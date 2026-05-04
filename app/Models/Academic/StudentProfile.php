@@ -1,0 +1,89 @@
+<?php
+
+namespace App\Models\Academic;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
+
+class StudentProfile extends Model
+{
+    use HasFactory, LogsActivity, SoftDeletes;
+
+    protected $table = 'student_profiles';
+
+    protected $fillable = [
+        'user_id',
+        'study_program_id',
+        'entry_academic_year_id',
+        'nim',
+        'entry_year',
+        'academic_status',
+        'entry_date',
+        'graduation_date',
+        'current_semester',
+        'is_active',
+        'desc',
+        'created_by',
+        'updated_by',
+        'deleted_by',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'entry_date' => 'date',
+            'graduation_date' => 'date',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('student_profile')
+            ->logOnly(['nim', 'academic_status', 'current_semester', 'is_active'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function studyProgram(): BelongsTo
+    {
+        return $this->belongsTo(StudyProgram::class);
+    }
+
+    public function entryAcademicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class, 'entry_academic_year_id');
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(StudentRegistration::class);
+    }
+
+    public function studyResults(): HasMany
+    {
+        return $this->hasMany(StudyResult::class);
+    }
+
+    public function transcriptEntries(): HasMany
+    {
+        return $this->hasMany(TranscriptEntry::class);
+    }
+
+    public function advisorAssignments(): HasMany
+    {
+        return $this->hasMany(AcademicAdvisorAssignment::class);
+    }
+}

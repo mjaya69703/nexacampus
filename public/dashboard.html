@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SIM System</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 shadow-lg fixed top-0 z-50">
+        <div class="navbar-start">
+            <label for="sidebar-drawer" class="btn btn-ghost lg:hidden">
+                <i class="fas fa-bars text-xl"></i>
+            </label>
+            <a class="btn btn-ghost text-xl">
+                <i class="fas fa-building-columns"></i>
+                <span class="hidden sm:inline">SIM Dashboard</span>
+            </a>
+        </div>
+        <div class="navbar-center hidden lg:flex">
+            <ul class="menu menu-horizontal">
+                <li><a>Dashboard</a></li>
+                <li><a>Reports</a></li>
+                <li><a>Analytics</a></li>
+            </ul>
+        </div>
+        <div class="navbar-end gap-2">
+            <div class="form-control hidden sm:block">
+                <input type="text" placeholder="Search..." class="input input-bordered w-24 md:w-auto" />
+            </div>
+            <button class="btn btn-ghost btn-circle">
+                <div class="indicator">
+                    <i class="fas fa-bell text-xl"></i>
+                    <span class="badge badge-xs badge-primary indicator-item"></span>
+                </div>
+            </button>
+            <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+                    <div class="w-10 rounded-full">
+                        <img alt="User Avatar" src="https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff" />
+                    </div>
+                </div>
+                <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
+                    <li><a class="justify-between">Profile <span class="badge">New</span></a></li>
+                    <li><a>Settings</a></li>
+                    <li><a class="text-error">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Drawer -->
+    <input type="checkbox" id="sidebar-drawer" class="drawer-toggle" />
+    <div class="drawer-side z-40">
+        <label for="sidebar-drawer" class="drawer-overlay"></label>
+        <aside class="bg-base-100 w-64 min-h-screen pt-16">
+            <ul class="menu p-4 gap-2">
+                <li class="menu-title">
+                    <span>MAIN MENU</span>
+                </li>
+                <li>
+                    <a class="active">
+                        <i class="fas fa-home w-5"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            <i class="fas fa-users w-5"></i>
+                            Data Master
+                        </summary>
+                        <ul>
+                            <li><a>Users</a></li>
+                            <li><a>Roles & Permissions</a></li>
+                            <li><a>Departments</a></li>
+                        </ul>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            <i class="fas fa-file-alt w-5"></i>
+                            Transactions
+                        </summary>
+                        <ul>
+                            <li><a>New Entry</a></li>
+                            <li><a>View All</a></li>
+                            <li><a>Pending Approval</a></li>
+                        </ul>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            <i class="fas fa-chart-bar w-5"></i>
+                            Reports
+                        </summary>
+                        <ul>
+                            <li><a>Daily Report</a></li>
+                            <li><a>Monthly Report</a></li>
+                            <li><a>Custom Report</a></li>
+                            <li><a>Export Data</a></li>
+                        </ul>
+                    </details>
+                </li>
+                <li class="menu-title mt-4">
+                    <span>SETTINGS</span>
+                </li>
+                <li>
+                    <a>
+                        <i class="fas fa-cog w-5"></i>
+                        Preferences
+                    </a>
+                </li>
+                <li>
+                    <a>
+                        <i class="fas fa-shield-alt w-5"></i>
+                        Security
+                    </a>
+                </li>
+                <li>
+                    <a>
+                        <i class="fas fa-question-circle w-5"></i>
+                        Help & Support
+                    </a>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <!-- Main Content -->
+    <main class="pt-16 lg:ml-64">
+        <div class="p-6">
+            <!-- Page Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold">Dashboard Overview</h1>
+                    <p class="text-sm text-base-content/70">Welcome back! Here's what's happening today.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm btn-outline">
+                        <i class="fas fa-download"></i>
+                        Export
+                    </button>
+                    <button class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i>
+                        New Entry
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- Stat Card 1 -->
+                <div class="stats shadow">
+                    <div class="stat">
+                        <div class="stat-figure text-primary">
+                            <i class="fas fa-users text-3xl"></i>
+                        </div>
+                        <div class="stat-title">Total Users</div>
+                        <div class="stat-value text-primary">25.6K</div>
+                        <div class="stat-desc">21% more than last month</div>
+                    </div>
+                </div>
+                
+                <!-- Stat Card 2 -->
+                <div class="stats shadow">
+                    <div class="stat">
+                        <div class="stat-figure text-secondary">
+                            <i class="fas fa-file-invoice text-3xl"></i>
+                        </div>
+                        <div class="stat-title">Transactions</div>
+                        <div class="stat-value text-secondary">4,567</div>
+                        <div class="stat-desc">15% pending review</div>
+                    </div>
+                </div>
+                
+                <!-- Stat Card 3 -->
+                <div class="stats shadow">
+                    <div class="stat">
+                        <div class="stat-figure text-accent">
+                            <i class="fas fa-wallet text-3xl"></i>
+                        </div>
+                        <div class="stat-title">Revenue</div>
+                        <div class="stat-value text-accent">$128K</div>
+                        <div class="stat-desc">↗︎ 12% increase</div>
+                    </div>
+                </div>
+                
+                <!-- Stat Card 4 -->
+                <div class="stats shadow">
+                    <div class="stat">
+                        <div class="stat-figure text-error">
+                            <i class="fas fa-exclamation-triangle text-3xl"></i>
+                        </div>
+                        <div class="stat-title">Alerts</div>
+                        <div class="stat-value text-error">23</div>
+                        <div class="stat-desc">5 require immediate action</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Line Chart -->
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title">
+                            <i class="fas fa-chart-line"></i>
+                            Analytics Overview
+                        </h2>
+                        <canvas id="lineChart" height="200"></canvas>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-sm btn-ghost">View Details</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bar Chart -->
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Monthly Statistics
+                        </h2>
+                        <canvas id="barChart" height="200"></canvas>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-sm btn-ghost">View Details</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tables and Activity Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Recent Transactions Table -->
+                <div class="card bg-base-100 shadow-xl lg:col-span-2">
+                    <div class="card-body">
+                        <div class="flex justify-between items-center">
+                            <h2 class="card-title">
+                                <i class="fas fa-list"></i>
+                                Recent Transactions
+                            </h2>
+                            <button class="btn btn-sm btn-ghost">View All</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Amount</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th>#TRX001</th>
+                                        <td>2024-01-15</td>
+                                        <td>Payment Received</td>
+                                        <td><span class="badge badge-success">Completed</span></td>
+                                        <td>$1,250.00</td>
+                                        <td>
+                                            <button class="btn btn-ghost btn-xs">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>#TRX002</th>
+                                        <td>2024-01-15</td>
+                                        <td>Refund Request</td>
+                                        <td><span class="badge badge-warning">Pending</span></td>
+                                        <td>$350.00</td>
+                                        <td>
+                                            <button class="btn btn-ghost btn-xs">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>#TRX003</th>
+                                        <td>2024-01-14</td>
+                                        <td>New Subscription</td>
+                                        <td><span class="badge badge-success">Completed</span></td>
+                                        <td>$99.00</td>
+                                        <td>
+                                            <button class="btn btn-ghost btn-xs">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>#TRX004</th>
+                                        <td>2024-01-14</td>
+                                        <td>Service Upgrade</td>
+                                        <td><span class="badge badge-error">Failed</span></td>
+                                        <td>$499.00</td>
+                                        <td>
+                                            <button class="btn btn-ghost btn-xs">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>#TRX005</th>
+                                        <td>2024-01-13</td>
+                                        <td>Consultation Fee</td>
+                                        <td><span class="badge badge-info">Processing</span></td>
+                                        <td>$200.00</td>
+                                        <td>
+                                            <button class="btn btn-ghost btn-xs">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Feed -->
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title">
+                            <i class="fas fa-history"></i>
+                            Recent Activity
+                        </h2>
+                        <ul class="timeline timeline-vertical">
+                            <li>
+                                <div class="timeline-start">10:30 AM</div>
+                                <div class="timeline-middle">
+                                    <i class="fas fa-check-circle text-success text-xl"></i>
+                                </div>
+                                <div class="timeline-end timeline-box">Transaction completed</div>
+                                <hr class="bg-primary"/>
+                            </li>
+                            <li>
+                                <hr class="bg-primary"/>
+                                <div class="timeline-start">09:15 AM</div>
+                                <div class="timeline-middle">
+                                    <i class="fas fa-user-plus text-info text-xl"></i>
+                                </div>
+                                <div class="timeline-end timeline-box">New user registered</div>
+                                <hr class="bg-primary"/>
+                            </li>
+                            <li>
+                                <hr class="bg-primary"/>
+                                <div class="timeline-start">08:45 AM</div>
+                                <div class="timeline-middle">
+                                    <i class="fas fa-file-export text-warning text-xl"></i>
+                                </div>
+                                <div class="timeline-end timeline-box">Report exported</div>
+                                <hr class="bg-primary"/>
+                            </li>
+                            <li>
+                                <hr class="bg-primary"/>
+                                <div class="timeline-start">Yesterday</div>
+                                <div class="timeline-middle">
+                                    <i class="fas fa-cog text-error text-xl"></i>
+                                </div>
+                                <div class="timeline-end timeline-box">System settings updated</div>
+                            </li>
+                        </ul>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-sm btn-ghost">View All Activity</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions & Notifications -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Quick Actions -->
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title">
+                            <i class="fas fa-bolt"></i>
+                            Quick Actions
+                        </h2>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <button class="btn btn-outline gap-2">
+                                <i class="fas fa-user-plus"></i>
+                                Add User
+                            </button>
+                            <button class="btn btn-outline gap-2">
+                                <i class="fas fa-file-invoice"></i>
+                                New Invoice
+                            </button>
+                            <button class="btn btn-outline gap-2">
+                                <i class="fas fa-chart-pie"></i>
+                                Generate Report
+                            </button>
+                            <button class="btn btn-outline gap-2">
+                                <i class="fas fa-envelope"></i>
+                                Send Email
+                            </button>
+                            <button class="btn btn-outline gap-2">
+                                <i class="fas fa-calendar"></i>
+                                Schedule
+                            </button>
+                            <button class="btn btn-outline gap-2">
+                                <i class="fas fa-download"></i>
+                                Export Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title">
+                            <i class="fas fa-bell"></i>
+                            Notifications
+                        </h2>
+                        <div class="flex flex-col gap-3">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <span>System maintenance scheduled for tonight at 2 AM</span>
+                            </div>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>5 pending approvals require your attention</span>
+                            </div>
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Monthly report has been generated successfully</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Theme Toggle FAB -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <div class="dropdown dropdown-top">
+            <div tabindex="0" role="button" class="btn btn-circle btn-primary shadow-lg">
+                <i class="fas fa-palette"></i>
+            </div>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                <li class="menu-title">Select Theme</li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'light')">Light</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'dark')">Dark</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'cupcake')">Cupcake</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'bumblebee')">Bumblebee</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'emerald')">Emerald</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'corporate')">Corporate</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'synthwave')">Synthwave</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'retro')">Retro</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'cyberpunk')">Cyberpunk</a></li>
+                <li><a onclick="document.documentElement.setAttribute('data-theme', 'valentine')">Valentine</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Line Chart
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: '2024',
+                    data: [65, 59, 80, 81, 56, 55, 40, 70, 85, 95, 100, 120],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: '2023',
+                    data: [45, 49, 60, 71, 46, 45, 30, 60, 75, 85, 90, 100],
+                    borderColor: 'rgb(107, 114, 128)',
+                    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Bar Chart
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Transactions',
+                    data: [1250, 1890, 1456, 2100],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(239, 68, 68, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(59, 130, 246)',
+                        'rgb(16, 185, 129)',
+                        'rgb(245, 158, 11)',
+                        'rgb(239, 68, 68)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Mobile sidebar close on route change
+        document.querySelectorAll('.drawer-side a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('sidebar-drawer').checked = false;
+            });
+        });
+    </script>
+</body>
+</html>
