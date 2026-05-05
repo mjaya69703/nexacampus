@@ -86,7 +86,7 @@ new class extends Component {
 
         $this->schedulesData = CourseSchedule::query()
             ->where('course_offering_id', $this->courseOfferingId)
-            ->with('lecturerProfile.user')
+            ->with(['lecturerProfile.user', 'room.building'])
             ->orderBy('day_of_week')
             ->orderBy('start_time')
             ->get()
@@ -96,8 +96,8 @@ new class extends Component {
                 'start_time' => $schedule->start_time?->format('H:i') ?? '-',
                 'end_time' => $schedule->end_time?->format('H:i') ?? '-',
                 'lecturer_name' => $schedule->lecturerProfile?->user?->name ?? '-',
-                'room' => $schedule->room,
-                'building' => $schedule->building,
+                'room' => $schedule->room?->name,
+                'building' => $schedule->room?->building?->name,
             ])
             ->toArray();
     }

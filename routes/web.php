@@ -4,9 +4,9 @@ use App\Http\Controllers\AuthController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
-// Route::get('/', function () {
-//     return view('layouts.appv2');
-// });
+Route::get('/', function () {
+    return view('welcome');
+});
 
 Route::livewire('/welcome', 'setup-wizard')->name('system.setup-wizard');
 
@@ -61,7 +61,6 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/course-offerings/{offeringId}/students', 'lecturer.course-offerings.students')->name('course-offerings.students');
             Route::livewire('/course-offerings/{offeringId}/attendance', 'lecturer.course-offerings.attendance')->name('course-offerings.attendance');
             Route::livewire('/course-offerings/{offeringId}/grades', 'lecturer.course-offerings.grades')->name('course-offerings.grades');
-            Route::livewire('/attendance-sessions', 'lecturer.attendance-sessions.index')->name('attendance-sessions.index');
             Route::livewire('/attendance-sessions/{sessionId}/edit', 'lecturer.attendance-sessions.edit')->name('attendance-sessions.edit');
             Route::livewire('/student-grades', 'lecturer.student-grades.index')->name('student-grades.index');
             Route::livewire('/student-grades/{id}/edit', 'lecturer.student-grades.edit')->name('student-grades.edit');

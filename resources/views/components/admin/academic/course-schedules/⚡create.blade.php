@@ -3,14 +3,14 @@
 use App\Models\Academic\CourseOffering;
 use App\Models\Academic\CourseOfferingLecturer;
 use App\Models\Academic\CourseSchedule;
+use App\Models\Campus\Room;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 new class extends Component {
     public $courseOfferingId = '';
     public $lecturerProfileId = '';
-    public $room = '';
-    public $building = '';
+    public $roomId = null;
     public $dayOfWeek = 'Monday';
     public $startTime = '';
     public $endTime = '';
@@ -22,6 +22,7 @@ new class extends Component {
 
     public array $courseOfferings = [];
     public array $lecturers = [];
+    public array $rooms = [];
     public array $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     public function mount(): void
@@ -32,6 +33,20 @@ new class extends Component {
             ->map(fn ($offering) => [
                 'id' => $offering->id,
                 'label' => ($offering->course?->code ?? '-') . ' - ' . ($offering->course?->name ?? '-') . ' / ' . ($offering->label ?? '-'),
+            ])
+            ->toArray();
+
+        $this->rooms = Room::query()
+            ->with('building')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Room $room) => [
+                'id' => $room->id,
+                'label' => trim(
+                    ($room->building?->name ? $room->building->name.' - ' : '')
+                    .$room->name
+                    .($room->code ? ' ('.$room->code.')' : '')
+                ),
             ])
             ->toArray();
     }
@@ -76,8 +91,7 @@ new class extends Component {
                 Rule::exists('course_offering_lecturers', 'lecturer_profile_id')
                     ->where('course_offering_id', $this->courseOfferingId),
             ],
-            'room' => 'nullable|string|max:100',
-            'building' => 'nullable|string|max:100',
+            'roomId' => 'nullable|exists:rooms,id',
             'dayOfWeek' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'startTime' => 'required|date_format:H:i',
             'endTime' => 'required|date_format:H:i|after:startTime',
@@ -95,8 +109,7 @@ new class extends Component {
             CourseSchedule::create([
                 'course_offering_id' => $this->courseOfferingId,
                 'lecturer_profile_id' => $this->lecturerProfileId ?: null,
-                'room' => $this->room ?: null,
-                'building' => $this->building ?: null,
+                'room_id' => $this->roomId ?: null,
                 'day_of_week' => $this->dayOfWeek,
                 'start_time' => $this->startTime,
                 'end_time' => $this->endTime,
@@ -183,14 +196,13 @@ new class extends Component {
 
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Ruangan</label>
-                            <input type="text" class="form-control" wire:model="room" placeholder="R101">
-                            @error('room') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Gedung</label>
-                            <input type="text" class="form-control" wire:model="building" placeholder="Gedung A">
-                            @error('building') <span class="text-danger">{{ $message }}</span> @enderror
+                            <select class="form-select" wire:model="roomId">
+                                <option value="">Pilih Ruangan (Opsional)</option>
+                                @foreach($rooms as $room)
+                                    <option value="{{ $room['id'] }}">{{ $room['label'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('roomId') <span class="text-danger">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="col-md-4 mb-3">

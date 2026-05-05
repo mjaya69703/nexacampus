@@ -124,15 +124,7 @@ class SidebarMenu
                 static::makeLink('student-transcript', 'Transkrip', 'student.transcript.index', 'fas fa-file-invoice'),
             ]),
             'lecturer' => collect([
-                static::makeGroup(
-                    id: 'lecturer-courses',
-                    title: 'Kelas',
-                    icon: 'fas fa-book',
-                    children: [
-                        static::makeChildLink('lecturer.course-offerings.index', 'Daftar Kelas'),
-                    ],
-                ),
-                static::makeLink('lecturer-attendance-sessions', 'Sesi Absensi', 'lecturer.attendance-sessions.index', 'fas fa-clipboard-check'),
+                static::makeLink('lecturer-course-offerings', 'Kelas Saya', 'lecturer.course-offerings.index', 'fas fa-book'),
                 static::makeLink('lecturer-student-grades', 'Nilai', 'lecturer.student-grades.index', 'fas fa-chart-bar'),
             ]),
             default => collect(),
