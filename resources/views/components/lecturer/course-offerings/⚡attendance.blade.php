@@ -36,7 +36,11 @@ new class extends Component
             ->where('course_offering_id', $this->offeringId)
             ->where('lecturer_profile_id', $lecturerProfile->id)
             ->where('is_active', true)
-            ->with(['courseOffering.course', 'courseOffering.academicYear'])
+            ->with([
+                'courseOffering.course',
+                'courseOffering.academicYear',
+                'courseOffering.courseSchedules.room.building',
+            ])
             ->first();
 
         if (! $assignment || ! $assignment->courseOffering) {
@@ -44,12 +48,16 @@ new class extends Component
         }
 
         $offering = $assignment->courseOffering;
+        $activeSchedule = $offering->courseSchedules->where('is_active', true)->first();
 
         $this->classInfo = [
             'course' => ($offering->course?->code ?? '-') . ' - ' . ($offering->course?->name ?? '-'),
             'class' => $offering->label ?? '-',
             'class_code' => $offering->code ?? '-',
             'academic_year' => $offering->academicYear?->name ?? '-',
+            'room' => $activeSchedule?->room?->name ?? '-',
+            'building' => $activeSchedule?->room?->building?->name ?? '-',
+            'delivery_mode' => $activeSchedule?->delivery_mode ?? '-',
         ];
 
         $this->sessions = AttendanceSession::query()
@@ -342,6 +350,14 @@ new class extends Component
                         <span class="info-badge" style="color: #1e293b;">
                             <i class="fas fa-calendar-alt"></i>
                             {{ $classInfo['academic_year'] }}
+                        </span>
+                        <span class="info-badge" style="color: #1e293b;">
+                            <i class="fas fa-building"></i>
+                            {{ $classInfo['building'] }} / {{ $classInfo['room'] }}
+                        </span>
+                        <span class="info-badge" style="color: #1e293b;">
+                            <i class="fas fa-wifi"></i>
+                            {{ $classInfo['delivery_mode'] }}
                         </span>
                     </div>
                 </div>

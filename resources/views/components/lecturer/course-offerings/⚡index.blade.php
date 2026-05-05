@@ -63,7 +63,7 @@ new class extends Component
                 'courseOffering.academicYear',
                 'courseOffering.studyProgram',
                 'courseOffering.course',
-                'courseOffering.courseSchedules',
+                'courseOffering.courseSchedules.room.building',
                 'courseOffering.attendanceSessions',
             ])
             ->latest('id')
@@ -98,6 +98,8 @@ new class extends Component
                     'session_count' => $offering->attendanceSessions->count(),
                     'capacity' => $offering->capacity,
                     'enrolled_count' => $enrolledCount,
+                    'room' => $offering->courseSchedules->where('is_active', true)->first()?->room?->name ?? '-',
+                    'building' => $offering->courseSchedules->where('is_active', true)->first()?->room?->building?->name ?? '-',
                 ];
             })
             ->filter()
@@ -559,6 +561,12 @@ new class extends Component
                                 <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.5rem;">
                                     <span style="font-size: 0.8rem; color: #6b7280;">Periode</span>
                                     <span style="font-size: 0.8rem; font-weight: 600; color: #1f2937;">{{ $offering['academic_year'] }}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.8rem; color: #6b7280;">Ruangan</span>
+                                    <span style="font-size: 0.8rem; font-weight: 600; color: #1f2937;">
+                                        <i class="fas fa-building me-1" style="color: #667eea;"></i>{{ $offering['building'] }} / {{ $offering['room'] }}
+                                    </span>
                                 </div>
                                 <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.5rem;">
                                     <span style="font-size: 0.8rem; color: #6b7280;">Program Studi</span>

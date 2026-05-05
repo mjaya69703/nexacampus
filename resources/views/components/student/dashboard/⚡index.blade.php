@@ -181,7 +181,7 @@ new class extends Component
             ];
 
             $this->upcomingSchedules = StudyPlanDetail::query()
-                ->with(['courseOffering.course', 'courseOffering.courseSchedules'])
+                ->with(['courseOffering.course', 'courseOffering.courseSchedules.room.building'])
                 ->where('study_plan_id', $currentStudyPlan->id)
                 ->get()
                 ->flatMap(function ($detail) {
@@ -203,8 +203,8 @@ new class extends Component
                                 'day' => $schedule->day_of_week,
                                 'start_time' => $this->formatTime($schedule->start_time),
                                 'end_time' => $this->formatTime($schedule->end_time),
-                                'room' => $schedule->room ?: '-',
-                                'building' => $schedule->building ?: '-',
+                                'room' => $schedule->room?->name ?? '-',
+                                'building' => $schedule->room?->building?->name ?? '-',
                                 'mode' => $schedule->delivery_mode,
                             ];
                         });
@@ -475,7 +475,7 @@ new class extends Component
                             <div class="col-6">
                                 <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 1rem; text-align: center;">
                                     <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.5rem;">Status Akademik</div>
-                                    <span class="badge bg-white text-primary" style="font-size: 0.85rem;">
+                                    <span class="badge bg-whitebg-white text-primary" style="font-size: 0.85rem;">
                                         {{ $studentInfo['academic_status'] ?? '-' }}
                                     </span>
                                 </div>
@@ -704,7 +704,7 @@ new class extends Component
             <div class="card modern-card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
                     <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-graduation-cap me-2" style="color: #10b981;"></i>Nilai Terbaru</h3>
-                    <a href="{{ route('student.grades.index') }}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">Lihat Semua</a>
+                    <a href="{{ route('student.grades.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Lihat Semua</a>
                 </div>
 
                 <div class="card-body p-4">
@@ -741,7 +741,7 @@ new class extends Component
             <div class="card modern-card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
                     <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-calendar-days me-2" style="color: #f59e0b;"></i>Jadwal Ringkas</h3>
-                    <a href="{{ route('student.schedule.index') }}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">Buka Jadwal</a>
+                    <a href="{{ route('student.schedule.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Buka Jadwal</a>
                 </div>
 
                 <div class="card-body p-4">

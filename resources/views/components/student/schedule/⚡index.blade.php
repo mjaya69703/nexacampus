@@ -147,7 +147,7 @@ new class extends Component
         $sessions = AttendanceSession::query()
             ->with([
                 'courseOffering.course',
-                'courseSchedule',
+                'courseSchedule.room.building',
                 'records' => function ($query) {
                     $query->where('student_profile_id', $this->studentProfileId);
                 },
@@ -184,8 +184,8 @@ new class extends Component
                     'end_time' => $this->formatTime($session->end_time),
                     'course_name' => $offering?->course?->name ?? $offering?->label ?? '-',
                     'course_code' => $offering?->course?->code ?? '-',
-                    'room' => $courseSchedule?->room ?: '-',
-                    'building' => $courseSchedule?->building ?: '-',
+                    'room' => $courseSchedule?->room?->name ?? '-',
+                    'building' => $courseSchedule?->room?->building?->name ?? '-',
                     'delivery_mode' => $courseSchedule?->delivery_mode ?? '-',
                     'session_status' => $session->status,
                     'attendance_status' => $attendanceStatus ? ($statusMap[$attendanceStatus] ?? $attendanceStatus) : 'Belum Absen',
