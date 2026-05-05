@@ -181,23 +181,110 @@ new class extends Component
 
 @push('styles')
     <style>
-        .student-attendance-card {
-            border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.06);
-            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+        .modern-card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background: white;
         }
 
-        .student-attendance-label {
-            color: #6b7280;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
         }
 
-        .student-attendance-value {
-            font-size: 28px;
-            line-height: 1;
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+            border-radius: 16px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2.25rem;
             font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .session-row {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .session-row:hover {
+            background: #f8fafc;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
         }
     </style>
 @endpush
@@ -212,106 +299,142 @@ new class extends Component
     @elseif (! $hasStudyPlanAccess)
         <div class="alert alert-danger">Data kelas tidak ditemukan atau Anda tidak memiliki akses.</div>
     @else
-        <div class="card student-attendance-card mb-4">
-            <div class="card-body p-4">
+        {{-- Hero Section with Gradient --}}
+        <div class="card modern-card hero-gradient mb-4" style="color: white;">
+            <div class="card-body p-4 p-lg-5">
                 <div class="row align-items-center g-4">
                     <div class="col-lg-8">
-                        <div class="student-attendance-label mb-2">Kehadiran Mata Kuliah</div>
-                        <h2 class="mb-2">{{ $courseName }}</h2>
-                        <div class="text-secondary">
-                            Tahun akademik {{ $activeAcademicYearName }} • Status registrasi {{ $registrationStatus }}
+                        <div class="d-flex align-items-start gap-3">
+                            <div style="width: 72px; height: 72px; background: rgba(255,255,255,0.2); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; backdrop-filter: blur(10px);">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Absensi Mata Kuliah</div>
+                                <h1 class="h2 mb-2" style="font-weight: 700;">{{ $courseName }}</h1>
+                                <div style="opacity: 0.9; margin-bottom: 1rem;">
+                                    <i class="fas fa-calendar me-2"></i>{{ $activeAcademicYearName }} • 
+                                    <span class="badge bg-white text-primary ms-2">{{ $registrationStatus }}</span>
+                                </div>
+                                <a href="{{ route('student.schedule.index') }}" class="btn btn-light" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600;">
+                                    <i class="fas fa-arrow-left me-2"></i>Kembali ke Jadwal
+                                </a>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="col-lg-4 text-lg-end">
-                        <a href="{{ route('student.schedule.index') }}" class="btn btn-outline-secondary">
-                            Kembali ke Jadwal
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="row row-cards mb-4">
+        {{-- Stats Cards --}}
+        <div class="row g-4 mb-4">
             <div class="col-md-3">
-                <div class="card student-attendance-card">
-                    <div class="card-body">
-                        <div class="student-attendance-label">Total Sesi</div>
-                        <div class="student-attendance-value">{{ $summary['total_meetings'] }}</div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af;">
+                        <i class="fas fa-layer-group"></i>
                     </div>
+                    <div class="stat-value" style="color: #1e40af;">{{ $summary['total_meetings'] }}</div>
+                    <div class="stat-label">Total Sesi</div>
                 </div>
             </div>
 
             <div class="col-md-3">
-                <div class="card student-attendance-card">
-                    <div class="card-body">
-                        <div class="student-attendance-label">Sesi Dibuka</div>
-                        <div class="student-attendance-value">{{ $summary['opened_count'] }}</div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46;">
+                        <i class="fas fa-door-open"></i>
                     </div>
+                    <div class="stat-value" style="color: #065f46;">{{ $summary['opened_count'] }}</div>
+                    <div class="stat-label">Sesi Dibuka</div>
                 </div>
             </div>
 
             <div class="col-md-3">
-                <div class="card student-attendance-card">
-                    <div class="card-body">
-                        <div class="student-attendance-label">Sudah Diabsen</div>
-                        <div class="student-attendance-value">{{ $summary['attended_count'] }}</div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e;">
+                        <i class="fas fa-check-circle"></i>
                     </div>
+                    <div class="stat-value" style="color: #92400e;">{{ $summary['attended_count'] }}</div>
+                    <div class="stat-label">Sudah Diabsen</div>
                 </div>
             </div>
 
             <div class="col-md-3">
-                <div class="card student-attendance-card">
-                    <div class="card-body">
-                        <div class="student-attendance-label">Belum Diinput</div>
-                        <div class="student-attendance-value">{{ $summary['not_input_count'] }}</div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b;">
+                        <i class="fas fa-clock"></i>
                     </div>
+                    <div class="stat-value" style="color: #991b1b;">{{ $summary['not_input_count'] }}</div>
+                    <div class="stat-label">Belum Diinput</div>
                 </div>
             </div>
         </div>
 
-        <div class="card student-attendance-card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Daftar Pertemuan</h3>
+        {{-- Sessions Table --}}
+        <div class="modern-card">
+            <div class="card-header" style="padding: 1.5rem; border-bottom: 2px solid #f1f5f9;">
+                <h3 class="mb-0" style="font-weight: 600; color: #1f2937;">
+                    <i class="fas fa-list-alt me-2" style="color: #667eea;"></i>Daftar Pertemuan
+                </h3>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-vcenter card-table">
-                        <thead>
+                    <table class="table table-vcenter mb-0" style="margin: 0;">
+                        <thead style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
                             <tr>
-                                <th>Pertemuan</th>
-                                <th>Tanggal</th>
-                                <th>Jam</th>
-                                <th>Topik</th>
-                                <th>Status Sesi</th>
-                                <th>Status Absensi</th>
-                                <th class="text-end">Aksi</th>
+                                <th style="padding: 1rem; font-weight: 600; border-top-left-radius: 12px;">Pertemuan</th>
+                                <th style="padding: 1rem; font-weight: 600;">Tanggal</th>
+                                <th style="padding: 1rem; font-weight: 600;">Jam</th>
+                                <th style="padding: 1rem; font-weight: 600;">Topik</th>
+                                <th style="padding: 1rem; font-weight: 600;">Status Sesi</th>
+                                <th style="padding: 1rem; font-weight: 600;">Status Absensi</th>
+                                <th style="padding: 1rem; font-weight: 600; text-align: right; border-top-right-radius: 12px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($attendanceItems as $item)
-                                <tr>
-                                    <td>{{ $item['meeting_no'] ?? '-' }}</td>
-                                    <td>{{ $item['meeting_date'] }}</td>
-                                    <td>{{ $item['time_range'] }}</td>
-                                    <td>{{ $item['topic'] }}</td>
-                                    <td><span class="badge bg-azure-lt text-azure">{{ $item['session_status'] }}</span></td>
-                                    <td><span class="badge {{ $item['status_class'] }}">{{ $item['status'] }}</span></td>
-                                    <td class="text-end">
+                                <tr class="session-row">
+                                    <td style="padding: 1rem; font-weight: 600; color: #1f2937;">{{ $item['meeting_no'] ?? '-' }}</td>
+                                    <td style="padding: 1rem;">
+                                        <i class="fas fa-calendar-day me-2" style="color: #667eea;"></i>{{ $item['meeting_date'] }}
+                                    </td>
+                                    <td style="padding: 1rem;">
+                                        <i class="fas fa-clock me-2" style="color: #10b981;"></i>{{ $item['time_range'] }}
+                                    </td>
+                                    <td style="padding: 1rem;">{{ $item['topic'] }}</td>
+                                    <td style="padding: 1rem;">
+                                        <span class="status-badge" style="background: #dbeafe; color: #1e40af;">
+                                            {{ $item['session_status'] }}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 1rem;">
+                                        <span class="status-badge" style="{{ match($item['status']) {
+                                            'Hadir' => 'background: #d1fae5; color: #065f46;',
+                                            'Terlambat', 'Izin', 'Sakit' => 'background: #fef3c7; color: #92400e;',
+                                            'Alpha' => 'background: #fee2e2; color: #991b1b;',
+                                            default => 'background: #f1f5f9; color: #64748b;',
+                                        } }}">
+                                            {{ $item['status'] }}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 1rem; text-align: right;">
                                         @if ($item['can_fill_attendance'])
-                                            <a href="{{ route('student.schedule.attendance.record', ['sessionId' => $item['session_id']]) }}" class="btn btn-primary">
-                                                Isi / Update Absen
+                                            <a href="{{ route('student.schedule.attendance.record', ['sessionId' => $item['session_id']]) }}" 
+                                               class="action-btn" 
+                                               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                                <i class="fas fa-edit"></i> Isi / Update
                                             </a>
                                         @else
-                                            <button type="button" class="btn btn-secondary" disabled>
-                                                Belum Bisa
+                                            <button type="button" class="action-btn" disabled style="background: #e5e7eb; color: #6b7280;">
+                                                <i class="fas fa-lock"></i> Belum Bisa
                                             </button>
                                         @endif
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-secondary">Belum ada sesi kehadiran pada kelas ini.</td>
+                                    <td colspan="7" class="text-center" style="padding: 3rem;">
+                                        <i class="fas fa-inbox" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display: block;"></i>
+                                        <div style="color: #64748b; font-size: 1rem;">Belum ada sesi kehadiran pada kelas ini.</div>
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>
