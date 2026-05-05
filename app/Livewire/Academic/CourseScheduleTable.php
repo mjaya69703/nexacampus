@@ -30,7 +30,7 @@ final class CourseScheduleTable extends BasePowerGridTable
     public function datasource(): Builder
     {
         return CourseSchedule::query()
-            ->with(['courseOffering.course', 'courseOffering.academicYear', 'lecturerProfile.user'])
+            ->with(['courseOffering.course', 'courseOffering.academicYear', 'lecturerProfile.user', 'room.building'])
             ->orderByDesc('created_at');
     }
 
@@ -40,6 +40,7 @@ final class CourseScheduleTable extends BasePowerGridTable
             'courseOffering.course' => ['name', 'code'],
             'courseOffering.academicYear' => ['name', 'code'],
             'lecturerProfile.user' => ['first_name', 'last_name', 'email'],
+            'room' => ['name', 'code'],
         ];
     }
 
@@ -51,8 +52,8 @@ final class CourseScheduleTable extends BasePowerGridTable
             ->add('lecturer_name', fn (CourseSchedule $model) => $model->lecturerProfile?->user?->name ?? 'Jadwal Umum')
             ->add('day_of_week')
             ->add('time_range', fn (CourseSchedule $model) => ($model->start_time ? $model->start_time->format('H:i') : '-').' - '.($model->end_time ? $model->end_time->format('H:i') : '-'))
-            ->add('room')
-            ->add('building')
+            ->add('room_name', fn (CourseSchedule $model) => $model->room?->name ?? '-')
+            ->add('building_name', fn (CourseSchedule $model) => $model->room?->building?->name ?? '-')
             ->add('session_type')
             ->add('delivery_mode')
             ->add('is_active')
@@ -72,9 +73,9 @@ final class CourseScheduleTable extends BasePowerGridTable
                 ->sortable(),
             Column::make('Waktu', 'time_range')
                 ->sortable(),
-            Column::make('Ruangan', 'room')
+            Column::make('Ruangan', 'room_name')
                 ->sortable(),
-            Column::make('Gedung', 'building')
+            Column::make('Gedung', 'building_name')
                 ->sortable(),
             Column::make('Tipe', 'session_type')
                 ->sortable(),
