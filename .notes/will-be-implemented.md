@@ -61,7 +61,7 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)*
 
 #### 🎯 PRIORITAS TINGGI (High Priority - Week 1-2)
 
-##### 1. Course Materials / Bahan Ajar 📚
+##### 1. 🚧 IN PROGRESS - Course Materials / Bahan Ajar 📚
 **Deskripsi:** Sistem upload dan manajemen materi perkuliahan
 
 **Fitur Detail:**
@@ -92,7 +92,7 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)*
 
 ---
 
-##### 2. Announcements / Pengumuman 📢
+##### 2. 🚧 IN PROGRESS - Announcements / Pengumuman 📢
 **Deskripsi:** Sistem pengumuman untuk komunikasi dosen-mahasiswa
 
 **Fitur Detail:**
@@ -122,7 +122,7 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)*
 
 ---
 
-##### 3. Grade Book with Export 📊
+##### 3. 🚧 IN PROGRESS - Grade Book with Export 📊
 **Deskripsi:** Rekap nilai lengkap dengan export functionality
 
 **Fitur Detail:**
@@ -585,7 +585,7 @@ Dokumen ini merangkum fitur-fitur **CRUD bisnis** yang dibutuhkan untuk role **A
 
 #### 🎯 PRIORITAS TINGGI (High Priority - Week 1-2)
 
-##### 1. PMB (Penerimaan Mahasiswa Baru) Management 🎓
+##### 1. 🚧 IN PROGRESS - PMB (Penerimaan Mahasiswa Baru) Management 🎓
 **Deskripsi:** Sistem pendaftaran & seleksi mahasiswa baru end-to-end
 
 **Fitur Detail:**
@@ -637,7 +637,7 @@ Dokumen ini merangkum fitur-fitur **CRUD bisnis** yang dibutuhkan untuk role **A
 
 ---
 
-##### 2. Financial Management - Tuition & Payments 💰
+##### 2. 🚧 IN PROGRESS - Financial Management - Tuition & Payments 💰
 **Deskripsi:** Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran)
 
 **Fitur Detail:**
@@ -1682,7 +1682,7 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Student (Mahasisw
 
 #### 🎯 PRIORITAS TINGGI (High Priority - Week 1-2)
 
-##### 1. Course Materials Access / Akses Bahan Ajar 📚
+##### 1. 🚧 IN PROGRESS - Course Materials Access / Akses Bahan Ajar 📚
 **Deskripsi:** Mahasiswa bisa download/view materi perkuliahan yang diupload dosen
 
 **Fitur Detail:**
@@ -1713,7 +1713,7 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Student (Mahasisw
 
 ---
 
-##### 2. Announcements View / Lihat Pengumuman 📢
+##### 2. 🚧 IN PROGRESS - Announcements View / Lihat Pengumuman 📢
 **Deskripsi:** Mahasiswa bisa lihat pengumuman dari dosen per mata kuliah
 
 **Fitur Detail:**
@@ -2327,6 +2327,10 @@ Setelah implementasi fitur-fitur di atas, success metrics yang diharapkan:
   - Removed internal admin features (analytics dashboard, monitoring, bulk ops) - focus on user-facing CRUD
   - Documented existing features untuk all three roles: Lecturer, Admin, & Student
   - Created implementation priority matrices & recommended phases for all roles
+  - **Marked 7 features as 🚧 IN PROGRESS** (moved to has-been-implemented.md for active tracking):
+    - Lecturer: Course Materials, Announcements, Grade Book Export
+    - Admin: PMB Management, Financial/Tuition Management
+    - Student: Course Materials Access, Announcements View
 - Last updated by: AI Assistant
 
 ---
