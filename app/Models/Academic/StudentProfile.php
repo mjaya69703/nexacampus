@@ -86,4 +86,9 @@ class StudentProfile extends Model
     {
         return $this->hasMany(AcademicAdvisorAssignment::class);
     }
+
+    public function studyPlans(): HasMany
+    {
+        return $this->hasMany(StudyPlan::class);
+    }
 }

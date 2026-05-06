@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,12 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/schedule', 'student.schedule.index')->name('schedule.index');
             Route::livewire('/schedule/{offeringId}/attendance', 'student.schedule.attendance.index')->name('schedule.attendance');
             Route::livewire('/schedule/attendance/{sessionId}/record', 'student.schedule.attendance.record.index')->name('schedule.attendance.record');
+            Route::livewire('/materials', 'student.course-materials')->name('course-materials.index');
+            Route::livewire('/course-offerings/{offeringId}/materials', 'student.course-materials')->name('course-materials.offering');
+            Route::livewire('/learning/{material}', 'student.learning.show')->name('learning.show');
+            Route::get('/learning/{material}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->name('learning.preview');
+            Route::get('/learning/{material}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->name('learning.link');
+            Route::get('/course-materials/{id}/download/{fileId}', [CourseMaterialController::class, 'download'])->name('course-materials.download');
         });
 
         // Lecturer Routes
@@ -61,6 +68,12 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/course-offerings/{offeringId}/students', 'lecturer.course-offerings.students')->name('course-offerings.students');
             Route::livewire('/course-offerings/{offeringId}/attendance', 'lecturer.course-offerings.attendance')->name('course-offerings.attendance');
             Route::livewire('/course-offerings/{offeringId}/grades', 'lecturer.course-offerings.grades')->name('course-offerings.grades');
+            Route::livewire('/course-offerings/{offeringId}/materials', 'lecturer.course-materials.index')->name('course-materials.index');
+            Route::livewire('/course-materials', 'lecturer.course-materials.list')->name('course-materials.list');
+            Route::livewire('/course-materials/{material}', 'lecturer.course-materials.show')->name('course-materials.show');
+            Route::get('/course-materials/{id}/download', [CourseMaterialController::class, 'download'])->name('course-materials.download');
+            Route::get('/course-materials/{id}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->name('course-materials.preview');
+            Route::get('/course-materials/{id}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->name('course-materials.link');
             Route::livewire('/attendance-sessions/{sessionId}/edit', 'lecturer.attendance-sessions.edit')->name('attendance-sessions.edit');
             Route::livewire('/student-grades', 'lecturer.student-grades.index')->name('student-grades.index');
             Route::livewire('/student-grades/{id}/edit', 'lecturer.student-grades.edit')->name('student-grades.edit');

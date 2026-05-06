@@ -120,11 +120,13 @@ class SidebarMenu
                 static::makeLink('student-registration', 'Registrasi', 'student.registration.index', 'fas fa-clipboard-list'),
                 static::makeLink('student-study-plan', 'KRS', 'student.study-plan.index', 'fas fa-file-alt'),
                 static::makeLink('student-schedule', 'Jadwal', 'student.schedule.index', 'fas fa-calendar'),
+                static::makeLink('student-materials', 'Materi', 'student.course-materials.index', 'fas fa-book-open'),
                 static::makeLink('student-grades', 'Nilai', 'student.grades.index', 'fas fa-chart-bar'),
                 static::makeLink('student-transcript', 'Transkrip', 'student.transcript.index', 'fas fa-file-invoice'),
             ]),
             'lecturer' => collect([
                 static::makeLink('lecturer-course-offerings', 'Kelas Saya', 'lecturer.course-offerings.index', 'fas fa-book'),
+                static::makeLink('lecturer-course-materials', 'Materi', 'lecturer.course-materials.list', 'fas fa-book-open'),
                 static::makeLink('lecturer-student-grades', 'Nilai', 'lecturer.student-grades.index', 'fas fa-chart-bar'),
             ]),
             default => collect(),

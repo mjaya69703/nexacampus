@@ -14,6 +14,7 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^4.2",
+        "mantix/livewire-jodit-text-editor": "^1.9",
         "power-components/livewire-powergrid": "^6.9",
         "spatie/laravel-activitylog": "^4.12",
         "spatie/laravel-permission": "^7.2"

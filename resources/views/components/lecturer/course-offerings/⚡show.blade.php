@@ -81,7 +81,7 @@ new class extends Component
 
     public function setTab(string $tab): void
     {
-        if (! in_array($tab, ['students', 'attendance', 'grades'], true)) {
+        if (! in_array($tab, ['students', 'attendance', 'grades', 'materials'], true)) {
             return;
         }
 
@@ -444,6 +444,9 @@ new class extends Component
                 <button type="button" class="btn tab-button {{ $activeTab === 'grades' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('grades')">
                     <i class="fas fa-chart-line me-2"></i>Nilai
                 </button>
+                <button type="button" class="btn tab-button {{ $activeTab === 'materials' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('materials')">
+                    <i class="fas fa-book me-2"></i>Materi
+                </button>
             </div>
 
             <div class="btn-list">
@@ -455,6 +458,9 @@ new class extends Component
                 </a>
                 <a href="{{ route('lecturer.course-offerings.grades', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
                     <i class="fas fa-external-link-alt me-1"></i>Halaman Nilai
+                </a>
+                <a href="{{ route('lecturer.course-materials.index', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>Halaman Materi
                 </a>
             </div>
         </div>
@@ -525,7 +531,7 @@ new class extends Component
                     </tbody>
                 </table>
             </div>
-        @else
+        @elseif ($activeTab === 'grades')
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">
                     <thead>
@@ -559,6 +565,15 @@ new class extends Component
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        @elseif ($activeTab === 'materials')
+            <div class="p-4 text-center">
+                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                <h5>Kelola Materi Perkuliahan</h5>
+                <p class="text-muted">Upload dan kelola materi perkuliahan untuk kelas ini.</p>
+                <a href="{{ route('lecturer.course-materials.index', ['offeringId' => $offeringId]) }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-arrow-right me-2"></i>Buka Halaman Materi
+                </a>
             </div>
         @endif
     </div>

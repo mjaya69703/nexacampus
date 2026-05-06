@@ -373,25 +373,32 @@ new class extends Component
             <div class="card-body p-4">
                 <h3 class="h5 mb-3" style="font-weight: 700; color: #1f2937;">⚡ Aksi Cepat</h3>
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="{{ route('lecturer.course-offerings.index') }}" class="quick-action-btn d-block text-decoration-none">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-calendar-check" style="color: #10b981;"></i></div>
                             <div style="font-weight: 600; color: #1f2937;">Kelola Absensi</div>
                             <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Pilih kelas untuk absensi</div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="{{ route('lecturer.student-grades.index') }}" class="quick-action-btn d-block text-decoration-none">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-chart-line" style="color: #3b82f6;"></i></div>
                             <div style="font-weight: 600; color: #1f2937;">Input Nilai</div>
                             <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Masukkan nilai mahasiswa</div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="{{ route('lecturer.course-offerings.index') }}" class="quick-action-btn d-block text-decoration-none">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-book-open" style="color: #f59e0b;"></i></div>
                             <div style="font-weight: 600; color: #1f2937;">Kelola Kelas</div>
                             <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Lihat daftar kelas</div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ route('lecturer.course-materials.list') }}" class="quick-action-btn d-block text-decoration-none">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-folder-open" style="color: #8b5cf6;"></i></div>
+                            <div style="font-weight: 600; color: #1f2937;">Kelola Materi</div>
+                            <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Akses materi per kelas</div>
                         </a>
                     </div>
                 </div>

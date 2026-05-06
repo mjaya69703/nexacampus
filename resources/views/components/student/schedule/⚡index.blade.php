@@ -535,14 +535,20 @@ new class extends Component
 
                                         <div class="d-flex gap-2 mt-3">
                                             <a href="{{ route('student.schedule.attendance', ['offeringId' => $item['offering_id']]) }}"
-                                               class="action-btn" 
+                                               class="action-btn"
                                                style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; flex: 1; justify-content: center;">
                                                 <i class="fas fa-info-circle"></i> Detail Sesi
                                             </a>
 
+                                            <a href="{{ route('student.course-materials.index', ['offeringId' => $item['offering_id']]) }}"
+                                               class="action-btn"
+                                               style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; flex: 1; justify-content: center;">
+                                                <i class="fas fa-book"></i> Materi
+                                            </a>
+
                                             @if ($item['can_fill_attendance'])
                                                 <a href="{{ route('student.schedule.attendance.record', ['sessionId' => $item['session_id']]) }}"
-                                                   class="action-btn" 
+                                                   class="action-btn"
                                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; flex: 1; justify-content: center;">
                                                     <i class="fas fa-user-check"></i> Isi Absen
                                                 </a>
