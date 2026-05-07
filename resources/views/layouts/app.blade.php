@@ -14,6 +14,7 @@
     <!-- BEGIN PLUGINS STYLES -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="{{ asset('assets/libs/tom-select/dist/css/tom-select.bootstrap5.min.css') }}" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/jodit@4.1.16/es2021/jodit.min.css">
     <!-- END PLUGINS STYLES -->
     <!-- BEGIN CUSTOM FONT -->
     <style>
@@ -436,6 +437,7 @@
     </div>
     <!-- BEGIN GLOBAL SCRIPTS -->
     <script src="{{ asset('assets') }}/dist/js/tabler.min.js?1774011441" defer></script>
+    <script src="https://unpkg.com/jodit@4.1.16/es2021/jodit.min.js"></script>
     @livewireScripts
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="{{ asset('assets/libs/tom-select/dist/js/tom-select.complete.min.js') }}"></script>

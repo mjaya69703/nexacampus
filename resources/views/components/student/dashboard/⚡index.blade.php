@@ -181,7 +181,7 @@ new class extends Component
             ];
 
             $this->upcomingSchedules = StudyPlanDetail::query()
-                ->with(['courseOffering.course', 'courseOffering.courseSchedules'])
+                ->with(['courseOffering.course', 'courseOffering.courseSchedules.room.building'])
                 ->where('study_plan_id', $currentStudyPlan->id)
                 ->get()
                 ->flatMap(function ($detail) {
@@ -203,8 +203,8 @@ new class extends Component
                                 'day' => $schedule->day_of_week,
                                 'start_time' => $this->formatTime($schedule->start_time),
                                 'end_time' => $this->formatTime($schedule->end_time),
-                                'room' => $schedule->room ?: '-',
-                                'building' => $schedule->building ?: '-',
+                                'room' => $schedule->room?->name ?? '-',
+                                'building' => $schedule->room?->building?->name ?? '-',
                                 'mode' => $schedule->delivery_mode,
                             ];
                         });
@@ -282,127 +282,152 @@ new class extends Component
 
 @push('styles')
     <style>
-        .student-shell-card {
-            border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.06);
-            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+        .modern-card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background: white;
         }
 
-        .student-dashboard-hero {
-            overflow: hidden;
+        .modern-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
-            background:
-                radial-gradient(circle at top right, rgba(192, 132, 252, 0.28), transparent 34%),
-                linear-gradient(135deg, var(--app-primary-deep, #4c1d95) 0%, var(--app-primary-bright, #a855f7) 100%);
-            color: #fff;
+            overflow: hidden;
         }
 
-        .student-dashboard-hero::after {
+        .hero-gradient::before {
             content: '';
             position: absolute;
-            inset: auto -80px -120px auto;
-            width: 260px;
-            height: 260px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.08);
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
         }
 
-        .student-dashboard-hero .text-muted,
-        .student-dashboard-hero .text-secondary {
-            color: rgba(255, 255, 255, 0.72) !important;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
         }
 
-        .student-dashboard-avatar {
-            width: 64px;
-            height: 64px;
-            border-radius: 20px;
-            display: grid;
-            place-items: center;
-            background: rgba(255, 255, 255, 0.16);
-            font-size: 24px;
-            font-weight: 700;
-            backdrop-filter: blur(8px);
-        }
-
-        .student-stat-card {
-            height: 100%;
-        }
-
-        .student-stat-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b7280;
-        }
-
-        .student-stat-value {
-            font-size: 30px;
-            line-height: 1;
-            font-weight: 700;
-            margin-top: 8px;
-        }
-
-        .student-stat-icon {
-            width: 48px;
-            height: 48px;
+        .stat-card {
+            padding: 1.5rem;
             border-radius: 16px;
-            display: grid;
-            place-items: center;
-            font-size: 18px;
+            background: white;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            height: 100%;
         }
 
-        .student-quick-link {
-            height: 100%;
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1;
+        }
+
+        .quick-action-btn {
+            padding: 1.5rem;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
             text-decoration: none;
             color: inherit;
-            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            display: block;
+            height: 100%;
         }
 
-        .student-quick-link:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+        .quick-action-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-color: #667eea;
         }
 
-        .student-quick-link-subtitle {
-            color: #6b7280;
-            font-size: 13px;
-        }
-
-        .student-metric-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .student-metric-item {
-            border-radius: 16px;
+        .schedule-item {
+            padding: 1rem;
+            border-radius: 12px;
             background: #f8fafc;
-            padding: 14px 16px;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
         }
 
-        .student-metric-title {
-            color: #6b7280;
-            font-size: 12px;
-            margin-bottom: 6px;
+        .schedule-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
         }
 
-        .student-metric-value {
-            font-size: 18px;
-            font-weight: 700;
+        .grade-item {
+            padding: 1rem;
+            border-radius: 12px;
+            background: #f8fafc;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
         }
 
-        .student-list-item {
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        .grade-item:hover {
+            background: #f1f5f9;
         }
 
-        .student-list-item:last-child {
-            border-bottom: 0;
+        .attendance-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            position: relative;
         }
 
-        .student-schedule-pill {
-            font-size: 12px;
-            color: #6b7280;
+        .attendance-circle-inner {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .info-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            font-size: 0.85rem;
+            font-weight: 500;
         }
     </style>
 @endpush
@@ -413,57 +438,72 @@ new class extends Component
     @if (! $hasProfile)
         <div class="alert alert-warning">Profil mahasiswa belum terhubung.</div>
     @else
-        <div class="card student-shell-card student-dashboard-hero mb-4">
-            <div class="card-body p-4 p-lg-5 position-relative">
+        {{-- Hero Section --}}
+        <div class="card modern-card hero-gradient mb-4" style="color: white;">
+            <div class="card-body p-4 p-lg-5">
                 <div class="row align-items-center g-4">
-                    <div class="col-lg-7">
+                    <div class="col-lg-8">
                         <div class="d-flex align-items-start gap-3">
-                            <div class="student-dashboard-avatar">
+                            <div style="width: 72px; height: 72px; background: rgba(255,255,255,0.2); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; backdrop-filter: blur(10px);">
                                 {{ strtoupper(substr($studentInfo['name'] ?? 'M', 0, 1)) }}
                             </div>
 
                             <div>
-                                <div class="text-uppercase small fw-semibold mb-2">Ruang Akademik Mahasiswa</div>
-                                <h1 class="h2 mb-2">{{ $studentInfo['name'] }}</h1>
-                                <div class="text-secondary mb-3">
-                                    {{ $studentInfo['study_program'] }} • {{ $studentInfo['faculty'] }}
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Ruang Akademik Mahasiswa</div>
+                                <h1 class="h2 mb-2" style="font-weight: 700;">{{ $studentInfo['name'] }}</h1>
+                                <div style="opacity: 0.9; margin-bottom: 1rem;">
+                                    <i class="fas fa-graduation-cap me-2"></i>{{ $studentInfo['study_program'] }} • {{ $studentInfo['faculty'] }}
                                 </div>
 
                                 <div class="d-flex flex-wrap gap-2">
-                                    <span class="badge bg-white text-primary">NIM {{ $studentInfo['nim'] }}</span>
-                                    <span class="badge bg-white text-primary">Semester {{ $studentInfo['current_semester'] ?? '-' }}</span>
-                                    <span class="badge bg-white text-primary">{{ $activeAcademicYear ?? 'Tahun akademik belum aktif' }}</span>
+                                    <span class="info-badge">
+                                        <i class="fas fa-id-card me-2"></i>NIM {{ $studentInfo['nim'] }}
+                                    </span>
+                                    <span class="info-badge">
+                                        <i class="fas fa-calendar me-2"></i>Semester {{ $studentInfo['current_semester'] ?? '-' }}
+                                    </span>
+                                    <span class="info-badge">
+                                        <i class="fas fa-clock me-2"></i>{{ $activeAcademicYear ?? 'Tahun akademik belum aktif' }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-lg-5">
-                        <div class="student-metric-grid">
-                            <div class="student-metric-item">
-                                <div class="student-metric-title">Status Akademik</div>
-                                <span class="badge {{ $this->statusBadgeClass($studentInfo['academic_status']) }}">
-                                    {{ $studentInfo['academic_status'] ?? '-' }}
-                                </span>
+                    <div class="col-lg-4">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 1rem; text-align: center;">
+                                    <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.5rem;">Status Akademik</div>
+                                    <span class="badge bg-whitebg-white text-primary" style="font-size: 0.85rem;">
+                                        {{ $studentInfo['academic_status'] ?? '-' }}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div class="student-metric-item">
-                                <div class="student-metric-title">Status Registrasi</div>
-                                <span class="badge {{ $this->statusBadgeClass($registrationStatus) }}">
-                                    {{ $registrationStatus }}
-                                </span>
+                            <div class="col-6">
+                                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 1rem; text-align: center;">
+                                    <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.5rem;">Registrasi</div>
+                                    <span class="badge {{ $this->statusBadgeClass($registrationStatus) }}" style="font-size: 0.85rem;">
+                                        {{ $registrationStatus }}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div class="student-metric-item">
-                                <div class="student-metric-title">Status KRS</div>
-                                <span class="badge {{ $this->statusBadgeClass($currentStudyPlanStatus) }}">
-                                    {{ $currentStudyPlanStatus }}
-                                </span>
+                            <div class="col-6">
+                                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 1rem; text-align: center;">
+                                    <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.5rem;">KRS</div>
+                                    <span class="badge {{ $this->statusBadgeClass($currentStudyPlanStatus) }}" style="font-size: 0.85rem;">
+                                        {{ $currentStudyPlanStatus }}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div class="student-metric-item">
-                                <div class="student-metric-title">Login Terakhir</div>
-                                <div class="student-metric-value">{{ $lastLoginAt ?? '-' }}</div>
+                            <div class="col-6">
+                                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 1rem; text-align: center;">
+                                    <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.5rem;">Login Terakhir</div>
+                                    <div style="font-weight: 600; font-size: 0.85rem;">{{ $lastLoginAt ?? '-' }}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -471,164 +511,141 @@ new class extends Component
             </div>
         </div>
 
-        <div class="row row-cards mb-4">
-            <div class="col-sm-6 col-xl-2">
-                <a href="{{ route('student.registration.index') }}" class="card student-shell-card student-quick-link">
-                    <div class="card-body">
-                        <div class="student-stat-icon bg-blue-lt text-blue mb-3">
-                            <i class="fas fa-clipboard-list"></i>
-                        </div>
-                        <div class="fw-semibold mb-1">Registrasi</div>
-                        <div class="student-quick-link-subtitle">Kelola registrasi semester aktif</div>
-                    </div>
+        {{-- Quick Actions --}}
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <a href="{{ route('student.registration.index') }}" class="quick-action-btn">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-clipboard-list" style="color: #3b82f6;"></i></div>
+                    <div style="font-weight: 600; color: #1f2937;">Registrasi Akademik</div>
+                    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Kelola registrasi semester aktif</div>
                 </a>
             </div>
 
-            <div class="col-sm-6 col-xl-2">
-                <a href="{{ route('student.study-plan.index') }}" class="card student-shell-card student-quick-link">
-                    <div class="card-body">
-                        <div class="student-stat-icon bg-purple-lt text-purple mb-3">
-                            <i class="fas fa-list-check"></i>
-                        </div>
-                        <div class="fw-semibold mb-1">KRS</div>
-                        <div class="student-quick-link-subtitle">Ambil dan cek mata kuliah semester ini</div>
-                    </div>
+            <div class="col-md-4">
+                <a href="{{ route('student.study-plan.index') }}" class="quick-action-btn">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-list-check" style="color: #8b5cf6;"></i></div>
+                    <div style="font-weight: 600; color: #1f2937;">KRS (Kartu Rencana Studi)</div>
+                    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Ambil dan cek mata kuliah semester ini</div>
                 </a>
             </div>
 
-            <div class="col-sm-6 col-xl-2">
-                <a href="{{ route('student.grades.index') }}" class="card student-shell-card student-quick-link">
-                    <div class="card-body">
-                        <div class="student-stat-icon bg-green-lt text-green mb-3">
-                            <i class="fas fa-graduation-cap"></i>
-                        </div>
-                        <div class="fw-semibold mb-1">Nilai</div>
-                        <div class="student-quick-link-subtitle">Lihat hasil yang sudah dipublikasikan</div>
-                    </div>
+            <div class="col-md-4">
+                <a href="{{ route('student.grades.index') }}" class="quick-action-btn">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-graduation-cap" style="color: #10b981;"></i></div>
+                    <div style="font-weight: 600; color: #1f2937;">Nilai Akademik</div>
+                    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Lihat hasil yang sudah dipublikasikan</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <a href="{{ route('student.schedule.index') }}" class="quick-action-btn">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-calendar-days" style="color: #f59e0b;"></i></div>
+                    <div style="font-weight: 600; color: #1f2937;">Jadwal Kuliah</div>
+                    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Pantau sesi kuliah minggu berjalan</div>
                 </a>
             </div>
 
-            <div class="col-sm-6 col-xl-2">
-                <a href="{{ route('student.schedule.index') }}" class="card student-shell-card student-quick-link">
-                    <div class="card-body">
-                        <div class="student-stat-icon bg-orange-lt text-orange mb-3">
-                            <i class="fas fa-calendar-days"></i>
-                        </div>
-                        <div class="fw-semibold mb-1">Jadwal</div>
-                        <div class="student-quick-link-subtitle">Pantau sesi kuliah minggu berjalan</div>
-                    </div>
+            <div class="col-md-4">
+                <a href="{{ route('student.transcript.index') }}" class="quick-action-btn">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-book" style="color: #ef4444;"></i></div>
+                    <div style="font-weight: 600; color: #1f2937;">Transkrip Akademik</div>
+                    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Ringkasan akademik permanen</div>
                 </a>
             </div>
 
-            <div class="col-sm-6 col-xl-2">
-                <a href="{{ route('student.transcript.index') }}" class="card student-shell-card student-quick-link">
-                    <div class="card-body">
-                        <div class="student-stat-icon bg-red-lt text-red mb-3">
-                            <i class="fas fa-book"></i>
-                        </div>
-                        <div class="fw-semibold mb-1">Transkrip</div>
-                        <div class="student-quick-link-subtitle">Ringkasan akademik permanen</div>
-                    </div>
+            <div class="col-md-4">
+                <a href="{{ route('student.schedule.index') }}" class="quick-action-btn">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-check-circle" style="color: #06b6d4;"></i></div>
+                    <div style="font-weight: 600; color: #1f2937;">Absensi</div>
+                    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Cek kehadiran per mata kuliah</div>
                 </a>
             </div>
         </div>
     @endif
 
-    <div class="row row-cards mb-4">
+    {{-- Stats Cards --}}
+    <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
-            <div class="card student-shell-card student-stat-card">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="student-stat-label">Mata Kuliah Aktif</div>
-                        <div class="student-stat-value">{{ $stats['current_courses'] }}</div>
-                    </div>
-                    <div class="student-stat-icon bg-primary-lt text-primary">
-                        <i class="fas fa-book-open"></i>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="fas fa-book-open"></i>
                 </div>
+                <div class="stat-label">Mata Kuliah Aktif</div>
+                <div class="stat-value">{{ $stats['current_courses'] }}</div>
             </div>
         </div>
 
         <div class="col-sm-6 col-lg-3">
-            <div class="card student-shell-card student-stat-card">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="student-stat-label">Total SKS</div>
-                        <div class="student-stat-value">{{ $stats['current_credits'] }}</div>
-                    </div>
-                    <div class="student-stat-icon bg-azure-lt text-azure">
-                        <i class="fas fa-layer-group"></i>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;">
+                    <i class="fas fa-layer-group"></i>
                 </div>
+                <div class="stat-label">Total SKS</div>
+                <div class="stat-value">{{ $stats['current_credits'] }}</div>
             </div>
         </div>
 
         <div class="col-sm-6 col-lg-3">
-            <div class="card student-shell-card student-stat-card">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="student-stat-label">Nilai Dipublikasikan</div>
-                        <div class="student-stat-value">{{ $stats['published_grades'] }}</div>
-                    </div>
-                    <div class="student-stat-icon bg-green-lt text-green">
-                        <i class="fas fa-award"></i>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                    <i class="fas fa-award"></i>
                 </div>
+                <div class="stat-label">Nilai Dipublikasikan</div>
+                <div class="stat-value">{{ $stats['published_grades'] }}</div>
             </div>
         </div>
 
         <div class="col-sm-6 col-lg-3">
-            <div class="card student-shell-card student-stat-card">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="student-stat-label">Entri Transkrip</div>
-                        <div class="student-stat-value">{{ $stats['transcript_entries'] }}</div>
-                    </div>
-                    <div class="student-stat-icon bg-red-lt text-red">
-                        <i class="fas fa-scroll"></i>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
+                    <i class="fas fa-scroll"></i>
                 </div>
+                <div class="stat-label">Entri Transkrip</div>
+                <div class="stat-value">{{ $stats['transcript_entries'] }}</div>
             </div>
         </div>
     </div>
 
-    <div class="row row-cards mb-4">
+    {{-- Academic Summary & Attendance --}}
+    <div class="row g-3 mb-4">
         <div class="col-lg-8">
-            <div class="card student-shell-card h-100">
-                <div class="card-header">
-                    <h3 class="card-title">Ringkasan Akademik</h3>
+            <div class="card modern-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
+                    <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-chart-line me-2" style="color: #667eea;"></i>Ringkasan Akademik</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="student-metric-item h-100">
-                                <div class="student-metric-title">IPS Semester</div>
-                                <div class="student-metric-value">{{ $stats['semester_gpa'] }}</div>
-                                <div class="text-secondary small mt-2">Diambil dari hasil studi terakhir yang tersedia.</div>
+                            <div style="padding: 1.25rem; border-radius: 12px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); height: 100%;">
+                                <div style="font-size: 0.85rem; color: #92400e; margin-bottom: 0.5rem; font-weight: 500;">IPS Semester</div>
+                                <div style="font-size: 2rem; font-weight: 700; color: #92400e;">{{ $stats['semester_gpa'] }}</div>
+                                <div style="font-size: 0.8rem; color: #a16207; margin-top: 0.5rem;">Diambil dari hasil studi terakhir yang tersedia.</div>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <div class="student-metric-item h-100">
-                                <div class="student-metric-title">IPK Kumulatif</div>
-                                <div class="student-metric-value">{{ $stats['cumulative_gpa'] }}</div>
-                                <div class="text-secondary small mt-2">Menjadi fallback dari rata-rata nilai publikasi jika snapshot belum ada.</div>
+                            <div style="padding: 1.25rem; border-radius: 12px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); height: 100%;">
+                                <div style="font-size: 0.85rem; color: #1e40af; margin-bottom: 0.5rem; font-weight: 500;">IPK Kumulatif</div>
+                                <div style="font-size: 2rem; font-weight: 700; color: #1e40af;">{{ $stats['cumulative_gpa'] }}</div>
+                                <div style="font-size: 0.8rem; color: #3b82f6; margin-top: 0.5rem;">Menjadi fallback dari rata-rata nilai publikasi jika snapshot belum ada.</div>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <div class="student-metric-item h-100">
-                                <div class="student-metric-title">Program Studi</div>
-                                <div class="student-metric-value">{{ $studentInfo['study_program'] }}</div>
-                                <div class="text-secondary small mt-2">{{ $studentInfo['faculty'] }}</div>
+                            <div style="padding: 1.25rem; border-radius: 12px; background: #f8fafc; height: 100%;">
+                                <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.5rem; font-weight: 500;">Program Studi</div>
+                                <div style="font-size: 1.25rem; font-weight: 700; color: #1f2937;">{{ $studentInfo['study_program'] }}</div>
+                                <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">{{ $studentInfo['faculty'] }}</div>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <div class="student-metric-item h-100">
-                                <div class="student-metric-title">Tahun Akademik Aktif</div>
-                                <div class="student-metric-value">{{ $activeAcademicYear ?? '-' }}</div>
-                                <div class="text-secondary small mt-2">Pastikan registrasi dan KRS aktif di periode ini.</div>
+                            <div style="padding: 1.25rem; border-radius: 12px; background: #f8fafc; height: 100%;">
+                                <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.5rem; font-weight: 500;">Tahun Akademik Aktif</div>
+                                <div style="font-size: 1.25rem; font-weight: 700; color: #1f2937;">{{ $activeAcademicYear ?? '-' }}</div>
+                                <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">Pastikan registrasi dan KRS aktif di periode ini.</div>
                             </div>
                         </div>
                     </div>
@@ -637,33 +654,43 @@ new class extends Component
         </div>
 
         <div class="col-lg-4">
-            <div class="card student-shell-card h-100">
-                <div class="card-header">
-                    <h3 class="card-title">Kehadiran</h3>
+            <div class="card modern-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
+                    <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-check-circle me-2" style="color: #10b981;"></i>Kehadiran</h3>
                 </div>
-                <div class="card-body">
-                    <div class="student-stat-value mb-2">{{ $attendance['rate'] ?? '-' }}%</div>
+                <div class="card-body p-4 text-center">
+                    @if ($attendance['rate'] !== null)
+                        <div class="attendance-circle" style="background: conic-gradient(#10b981 {{ $attendance['rate'] }}%, #e5e7eb 0%);">
+                            <div class="attendance-circle-inner">
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #10b981;">{{ $attendance['rate'] }}%</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">Rate</div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="attendance-circle" style="background: #e5e7eb;">
+                            <div class="attendance-circle-inner">
+                                <div style="font-size: 1.75rem; font-weight: 700; color: #9ca3af;">-</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">No Data</div>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="text-secondary small mb-3">
                         {{ $attendance['attended'] }} kehadiran tercatat dari {{ $attendance['total'] }} sesi.
                     </div>
 
-                    @if ($attendance['rate'] !== null)
-                        <div class="progress progress-sm mb-4">
-                            <div
-                                class="progress-bar {{ $attendance['rate'] < 75 ? 'bg-red' : 'bg-green' }}"
-                                style="width: {{ $attendance['rate'] }}%"
-                            ></div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div style="padding: 1rem; border-radius: 10px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);">
+                                <div style="font-size: 0.8rem; color: #065f46; margin-bottom: 0.25rem;">Hadir</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #065f46;">{{ $attendance['attended'] }}</div>
+                            </div>
                         </div>
-                    @endif
-
-                    <div class="student-metric-grid">
-                        <div class="student-metric-item">
-                            <div class="student-metric-title">Hadir</div>
-                            <div class="student-metric-value">{{ $attendance['attended'] }}</div>
-                        </div>
-                        <div class="student-metric-item">
-                            <div class="student-metric-title">Tidak Hadir</div>
-                            <div class="student-metric-value">{{ $attendance['absent'] }}</div>
+                        <div class="col-6">
+                            <div style="padding: 1rem; border-radius: 10px; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);">
+                                <div style="font-size: 0.8rem; color: #991b1b; margin-bottom: 0.25rem;">Tidak Hadir</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #991b1b;">{{ $attendance['absent'] }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -671,68 +698,80 @@ new class extends Component
         </div>
     </div>
 
-    <div class="row row-cards">
+    {{-- Recent Grades & Upcoming Schedules --}}
+    <div class="row g-3">
         <div class="col-lg-6">
-            <div class="card student-shell-card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Nilai Terbaru</h3>
-                    <a href="{{ route('student.grades.index') }}" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+            <div class="card modern-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
+                    <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-graduation-cap me-2" style="color: #10b981;"></i>Nilai Terbaru</h3>
+                    <a href="{{ route('student.grades.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Lihat Semua</a>
                 </div>
 
-                <div class="list-group list-group-flush">
+                <div class="card-body p-4">
                     @forelse ($recentGrades as $grade)
-                        <div class="student-list-item">
+                        <div class="grade-item">
                             <div class="d-flex justify-content-between gap-3">
                                 <div>
-                                    <div class="fw-semibold">{{ $grade->studyPlanDetail?->courseOffering?->course?->name ?? '-' }}</div>
-                                    <div class="text-secondary small">
+                                    <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">{{ $grade->studyPlanDetail?->courseOffering?->course?->name ?? '-' }}</div>
+                                    <div style="font-size: 0.85rem; color: #6b7280;">
+                                        <i class="fas fa-star me-1" style="color: #f59e0b;"></i>
                                         Nilai akhir {{ $grade->final_score !== null ? number_format((float) $grade->final_score, 2) : '-' }}
                                         • Huruf {{ $grade->letter_grade ?? '-' }}
                                     </div>
                                 </div>
                                 <div class="text-end">
-                                    <div class="badge bg-blue-lt text-blue mb-2">
-                                        GP {{ $grade->grade_point !== null ? number_format((float) $grade->grade_point, 2) : '-' }}
+                                    <div class="badge bg-blue-lt text-blue mb-2" style="font-size: 0.85rem; padding: 0.5rem 0.75rem;">
+                                        <i class="fas fa-chart-line me-1"></i>GP {{ $grade->grade_point !== null ? number_format((float) $grade->grade_point, 2) : '-' }}
                                     </div>
-                                    <div class="text-secondary small">{{ $grade->graded_at?->format('d M Y') }}</div>
+                                    <div style="font-size: 0.75rem; color: #9ca3af;">{{ $grade->graded_at?->format('d M Y') }}</div>
                                 </div>
                             </div>
                         </div>
                     @empty
-                        <div class="p-4 text-center text-secondary">Belum ada nilai yang dipublikasikan.</div>
+                        <div class="p-4 text-center text-secondary">
+                            <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
+                            Belum ada nilai yang dipublikasikan.
+                        </div>
                     @endforelse
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6">
-            <div class="card student-shell-card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Jadwal Ringkas</h3>
-                    <a href="{{ route('student.schedule.index') }}" class="btn btn-sm btn-outline-primary">Buka Jadwal</a>
+            <div class="card modern-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
+                    <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-calendar-days me-2" style="color: #f59e0b;"></i>Jadwal Ringkas</h3>
+                    <a href="{{ route('student.schedule.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Buka Jadwal</a>
                 </div>
 
-                <div class="list-group list-group-flush">
+                <div class="card-body p-4">
                     @forelse ($upcomingSchedules as $schedule)
-                        <div class="student-list-item">
+                        <div class="schedule-item">
                             <div class="d-flex justify-content-between gap-3">
                                 <div>
-                                    <div class="fw-semibold">{{ $schedule['course_name'] }}</div>
-                                    <div class="student-schedule-pill">
-                                        {{ $schedule['day'] }} • {{ $schedule['start_time'] }} - {{ $schedule['end_time'] }}
+                                    <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">{{ $schedule['course_name'] }}</div>
+                                    <div style="font-size: 0.85rem; color: #6b7280;">
+                                        <i class="fas fa-calendar me-1" style="color: #3b82f6;"></i>{{ $schedule['day'] }}
+                                        <span class="mx-2">•</span>
+                                        <i class="fas fa-clock me-1" style="color: #f59e0b;"></i>{{ $schedule['start_time'] }} - {{ $schedule['end_time'] }}
                                     </div>
                                 </div>
 
                                 <div class="text-end">
-                                    <div class="badge {{ $schedule['mode'] === 'Online' ? 'bg-blue-lt text-blue' : 'bg-green-lt text-green' }} mb-2">
-                                        {{ $schedule['mode'] ?? '-' }}
+                                    <div class="badge {{ $schedule['mode'] === 'Online' ? 'bg-blue-lt text-blue' : 'bg-green-lt text-green' }} mb-2" style="font-size: 0.85rem; padding: 0.5rem 0.75rem;">
+                                        <i class="fas fa-wifi me-1"></i>{{ $schedule['mode'] ?? '-' }}
                                     </div>
-                                    <div class="text-secondary small">{{ $schedule['building'] }} / {{ $schedule['room'] }}</div>
+                                    <div style="font-size: 0.75rem; color: #9ca3af;">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ $schedule['building'] }} / {{ $schedule['room'] }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     @empty
-                        <div class="p-4 text-center text-secondary">Belum ada jadwal aktif.</div>
+                        <div class="p-4 text-center text-secondary">
+                            <i class="fas fa-calendar-times" style="font-size: 2rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
+                            Belum ada jadwal aktif.
+                        </div>
                     @endforelse
                 </div>
             </div>

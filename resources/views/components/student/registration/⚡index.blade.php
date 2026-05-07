@@ -315,30 +315,135 @@ new class extends Component
 
 @push('styles')
     <style>
-        .student-registration-card {
-            border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.06);
-            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+        .modern-card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background: white;
         }
 
-        .student-registration-hero {
-            background:
-                radial-gradient(circle at top right, rgba(32, 107, 196, 0.12), transparent 28%),
-                linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
         }
 
-        .student-registration-label {
-            color: #6b7280;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
         }
 
-        .student-registration-meta {
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .info-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.4rem 0.8rem;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: white;
+        }
+
+        .stat-card {
             border-radius: 16px;
+            padding: 1.5rem;
+            background: white;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .form-card {
+            border-radius: 16px;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .status-box {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .period-box {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .action-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .history-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .history-table th:first-child {
+            border-radius: 12px 0 0 0;
+        }
+
+        .history-table th:last-child {
+            border-radius: 0 12px 0 0;
+        }
+
+        .history-table td {
+            padding: 1rem;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .history-table tr:last-child td:first-child {
+            border-radius: 0 0 0 12px;
+        }
+
+        .history-table tr:last-child td:last-child {
+            border-radius: 0 0 12px 0;
+        }
+
+        .history-table tr:hover td {
             background: #f8fafc;
-            padding: 14px 16px;
-            height: 100%;
         }
     </style>
 @endpush
@@ -355,52 +460,51 @@ new class extends Component
             Tahun akademik aktif belum ditentukan. Registrasi semester belum dapat dilakukan.
         </div>
     @else
-        <div class="card student-registration-card student-registration-hero mb-4">
-            <div class="card-body p-4">
+        {{-- Hero Section with Gradient --}}
+        <div class="card modern-card hero-gradient mb-4" style="color: white;">
+            <div class="card-body p-4 p-lg-5">
                 <div class="row align-items-center g-4">
-                    <div class="col-lg-7">
-                        <div class="student-registration-label mb-2">Registrasi Semester</div>
-                        <h2 class="mb-2">{{ $studentInfo['name'] }}</h2>
-                        <div class="text-secondary mb-3">
-                            {{ $studentInfo['study_program'] }} • {{ $studentInfo['faculty'] }}
-                        </div>
-
-                        <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-blue-lt text-blue">NIM {{ $studentInfo['nim'] }}</span>
-                            <span class="badge bg-azure-lt text-azure">Semester {{ $studentInfo['current_semester'] ?? '-' }}</span>
-                            <span class="badge bg-green-lt text-green">{{ $activeAcademicYearName }}</span>
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-start gap-3">
+                            <div style="width: 72px; height: 72px; background: rgba(255,255,255,0.2); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; backdrop-filter: blur(10px);">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Registrasi Semester Mahasiswa</div>
+                                <h1 class="h2 mb-2" style="font-weight: 700;">{{ $studentInfo['name'] }}</h1>
+                                <div style="opacity: 0.9; margin-bottom: 1rem;">
+                                    <i class="fas fa-university me-2"></i>{{ $studentInfo['study_program'] }} • {{ $studentInfo['faculty'] }}
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="info-badge">
+                                        <i class="fas fa-id-card me-2"></i>NIM {{ $studentInfo['nim'] }}
+                                    </span>
+                                    <span class="info-badge">
+                                        <i class="fas fa-calendar me-2"></i>Semester {{ $studentInfo['current_semester'] ?? '-' }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="col-lg-5">
+                    
+                    <div class="col-lg-4">
                         <div class="row g-3">
                             <div class="col-6">
-                                <div class="student-registration-meta">
-                                    <div class="student-registration-label">Status Registrasi</div>
-                                    <div class="mt-2">
-                                        <span class="badge {{ $this->statusBadgeClass($currentRegistrationStatus) }}">
-                                            {{ $currentRegistrationStatus ?? '-' }}
-                                        </span>
-                                    </div>
+                                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 1rem; text-align: center;">
+                                    <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.5rem;">Status Registrasi</div>
+                                    <span class="badge bg-white text-primary">{{ $currentRegistrationStatus ?? '-' }}</span>
                                 </div>
                             </div>
-
                             <div class="col-6">
-                                <div class="student-registration-meta">
-                                    <div class="student-registration-label">Status Akademik</div>
-                                    <div class="mt-2 fw-semibold">{{ $currentAcademicStatus ?? $form['academic_status'] ?? '-' }}</div>
+                                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 1rem; text-align: center;">
+                                    <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.5rem;">Status Akademik</div>
+                                    <div style="font-weight: 600;">{{ $currentAcademicStatus ?? $form['academic_status'] ?? '-' }}</div>
                                 </div>
                             </div>
-
                             <div class="col-12">
-                                <div class="student-registration-meta">
-                                    <div class="student-registration-label">Periode Aktif</div>
-                                    @if ($canRegister)
-                                        <div class="fw-semibold mt-2">{{ $activePeriodName }}</div>
-                                        <div class="text-secondary small">{{ $activePeriodRange }}</div>
-                                    @else
-                                        <div class="text-secondary mt-2">Periode registrasi belum aktif atau sudah berakhir.</div>
-                                    @endif
+                                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 1rem; text-align: center;">
+                                    <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.5rem;">Tahun Akademik</div>
+                                    <div style="font-weight: 600;">{{ $activeAcademicYearName }}</div>
                                 </div>
                             </div>
                         </div>
@@ -411,128 +515,166 @@ new class extends Component
 
         <div class="row row-cards">
             <div class="col-lg-8">
-                <div class="card student-registration-card">
-                    <div class="card-header">
-                        <h3 class="card-title mb-0">Form Registrasi Semester</h3>
+                {{-- Form Card --}}
+                <div class="modern-card form-card mb-4">
+                    <div style="margin-bottom: 1.5rem;">
+                        <h3 style="font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">
+                            <i class="fas fa-edit me-2" style="color: #667eea;"></i>Form Registrasi Semester
+                        </h3>
+                        <p style="color: #6b7280; font-size: 0.9rem;">Lengkapi form berikut untuk melakukan registrasi semester</p>
                     </div>
-                    <div class="card-body">
-                        <div class="alert {{ $canRegister ? 'alert-success' : 'alert-warning' }} mb-4">
-                            <div class="fw-semibold mb-1">Tahun akademik aktif: {{ $activeAcademicYearName }}</div>
-                            <div class="small">
-                                @if ($canRegister)
-                                    Registrasi dapat diajukan pada periode {{ $activePeriodName }} ({{ $activePeriodRange }}).
-                                @else
-                                    Registrasi masih bisa disimpan sebagai draft, tetapi pengajuan menunggu periode aktif.
-                                @endif
+
+                    {{-- Period Alert --}}
+                    <div class="alert {{ $canRegister ? 'bg-green-lt' : 'bg-yellow-lt' }} mb-4" style="border-radius: 12px; border: none;">
+                        <div style="display: flex; align-items: start; gap: 0.75rem;">
+                            <i class="fas {{ $canRegister ? 'fa-check-circle' : 'fa-info-circle' }}" style="font-size: 1.25rem; color: {{ $canRegister ? '#10b981' : '#f59e0b' }};"></i>
+                            <div>
+                                <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">Tahun akademik aktif: {{ $activeAcademicYearName }}</div>
+                                <div style="font-size: 0.85rem; color: #6b7280;">
+                                    @if ($canRegister)
+                                        Registrasi dapat diajukan pada periode {{ $activePeriodName }} ({{ $activePeriodRange }}).
+                                    @else
+                                        Registrasi masih bisa disimpan sebagai draft, tetapi pengajuan menunggu periode aktif.
+                                    @endif
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <form wire:submit.prevent="saveDraft">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Semester</label>
-                                    <input
-                                        type="number"
-                                        class="form-control"
-                                        min="1"
-                                        max="14"
-                                        wire:model="form.semester_no"
-                                        @disabled(! $canEditRegistration)
-                                    >
-                                    @error('form.semester_no')
-                                        <small class="text-danger">{{ $message }}</small>
-                                    @enderror
-                                </div>
-
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Status Akademik</label>
-                                    <select class="form-select" wire:model="form.academic_status" @disabled(! $canEditRegistration)>
-                                        <option value="Aktif">Aktif</option>
-                                        <option value="Cuti">Cuti</option>
-                                        <option value="Nonaktif">Nonaktif</option>
-                                        <option value="Lulus">Lulus</option>
-                                        <option value="Drop Out">Drop Out</option>
-                                        <option value="Keluar">Keluar</option>
-                                    </select>
-                                    @error('form.academic_status')
-                                        <small class="text-danger">{{ $message }}</small>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label">Catatan</label>
-                                <textarea
+                    <form wire:submit.prevent="saveDraft">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" style="font-weight: 600; color: #374151;">
+                                    <i class="fas fa-layer-group me-2" style="color: #667eea;"></i>Semester
+                                </label>
+                                <input
+                                    type="number"
                                     class="form-control"
-                                    rows="4"
-                                    wire:model="form.notes"
+                                    min="1"
+                                    max="14"
+                                    wire:model="form.semester_no"
                                     @disabled(! $canEditRegistration)
-                                    placeholder="Tambahkan catatan jika dibutuhkan"
-                                ></textarea>
-                                @error('form.notes')
+                                    style="border-radius: 10px; padding: 0.75rem;"
+                                >
+                                @error('form.semester_no')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
                             </div>
 
-                            <div class="d-flex flex-wrap gap-2">
-                                <button type="submit" class="btn btn-secondary" @disabled(! $canEditRegistration)>
-                                    Simpan Draft
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="btn btn-primary"
-                                    wire:click="submitRegistration"
-                                    @disabled(! $canEditRegistration || ! $canRegister)
-                                >
-                                    Ajukan Registrasi
-                                </button>
-
-                                @if (in_array($currentRegistrationStatus, ['Draft', 'Submitted'], true))
-                                    <button type="button" class="btn btn-outline-danger" wire:click="cancelSubmission">
-                                        Batalkan Pengajuan
-                                    </button>
-                                @endif
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" style="font-weight: 600; color: #374151;">
+                                    <i class="fas fa-user-check me-2" style="color: #667eea;"></i>Status Akademik
+                                </label>
+                                <select class="form-select" wire:model="form.academic_status" @disabled(! $canEditRegistration) style="border-radius: 10px; padding: 0.75rem;">
+                                    <option value="Aktif">Aktif</option>
+                                    <option value="Cuti">Cuti</option>
+                                    <option value="Nonaktif">Nonaktif</option>
+                                    <option value="Lulus">Lulus</option>
+                                    <option value="Drop Out">Drop Out</option>
+                                    <option value="Keluar">Keluar</option>
+                                </select>
+                                @error('form.academic_status')
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
                             </div>
-                        </form>
-                    </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label" style="font-weight: 600; color: #374151;">
+                                <i class="fas fa-sticky-note me-2" style="color: #667eea;"></i>Catatan
+                            </label>
+                            <textarea
+                                class="form-control"
+                                rows="4"
+                                wire:model="form.notes"
+                                @disabled(! $canEditRegistration)
+                                placeholder="Tambahkan catatan jika dibutuhkan"
+                                style="border-radius: 10px; padding: 0.75rem;"
+                            ></textarea>
+                            @error('form.notes')
+                                <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="action-btn" @disabled(! $canEditRegistration)
+                                    style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white;">
+                                <i class="fas fa-save"></i> Simpan Draft
+                            </button>
+
+                            <button type="button" class="action-btn" wire:click="submitRegistration"
+                                    @disabled(! $canEditRegistration || ! $canRegister)
+                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                <i class="fas fa-paper-plane"></i> Ajukan Registrasi
+                            </button>
+
+                            @if (in_array($currentRegistrationStatus, ['Draft', 'Submitted'], true))
+                                <button type="button" class="action-btn" wire:click="cancelSubmission"
+                                        style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #dc2626;">
+                                    <i class="fas fa-times-circle"></i> Batalkan Pengajuan
+                                </button>
+                            @endif
+                        </div>
+                    </form>
                 </div>
             </div>
 
             <div class="col-lg-4">
-                <div class="card student-registration-card">
-                    <div class="card-header">
-                        <h3 class="card-title mb-0">Status Saat Ini</h3>
+                {{-- Status Box --}}
+                <div class="status-box">
+                    <div style="font-size: 0.85rem; color: #1e40af; margin-bottom: 1rem; font-weight: 600;">
+                        <i class="fas fa-info-circle me-2"></i>Status Saat Ini
                     </div>
-                    <div class="card-body">
-                        <div class="student-registration-label">Registrasi</div>
-                        <div class="mb-3 mt-2">
-                            <span class="badge {{ $this->statusBadgeClass($currentRegistrationStatus) }}">
-                                {{ $currentRegistrationStatus ?? '-' }}
-                            </span>
-                        </div>
-
-                        <div class="student-registration-label">Status Akademik</div>
-                        <div class="fw-semibold mb-3 mt-2">{{ $currentAcademicStatus ?? '-' }}</div>
-
-                        <div class="student-registration-label">Diajukan Pada</div>
-                        <div class="mb-3 mt-2">{{ $submittedAt ?? '-' }}</div>
-
-                        <div class="student-registration-label">Disetujui Pada</div>
-                        <div class="mt-2">{{ $approvedAt ?? '-' }}</div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <div style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 0.25rem;">Registrasi</div>
+                        <span class="badge {{ $this->statusBadgeClass($currentRegistrationStatus) }}" style="padding: 0.5rem 0.75rem;">
+                            {{ $currentRegistrationStatus ?? '-' }}
+                        </span>
                     </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <div style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 0.25rem;">Status Akademik</div>
+                        <div style="font-weight: 600; color: #1f2937;">{{ $currentAcademicStatus ?? '-' }}</div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <div style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 0.25rem;">Diajukan Pada</div>
+                        <div style="font-weight: 600; color: #1f2937;">{{ $submittedAt ?? '-' }}</div>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 0.25rem;">Disetujui Pada</div>
+                        <div style="font-weight: 600; color: #1f2937;">{{ $approvedAt ?? '-' }}</div>
+                    </div>
+                </div>
+
+                {{-- Period Box --}}
+                <div class="period-box">
+                    <div style="font-size: 0.85rem; color: #065f46; margin-bottom: 0.5rem; font-weight: 600;">
+                        <i class="fas fa-clock me-2"></i>Periode Aktif
+                    </div>
+                    @if ($canRegister)
+                        <div style="font-weight: 600; color: #047857; margin-bottom: 0.5rem;">{{ $activePeriodName }}</div>
+                        <div style="font-size: 0.85rem; color: #065f46;">{{ $activePeriodRange }}</div>
+                    @else
+                        <div style="font-size: 0.85rem; color: #065f46;">Periode registrasi belum aktif atau sudah berakhir.</div>
+                    @endif
                 </div>
             </div>
         </div>
 
-        <div class="card student-registration-card mt-4">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Riwayat Registrasi</h3>
+        {{-- History Table --}}
+        <div class="modern-card mt-4">
+            <div style="padding: 1.5rem; border-bottom: 1px solid #e5e7eb;">
+                <h3 style="font-weight: 700; color: #1f2937; margin: 0;">
+                    <i class="fas fa-history me-2" style="color: #667eea;"></i>Riwayat Registrasi
+                </h3>
             </div>
-            <div class="card-body p-0">
+            <div style="padding: 0;">
                 @if (count($registrationHistory))
                     <div class="table-responsive">
-                        <table class="table table-vcenter card-table">
+                        <table class="history-table">
                             <thead>
                                 <tr>
                                     <th>Tahun Akademik</th>
@@ -546,10 +688,10 @@ new class extends Component
                             <tbody>
                                 @foreach ($registrationHistory as $item)
                                     <tr>
-                                        <td>{{ $item['academic_year'] }}</td>
+                                        <td style="font-weight: 500;">{{ $item['academic_year'] }}</td>
                                         <td>{{ $item['semester_no'] ?? '-' }}</td>
                                         <td>
-                                            <span class="badge {{ $this->statusBadgeClass($item['registration_status']) }}">
+                                            <span class="badge {{ $this->statusBadgeClass($item['registration_status']) }}" style="padding: 0.5rem 0.75rem;">
                                                 {{ $item['registration_status'] }}
                                             </span>
                                         </td>
@@ -562,7 +704,10 @@ new class extends Component
                         </table>
                     </div>
                 @else
-                    <div class="p-4 text-secondary">Belum ada riwayat registrasi semester.</div>
+                    <div style="padding: 3rem; text-align: center; color: #9ca3af;">
+                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <div>Belum ada riwayat registrasi semester.</div>
+                    </div>
                 @endif
             </div>
         </div>

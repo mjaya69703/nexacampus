@@ -76,14 +76,14 @@ class UserSeeder extends Seeder
         $user->syncRoles(['superuser', 'admin', 'lecturer', 'student']);
 
         // Generate 250 dummy users
-        $this->command->info('Creating 250 dummy users...');
+        // $this->command->info('Creating 250 dummy users...');
 
-        User::factory(250)->create()->each(function ($user) use ($roles) {
-            // Random role assignment (1-2 roles per user)
-            $randomRoles = fake()->randomElements($roles, rand(1, 2));
-            $user->syncRoles($randomRoles);
-        });
+        // User::factory(250)->create()->each(function ($user) use ($roles) {
+        //     // Random role assignment (1-2 roles per user)
+        //     $randomRoles = fake()->randomElements($roles, rand(1, 2));
+        //     $user->syncRoles($randomRoles);
+        // });
 
-        $this->command->info('250 dummy users created successfully!');
+        // $this->command->info('250 dummy users created successfully!');
     }
 }

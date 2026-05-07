@@ -2,6 +2,7 @@
 
 namespace App\Models\Academic;
 
+use App\Models\Campus\Room;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,8 +20,7 @@ class CourseSchedule extends Model
     protected $fillable = [
         'course_offering_id',
         'lecturer_profile_id',
-        'room',
-        'building',
+        'room_id',
         'day_of_week',
         'start_time',
         'end_time',
@@ -50,6 +50,11 @@ class CourseSchedule extends Model
             ->logOnly(['course_offering_id', 'lecturer_profile_id', 'day_of_week', 'start_time', 'end_time', 'session_type', 'delivery_mode', 'is_active'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    public function room(): BelongsTo
+    {
+        return $this->belongsTo(Room::class);
     }
 
     public function courseOffering(): BelongsTo

@@ -614,6 +614,113 @@ new class extends Component
 };
 ?>
 
+@push('styles')
+    <style>
+        .modern-card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .sks-counter {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .sks-counter-inner {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .course-card {
+            padding: 1rem;
+            border-radius: 12px;
+            background: #f8fafc;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .course-card:hover {
+            background: #f1f5f9;
+            border-color: #667eea;
+            transform: translateX(4px);
+        }
+
+        .selected-course-card {
+            padding: 1rem;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .selected-course-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+@endpush
+
 <div>
     <x-alert />
 
@@ -630,126 +737,137 @@ new class extends Component
             Registrasi semester Anda belum <strong>Approved</strong>. KRS dapat diambil setelah registrasi disetujui.
         </div>
     @else
-        <div class="row row-deck row-cards">
-            <div class="col-lg-4">
-                <div class="card card-sm">
-                    <div class="card-body">
-                        <div class="text-secondary mb-1">Mahasiswa</div>
-                        <div class="font-weight-medium">{{ $studentInfo['name'] }}</div>
-                        <div class="text-secondary small">{{ $studentInfo['nim'] }} · {{ $studentInfo['study_program'] }}</div>
-                    </div>
-                </div>
-            </div>
+        {{-- Hero Section --}}
+        <div class="card modern-card hero-gradient mb-4" style="color: white;">
+            <div class="card-body p-4 p-lg-5">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-start gap-3">
+                            <div style="width: 72px; height: 72px; background: rgba(255,255,255,0.2); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; backdrop-filter: blur(10px);">
+                                <i class="fas fa-list-check"></i>
+                            </div>
 
-            <div class="col-lg-4">
-                <div class="card card-sm">
-                    <div class="card-body">
-                        <div class="text-secondary mb-1">Tahun Akademik Aktif</div>
-                        <div class="font-weight-medium">{{ $activeAcademicYearName }}</div>
-                        <div class="text-secondary small mt-1">
-                            Status KRS:
-                            <span class="badge {{ $this->statusBadgeClass($studyPlanStatus) }}">{{ $studyPlanStatus ?? '-' }}</span>
-                        </div>
-                        <div class="text-secondary small mt-1">
-                            Registration: {{ $registrationStatus ?? '-' }}
+                            <div>
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Kartu Rencana Studi (KRS)</div>
+                                <h1 class="h2 mb-2" style="font-weight: 700;">{{ $studentInfo['name'] }}</h1>
+                                <div style="opacity: 0.9; margin-bottom: 1rem;">
+                                    <i class="fas fa-id-card me-2"></i>{{ $studentInfo['nim'] }} • {{ $studentInfo['study_program'] }}
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="filter-badge">
+                                        <i class="fas fa-calendar me-2"></i>{{ $activeAcademicYearName ?? '-' }}
+                                    </span>
+                                    <span class="filter-badge">
+                                        <i class="fas fa-graduation-cap me-2"></i>Semester {{ $registrationSemesterNo ?? '-' }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="col-lg-4">
-                <div class="card card-sm">
-                    <div class="card-body">
-                        <div class="text-secondary mb-1">Total SKS Dipilih</div>
-                        <div class="h2 m-0">{{ number_format($totalCredits) }}</div>
-                        <div class="text-secondary small mt-1">Submitted At: {{ $submittedAt ?? '-' }}</div>
+                    <div class="col-lg-4 text-center">
+                        <div class="sks-counter" style="background: conic-gradient(#fbbf24 {{ min(($totalCredits / 24) * 100, 100) }}%, rgba(255,255,255,0.2) 0%);">
+                            <div class="sks-counter-inner">
+                                <div style="font-size: 2.5rem; font-weight: 700; color: #f59e0b;">{{ $totalCredits }}</div>
+                                <div style="font-size: 0.85rem; color: #6b7280;">Total SKS</div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <span class="badge {{ $this->statusBadgeClass($studyPlanStatus) }}" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                                Status: {{ $studyPlanStatus ?? '-' }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row row-deck row-cards mt-1">
+        {{-- Main Content --}}
+        <div class="row g-3">
             <div class="col-lg-7">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="card-title">Available Course Offerings</h3>
+                <div class="card modern-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
+                        <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-book me-2" style="color: #3b82f6;"></i>Mata Kuliah Tersedia</h3>
                         <div class="form-check form-switch m-0">
                             <input class="form-check-input" type="checkbox" id="showRetakeOfferings" wire:model.live="showRetakeOfferings">
-                            <label class="form-check-label text-secondary" for="showRetakeOfferings">
-                                Tampilkan opsi retake
+                            <label class="form-check-label text-secondary" for="showRetakeOfferings" style="font-size: 0.85rem;">
+                                <i class="fas fa-redo me-1"></i>Tampilkan opsi retake
                             </label>
                         </div>
                     </div>
-                    <div class="card-body border-bottom py-2">
-                        <span class="text-secondary small">
-                            Semester registrasi aktif: {{ $registrationSemesterNo ?? '-' }}.
-                            Matkul semester atas tidak diperbolehkan.
-                        </span>
-                    </div>
-                    <div class="card-body p-0">
+                    <div class="card-body p-4">
+                        <div style="padding: 0.75rem; border-radius: 8px; background: #dbeafe; margin-bottom: 1rem;">
+                            <span style="font-size: 0.85rem; color: #1e40af;">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Semester registrasi aktif: <strong>{{ $registrationSemesterNo ?? '-' }}</strong>.
+                                Matkul semester atas tidak diperbolehkan.
+                            </span>
+                        </div>
+
                         @if (count($availableOfferings))
-                            <div class="table-responsive">
-                                <table class="table table-vcenter card-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Kode</th>
-                                            <th>Mata Kuliah</th>
-                                            <th>SKS</th>
-                                            <th>Semester</th>
-                                            <th>Mode</th>
-                                            <th class="text-end">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($availableOfferings as $offering)
-                                            <tr>
-                                                <td>{{ $offering['code'] }}</td>
-                                                <td>
-                                                    <div class="font-weight-medium">{{ $offering['name'] }}</div>
-                                                    <div class="text-secondary small">{{ $offering['label'] ?? '-' }}</div>
-                                                </td>
-                                                <td>{{ $offering['credits'] }}</td>
-                                                <td>{{ $offering['semester_no'] ?? '-' }}</td>
-                                                <td>{{ $offering['delivery_mode'] }}</td>
-                                                <td class="text-end">
-                                                    @if ($offering['is_retake'])
-                                                        <span class="badge bg-yellow-lt me-2">Retake</span>
-                                                    @endif
-                                                    <button
-                                                        type="button"
-                                                        class="btn  btn-primary"
-                                                        wire:click="addCourse({{ $offering['id'] }})"
-                                                        @disabled(! $canModifyStudyPlan)
-                                                    >
-                                                        <i class="fas fa-plus me-1"></i> Ambil
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                            @foreach ($availableOfferings as $offering)
+                                <div class="course-card">
+                                    <div class="d-flex justify-content-between align-items-start gap-3">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">{{ $offering['name'] }}</div>
+                                            <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.5rem;">
+                                                <i class="fas fa-hashtag me-1" style="color: #667eea;"></i>{{ $offering['code'] }}
+                                                <span class="mx-2">•</span>
+                                                <i class="fas fa-layer-group me-1" style="color: #10b981;"></i>{{ $offering['credits'] }} SKS
+                                                <span class="mx-2">•</span>
+                                                <i class="fas fa-calendar me-1" style="color: #f59e0b;"></i>Semester {{ $offering['semester_no'] ?? '-' }}
+                                            </div>
+                                            <div style="font-size: 0.8rem; color: #9ca3af;">
+                                                <i class="fas fa-tag me-1"></i>{{ $offering['label'] ?? '-' }}
+                                                <span class="mx-2">•</span>
+                                                <i class="fas fa-wifi me-1"></i>{{ $offering['delivery_mode'] }}
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            @if ($offering['is_retake'])
+                                                <span class="badge bg-yellow-lt text-yellow mb-2" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                                                    <i class="fas fa-redo me-1"></i>Retake
+                                                </span>
+                                            @endif
+                                            <button
+                                                type="button"
+                                                class="action-btn"
+                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;"
+                                                wire:click="addCourse({{ $offering['id'] }})"
+                                                @disabled(! $canModifyStudyPlan)
+                                            >
+                                                <i class="fas fa-plus me-1"></i> Ambil
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         @else
-                            <div class="p-3 text-secondary">Tidak ada course offering tersedia untuk filter saat ini.</div>
+                            <div class="p-4 text-center text-secondary">
+                                <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
+                                Tidak ada course offering tersedia untuk filter saat ini.
+                            </div>
                         @endif
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-5">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="card-title">Selected Courses (KRS)</h3>
+                <div class="card modern-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
+                        <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-check-circle me-2" style="color: #10b981;"></i>KRS Saya</h3>
                         <div class="d-flex gap-2">
                             @if ($studyPlanStatus === 'Submitted')
-                                <button type="button" class="btn  btn-outline-secondary" wire:click="reviseStudyPlan">
+                                <button type="button" class="btn btn-outline-secondary action-btn" wire:click="reviseStudyPlan" style="border-radius: 8px;">
                                     <i class="fas fa-rotate-left me-1"></i> Revisi
                                 </button>
                             @endif
 
                             <button
                                 type="button"
-                                class="btn  btn-primary"
+                                class="action-btn"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 8px;"
                                 wire:click="submitStudyPlan"
                                 @disabled(! $canModifyStudyPlan || ! $isStudyPlanPeriodOpen || count($selectedCourses) < 1)
                             >
@@ -757,60 +875,69 @@ new class extends Component
                             </button>
                         </div>
                     </div>
-                    <div class="card-body border-bottom py-2">
+                    <div class="card-body p-4">
                         @if ($isStudyPlanPeriodOpen)
-                            <span class="text-secondary small">
-                                Periode aktif: {{ $studyPlanPeriodName }} ({{ $studyPlanPeriodRange }})
-                            </span>
-                        @else
-                            <span class="text-danger small">Periode submit KRS belum aktif.</span>
-                        @endif
-                    </div>
-                    <div class="card-body p-0">
-                        @if (count($selectedCourses))
-                            <div class="table-responsive">
-                                <table class="table table-vcenter card-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Mata Kuliah</th>
-                                            <th>SKS</th>
-                                            <th class="text-end">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($selectedCourses as $course)
-                                            <tr>
-                                                <td>
-                                                    <div class="font-weight-medium">{{ $course['name'] }}</div>
-                                                    <div class="text-secondary small">{{ $course['code'] }}</div>
-                                                    @if ($course['is_repeat'])
-                                                        <span class="badge bg-yellow-lt mt-1">Retake</span>
-                                                    @endif
-                                                </td>
-                                                <td>{{ $course['credits'] }}</td>
-                                                <td class="text-end">
-                                                    <button
-                                                        type="button"
-                                                        class="btn  btn-outline-danger"
-                                                        wire:click="removeCourse({{ $course['detail_id'] }})"
-                                                        @disabled(! $canModifyStudyPlan)
-                                                    >
-                                                        <i class="fas fa-trash me-1"></i> Hapus
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th>Total SKS</th>
-                                            <th colspan="2">{{ number_format($totalCredits) }}</th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                            <div style="padding: 0.75rem; border-radius: 8px; background: #d1fae5; margin-bottom: 1rem;">
+                                <span style="font-size: 0.85rem; color: #065f46;">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Periode aktif: <strong>{{ $studyPlanPeriodName }}</strong><br>
+                                    {{ $studyPlanPeriodRange }}
+                                </span>
                             </div>
                         @else
-                            <div class="p-3 text-secondary">Belum ada mata kuliah yang dipilih.</div>
+                            <div style="padding: 0.75rem; border-radius: 8px; background: #fee2e2; margin-bottom: 1rem;">
+                                <span style="font-size: 0.85rem; color: #991b1b;">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Periode submit KRS belum aktif.
+                                </span>
+                            </div>
+                        @endif
+
+                        @if (count($selectedCourses))
+                            @foreach ($selectedCourses as $course)
+                                <div class="selected-course-card">
+                                    <div class="d-flex justify-content-between align-items-start gap-3">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">{{ $course['name'] }}</div>
+                                            <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.5rem;">
+                                                <i class="fas fa-hashtag me-1" style="color: #667eea;"></i>{{ $course['code'] }}
+                                                <span class="mx-2">•</span>
+                                                <i class="fas fa-layer-group me-1" style="color: #10b981;"></i>{{ $course['credits'] }} SKS
+                                            </div>
+                                            @if ($course['is_repeat'])
+                                                <span class="badge bg-yellow-lt text-yellow" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                                                    <i class="fas fa-redo me-1"></i>Retake
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="text-end">
+                                            <button
+                                                type="button"
+                                                class="action-btn"
+                                                style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;"
+                                                wire:click="removeCourse({{ $course['detail_id'] }})"
+                                                @disabled(! $canModifyStudyPlan)
+                                            >
+                                                <i class="fas fa-trash me-1"></i> Hapus
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+
+                            {{-- Total SKS Summary --}}
+                            <div style="margin-top: 1rem; padding: 1rem; border-radius: 12px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); text-align: center;">
+                                <div style="font-size: 0.85rem; color: #1e40af; margin-bottom: 0.25rem;">Total SKS Dipilih</div>
+                                <div style="font-size: 2rem; font-weight: 700; color: #1e40af;">{{ number_format($totalCredits) }}</div>
+                                <div style="font-size: 0.75rem; color: #3b82f6; margin-top: 0.25rem;">
+                                    <i class="fas fa-info-circle me-1"></i>Maksimal 24 SKS per semester
+                                </div>
+                            </div>
+                        @else
+                            <div class="p-4 text-center text-secondary">
+                                <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
+                                Belum ada mata kuliah yang dipilih.
+                            </div>
                         @endif
                     </div>
                 </div>

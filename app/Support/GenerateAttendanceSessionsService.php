@@ -54,7 +54,7 @@ class GenerateAttendanceSessionsService
 
                         AttendanceSession::create([
                             'course_offering_id' => $courseOffering->id,
-                            'course_schedule_id' => null,
+                            'course_schedule_id' => $schedule->id,
                             'lecturer_profile_id' => $schedule->lecturer_profile_id,
                             'meeting_no' => $meetingNo,
                             'meeting_date' => $currentDate,

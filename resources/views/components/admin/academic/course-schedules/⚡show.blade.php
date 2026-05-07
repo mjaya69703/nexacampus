@@ -8,7 +8,7 @@ new class extends Component {
 
     public function mount($id): void
     {
-        $this->schedule = CourseSchedule::with(['courseOffering.course', 'courseOffering.academicYear', 'lecturerProfile.user'])
+        $this->schedule = CourseSchedule::with(['courseOffering.course', 'courseOffering.academicYear', 'lecturerProfile.user', 'room.building'])
             ->findOrFail($id);
     }
 
@@ -80,12 +80,12 @@ new class extends Component {
 
                     <div class="col-md-3 mb-3">
                         <label class="form-label text-muted">Ruangan</label>
-                        <div class="h6">{{ $schedule->room ?? '-' }}</div>
+                        <div class="h6">{{ $schedule->room?->name ?? '-' }}</div>
                     </div>
 
                     <div class="col-md-3 mb-3">
                         <label class="form-label text-muted">Gedung</label>
-                        <div class="h6">{{ $schedule->building ?? '-' }}</div>
+                        <div class="h6">{{ $schedule->room?->building?->name ?? '-' }}</div>
                     </div>
 
                     <div class="col-md-2 mb-3">

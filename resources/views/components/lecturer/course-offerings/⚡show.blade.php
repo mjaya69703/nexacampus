@@ -81,7 +81,7 @@ new class extends Component
 
     public function setTab(string $tab): void
     {
-        if (! in_array($tab, ['students', 'attendance', 'grades'], true)) {
+        if (! in_array($tab, ['students', 'attendance', 'grades', 'materials'], true)) {
             return;
         }
 
@@ -231,23 +231,82 @@ new class extends Component
 
 @push('styles')
     <style>
-        .lecturer-class-card {
-            border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.06);
-            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+        .modern-card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background: white;
         }
 
-        .lecturer-class-hero {
-            background:
-                radial-gradient(circle at top right, rgba(32, 107, 196, 0.12), transparent 30%),
-                linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
         }
 
-        .lecturer-class-label {
-            color: #6b7280;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .stat-card {
+            border-radius: 16px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: white;
+        }
+
+        .info-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .tab-button {
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button:hover {
+            transform: translateY(-2px);
         }
     </style>
 @endpush
@@ -255,97 +314,154 @@ new class extends Component
 <div>
     <x-alert />
 
-    <div class="card lecturer-class-card lecturer-class-hero mb-4">
-        <div class="card-body p-4">
+    {{-- Hero Section --}}
+    <div class="card modern-card hero-gradient mb-4" style="color: white;">
+        <div class="card-body p-4 p-lg-5">
             <div class="row align-items-center g-4">
                 <div class="col-lg-8">
-                    <div class="lecturer-class-label mb-2">Detail Kelas</div>
-                    <h2 class="mb-2">{{ $classInfo['course_code'] }} - {{ $classInfo['course_name'] }}</h2>
-                    <div class="text-secondary mb-3">
-                        Kelas {{ $classInfo['label'] }} • {{ $classInfo['study_program'] }} • {{ $classInfo['academic_year'] }}
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 2rem;">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Detail Kelas</div>
+                            <h2 class="h2 mb-0" style="font-weight: 700;">{{ $classInfo['course_code'] }} - {{ $classInfo['course_name'] }}</h2>
+                            <div style="font-size: 1.1rem; opacity: 0.95; margin-top: 4px;">Kelas {{ $classInfo['label'] }}</div>
+                        </div>
                     </div>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-blue-lt text-blue">{{ $classInfo['class_code'] }}</span>
-                        <span class="badge bg-azure-lt text-azure">Semester {{ $classInfo['semester_no'] }}</span>
-                        <span class="badge bg-green-lt text-green">{{ $classInfo['credits'] }} SKS</span>
-                        <span class="badge {{ $this->statusBadgeClass($classInfo['status']) }}">{{ $classInfo['status'] }}</span>
+                    
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <span class="info-badge">
+                            <i class="fas fa-hashtag"></i>
+                            {{ $classInfo['class_code'] }}
+                        </span>
+                        <span class="info-badge">
+                            <i class="fas fa-calendar-alt"></i>
+                            Semester {{ $classInfo['semester_no'] }}
+                        </span>
+                        <span class="info-badge">
+                            <i class="fas fa-book"></i>
+                            {{ $classInfo['credits'] }} SKS
+                        </span>
+                        <span class="info-badge">
+                            <i class="fas fa-circle-check"></i>
+                            {{ $classInfo['status'] }}
+                        </span>
                     </div>
                 </div>
 
                 <div class="col-lg-4 text-lg-end">
-                    <a href="{{ route('lecturer.course-offerings.index') }}" class="btn btn-outline-secondary">
-                        Kembali ke Daftar Kelas
+                    <a href="{{ route('lecturer.course-offerings.index') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-arrow-left me-2"></i>Kembali ke Daftar Kelas
                     </a>
                 </div>
             </div>
 
-            <div class="mt-4">
-                <div class="lecturer-class-label mb-2">Dosen Pengampu</div>
+            <div class="mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.2);">
+                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">
+                    <i class="fas fa-user-tie me-2"></i><strong>Dosen Pengampu:</strong>
+                </div>
                 <div class="d-flex flex-wrap gap-2">
                     @foreach ($classInfo['lecturers'] as $lecturer)
-                        <span class="badge bg-secondary-lt text-secondary">{{ $lecturer['name'] }} ({{ $lecturer['role'] }})</span>
+                        <span style="padding: 8px 14px; border-radius: 10px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); font-size: 0.9rem; font-weight: 500;">
+                            {{ $lecturer['name'] }} ({{ $lecturer['role'] }})
+                        </span>
                     @endforeach
                 </div>
             </div>
         </div>
     </div>
 
+    {{-- Stats Cards --}}
     <div class="row row-cards mb-4">
         <div class="col-md-3">
-            <div class="card lecturer-class-card">
-                <div class="card-body">
-                    <div class="lecturer-class-label">Mahasiswa</div>
-                    <div class="h2 mb-0 mt-2">{{ number_format($stats['total_students']) }}</div>
+            <div class="card modern-card stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mahasiswa</div>
+                        <div class="h2 mb-0 mt-1" style="font-weight: 800; color: #1e293b;">{{ number_format($stats['total_students']) }}</div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card lecturer-class-card">
-                <div class="card-body">
-                    <div class="lecturer-class-label">Sesi Absensi</div>
-                    <div class="h2 mb-0 mt-2">{{ number_format($stats['total_sessions']) }}</div>
+            <div class="card modern-card stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Sesi Absensi</div>
+                        <div class="h2 mb-0 mt-1" style="font-weight: 800; color: #1e293b;">{{ number_format($stats['total_sessions']) }}</div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card lecturer-class-card">
-                <div class="card-body">
-                    <div class="lecturer-class-label">Nilai Masuk</div>
-                    <div class="h2 mb-0 mt-2">{{ number_format($stats['graded_students']) }}</div>
+            <div class="card modern-card stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Nilai Masuk</div>
+                        <div class="h2 mb-0 mt-1" style="font-weight: 800; color: #1e293b;">{{ number_format($stats['graded_students']) }}</div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card lecturer-class-card">
-                <div class="card-body">
-                    <div class="lecturer-class-label">Rata-rata Point Publish</div>
-                    <div class="h2 mb-0 mt-2">{{ $stats['average_grade_point'] }}</div>
+            <div class="card modern-card stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Rata-rata Point</div>
+                        <div class="h2 mb-0 mt-1" style="font-weight: 800; color: #1e293b;">{{ $stats['average_grade_point'] }}</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card lecturer-class-card">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    {{-- Tabs Section --}}
+    <div class="card modern-card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3 py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
             <div class="btn-list">
-                <button type="button" class="btn {{ $activeTab === 'students' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('students')">
-                    Mahasiswa
+                <button type="button" class="btn tab-button {{ $activeTab === 'students' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('students')">
+                    <i class="fas fa-users me-2"></i>Mahasiswa
                 </button>
-                <button type="button" class="btn {{ $activeTab === 'attendance' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('attendance')">
-                    Absensi
+                <button type="button" class="btn tab-button {{ $activeTab === 'attendance' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('attendance')">
+                    <i class="fas fa-calendar-check me-2"></i>Absensi
                 </button>
-                <button type="button" class="btn {{ $activeTab === 'grades' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('grades')">
-                    Nilai
+                <button type="button" class="btn tab-button {{ $activeTab === 'grades' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('grades')">
+                    <i class="fas fa-chart-line me-2"></i>Nilai
+                </button>
+                <button type="button" class="btn tab-button {{ $activeTab === 'materials' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('materials')">
+                    <i class="fas fa-book me-2"></i>Materi
                 </button>
             </div>
 
             <div class="btn-list">
-                <a href="{{ route('lecturer.course-offerings.students', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary btn-sm">Halaman Mahasiswa</a>
-                <a href="{{ route('lecturer.course-offerings.attendance', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary btn-sm">Halaman Absensi</a>
-                <a href="{{ route('lecturer.course-offerings.grades', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary btn-sm">Halaman Nilai</a>
+                <a href="{{ route('lecturer.course-offerings.students', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>Halaman Mahasiswa
+                </a>
+                <a href="{{ route('lecturer.course-offerings.attendance', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>Halaman Absensi
+                </a>
+                <a href="{{ route('lecturer.course-offerings.grades', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>Halaman Nilai
+                </a>
+                <a href="{{ route('lecturer.course-materials.index', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>Halaman Materi
+                </a>
             </div>
         </div>
 
@@ -415,7 +531,7 @@ new class extends Component
                     </tbody>
                 </table>
             </div>
-        @else
+        @elseif ($activeTab === 'grades')
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">
                     <thead>
@@ -449,6 +565,15 @@ new class extends Component
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        @elseif ($activeTab === 'materials')
+            <div class="p-4 text-center">
+                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                <h5>Kelola Materi Perkuliahan</h5>
+                <p class="text-muted">Upload dan kelola materi perkuliahan untuk kelas ini.</p>
+                <a href="{{ route('lecturer.course-materials.index', ['offeringId' => $offeringId]) }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-arrow-right me-2"></i>Buka Halaman Materi
+                </a>
             </div>
         @endif
     </div>

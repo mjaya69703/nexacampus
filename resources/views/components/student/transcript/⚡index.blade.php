@@ -127,73 +127,131 @@ new class extends Component {
 
 @push('styles')
     <style>
-        .student-transcript-card {
-            border-radius: 18px;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        .modern-card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background: white;
         }
 
-        .student-transcript-summary {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #6b7280;
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
         }
 
-        .student-transcript-value {
-            font-size: 30px;
-            font-weight: 700;
-            line-height: 1.1;
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
         }
 
-        .student-transcript-avatar {
-            width: 56px;
-            height: 56px;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .stat-card {
             border-radius: 16px;
-            background: #206bc4;
-            color: #fff;
+            padding: 1.5rem;
+            background: white;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .profile-card {
+            border-radius: 16px;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .semester-result-card {
+            border-radius: 16px;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .semester-result-card:hover {
+            background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+            border-color: #f59e0b;
+            transform: translateY(-4px);
+        }
+
+        .gpa-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .transcript-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .transcript-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .transcript-table th:first-child {
+            border-radius: 12px 0 0 0;
+        }
+
+        .transcript-table th:last-child {
+            border-radius: 0 12px 0 0;
+        }
+
+        .transcript-table td {
+            padding: 1rem;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .transcript-table tr:last-child td:first-child {
+            border-radius: 0 0 0 12px;
+        }
+
+        .transcript-table tr:last-child td:last-child {
+            border-radius: 0 0 12px 0;
+        }
+
+        .transcript-table tr:hover td {
+            background: #f8fafc;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            font-weight: 700;
+            gap: 0.75rem;
         }
 
-        .student-transcript-meta-label {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 4px;
-        }
-
-        .student-transcript-meta-value {
-            font-weight: 600;
-        }
-
-        .student-semester-card {
-            border-radius: 16px;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-            padding: 1rem;
-            height: 100%;
-        }
-
-        .student-semester-gpa {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .student-transcript-title {
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .student-transcript-course-name {
-            font-weight: 600;
-        }
-
-        .student-transcript-course-code {
-            font-size: 12px;
-            color: #6b7280;
+        .section-title i {
+            color: #667eea;
         }
     </style>
 @endpush
@@ -206,71 +264,78 @@ new class extends Component {
     @elseif (! $hasTranscriptEntries)
         <div class="alert alert-info">Belum ada data transkrip.</div>
     @else
-        <div class="row mb-4 row-cards">
-            <div class="col-md-6 col-lg-3">
-                <div class="card student-transcript-card">
-                    <div class="card-body">
-                        <div class="student-transcript-summary">Total Mata Kuliah</div>
-                        <div class="student-transcript-value">{{ $summary['total_courses'] }}</div>
+        {{-- Hero Section with Gradient --}}
+        <div class="card modern-card hero-gradient mb-4" style="color: white;">
+            <div class="card-body p-4 p-lg-5">
+                <div class="d-flex align-items-start gap-3">
+                    <div style="width: 72px; height: 72px; background: rgba(255,255,255,0.2); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; backdrop-filter: blur(10px);">
+                        <i class="fas fa-scroll"></i>
                     </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3">
-                <div class="card student-transcript-card">
-                    <div class="card-body">
-                        <div class="student-transcript-summary">Total SKS</div>
-                        <div class="student-transcript-value">{{ $summary['total_credits'] }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3">
-                <div class="card student-transcript-card">
-                    <div class="card-body">
-                        <div class="student-transcript-summary">SKS Lulus</div>
-                        <div class="student-transcript-value">{{ $summary['passed_credits'] }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3">
-                <div class="card student-transcript-card">
-                    <div class="card-body">
-                        <div class="student-transcript-summary">IPK</div>
-                        <div class="student-transcript-value">
-                            {{ $summary['cumulative_gpa'] !== null ? number_format((float) $summary['cumulative_gpa'], 2) : '-' }}
+                    <div>
+                        <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Transkrip Nilai Akademik</div>
+                        <h1 class="h2 mb-2" style="font-weight: 700;">{{ $studentName }}</h1>
+                        <div style="opacity: 0.9;">
+                            <i class="fas fa-university me-2"></i>{{ $studyProgramName }} • NIM {{ $studentNim }}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card student-transcript-card mb-4">
-            <div class="card-body">
-                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-4">
-                    <div class="student-transcript-avatar">
-                        {{ strtoupper(substr($studentName ?? 'M', 0, 1)) }}
+        {{-- Stats Cards --}}
+        <div class="row row-cards mb-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #3b82f6;">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">Total Mata Kuliah</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #1f2937;">{{ $summary['total_courses'] }}</div>
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="flex-fill">
-                        <div class="h2 mb-1">{{ $studentName }}</div>
-                        <div class="text-secondary mb-3">{{ $studyProgramName }}</div>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #f59e0b;">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">Total SKS</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #1f2937;">{{ $summary['total_credits'] }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="student-transcript-meta-label">NIM</div>
-                                <div class="student-transcript-meta-value">{{ $studentNim }}</div>
-                            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #10b981;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">SKS Lulus</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #1f2937;">{{ $summary['passed_credits'] }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                            <div class="col-md-4 mb-3">
-                                <div class="student-transcript-meta-label">Semester Saat Ini</div>
-                                <div class="student-transcript-meta-value">{{ $currentSemester ?? '-' }}</div>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <div class="student-transcript-meta-label">Status Akademik</div>
-                                <span class="badge {{ $this->statusBadgeClass($academicStatus) }}">{{ $academicStatus ?? '-' }}</span>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #8b5cf6;">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">IPK</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #1f2937;">
+                                {{ $summary['cumulative_gpa'] !== null ? number_format((float) $summary['cumulative_gpa'], 2) : '-' }}
                             </div>
                         </div>
                     </div>
@@ -278,47 +343,81 @@ new class extends Component {
             </div>
         </div>
 
+        {{-- Profile Card --}}
+        <div class="modern-card profile-card mb-4">
+            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-4">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                    {{ strtoupper(substr($studentName ?? 'M', 0, 1)) }}
+                </div>
+
+                <div class="flex-fill">
+                    <div class="h2 mb-1" style="font-weight: 700;">{{ $studentName }}</div>
+                    <div style="color: #6b7280; margin-bottom: 1rem;">{{ $studyProgramName }}</div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.25rem;">NIM</div>
+                            <div style="font-weight: 600; color: #1f2937;">{{ $studentNim }}</div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.25rem;">Semester Saat Ini</div>
+                            <div style="font-weight: 600; color: #1f2937;">{{ $currentSemester ?? '-' }}</div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.25rem;">Status Akademik</div>
+                            <span class="badge {{ $this->statusBadgeClass($academicStatus) }}" style="padding: 0.5rem 0.75rem;">{{ $academicStatus ?? '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Semester Results --}}
         <div class="mb-4">
-            <div class="student-transcript-title mb-3">Hasil Studi per Semester</div>
+            <div class="section-title">
+                <i class="fas fa-chart-line"></i> Hasil Studi per Semester
+            </div>
 
             <div class="row row-cards">
                 @forelse ($studyResults as $result)
                     <div class="col-md-6 col-xl-4">
-                        <div class="student-semester-card">
+                        <div class="semester-result-card">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div>
-                                    <div class="student-transcript-meta-label">{{ $result['academic_year'] }}</div>
-                                    <div class="fw-bold">Semester {{ $result['semester_no'] ?? '-' }}</div>
+                                    <div style="font-size: 0.8rem; color: #92400e; margin-bottom: 0.25rem;">{{ $result['academic_year'] }}</div>
+                                    <div style="font-weight: 700; color: #78350f; font-size: 1.1rem;">Semester {{ $result['semester_no'] ?? '-' }}</div>
                                 </div>
 
-                                <span class="badge {{ $this->statusBadgeClass($result['status']) }}">
+                                <span class="badge {{ $this->statusBadgeClass($result['status']) }}" style="padding: 0.5rem 0.75rem;">
                                     {{ $result['status'] }}
                                 </span>
                             </div>
 
-                            <div class="student-semester-gpa mb-1">
+                            <div class="gpa-display mb-1">
                                 {{ $result['semester_gpa'] !== null ? number_format((float) $result['semester_gpa'], 2) : '-' }}
                             </div>
-                            <div class="student-transcript-meta-label mb-3">IPS Semester</div>
+                            <div style="font-size: 0.8rem; color: #92400e; margin-bottom: 1rem;">IPS Semester</div>
 
-                            <div class="row text-center">
+                            <div class="row text-center" style="margin-bottom: 1rem;">
                                 <div class="col-4">
-                                    <div class="student-transcript-meta-label">Matkul</div>
-                                    <div class="fw-bold">{{ $result['total_courses'] }}</div>
+                                    <div style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.25rem;">Matkul</div>
+                                    <div style="font-weight: 700; color: #78350f;">{{ $result['total_courses'] }}</div>
                                 </div>
                                 <div class="col-4">
-                                    <div class="student-transcript-meta-label">SKS</div>
-                                    <div class="fw-bold">{{ $result['credits_taken'] }}</div>
+                                    <div style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.25rem;">SKS</div>
+                                    <div style="font-weight: 700; color: #78350f;">{{ $result['credits_taken'] }}</div>
                                 </div>
                                 <div class="col-4">
-                                    <div class="student-transcript-meta-label">Lulus</div>
-                                    <div class="fw-bold">{{ $result['credits_passed'] }}</div>
+                                    <div style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.25rem;">Lulus</div>
+                                    <div style="font-weight: 700; color: #78350f;">{{ $result['credits_passed'] }}</div>
                                 </div>
                             </div>
 
-                            <div class="mt-3 pt-3 border-top d-flex justify-content-between">
-                                <span class="student-transcript-meta-label mb-0">Snapshot IPK</span>
-                                <span class="fw-semibold">
+                            <div style="padding-top: 1rem; border-top: 2px solid rgba(251, 191, 36, 0.3); display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.8rem; color: #92400e;">Snapshot IPK</span>
+                                <span style="font-weight: 700; color: #78350f; font-size: 1.1rem;">
                                     {{ $result['cumulative_gpa'] !== null ? number_format((float) $result['cumulative_gpa'], 2) : '-' }}
                                 </span>
                             </div>
@@ -326,12 +425,15 @@ new class extends Component {
                     </div>
                 @empty
                     <div class="col-12">
-                        <div class="alert alert-info mb-0">Belum ada hasil studi.</div>
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Belum ada hasil studi.
+                        </div>
                     </div>
                 @endforelse
             </div>
         </div>
 
+        {{-- Transcript Entries --}}
         @php
             $groupedTranscript = collect($transcriptEntries)
                 ->sortByDesc('semester_no')
@@ -339,56 +441,60 @@ new class extends Component {
         @endphp
 
         <div>
-            <div class="student-transcript-title mb-3">Entri Transkrip</div>
+            <div class="section-title">
+                <i class="fas fa-list-alt"></i> Entri Transkrip
+            </div>
 
             @foreach ($groupedTranscript as $semester => $entries)
-                <div class="card student-transcript-card mb-4">
-                    <div class="card-header">
+                <div class="modern-card mb-4">
+                    <div style="padding: 1.5rem; border-bottom: 1px solid #e5e7eb;">
                         <div class="d-flex justify-content-between align-items-center w-100">
                             <div>
-                                <div class="student-transcript-title">{{ $semester }}</div>
-                                <div class="text-secondary small">{{ count($entries) }} mata kuliah</div>
+                                <div style="font-weight: 700; color: #1f2937; font-size: 1.25rem;">{{ $semester }}</div>
+                                <div style="color: #6b7280; font-size: 0.85rem;">{{ count($entries) }} mata kuliah</div>
                             </div>
 
                             <div class="text-end">
-                                <div class="text-secondary small">Total SKS</div>
-                                <div class="fw-bold">{{ collect($entries)->sum('credits') }}</div>
+                                <div style="color: #6b7280; font-size: 0.85rem;">Total SKS</div>
+                                <div style="font-weight: 700; color: #667eea; font-size: 1.25rem;">{{ collect($entries)->sum('credits') }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-vcenter card-table">
-                            <thead>
-                                <tr>
-                                    <th>Mata Kuliah</th>
-                                    <th>SKS</th>
-                                    <th>Nilai</th>
-                                    <th>Point</th>
-                                    <th>Score</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($entries as $entry)
+                    <div style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="transcript-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <div class="student-transcript-course-name">{{ $entry['course_name'] }}</div>
-                                            <div class="student-transcript-course-code">{{ $entry['course_code'] }}</div>
-                                        </td>
-                                        <td>{{ $entry['credits'] }}</td>
-                                        <td><span class="badge bg-blue-lt">{{ $entry['letter_grade'] ?? '-' }}</span></td>
-                                        <td>{{ $entry['grade_point'] !== null ? number_format((float) $entry['grade_point'], 2) : '-' }}</td>
-                                        <td>{{ $entry['final_score'] !== null ? number_format((float) $entry['final_score'], 2) : '-' }}</td>
-                                        <td>
-                                            <span class="badge {{ $this->statusBadgeClass($entry['result_status']) }}">
-                                                {{ $entry['result_status'] ?? '-' }}
-                                            </span>
-                                        </td>
+                                        <th>Mata Kuliah</th>
+                                        <th>SKS</th>
+                                        <th>Nilai</th>
+                                        <th>Point</th>
+                                        <th>Score</th>
+                                        <th>Status</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach ($entries as $entry)
+                                        <tr>
+                                            <td>
+                                                <div style="font-weight: 600; color: #1f2937;">{{ $entry['course_name'] }}</div>
+                                                <div style="font-size: 0.8rem; color: #9ca3af;">{{ $entry['course_code'] }}</div>
+                                            </td>
+                                            <td style="font-weight: 600;">{{ $entry['credits'] }}</td>
+                                            <td><span class="badge bg-blue-lt text-blue" style="padding: 0.5rem 0.75rem;">{{ $entry['letter_grade'] ?? '-' }}</span></td>
+                                            <td style="font-weight: 600; color: #667eea;">{{ $entry['grade_point'] !== null ? number_format((float) $entry['grade_point'], 2) : '-' }}</td>
+                                            <td>{{ $entry['final_score'] !== null ? number_format((float) $entry['final_score'], 2) : '-' }}</td>
+                                            <td>
+                                                <span class="badge {{ $this->statusBadgeClass($entry['result_status']) }}" style="padding: 0.5rem 0.75rem;">
+                                                    {{ $entry['result_status'] ?? '-' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             @endforeach
