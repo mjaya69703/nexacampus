@@ -4,6 +4,7 @@ use App\Models\Academic\CourseMaterial;
 use App\Models\Academic\CourseMaterialBookmark;
 use App\Models\Academic\CourseMaterialDownload;
 use App\Models\Academic\CourseMaterialFile;
+use App\Models\Academic\MaterialLike;
 use App\Models\Academic\StudyPlan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -16,6 +17,8 @@ new class extends Component
     public array $materialData = [];
     public array $attachments = [];
     public bool $isBookmarked = false;
+    public bool $isLiked = false;
+    public int $likesCount = 0;
 
     public function mount(int|string $material): void
     {
@@ -80,6 +83,7 @@ new class extends Component
         }
 
         $this->loadBookmarkState();
+        $this->loadLikeState();
     }
 
     private function loadBookmarkState(): void
@@ -94,7 +98,25 @@ new class extends Component
 
         $this->isBookmarked = CourseMaterialBookmark::query()
             ->where('course_material_id', $this->materialId)
-            ->where('student_profile_id', $user->studentProfile->id)
+            ->where('student_profile_id', $user->studentProfile?->id)
+            ->exists();
+    }
+    
+    private function loadLikeState(): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->hasRole('student')) {
+            $this->isLiked = false;
+            $this->likesCount = 0;
+
+            return;
+        }
+
+        $material = CourseMaterial::find($this->materialId);
+        $this->likesCount = $material->likes_count ?? 0;
+        $this->isLiked = MaterialLike::where('course_material_id', $this->materialId)
+            ->where('user_id', $user->id)
             ->exists();
     }
 
@@ -128,6 +150,51 @@ new class extends Component
         $this->isBookmarked = true;
 
         session()->flash('success', 'Materi ditambahkan ke bookmark.');
+    }
+    
+    public function toggleMaterialLike(): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->hasRole('student')) {
+            session()->flash('error', 'Anda harus login sebagai mahasiswa.');
+            return;
+        }
+
+        $existingLike = MaterialLike::where('course_material_id', $this->materialId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existingLike) {
+            // Unlike
+            $existingLike->delete();
+            $this->isLiked = false;
+            
+            // Decrement likes count
+            $material = CourseMaterial::find($this->materialId);
+            if ($material) {
+                $material->decrement('likes_count');
+                $this->likesCount = $material->likes_count;
+            }
+            
+            session()->flash('success', 'Like dihapus.');
+        } else {
+            // Like
+            MaterialLike::create([
+                'course_material_id' => $this->materialId,
+                'user_id' => $user->id,
+            ]);
+            $this->isLiked = true;
+            
+            // Increment likes count
+            $material = CourseMaterial::find($this->materialId);
+            if ($material) {
+                $material->increment('likes_count');
+                $this->likesCount = $material->likes_count;
+            }
+            
+            session()->flash('success', 'Materi disukai!');
+        }
     }
 
     public function downloadAttachment(int $materialId, ?int $fileId = null): ?BinaryFileResponse
@@ -229,7 +296,7 @@ new class extends Component
         CourseMaterialDownload::updateOrCreate(
             [
                 'course_material_id' => $material->id,
-                'student_profile_id' => $user->studentProfile->id,
+                'student_profile_id' => $user->studentProfile?->id,
             ],
             [
                 'downloaded_at' => now(),
@@ -303,7 +370,7 @@ new class extends Component
         }
 
         .hero-gradient {
-            background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
             overflow: hidden;
             color: white;
@@ -316,13 +383,58 @@ new class extends Component
             right: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
-            animation: pulse 18s ease-in-out infinite;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 16s ease-in-out infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.4; }
-            50% { transform: scale(1.08); opacity: 0.8; }
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.85; }
+        }
+
+        .hero-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.5rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-meta-panel {
+            min-width: 250px;
+            padding: 1rem;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.22);
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.65rem;
+        }
+
+        .hero-actions .action-btn {
+            justify-content: center;
+            width: 100%;
         }
 
         .attachment-card {
@@ -363,32 +475,43 @@ new class extends Component
 <div>
     <x-alert />
 
-    <div class="card modern-card hero-gradient mb-4">
+    <div class="card modern-card hero-gradient mb-4" style="color: white;">
         <div class="card-body p-4 p-lg-5 position-relative">
-            <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
-                <div>
-                    <div class="text-uppercase" style="letter-spacing: 0.08em; font-size: 0.8rem; opacity: 0.85;">Learning</div>
-                    <h2 class="h2 mt-2 mb-2" style="font-weight: 700;">{{ $materialData['title'] }}</h2>
-                    <div style="font-size: 1rem; opacity: 0.95;">{{ $materialData['course_code'] }} - {{ $materialData['course_name'] }}</div>
-                    <div class="d-flex flex-wrap gap-2 mt-3">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="hero-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <div>
+                            <div class="text-uppercase" style="letter-spacing: 0.08em; font-size: 0.8rem; opacity: 0.85;">Learning</div>
+                            <h2 class="h2 mt-2 mb-2" style="font-weight: 700;">{{ $materialData['title'] }}</h2>
+                            <div style="font-size: 1.05rem; opacity: 0.95;">{{ $materialData['course_code'] }} - {{ $materialData['course_name'] }}</div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
                         @if($materialData['meeting_number'])
-                            <span class="badge bg-light text-dark" style="padding: 6px 12px; border-radius: 8px;">
+                            <span class="hero-badge">
+                                <i class="fas fa-calendar-day"></i>
                                 Pertemuan #{{ $materialData['meeting_number'] }}
                             </span>
                         @endif
-                        <span class="badge {{ $this->categoryBadgeClass($materialData['category']) }}" style="padding: 6px 12px; border-radius: 8px;">
+                        <span class="hero-badge">
+                            <i class="fas fa-layer-group"></i>
                             {{ ucfirst(str_replace('_', ' ', $materialData['category'])) }}
                         </span>
-                        <span class="badge bg-light text-dark" style="padding: 6px 12px; border-radius: 8px;">
+                        <span class="hero-badge">
+                            <i class="fas fa-paperclip"></i>
                             {{ count($attachments) }} Lampiran
                         </span>
                     </div>
                 </div>
-                <div class="text-lg-end" style="min-width: 220px;">
-                    <div style="font-size: 0.85rem; opacity: 0.9;">Diupload oleh</div>
-                    <div style="font-weight: 600;">{{ $materialData['uploaded_by'] }}</div>
-                    <div style="font-size: 0.85rem; opacity: 0.85;">{{ $materialData['uploaded_at'] }}</div>
-                    <div class="d-flex flex-column gap-2 mt-3">
+                <div class="col-lg-4">
+                    <div class="hero-meta-panel ms-lg-auto">
+                        <div style="font-size: 0.8rem; opacity: 0.85; font-weight: 600;">Diupload oleh</div>
+                        <div style="font-weight: 700; font-size: 1.05rem;">{{ $materialData['uploaded_by'] }}</div>
+                        <div class="mb-3" style="font-size: 0.85rem; opacity: 0.85;">{{ $materialData['uploaded_at'] }}</div>
+                        <div class="hero-actions">
                         <a
                             href="{{ route('student.course-materials.index', ['offeringId' => $materialData['course_offering_id']]) }}"
                             class="action-btn"
@@ -399,11 +522,21 @@ new class extends Component
                         <button
                             type="button"
                             class="action-btn"
+                            wire:click="toggleMaterialLike"
+                            style="background: {{ $isLiked ? 'rgba(239, 68, 68, 0.9)' : 'rgba(255,255,255,0.18)' }}; color: {{ $isLiked ? 'white' : 'white' }};"
+                        >
+                            <i class="fas fa-heart {{ $isLiked ? 'fa-solid' : 'fa-regular' }}"></i>
+                            {{ $likesCount }} {{ $isLiked ? 'Disukai' : 'Suka' }}
+                        </button>
+                        <button
+                            type="button"
+                            class="action-btn"
                             wire:click="toggleBookmark"
                             style="background: {{ $isBookmarked ? 'rgba(251, 191, 36, 0.9)' : 'rgba(255,255,255,0.18)' }}; color: {{ $isBookmarked ? '#1e293b' : 'white' }};"
                         >
                             <i class="fas fa-star"></i> {{ $isBookmarked ? 'Tersimpan' : 'Bookmark' }}
                         </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -414,7 +547,7 @@ new class extends Component
         <div class="card-body p-4">
             <h4 class="mb-3" style="font-weight: 700;">Deskripsi</h4>
             <div style="color: #475569; line-height: 1.6;">
-                {{ $materialData['description'] ?: 'Tidak ada deskripsi untuk materi ini.' }}
+                {!! $materialData['description'] ?: 'Tidak ada deskripsi untuk materi ini.' !!}
             </div>
         </div>
     </div>
@@ -506,5 +639,10 @@ new class extends Component
                 </div>
             @endforelse
         </div>
+    </div>
+    
+    {{-- Comments/Discussion Section --}}
+    <div class="mt-5">
+        <livewire:student.course-material-comments :material-id="$materialId" />
     </div>
 </div>

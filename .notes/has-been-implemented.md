@@ -22,39 +22,39 @@ Urutan pengerjaan berdasarkan business impact dan dependencies antar role:
 **Roles Affected:** Lecturer (upload), Student (access)  
 **Module Category:** Academic → New Submodule: `course-materials`
 
-**Catatan Evaluasi (Perlu Ditambahkan):**
-- **Video links / embed YouTube** belum ada (hanya upload file). Tambah opsi input URL dan tampilan embed di halaman student learning.
-- **Bookmark/Favorite** belum ada. Tambah toggle favorit per materi untuk mahasiswa.
-- **PDF viewer in-browser** belum ada. Tambah viewer sederhana (iframe/PDF.js) untuk mobile-friendly.
-- **Drag & drop upload** belum ada. Upgrade input upload ke drag & drop.
-- **Versioning** belum ada. Simpan versi file/material (minimal log versi/riwayat update).
+**Catatan Evaluasi (Status Implementasi):**
+- ✅ **Video links / embed YouTube** - SUDAH ADA. Dosen bisa input URL YouTube, student melihat embedded video player di learning page.
+- ✅ **Bookmark/Favorite** - SUDAH ADA. Toggle bookmark per materi untuk mahasiswa, filter "Bookmarked Only", counter di dashboard.
+- ✅ **PDF viewer in-browser** - SUDAH ADA. PDF ditampilkan via iframe embed di halaman student learning.
+- ❌ **Drag & drop upload** - BELUM ADA. Upload masih menggunakan input file standar Bootstrap.
+- ❌ **Versioning** - BELUM ADA. Belum ada sistem tracking versi/riwayat update material.
 
 **Description:**
 Sistem upload dan manajemen materi perkuliahan yang terintegrasi antara dosen dan mahasiswa.
 
 **Features:**
 - **Lecturer Side:**
-  - Upload syllabus/RPS (Rencana Pembelajaran Semester)
-  - Upload materi perkuliahan (PDF, PPT, DOC, video links)
-  - Organize materials by meeting/session number
-  - Categorize materials (Syllabus, Lecture Notes, Assignments, References)
-  - Share resources with enrolled students
-  - Download statistics tracking
-  - Version control for updated materials
-  - File size & type validation
-  - Drag & drop upload interface
+  - ✅ Upload syllabus/RPS (Rencana Pembelajaran Semester)
+  - ✅ Upload materi perkuliahan (PDF, PPT, DOC, video links)
+  - ✅ Organize materials by meeting/session number
+  - ✅ Categorize materials (Syllabus, Lecture Notes, Assignments, References)
+  - ✅ Share resources with enrolled students
+  - ✅ Download statistics tracking
+  - ❌ Version control for updated materials *(BELUM IMPLEMENTED)*
+  - ✅ File size & type validation
+  - ❌ Drag & drop upload interface *(BELUM IMPLEMENTED)*
 
 - **Student Side:**
-  - View materials per course offering
-  - Download syllabus/RPS
-  - Download lecture notes (PDF, PPT, DOC)
-  - Watch embedded videos (YouTube links)
-  - Filter by category (Syllabus, Lecture Notes, Assignments, References)
-  - Filter by meeting/session number
-  - Download counter & last accessed tracking
-  - Search materials by keyword
-  - Bookmark/favorite important materials
-  - Mobile-friendly PDF viewer
+  - ✅ View materials per course offering
+  - ✅ Download syllabus/RPS
+  - ✅ Download lecture notes (PDF, PPT, DOC)
+  - ✅ Watch embedded videos (YouTube links)
+  - ✅ Filter by category (Syllabus, Lecture Notes, Assignments, References)
+  - ✅ Filter by meeting/session number
+  - ✅ Download counter & last accessed tracking
+  - ✅ Search materials by keyword
+  - ✅ Bookmark/favorite important materials
+  - ✅ Mobile-friendly PDF viewer (iframe embed)
 
 **Why Important:**
 - Central repository untuk semua materi ajar
@@ -149,33 +149,75 @@ Schema::create('course_material_downloads', function (Blueprint $table) {
 - Blocks: None
 - Related: Assignment Management (future - can attach materials to assignments)
 
+**Additional Features Implemented (After Initial Release):**
+- ✅ **Comments & Discussion System** - Threaded comments dengan reply, like, edit/delete, mentions (@username), pagination, dan moderation
+- ✅ **Material Likes** - Students bisa like/unlike materi dengan counter real-time
+- ✅ **Advanced Comment Features:**
+  - Edit/Delete own comments (dengan tracking `is_edited`, `edited_at`)
+  - Soft delete untuk preserve context replies
+  - Like system terpisah untuk comments (`comment_likes` table)
+  - Mention parsing (@username) untuk notify users
+  - Load more pagination untuk performance
+  - Moderation capabilities via soft delete
+
+**Recommended Future Enhancements:**
+- 🔧 **Drag & Drop Upload** - Upgrade file upload interface ke drag & drop (gunakan Dropzone.js atau FilePond)
+- 🔧 **Version Control** - Track versi material dengan history (table `course_material_versions`)
+- 🔧 **Material Analytics Dashboard** - Statistik download per mahasiswa, engagement metrics
+- 🔧 **Bulk Upload** - Upload multiple files sekaligus dengan progress bar
+- 🔧 **Material Preview Thumbnails** - Generate thumbnail untuk PDF/PPT preview
+- 🔧 **Download Expiry** - Set expiry date untuk material tertentu (misal: quiz materials)
+- 🔧 **Access Logs** - Track siapa yang akses material kapan (audit trail lengkap)
+- 🔧 **Material Tags** - Tambah tagging system untuk better organization
+- 🔧 **Related Materials** - Suggest related materials based on category/meeting
+- 🔧 **Offline Access** - Cache materials untuk offline viewing (PWA feature)
+
 ---
 
 #### **Priority 2: Announcement System**
-*Impact: Lecturer + Student | Module: Academic*
+*Impact: Admin/Superuser + Lecturer + Student | Module: Publication*
 
 ##### 2. Announcements System 📢
 **Status:** 🚧 IN PROGRESS  
-**Roles Affected:** Lecturer (create), Student (view)  
-**Module Category:** Academic → New Submodule: `announcements`
+**Roles Affected:** 
+- **Admin/Superuser:** Manage all announcements (base ownership)
+- **Lecturer:** Create & edit announcements for their courses (via permission)
+- **Student:** View announcements for enrolled courses  
+**Module Category:** Publication → Submodule: `announcements`
+
+**Architecture Decision:**
+- Announcements berbasis di **Admin/Publication module** sebagai base ownership
+- Lecturer mendapat akses melalui **permission system** (didaftarkan ke role lecturer)
+- Views berada di `resources/views/components/admin/publication/announcements/`
+- Models di `app/Models/Publication/Announcement.php`
+- Livewire components di `app/Livewire/Publication/AnnouncementTable.php`
+- Scalable untuk future publication types (News, Events, Blog)
 
 **Description:**
 Sistem pengumuman untuk komunikasi dosen-mahasiswa yang efektif dan terdokumentasi.
 
 **Features:**
-- **Lecturer Side:**
-  - Create announcements per course offering
+- **Admin/Superuser Side (Base Owner):**
+  - Full CRUD untuk semua announcements
+  - Manage announcements across all courses
+  - Create campus-wide announcements (global)
+  - Assign permissions to lecturers
+  - View analytics & read statistics
+  - Archive/delete any announcement
+
+- **Lecturer Side (Via Permission):**
+  - Create announcements for their assigned course offerings
   - Rich text editor (bold, italic, lists, links)
   - Attach files/links to announcements
   - Schedule announcements (publish later)
   - Pin important announcements
   - Mark as read/unread tracking
-  - Email notification integration (optional)
-  - Announcement history/archive
-  - Bulk send to multiple classes
+  - View read statistics for their announcements
+  - Edit/delete own announcements only
+  - Filter by course offering
 
 - **Student Side:**
-  - View announcements per enrolled course
+  - View announcements for enrolled courses
   - Announcement list dengan:
     - Title
     - Content (rich text)
@@ -186,9 +228,10 @@ Sistem pengumuman untuk komunikasi dosen-mahasiswa yang efektif dan terdokumenta
   - Mark as read functionality
   - Filter by course
   - Filter by date range
+  - Filter by priority
   - Search announcements
-  - Email notification for important announcements
-  - Push notification (PWA)
+  - Email notification for important announcements (optional)
+  - Push notification (PWA - optional)
 
 **Why Important:**
 - Komunikasi efektif & terdokumentasi
@@ -203,58 +246,158 @@ Sistem pengumuman untuk komunikasi dosen-mahasiswa yang efektif dan terdokumenta
 - Notification integration: 0.5 day
 
 **Technical Notes:**
-- Simple CRUD with title, content (HTML), course_offering_id, published_at, is_pinned
-- Use Trix or Quill editor for rich text
-- Add "read_by_students" pivot table for tracking
-- Optional: Integrate with Laravel notifications for email/push
-- Reuse existing course_offerings relationship
-- Implement priority levels (enum: normal, important, urgent)
+- **Architecture:** Publication module dengan base ownership di Admin/Superuser
+- **Permission System:** Lecturer access via permission registration (e.g., `announcement.create`, `announcement.edit`)
+- **Database:** Simple CRUD dengan title, content (HTML), course_offering_id (nullable for global), published_at, is_pinned
+- **Rich Text Editor:** Use Summernote (consistent dengan existing pattern)
+- **Read Tracking:** Pivot table `announcement_reads` untuk track student reads
+- **Notifications:** Optional integration dengan Laravel notifications untuk email/push
+- **Authorization:** 
+  - Admin: Full access to all announcements
+  - Lecturer: Can only manage announcements for their course offerings
+  - Student: Read-only access to announcements for enrolled courses
+- **Priority Levels:** Enum (normal, important, urgent) dengan visual indicators
 
 **Database Changes Required:**
 ```php
-// New table: announcements
+// New table: announcements (Publication module)
 Schema::create('announcements', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('course_offering_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('created_by')->constrained('users')->cascadeOnDelete(); // lecturer
+    $table->foreignId('course_offering_id')
+        ->nullable()  // Nullable for campus-wide/global announcements
+        ->constrained('course_offerings')
+        ->cascadeOnDelete();
+    $table->foreignId('created_by')
+        ->constrained('users')
+        ->cascadeOnDelete(); // Admin or Lecturer
     $table->string('title');
-    $table->longText('content'); // HTML from rich text editor
+    $table->longText('content'); // HTML from Summernote editor
     $table->string('priority')->default('normal'); // normal, important, urgent
     $table->boolean('is_pinned')->default(false);
     $table->boolean('is_published')->default(false);
     $table->timestamp('published_at')->nullable();
-    $table->timestamp('scheduled_at')->nullable(); // for scheduled publishing
+    $table->timestamp('scheduled_at')->nullable(); // For scheduled publishing
+    
+    // Optional single attachment (simple approach)
+    $table->string('attachment_path')->nullable();
+    $table->string('attachment_name')->nullable();
+    $table->string('attachment_type')->nullable(); // pdf, doc, docx, xls, xlsx, jpg, png, etc.
+    $table->integer('attachment_size')->nullable(); // in bytes
+    
     $table->timestamps();
     $table->softDeletes();
     
     $table->index(['course_offering_id', 'is_published']);
     $table->index(['published_at', 'is_pinned']);
+    $table->index(['priority', 'is_published']);
 });
 
 // Pivot table for tracking reads
 Schema::create('announcement_reads', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('announcement_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
+    $table->foreignId('announcement_id')
+        ->constrained('announcements')
+        ->cascadeOnDelete();
+    $table->foreignId('student_id')
+        ->constrained('users')
+        ->cascadeOnDelete();
     $table->timestamp('read_at');
     
-    $table->unique(['announcement_id', 'student_id']);
+    $table->unique(['announcement_id', 'student_id']); // Prevent duplicate reads
 });
 ```
 
-**New Dependencies:**
-- Trix Editor or Quill Editor (for rich text editing)
-- Laravel Notifications (optional, for email/push)
+**Attachment Design Decision:**
+- **Single optional attachment** per announcement (not multiple)
+- **Rationale:** Announcements are for communication, not file repository
+- **If need multiple files:** Upload to Course Materials, then share link in announcement
+- **Supported types:** PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (max 10MB)
+- **Storage:** Laravel public disk (same as course materials)
 
 **Files to Create/Modify:**
-- Models: `app/Models/Academic/Announcement.php`, `app/Models/Academic/AnnouncementRead.php`
-- Livewire Components:
-  - `app/Livewire/Academic/AnnouncementTable.php` (lecturer)
-  - `app/Livewire/Academic/StudentAnnouncementTable.php` (student)
-- Views:
-  - `resources/views/components/lecturer/announcements/` (index, create, edit)
-  - `resources/views/components/student/announcements/` (index, view)
-- Migration: `database/migrations/YYYY_MM_DD_create_announcements_table.php`
+
+**Models:**
+- `app/Models/Publication/Announcement.php`
+- `app/Models/Publication/AnnouncementRead.php`
+
+**Livewire Components:**
+- `app/Livewire/Publication/AnnouncementTable.php` (Admin/Lecturer - PowerGrid table)
+- `app/Livewire/Publication/AnnouncementCreate.php` (Admin/Lecturer - Create form)
+- `app/Livewire/Publication/AnnouncementEdit.php` (Admin/Lecturer - Edit form)
+- `app/Livewire/Publication/StudentAnnouncementTable.php` (Student - View only)
+
+**Views:**
+- Admin/Lecturer Views:
+  - `resources/views/components/admin/publication/announcements/⚡index.blade.php`
+  - `resources/views/components/admin/publication/announcements/⚡create.blade.php`
+  - `resources/views/components/admin/publication/announcements/⚡edit.blade.php`
+- Student Views:
+  - `resources/views/components/student/publication/announcements/⚡index.blade.php`
+  - `resources/views/components/student/publication/announcements/⚡show.blade.php`
+
+**Migrations:**
+- `database/migrations/YYYY_MM_DD_create_announcements_table.php`
+- `database/migrations/YYYY_MM_DD_create_announcement_reads_table.php`
+
+**Permissions (to be registered):**
+- `announcement.view` - View announcements
+- `announcement.create` - Create new announcements
+- `announcement.edit` - Edit existing announcements
+- `announcement.delete` - Delete announcements
+- `announcement.publish` - Publish/schedule announcements
+
+**Routes:**
+```php
+// Admin Routes (base ownership)
+Route::middleware('active_role:superuser')->prefix('admin')->as('admin.')->group(function () {
+    Route::livewire('/publication/announcements', 'publication.announcement-table')->name('announcements.index');
+    Route::livewire('/publication/announcements/create', 'publication.announcement-create')->name('announcements.create');
+    Route::livewire('/publication/announcements/{id}/edit', 'publication.announcement-edit')->name('announcements.edit');
+});
+
+// Lecturer Routes (via permission)
+Route::middleware(['active_role:lecturer', 'can:announcement.view'])->prefix('lecturer')->as('lecturer.')->group(function () {
+    Route::livewire('/announcements', 'publication.announcement-table')->name('announcements.index');
+    Route::livewire('/announcements/create', 'publication.announcement-create')->name('announcements.create');
+    Route::livewire('/announcements/{id}/edit', 'publication.announcement-edit')->name('announcements.edit');
+});
+
+// Student Routes (read-only)
+Route::middleware('active_role:student')->prefix('student')->as('student.')->group(function () {
+    Route::livewire('/announcements', 'publication.student-announcement-table')->name('announcements.index');
+    Route::livewire('/announcements/{id}', 'publication.announcement-show')->name('announcements.show');
+});
+```
+
+**Sidebar Menu Integration:**
+```php
+// In app/Support/SidebarMenu.php
+
+'lecturer' => collect([
+    static::makeLink('lecturer-course-offerings', 'Kelas Saya', 'lecturer.course-offerings.index', 'fas fa-book'),
+    static::makeGroup('lecturer-publication', 'Publikasi', 'fas fa-bullhorn', [
+        static::makeChildLink('lecturer.announcements.index', 'Pengumuman'),
+        // Future: static::makeChildLink('lecturer.news.index', 'Berita'),
+        // Future: static::makeChildLink('lecturer.events.index', 'Kegiatan'),
+    ]),
+    static::makeLink('lecturer-course-materials', 'Materi', 'lecturer.course-materials.list', 'fas fa-book-open'),
+    static::makeLink('lecturer-student-grades', 'Nilai', 'lecturer.student-grades.index', 'fas fa-chart-bar'),
+]),
+
+'student' => collect([
+    static::makeLink('student-registration', 'Registrasi', 'student.registration.index', 'fas fa-clipboard-list'),
+    static::makeLink('student-study-plan', 'KRS', 'student.study-plan.index', 'fas fa-file-alt'),
+    static::makeLink('student-schedule', 'Jadwal', 'student.schedule.index', 'fas fa-calendar'),
+    static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
+        static::makeChildLink('student.announcements.index', 'Pengumuman'),
+        // Future: static::makeChildLink('student.news.index', 'Berita'),
+        // Future: static::makeChildLink('student.events.index', 'Kegiatan'),
+    ]),
+    static::makeLink('student-materials', 'Materi', 'student.course-materials.index', 'fas fa-book-open'),
+    static::makeLink('student-grades', 'Nilai', 'student.grades.index', 'fas fa-chart-bar'),
+    static::makeLink('student-transcript', 'Transkrip', 'student.transcript.index', 'fas fa-file-invoice'),
+]),
+```
 
 **Success Metrics:**
 - >90% announcement read rate within 24 hours
@@ -263,8 +406,162 @@ Schema::create('announcement_reads', function (Blueprint $table) {
 
 **Dependencies:**
 - Requires: Existing course_offerings system ✅
+- Requires: Permission system for lecturer access ✅
 - Blocks: None
 - Related: Personalized Notifications (future enhancement)
+
+**Implementation Details:**
+
+**1. Authorization Logic:**
+```php
+// In Announcement model or Policy
+class AnnouncementPolicy
+{
+    public function view(User $user, Announcement $announcement): bool
+    {
+        // Admin can view all
+        if ($user->hasRole('superuser')) {
+            return true;
+        }
+        
+        // Lecturer can view if they teach the course
+        if ($user->hasRole('lecturer')) {
+            return $announcement->courseOffering->lecturers->contains($user->lecturerProfile);
+        }
+        
+        // Student can view if enrolled in the course
+        if ($user->hasRole('student')) {
+            return $announcement->courseOffering->students->contains($user->studentProfile);
+        }
+        
+        return false;
+    }
+    
+    public function create(User $user): bool
+    {
+        // Admin or Lecturer with permission
+        return $user->hasRole('superuser') || 
+               ($user->hasRole('lecturer') && $user->can('announcement.create'));
+    }
+    
+    public function update(User $user, Announcement $announcement): bool
+    {
+        // Admin can update any
+        if ($user->hasRole('superuser')) {
+            return true;
+        }
+        
+        // Lecturer can only update their own announcements
+        return $user->hasRole('lecturer') && 
+               $announcement->created_by === $user->id &&
+               $user->can('announcement.edit');
+    }
+}
+```
+
+**2. Query Scopes for Filtering:**
+```php
+// In Announcement model
+public function scopePublished($query)
+{
+    return $query->where('is_published', true)
+                 ->whereNotNull('published_at')
+                 ->where('published_at', '<=', now());
+}
+
+public function scopeForCourse($query, $courseOfferingId)
+{
+    return $query->where('course_offering_id', $courseOfferingId);
+}
+
+public function scopeGlobal($query)
+{
+    return $query->whereNull('course_offering_id');
+}
+
+public function scopePinned($query)
+{
+    return $query->where('is_pinned', true);
+}
+
+public function scopeByPriority($query, $priority)
+{
+    return $query->where('priority', $priority);
+}
+```
+
+**3. Read Tracking Implementation:**
+```php
+// Mark announcement as read
+public function markAsRead(int $announcementId): void
+{
+    $user = auth()->user();
+    
+    AnnouncementRead::updateOrCreate(
+        [
+            'announcement_id' => $announcementId,
+            'student_id' => $user->id,
+        ],
+        ['read_at' => now()]
+    );
+}
+
+// Get unread count for student
+public function getUnreadCount(): int
+{
+    $user = auth()->user();
+    
+    return Announcement::published()
+        ->whereHas('courseOffering.students', function ($query) use ($user) {
+            $query->where('student_profile_id', $user->studentProfile->id);
+        })
+        ->whereDoesntHave('reads', function ($query) use ($user) {
+            $query->where('student_id', $user->id);
+        })
+        ->count();
+}
+```
+
+**Future Scalability - Publication Module Expansion:**
+
+The Publication module architecture is designed to be easily extensible:
+
+```
+app/Models/Publication/
+├── Announcement.php          ← Current
+├── AnnouncementRead.php      ← Current
+├── News.php                  ← Future: Campus news
+├── NewsCategory.php          ← Future: News categories
+├── Event.php                 ← Future: Campus events
+├── EventRegistration.php     ← Future: Event RSVP
+├── BlogPost.php              ← Future: Articles/blog
+└── BlogComment.php           ← Future: Blog comments
+
+app/Livewire/Publication/
+├── AnnouncementTable.php     ← Current
+├── AnnouncementCreate.php    ← Current
+├── AnnouncementEdit.php      ← Current
+├── StudentAnnouncementTable.php ← Current
+├── NewsTable.php             ← Future
+├── NewsCreate.php            ← Future
+├── EventTable.php            ← Future
+├── EventCreate.php           ← Future
+└── BlogTable.php             ← Future
+
+resources/views/components/admin/publication/
+├── announcements/            ← Current
+├── news/                     ← Future
+├── events/                   ← Future
+└── blog/                     ← Future
+```
+
+**Benefits of This Architecture:**
+1. ✅ **Centralized ownership** - All publication content managed from admin
+2. ✅ **Permission-based access** - Flexible role assignments
+3. ✅ **Consistent patterns** - Same structure for all publication types
+4. ✅ **Easy to extend** - Add new publication types without refactoring
+5. ✅ **Clear separation** - Publication vs Academic concerns
+6. ✅ **Scalable permissions** - Granular control per publication type
 
 ---
 

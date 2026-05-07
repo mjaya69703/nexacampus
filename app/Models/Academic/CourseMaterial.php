@@ -30,6 +30,7 @@ class CourseMaterial extends Model
         'meeting_number',
         'is_published',
         'download_count',
+        'likes_count',
         'last_accessed_at',
         'created_by',
         'updated_by',
@@ -43,6 +44,7 @@ class CourseMaterial extends Model
             'last_accessed_at' => 'datetime',
             'file_size' => 'integer',
             'download_count' => 'integer',
+            'likes_count' => 'integer',
             'meeting_number' => 'integer',
         ];
     }
@@ -79,6 +81,23 @@ class CourseMaterial extends Model
     public function files(): HasMany
     {
         return $this->hasMany(CourseMaterialFile::class);
+    }
+    
+    public function comments(): HasMany
+    {
+        return $this->hasMany(CourseMaterialComment::class)
+            ->whereNull('parent_id') // Only top-level comments
+            ->orderBy('created_at', 'desc');
+    }
+    
+    public function allComments(): HasMany
+    {
+        return $this->hasMany(CourseMaterialComment::class);
+    }
+    
+    public function materialLikes(): HasMany
+    {
+        return $this->hasMany(MaterialLike::class);
     }
 
     public function scopePublished($query)

@@ -93,32 +93,66 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)*
 ---
 
 ##### 2. 🚧 IN PROGRESS - Announcements / Pengumuman 📢
-**Deskripsi:** Sistem pengumuman untuk komunikasi dosen-mahasiswa
+**Deskripsi:** Sistem pengumuman untuk komunikasi dosen-mahasiswa yang efektif dan terdokumentasi
+
+**Module:** Publication (base ownership di Admin/Superuser)
+
+**Roles & Permissions:**
+- **Admin/Superuser:** Full CRUD semua announcements (base owner)
+- **Lecturer:** Create/edit announcements untuk kelas mereka (via permission: `announcement.create`, `announcement.edit`)
+- **Student:** View-only announcements untuk kelas yang diambil
 
 **Fitur Detail:**
-- Create announcements per course offering
-- Rich text editor (bold, italic, lists, links)
-- Attach files/links to announcements
-- Schedule announcements (publish later)
-- Pin important announcements
-- Mark as read/unread tracking
-- Email notification integration (optional)
-- Announcement history/archive
-- Bulk send to multiple classes
+- **Admin Side:**
+  - Manage all announcements across all courses
+  - Create campus-wide/global announcements
+  - Assign permissions to lecturers
+  - View analytics & read statistics
+  
+- **Lecturer Side (Via Permission):**
+  - Create announcements per assigned course offering
+  - Rich text editor dengan Summernote
+  - Attach files/links to announcements
+  - Schedule announcements (publish later)
+  - Pin important announcements
+  - Mark as read/unread tracking
+  - View read statistics
+  - Edit/delete own announcements only
+  
+- **Student Side:**
+  - View announcements for enrolled courses
+  - Filter by course, date range, priority
+  - Search announcements
+  - Mark as read functionality
+  - Email/push notifications (optional)
 
 **Kenapa Penting:**
 - Komunikasi efektif & terdokumentasi
 - Inform perubahan jadwal, deadline, dll
 - Semua mahasiswa receive same information
 - Reduce miscommunication
+- Tidak ketinggalan info penting dari dosen
 
 **Estimated Effort:** Low-Medium (1-2 days)
 
 **Technical Notes:**
-- Simple CRUD with title, content (HTML), course_offering_id, published_at, is_pinned
-- Use Trix or Quill editor for rich text
-- Add "read_by_students" pivot table for tracking
-- Optional: Integrate with Laravel notifications for email/push
+- **Architecture:** Publication module dengan base ownership di Admin
+- **Models:** `app/Models/Publication/Announcement.php`, `app/Models/Publication/AnnouncementRead.php`
+- **Livewire:** `app/Livewire/Publication/AnnouncementTable.php`
+- **Views:** `resources/views/components/admin/publication/announcements/`
+- **Database:** Simple CRUD dengan title, content (HTML), course_offering_id (nullable for global), published_at, is_pinned
+- **Attachment:** Optional single file attachment (PDF, DOC, images - max 10MB)
+- **Rich Text Editor:** Use Summernote (consistent dengan existing pattern)
+- **Read Tracking:** Pivot table `announcement_reads` untuk track student reads
+- **Authorization:** Policy-based access control (Admin > Lecturer > Student)
+- **Priority Levels:** Enum (normal, important, urgent) dengan visual indicators
+
+**Future Scalability:**
+Publication module designed untuk easy extension:
+- News/Berita (campus-wide news)
+- Events/Kegiatan (campus events dengan registration)
+- Blog/Articles (knowledge sharing)
+- Gallery/Media (photo/video library)
 
 ---
 

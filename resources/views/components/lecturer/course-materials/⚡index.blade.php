@@ -323,6 +323,36 @@ new class extends Component
         session()->flash('success', 'Materi berhasil dihapus!');
         $this->loadMaterials();
     }
+
+    public function confirmDeleteMaterial(int $id): void
+    {
+        $this->js('
+            Swal.fire({
+                title: "Hapus materi?",
+                text: "Materi dan semua lampirannya akan dihapus permanen.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Ya, hapus",
+                cancelButtonText: "Batal",
+                confirmButtonColor: "#dc3545",
+                cancelButtonColor: "#6c757d"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.dispatch("deleteMaterialConfirmed", { id: '.$id.' });
+                }
+            });
+        ');
+    }
+
+    #[\Livewire\Attributes\On('deleteMaterialConfirmed')]
+    public function deleteMaterialConfirmed($id = null): void
+    {
+        if (! $id) {
+            return;
+        }
+
+        $this->deleteMaterial((int) $id);
+    }
     
     public function togglePublish(int $id): void
     {
@@ -479,13 +509,98 @@ new class extends Component
         }
         
         .form-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-radius: 16px;
-            padding: 2rem;
+            background: #f8fafc;
+            border-radius: 18px;
+            padding: 1.25rem;
             margin-top: 2rem;
             border: 2px solid #e2e8f0;
         }
-        
+
+        .upload-header {
+            padding: 1.25rem;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 1.25rem;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+        }
+
+        .upload-panel {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.25rem;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        }
+
+        .upload-panel-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .upload-panel-title i {
+            color: #667eea;
+        }
+
+        .upload-field {
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+        }
+
+        .upload-field:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+        }
+
+        .upload-help {
+            color: #64748b;
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+
+        .upload-dropzone {
+            border: 2px dashed #c7d2fe;
+            border-radius: 14px;
+            background: #eef2ff;
+            padding: 1rem;
+        }
+
+        .publish-box {
+            border-radius: 14px;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            padding: 1rem;
+        }
+
+        .selected-file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.65rem;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -557,161 +672,175 @@ new class extends Component
     {{-- Inline Upload Form --}}
     @if($showUploadForm)
         <div class="form-section" style="animation: slideDown 0.3s ease;">
-            <div class="d-flex align-items-center justify-content-between mb-4">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 1.3rem; color: #667eea;"></i>
-                    <h3 class="mb-0" style="font-weight: 700;">Upload Materi Baru</h3>
+            <div class="upload-header">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.8rem; opacity: 0.85; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Materi Perkuliahan</div>
+                            <h3 class="mb-1" style="font-weight: 800;">Upload Materi Baru</h3>
+                            <div style="opacity: 0.9;">Tambahkan konten, file pendukung, atau video untuk kelas ini.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" wire:click="closeUploadForm"></button>
                 </div>
-                <button type="button" class="btn-close" wire:click="closeUploadForm"></button>
             </div>
-            
+
             <form wire:submit.prevent="uploadMaterial">
-                <div class="mb-4">
-                    <label class="form-label" style="font-weight: 600; color: #1e293b;">
-                        <i class="fas fa-heading me-2" style="color: #667eea;"></i>Judul Materi
-                    </label>
-                    <input 
-                        type="text" 
-                        class="form-control form-control-lg"
-                        wire:model="title"
-                        placeholder="Masukkan judul materi..."
-                        style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 12px 16px;"
-                        required
-                    >
-                </div>
-                    
-                <div class="mb-4">
-                    <label class="form-label" style="font-weight: 600; color: #1e293b;">
-                        <i class="fas fa-align-left me-2" style="color: #667eea;"></i>Konten / Deskripsi
-                    </label>
-                    <livewire:jodit-text-editor 
-                        wire:model.live="description" 
-                        identifier="upload-editor"
-                        :height="300"
-                    />
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle me-1"></i>Tulis konten materi dengan formatting lengkap (bold, italic, lists, headings, dll).
-                    </small>
-                </div>
-                    
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label" style="font-weight: 600; color: #1e293b;">
-                            <i class="fas fa-tag me-2" style="color: #667eea;"></i>Kategori
-                        </label>
-                        <select class="form-select form-select-lg" wire:model="category" style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 12px 16px;">
-                            <option value="syllabus">Silabus/RPS</option>
-                            <option value="lecture_notes">Catatan Kuliah</option>
-                            <option value="assignments">Tugas</option>
-                            <option value="references">Referensi</option>
-                        </select>
+                <div class="row g-4">
+                    <div class="col-xl-8">
+                        <div class="upload-panel h-100">
+                            <div class="upload-panel-title">
+                                <i class="fas fa-pen-nib"></i>
+                                <span>Konten Materi</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label" style="font-weight: 700; color: #1e293b;">Judul Materi</label>
+                                <input
+                                    type="text"
+                                    class="form-control form-control-lg upload-field"
+                                    wire:model="title"
+                                    placeholder="Contoh: Pengantar Basis Data"
+                                    required
+                                >
+                            </div>
+
+                            <div>
+                                <label class="form-label" style="font-weight: 700; color: #1e293b;">Konten / Deskripsi</label>
+                                <livewire:jodit-text-editor
+                                    wire:model.live="description"
+                                    identifier="upload-editor"
+                                    :height="320"
+                                />
+                                <div class="upload-help mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>Tulis ringkasan, instruksi belajar, atau catatan penting untuk mahasiswa.
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                        
-                    <div class="col-md-6">
-                        <label class="form-label" style="font-weight: 600; color: #1e293b;">
-                            <i class="fas fa-hashtag me-2" style="color: #667eea;"></i>Pertemuan (Opsional)
-                        </label>
-                        <input 
-                            type="number" 
-                            class="form-control form-control-lg"
-                            wire:model="meetingNumber"
-                            min="1"
-                            max="20"
-                            placeholder="No. pertemuan..."
-                            style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 12px 16px;"
-                        >
-                    </div>
-                </div>
-                    
-                <div class="mb-4">
-                    <label class="form-label" style="font-weight: 600; color: #1e293b;">
-                        <i class="fas fa-file-upload me-2" style="color: #667eea;"></i>File Materi (Opsional - Multiple)
-                    </label>
-                    <input 
-                        type="file" 
-                        class="form-control form-control-lg"
-                        wire:model="files"
-                        multiple
-                        accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.jpg,.jpeg,.png"
-                        style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 12px 16px;"
-                    >
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle me-1"></i>Pilih satu atau lebih file materi. Format: PDF, PPT, PPTX, DOC, DOCX, MP4, JPG, PNG. Maksimal 50MB per file. Kosongkan jika hanya ingin menambah deskripsi.
-                    </small>
-                        
-                    @if($files)
-                        <div class="mt-3">
-                            <div class="d-flex flex-wrap gap-2">
-                                @foreach($files as $index => $file)
-                                    <div class="badge bg-light text-dark p-2" style="border: 1px solid #e2e8f0;">
-                                        <i class="fas fa-file me-1"></i>
-                                        {{ $file->getClientOriginalName() }}
-                                        <button 
-                                            type="button" 
-                                            class="btn-close btn-close-xs ms-2" 
-                                            wire:click="$remove('files', {{ $index }})"
-                                            aria-label="Remove"
-                                        ></button>
+
+                    <div class="col-xl-4">
+                        <div class="d-flex flex-column gap-3">
+                            <div class="upload-panel">
+                                <div class="upload-panel-title">
+                                    <i class="fas fa-sliders"></i>
+                                    <span>Pengaturan</span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label" style="font-weight: 700; color: #1e293b;">Kategori</label>
+                                    <select class="form-select form-select-lg upload-field" wire:model="category">
+                                        <option value="syllabus">Silabus/RPS</option>
+                                        <option value="lecture_notes">Catatan Kuliah</option>
+                                        <option value="assignments">Tugas</option>
+                                        <option value="references">Referensi</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="form-label" style="font-weight: 700; color: #1e293b;">Pertemuan</label>
+                                    <input
+                                        type="number"
+                                        class="form-control form-control-lg upload-field"
+                                        wire:model="meetingNumber"
+                                        min="1"
+                                        max="20"
+                                        placeholder="Opsional"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="upload-panel">
+                                <div class="upload-panel-title">
+                                    <i class="fas fa-paperclip"></i>
+                                    <span>Lampiran</span>
+                                </div>
+
+                                <div class="upload-dropzone">
+                                    <label class="form-label mb-2" style="font-weight: 700; color: #3730a3;">File Materi</label>
+                                    <input
+                                        type="file"
+                                        class="form-control upload-field"
+                                        wire:model="files"
+                                        multiple
+                                        accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.jpg,.jpeg,.png"
+                                    >
+                                    <div class="upload-help mt-2">PDF, PPT, DOC, MP4, JPG, PNG. Maksimal 50MB per file.</div>
+                                </div>
+
+                                @if($files)
+                                    <div class="mt-3">
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach($files as $index => $file)
+                                                <div class="selected-file-chip">
+                                                    <i class="fas fa-file"></i>
+                                                    {{ $file->getClientOriginalName() }}
+                                                    <button
+                                                        type="button"
+                                                        class="btn-close btn-close-xs"
+                                                        wire:click="$remove('files', {{ $index }})"
+                                                        aria-label="Remove"
+                                                    ></button>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     </div>
-                                @endforeach
+                                    <div class="mt-2 upload-help" wire:loading wire:target="files">
+                                        <span class="spinner-border spinner-border-sm text-primary me-2" role="status"></span>
+                                        Mengupload files...
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="upload-panel">
+                                <div class="upload-panel-title">
+                                    <i class="fas fa-link"></i>
+                                    <span>Video Link</span>
+                                </div>
+
+                                <input
+                                    type="url"
+                                    class="form-control form-control-lg upload-field mb-2"
+                                    wire:model="videoUrl"
+                                    placeholder="https://www.youtube.com/watch?v=..."
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control upload-field"
+                                    wire:model="videoTitle"
+                                    placeholder="Judul video (opsional)"
+                                >
+                                <div class="upload-help mt-2">Link akan ditampilkan sebagai embed di halaman learning mahasiswa.</div>
+                            </div>
+
+                            <div class="publish-box">
+                                <div class="form-check form-switch">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="isPublished"
+                                        wire:model="isPublished"
+                                        style="width: 3em; height: 1.5em;"
+                                    >
+                                    <label class="form-check-label" for="isPublished" style="font-weight: 800; color: #065f46;">
+                                        <i class="fas fa-eye me-2"></i>Publikasikan
+                                    </label>
+                                </div>
+                                <div class="upload-help mt-2" style="color: #047857;">Materi langsung tersedia untuk mahasiswa setelah disimpan.</div>
                             </div>
                         </div>
-                        <div class="mt-2" wire:loading wire:target="files">
-                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                            <span>Mengupload files...</span>
-                        </div>
-                    @endif
+                    </div>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label" style="font-weight: 600; color: #1e293b;">
-                        <i class="fas fa-link me-2" style="color: #667eea;"></i>Video Link (Opsional)
-                    </label>
-                    <input
-                        type="url"
-                        class="form-control form-control-lg"
-                        wire:model="videoUrl"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 12px 16px;"
-                    >
-                    <input
-                        type="text"
-                        class="form-control form-control-lg mt-2"
-                        wire:model="videoTitle"
-                        placeholder="Judul video (opsional)"
-                        style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 12px 16px;"
-                    >
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle me-1"></i>Link akan ditampilkan sebagai embed di halaman learning mahasiswa.
-                    </small>
-                </div>
-                    
-                <div class="mb-4">
-                    <div class="form-check form-switch">
-                        <input 
-                            class="form-check-input" 
-                            type="checkbox" 
-                            id="isPublished"
-                            wire:model="isPublished"
-                            style="width: 3em; height: 1.5em;"
-                        >
-                        <label class="form-check-label" for="isPublished" style="font-weight: 600; color: #1e293b;">
-                            <i class="fas fa-eye me-2" style="color: #667eea;"></i>Publikasikan
-                        </label>
-                    </div>
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle me-1"></i>Aktifkan untuk membuat materi langsung tersedia untuk mahasiswa.
-                    </small>
-                </div>
-                    
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: 600; padding: 0.75rem 2rem;">
-                        <i class="fas fa-cloud-upload-alt me-2"></i>Upload Materi
-                    </button>
+                <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
                     <button type="button" class="btn btn-lg" wire:click="closeUploadForm" style="background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600;">
                         Batal
+                    </button>
+                    <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: 700; padding: 0.75rem 2rem;">
+                        <i class="fas fa-cloud-upload-alt me-2"></i>Upload Materi
                     </button>
                 </div>
             </form>
@@ -825,11 +954,10 @@ new class extends Component
                                 >
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button 
-                                    type="button"
+                                <button
+                                    type="button" 
                                     class="action-btn"
-                                    wire:confirm="Yakin ingin menghapus materi ini?"
-                                    wire:click="deleteMaterial({{ $material['id'] }})"
+                                    wire:click="confirmDeleteMaterial({{ $material['id'] }})"
                                     style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;"
                                 >
                                     <i class="fas fa-trash"></i> Hapus
