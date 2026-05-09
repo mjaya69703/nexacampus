@@ -282,5 +282,21 @@ return [
             'order' => 2,
         ],
     ],
+    [
+        'resource' => 'announcement',
+        'plural' => 'announcements',
+        'area' => 'publication',
+        'component' => 'admin.publication.announcements',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view', 'publish'],
+        'menu' => [
+            'title' => 'Announcements',
+            'icon' => 'fas fa-bullhorn',
+            'group' => 'Publication',
+            'group_icon' => 'fas fa-newspaper',
+            'group_order' => 1,
+            'order' => 1,
+        ],
+    ],
 
 ];

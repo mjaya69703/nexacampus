@@ -58,10 +58,16 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/learning/{material}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->name('learning.preview');
             Route::get('/learning/{material}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->name('learning.link');
             Route::get('/course-materials/{id}/download/{fileId}', [CourseMaterialController::class, 'download'])->name('course-materials.download');
+            Route::livewire('/announcements', 'student.publication.announcements.index')->name('announcements.index');
+            Route::livewire('/announcements/{id}', 'student.publication.announcements.show')->name('announcements.show');
         });
 
         // Lecturer Routes
         Route::middleware('active_role:lecturer')->prefix('lecturer')->as('lecturer.')->group(function () {
+            Route::livewire('/announcements', 'lecturer.publication.announcements.index')->name('announcements.index');
+            Route::livewire('/announcements/create', 'lecturer.publication.announcements.create')->name('announcements.create');
+            Route::livewire('/announcements/{id}/edit', 'lecturer.publication.announcements.edit')->name('announcements.edit');
+            Route::livewire('/announcements/{id}', 'lecturer.publication.announcements.show')->name('announcements.show');
             Route::livewire('/dashboard', 'lecturer.dashboard.index')->name('dashboard.index');
             Route::livewire('/course-offerings', 'lecturer.course-offerings.index')->name('course-offerings.index');
             Route::livewire('/course-offerings/{id}', 'lecturer.course-offerings.show')->name('course-offerings.show');
