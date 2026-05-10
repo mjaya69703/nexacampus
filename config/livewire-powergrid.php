@@ -146,7 +146,7 @@ return [
     */
 
     'exportable' => [
-        'default' => 'openspout_v4',
+        'default' => 'openspout_v5',
         'openspout_v5' => [
             'xlsx' => ExportToXLS::class,
             'csv' => ExportToCsv::class,

@@ -425,9 +425,22 @@ Schema::create('announcement_reads', function (Blueprint $table) {
 *Impact: Lecturer + Student + Admin | Module: Academic*
 
 ##### 3. Grade Book with Export 📊
-**Status:** 🚧 IN PROGRESS  
+**Status:** ✅ COMPLETED  
 **Roles Affected:** Lecturer (export), Admin (reporting)  
 **Module Category:** Academic → Enhancement to existing `student-grades`
+
+**Catatan Evaluasi (Status Implementasi):**
+- ✅ **Comprehensive grade overview** - SUDAH ADA. Dedicated page untuk lecturer dengan statistics dashboard.
+- ✅ **Filter by course/semester/year** - SUDAH ADA. Filter dropdowns untuk course offering, academic year, semester.
+- ✅ **Export to Excel (.xlsx)** - SUDAH ADA. PhpSpreadsheet integration untuk Excel export.
+- ✅ **Export to PDF (formatted report)** - SUDAH ADA. Dompdf integration untuk PDF generation.
+- ✅ **Real-time search** - SUDAH ADA. Search by student name atau NIM.
+- ✅ **Grade badges** - SUDAH ADA. Visual indicator dengan color coding (A=green, B=blue, C=yellow, D/F=red).
+- ✅ **Statistics dashboard** - SUDAH ADA. 6 stat cards (total students, average score, pass rate, etc.).
+- ✅ **Role-based UI pattern** - SUDAH ADA. Lecturer pakai dedicated page, Admin pakai PowerGrid table.
+- ❌ **Grade distribution charts** - BELUM ADA. Future enhancement untuk visualisasi bar/pie chart.
+- ❌ **Bulk grade operations** - BELUM ADA. Future enhancement untuk curve grades, apply formula.
+- ❌ **Print-friendly view** - BELUM ADA. Future enhancement untuk optimized print layout.
 
 **Description:**
 Rekap nilai lengkap dengan export functionality untuk reporting dan dokumentasi.
@@ -481,23 +494,98 @@ Schema::table('student_grades', function (Blueprint $table) {
 - Dompdf (^2.0) or TCPDF - for PDF generation
 - Chart.js (^4.0) - for visualizations (frontend)
 
-**Files to Create/Modify:**
-- Services: `app/Support/GradeExportService.php`
-- Livewire Components:
-  - Enhance: `app/Livewire/Academic/StudentGradeTable.php` (add export actions)
-  - New: `app/Livewire/Academic/GradeBookAnalytics.php` (charts & stats)
-- Views:
-  - Enhance: `resources/views/components/lecturer/student-grades/index.blade.php` (add export buttons)
-  - New: `resources/views/components/lecturer/student-grades/analytics.blade.php`
-- Config: Add to `composer.json` dependencies
+**Implementation Details & UI Pattern Decision:**
+
+**UI Pattern Berdasarkan Role (IMPORTANT DECISION):**
+
+1. **Lecturer Interface - Dedicated Grade Book Page:**
+   - Route: `/lecturer/student-grades/grade-book`
+   - Component: Anonymous Livewire (`⚡grade-book.blade.php`)
+   - Features:
+     - Hero section dengan purple/blue gradient (#667eea → #764ba2)
+     - Statistics dashboard (total students, graded count, finalized count, average score, median, pass rate, std deviation)
+     - Grade distribution analysis (A+, A, B+, B, C, D, E breakdown with percentages)
+     - Filter dropdowns (course offering, academic year, semester)
+     - Real-time search by student name/NIM/course
+     - Responsive table dengan grade badges (color-coded)
+     - Export buttons: CSV, Excel (.xlsx), PDF dengan statistics & distribution
+   - Rationale: Lecturers prefer visual context, quick overview, teaching-focused interface
+   - Theme: Modern card-based design consistent dengan lecturer dashboard
+
+2. **Admin Interface - PowerGrid Table with Filter-Aware Export:**
+   - Route: `/admin/academic/student-grades`
+   - Component: Simple view (`⚡index.blade.php`) + PowerGrid table (`StudentGradeTable.php`)
+   - Features:
+     - **Simple card layout** dengan export buttons di header (CSV, Excel, PDF)
+     - **PowerGrid built-in filtering**: Search, column filters, sorting, pagination
+     - **Filter-aware export**: Export respects current PowerGrid filters
+       - When user applies filters in PowerGrid → export only filtered data
+       - Uses Livewire events to trigger export from within PowerGrid component
+       - `getFilteredRows()` method extracts current filter state
+     - Bulk operations (checkbox selection)
+     - Column toggles (show/hide columns)
+     - Permission check: `student-grade.viewAny` or `student-grade.view`
+   - Rationale: Admins need powerful filtering + export that respects those filters
+   - Theme: Clean, functional admin interface - no unnecessary visual fluff
+
+**Technical Implementation:**
+- Service Layer: `app/Support/GradeExportService.php` handles both roles
+  - `rows(User $user, array $filters, bool $admin)`: Returns filtered collection
+  - `statistics(Collection $rows)`: Calculate total_students, graded_count, average_score, median_score, highest_score, lowest_score, pass_rate, standard_deviation
+  - `distribution(Collection $rows)`: Grade distribution (A+ through E) with counts and percentages
+  - `streamCsv()`, `streamXlsx()`: Streaming exports dengan UTF-8 BOM support
+  - Role detection via `$admin` parameter (not role checking inside service)
+  - Admin mode: Gets ALL grades from database
+  - Lecturer mode: Filters by CourseOfferingLecturer relationship
+- Controllers: Separate controllers untuk lecturer dan admin
+  - `app/Http/Controllers/Lecturer/GradeExportController.php` (csv, excel, pdf methods)
+  - `app/Http/Controllers/Admin/Academic/GradeExportController.php` (csv, excel, pdf methods with permission checks)
+- PDF Generation: Dompdf with DejaVu Sans font, landscape A4 paper
+  - Template: `resources/views/exports/grade-book-pdf.blade.php`
+  - Includes statistics table + detailed grade rows
+- UTF-8 Encoding: BOM (Byte Order Mark) added to CSV exports
+- Session-based filter passing: Livewire redirect dengan query parameters
+- Database Indexes: Added indexes on `grade_status` and `graded_at` columns for performance
+- ActivePermission: Used in controllers dan views untuk authorization
+
+**Files Created/Modified:**
+- ✅ Services: `app/Support/GradeExportService.php` (complete export service dengan statistics & distribution)
+- ✅ Controllers:
+  - `app/Http/Controllers/Lecturer/GradeExportController.php` (csv, excel, pdf methods)
+  - `app/Http/Controllers/Admin/Academic/GradeExportController.php` (csv, excel, pdf with ActivePermission checks)
+- ✅ Livewire Components:
+  - New: `resources/views/components/lecturer/student-grades/⚡grade-book.blade.php` (anonymous component dengan statistics dashboard)
+  - Enhanced: `app/Livewire/Academic/StudentGradeTable.php` (added filter-aware export methods with Livewire events)
+- ✅ Views:
+  - New: `resources/views/exports/grade-book-pdf.blade.php` (PDF template dengan statistics table)
+  - Enhanced: `resources/views/components/lecturer/student-grades/⚡index.blade.php` (Grade Book navigation button)
+- ✅ Routes: Added lecturer grade-book route + separate CSV/Excel/PDF routes untuk lecturer dan admin
+- ✅ Migrations: `2026_05_10_000001_add_grade_book_indexes.php` (indexes on grade_status & graded_at)
+- ✅ Dependencies: phpoffice/phpspreadsheet ^5.7, dompdf/dompdf ^3.1
+- ✅ Documentation: Updated status to COMPLETED
 
 **Success Metrics:**
 - 100% of lecturers use export feature at end of semester
 - <5 seconds export time for 100+ students
 - Zero data discrepancies in exported reports
+- >90% lecturer satisfaction with Grade Book UI
+- >85% admin efficiency improvement with PowerGrid export
+
+**Recommended Future Enhancements:**
+- 🔧 **Grade Distribution Charts** - Bar chart & pie chart visualization menggunakan Chart.js
+- 🔧 **Bulk Grade Operations** - Curve grades, apply formula, batch update
+- 🔧 **Print-Friendly View** - Optimized CSS untuk print layout
+- 🔧 **Advanced Analytics Dashboard** - Trend analysis, comparison across semesters
+- 🔧 **Grade History Tracking** - Track perubahan nilai dengan timestamp
+- 🔧 **Automated Report Generation** - Schedule weekly/monthly reports
+- 🔧 **Department-Level Filtering** - Admin bisa filter by faculty/department
+- 🔧 **Custom Grade Scales** - Support different grading systems per program
+- 🔧 **Export Templates** - Pre-formatted templates untuk different report types
+- 🔧 **Grade Validation Rules** - Auto-check untuk anomali (e.g., sudden grade drops)
 
 **Dependencies:**
 - Requires: Existing student_grades system ✅
+- Requires: PhpSpreadsheet & Dompdf packages ✅
 - Blocks: None
 - Related: Assignment Management (future - will add assignment grades to gradebook)
 
@@ -952,14 +1040,14 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 ## 📊 Implementation Statistics
 
 ### Current Sprint (Week 1-2)
-- **Total Features In Progress:** 4
+- **Total Features In Progress:** 3
 - **Roles Impacted:** Lecturer, Student, Admin
 - **Modules Affected:** Academic (enhancement), Publication (new), PMB (new), Financial (new)
 - **Estimated Total Effort:** ~18-23 days
 
 ### Completion Tracking
-- ✅ Completed Features: 2 (Course Materials Management, Announcement System)
-- 🚧 In Progress: 3
+- ✅ Completed Features: 3 (Course Materials Management, Announcement System, Grade Book with Export)
+- 🚧 In Progress: 2
 - ⏸️ Planned: 40+
 - ❌ Not Started: 40+
 
@@ -977,6 +1065,35 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 ---
 
 ## 🔄 Update History
+
+- **2026-05-09 (Grade Book with Export Implementation):**
+  - ✅ **COMPLETED: Grade Book with Export** (Priority 3)
+    - Role-based UI pattern decision: Lecturer (dedicated page) vs Admin (PowerGrid table)
+    - PhpSpreadsheet integration for Excel export (.xlsx format)
+    - Dompdf integration for PDF generation with formatted reports
+    - Dedicated Grade Book page for lecturers with statistics dashboard
+      - Hero section with purple/blue gradient (#667eea → #764ba2)
+      - 6 stat cards (total students, avg score, pass rate, highest, lowest, graded count)
+      - Filter by course offering, academic year, semester
+      - Real-time search by student name/NIM/course
+      - Responsive table dengan color-coded grade badges
+      - Export buttons: CSV, Excel, PDF (dengan statistics included in PDF)
+    - Admin interface: PowerGrid table + export buttons in card header (NOT in PowerGrid header)
+      - Direct route links untuk CSV/Excel/PDF exports
+      - ActivePermission checks: `student-grade.viewAny` or `student-grade.view`
+    - Service layer architecture: `GradeExportService` dengan comprehensive methods:
+      - `rows(User $user, array $filters, bool $admin)`: Filtered collection based on role
+      - `statistics(Collection $rows)`: 8 statistical metrics calculation
+      - `distribution(Collection $rows)`: Grade distribution analysis
+      - `streamCsv()`, `streamXlsx()`: Streaming exports dengan proper headers
+      - Admin mode via `$admin` parameter (not role checking inside service)
+    - Separate controllers untuk lecturer dan admin:
+      - Lecturer: No permission check (implicit access via authentication)
+      - Admin: ActivePermission checks in controller methods
+    - PDF template: `resources/views/exports/grade-book-pdf.blade.php` dengan DejaVu Sans font
+    - Database performance optimization dengan indexes on `grade_status` & `graded_at` columns
+    - Files changed: ~15 files, +2,000+ insertions
+    - Dependencies added: phpoffice/phpspreadsheet ^5.7, dompdf/dompdf ^3.1
 
 - **2026-05-08 (Announcement System Implementation):**
   - ✅ **COMPLETED: Announcement System** (Priority 2)

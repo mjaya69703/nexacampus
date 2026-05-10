@@ -322,6 +322,11 @@ new class extends Component
                 </div>
 
                 <div class="col-lg-4 text-lg-end">
+                    <div class="mb-3">
+                        <a href="{{ route('lecturer.student-grades.grade-book') }}" class="btn btn-light">
+                            <i class="fas fa-table me-2"></i>Grade Book
+                        </a>
+                    </div>
                     <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 12px; padding: 1.5rem; text-align: center;">
                         <div style="font-size: 0.75rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Total Data Nilai</div>
                         <div class="h1 mb-0" style="font-weight: 700;">{{ number_format(count($gradeRows)) }}</div>
