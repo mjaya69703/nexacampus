@@ -298,5 +298,37 @@ return [
             'order' => 1,
         ],
     ],
+    [
+        'resource' => 'admission-period',
+        'plural' => 'admission-periods',
+        'area' => 'admission',
+        'component' => 'admin.admission.admission-periods',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Admission Periods',
+            'icon' => 'fas fa-calendar-check',
+            'group' => 'Admission',
+            'group_icon' => 'fas fa-user-plus',
+            'group_order' => 3,
+            'order' => 1,
+        ],
+    ],
+    [
+        'resource' => 'admission-application',
+        'plural' => 'admission-applications',
+        'area' => 'admission',
+        'component' => 'admin.admission.admission-applications',
+        'actions' => ['index', 'show', 'delete'],
+        'permissions' => ['viewAny', 'view', 'update', 'delete'],
+        'menu' => [
+            'title' => 'Applications',
+            'icon' => 'fas fa-file-signature',
+            'group' => 'Admission',
+            'group_icon' => 'fas fa-user-plus',
+            'group_order' => 3,
+            'order' => 2,
+        ],
+    ],
 
 ];

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Support\ResourceRegistry;
@@ -13,6 +14,13 @@ Route::get('/', function () {
 Route::livewire('/welcome', 'setup-wizard')->name('system.setup-wizard');
 
 Route::middleware('is_installed')->group(function () {
+    Route::redirect('/admission', '/admission/apply')->name('admission.index');
+    Route::livewire('/admission/apply', 'admission.apply')->name('admission.apply');
+    Route::livewire('/admission/status', 'admission.status')->name('admission.status');
+    Route::livewire('/admission/applications/{applicationNumber}/{token}', 'admission.portal')->name('admission.portal');
+    Route::get('/admission/applications/{applicationNumber}/{token}/documents/{document}/preview', [AdmissionDocumentController::class, 'portalPreview'])
+        ->name('admission.documents.preview');
+
     Route::middleware('guest')->group(function () {
         Route::livewire('/auth/login', 'auth.signin-index')->name('auth.signin-index');
     });
@@ -39,6 +47,10 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', 'admin.academic.attendance-sessions.show')
                 ->middleware('active_permission:course-offering.view')
                 ->name('academic.attendance-sessions.show');
+
+            Route::get('/admission/documents/{document}/preview', [AdmissionDocumentController::class, 'adminPreview'])
+                ->middleware('active_permission:admission-application.view')
+                ->name('admission.documents.preview');
 
             Route::livewire('/dashboard', 'admin.dashboard.index')->name('dashboard.index');
         });
