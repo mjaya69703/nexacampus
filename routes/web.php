@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
@@ -51,6 +52,10 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/admission/documents/{document}/preview', [AdmissionDocumentController::class, 'adminPreview'])
                 ->middleware('active_permission:admission-application.view')
                 ->name('admission.documents.preview');
+
+            Route::get('/admission/applications/{application}/acceptance-letter', [AcceptanceLetterController::class, 'show'])
+                ->middleware('active_permission:admission-application.view')
+                ->name('admission.applications.acceptance-letter');
 
             Route::livewire('/dashboard', 'admin.dashboard.index')->name('dashboard.index');
         });

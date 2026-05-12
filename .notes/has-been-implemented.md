@@ -625,7 +625,7 @@ Sistem pendaftaran, seleksi, dan konversi mahasiswa baru end-to-end dengan arsit
 - ✅ **Public/Admin UI polish** - SUDAH ADA. Public application/status/portal dan admin application detail dipoles mengikuti pola card/hero modern lecturer/student pages.
 - ✅ **Exam/interview scheduling** - SUDAH ADA. Admin bisa manage schedule seleksi, assign participant, update attendance, dan input score.
 - ✅ **Ranking/quota/waitlist automation** - SUDAH ADA. Selection dashboard menampilkan ranking by final score, quota usage, waitlist/accept/reject, dan bulk decision.
-- ❌ **Student conversion + NIM rule engine** - BELUM ADA. Masuk Phase 3.
+- ✅ **Student conversion + NIM rule engine** - SUDAH ADA. Accepted applicant bisa dikonversi menjadi user/student profile/initial registration dengan NIM rule fleksibel.
 
 **Features:**
 - **Admission Period & Intake Management:**
@@ -725,10 +725,10 @@ Sistem pendaftaran, seleksi, dan konversi mahasiswa baru end-to-end dengan arsit
    - ✅ Bulk status actions
 
 3. **Phase 3 - Student Conversion**
-   - Flexible NIM generation rules
-   - Convert accepted applicant to user + student profile/registration
-   - Acceptance letter PDF
-   - Welcome notification/email
+   - ✅ Flexible NIM generation rules
+   - ✅ Convert accepted applicant to user + student profile/registration
+   - ✅ Acceptance letter PDF
+   - ✅ Welcome notification/email
 
 **Database Changes Required:**
 ```php
@@ -912,14 +912,14 @@ Schema::create('nim_sequence_counters', function (Blueprint $table) {
   - ✅ `app/Models/Admission/AdmissionScore.php`
   - ✅ `app/Models/Admission/AdmissionQuota.php`
   - ✅ `app/Models/Admission/AdmissionStatusHistory.php`
-  - `app/Models/Admission/NimGenerationRule.php`
-  - `app/Models/Admission/NimSequenceCounter.php`
+  - ✅ `app/Models/Admission/NimGenerationRule.php`
+  - ✅ `app/Models/Admission/NimSequenceCounter.php`
 - Livewire Components:
   - ✅ `app/Livewire/Admission/ApplicationTable.php` (admin review)
   - ✅ `app/Livewire/Admission/AdmissionPeriodTable.php` (admin)
   - ✅ `app/Livewire/Admission/ExamScheduleTable.php` (admin)
   - ✅ `app/Livewire/Admission/QuotaTable.php` (admin)
-  - `app/Livewire/Admission/NimGenerationRuleTable.php` (admin)
+  - ✅ `app/Livewire/Admission/NimGenerationRuleTable.php` (admin)
 - Views:
   - ✅ `resources/views/components/admission/` (public registration, applicant portal, status tracking)
   - ✅ `resources/views/components/admin/admission/` (review dashboard, periods, applications, exam schedules, quotas, selection)
@@ -927,14 +927,14 @@ Schema::create('nim_sequence_counters', function (Blueprint $table) {
   - ✅ `app/Support/Admission/AdmissionNumberService.php`
   - ✅ `app/Support/Admission/AdmissionStatusService.php`
   - ✅ `app/Support/Admission/AdmissionSelectionService.php`
-  - `app/Support/Admission/AdmissionConversionService.php`
-  - `app/Support/Admission/NimGenerationService.php`
+  - ✅ `app/Support/Admission/AdmissionConversionService.php`
+  - ✅ `app/Support/Admission/NimGenerationService.php`
   - `app/Support/Admission/AdmissionDocumentService.php` (optional extraction if document logic grows)
 - Migrations:
   - ✅ `2026_05_11_010000_create_admission_phase_one_tables.php`
   - ✅ `2026_05_11_020000_add_academic_year_id_to_admission_periods.php`
   - ✅ `2026_05_11_030000_create_admission_phase_two_tables.php`
-  - ⏳ Phase 3 NIM generation tables
+  - ✅ `2026_05_11_040000_create_admission_phase_three_tables.php`
 - Routes:
   - ✅ Admin routes via `config/resources.php` / resource registry pattern
   - ✅ Public routes: `/admission`, `/admission/apply`, `/admission/status`, tokenized applicant portal URL
@@ -1261,6 +1261,42 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 ---
 
 ## 🔄 Update History
+
+- **2026-05-11 (Admission Phase 3 Implementation):**
+  - ✅ **PHASE 3 IMPLEMENTED: Student Conversion & NIM Rules** (Priority 4)
+    - Added NIM generation tables:
+      - `nim_generation_rules`
+      - `nim_sequence_counters`
+    - Added `NimGenerationRule` and `NimSequenceCounter` models
+    - Added `NimGenerationService`:
+      - Active rule lookup
+      - NIM preview
+      - Token rendering: `{year}`, `{yy}`, `{period_code}`, `{faculty_code}`, `{program_code}`, `{class_type}`, `{sequence}`
+      - Sequence scopes: global, year, period, faculty, study program, class type, study program + year
+      - Counter locking and collision check against existing/soft-deleted student profiles
+    - Added admin NIM Rule management with PowerGrid/resource registry pattern
+      - Create/edit/index
+      - Active rule toggle
+      - Pattern preview
+    - Added `AdmissionConversionService`:
+      - Converts accepted applicant to active `users` account
+      - Assigns `student` role
+      - Creates `student_profiles` with generated NIM
+      - Creates initial approved `student_registrations` when admission period is bound to academic year
+      - Marks application as converted via `converted_at` and `user_id`
+    - Added welcome email:
+      - `AdmissionConvertedToStudent`
+      - `resources/views/templates/email/admission-converted-to-student.blade.php`
+    - Added acceptance letter PDF:
+      - Controller: `AcceptanceLetterController`
+      - Template: `resources/views/exports/admission-acceptance-letter.blade.php`
+    - Enhanced admin application detail:
+      - NIM preview for accepted applicant
+      - Convert to Student action
+      - Acceptance letter button after conversion
+    - Enhanced applicant portal:
+      - Shows NIM and conversion timestamp after conversion
+    - Registered `nim-generation-rule` resource/menu/permissions in `config/resources.php`
 
 - **2026-05-11 (Admission Phase 2 Implementation):**
   - 🚧 **PHASE 2 IMPLEMENTED: Admission Selection Workflow** (Priority 4)

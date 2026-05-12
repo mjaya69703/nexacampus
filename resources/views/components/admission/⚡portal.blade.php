@@ -28,6 +28,7 @@ new class extends Component
                 'documents.requirement',
                 'examParticipants.schedule',
                 'scores.schedule',
+                'user.studentProfile',
                 'statusHistories.changedBy',
             ])
             ->where('application_number', $applicationNumber)
@@ -346,6 +347,16 @@ new class extends Component
                                 <small class="text-muted">Class Type</small>
                                 <div class="h6 mb-0">{{ ucfirst($application->class_type ?? '-') }}</div>
                             </div>
+                            @if($application->converted_at)
+                                <div class="col-md-6">
+                                    <small class="text-muted">Student ID / NIM</small>
+                                    <div class="h6 mb-0">{{ $application->user?->studentProfile?->nim ?? '-' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted">Converted At</small>
+                                    <div class="h6 mb-0">{{ $application->converted_at?->format('d F Y H:i') }}</div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

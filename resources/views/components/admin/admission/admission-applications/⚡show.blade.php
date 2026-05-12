@@ -3,6 +3,8 @@
 use App\Models\Admission\AdmissionApplication;
 use App\Models\Admission\AdmissionDocument;
 use App\Support\ActivePermission;
+use App\Support\Admission\AdmissionConversionService;
+use App\Support\Admission\NimGenerationService;
 use App\Support\Admission\AdmissionStatusService;
 use Livewire\Component;
 
@@ -18,6 +20,8 @@ new class extends Component
 
     public array $documentNotes = [];
 
+    public ?string $nimPreview = null;
+
     public function mount($id): void
     {
         $this->loadApplication($id);
@@ -27,6 +31,8 @@ new class extends Component
             'review_notes' => $this->application->review_notes ?? '',
             'final_score' => $this->application->final_score,
         ];
+
+        $this->refreshNimPreview();
     }
 
     public function updateReview(AdmissionStatusService $statusService): void
@@ -56,6 +62,21 @@ new class extends Component
 
         session()->flash('success', 'Review aplikasi berhasil diperbarui.');
         $this->loadApplication($this->application->id);
+        $this->refreshNimPreview();
+    }
+
+    public function convertToStudent(AdmissionConversionService $conversionService): void
+    {
+        abort_unless(ActivePermission::check('admission-application.update'), 403);
+
+        try {
+            $studentProfile = $conversionService->convert($this->application, auth()->id());
+            session()->flash('success', 'Applicant berhasil dikonversi menjadi student dengan NIM '.$studentProfile->nim.'.');
+            $this->loadApplication($this->application->id);
+            $this->refreshNimPreview();
+        } catch (Throwable $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
     }
 
     public function verifyDocument(int $documentId, string $status): void
@@ -124,11 +145,26 @@ new class extends Component
             'scores.scorer',
             'statusHistories.changedBy',
             'reviewedBy',
+            'user.studentProfile',
         ])->findOrFail($id);
 
         $this->documentNotes = $this->application->documents
             ->mapWithKeys(fn (AdmissionDocument $document) => [$document->id => $document->verification_notes])
             ->toArray();
+    }
+
+    private function refreshNimPreview(): void
+    {
+        if ($this->application->status !== 'accepted' || $this->application->converted_at) {
+            $this->nimPreview = null;
+            return;
+        }
+
+        try {
+            $this->nimPreview = app(NimGenerationService::class)->preview($this->application);
+        } catch (Throwable) {
+            $this->nimPreview = null;
+        }
     }
 };
 ?>
@@ -389,6 +425,34 @@ new class extends Component
                 <a href="{{ route('admission.portal', ['applicationNumber' => $application->application_number, 'token' => $application->access_token]) }}" target="_blank" class="btn btn-outline-primary w-100">
                     <i class="fas fa-arrow-up-right-from-square me-1"></i> Open Portal
                 </a>
+            </div>
+
+            <div class="modern-card p-4 mt-4">
+                <h4 class="mb-2" style="font-weight:800;color:#1e293b;"><i class="fas fa-user-graduate me-2" style="color:#667eea;"></i>Student Conversion</h4>
+
+                @if($application->converted_at)
+                    <div class="alert alert-success">
+                        Converted to student on {{ $application->converted_at?->format('d F Y H:i') }}.
+                        <div class="fw-bold mt-1">NIM: {{ $application->user?->studentProfile?->nim ?? '-' }}</div>
+                    </div>
+                    <a href="{{ route('admin.admission.applications.acceptance-letter', ['application' => $application->id]) }}" target="_blank" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-file-pdf me-1"></i> Acceptance Letter
+                    </a>
+                @elseif($application->status === 'accepted')
+                    <div class="info-tile mb-3">
+                        <small>Preview NIM</small>
+                        <div class="fw-bold">{{ $nimPreview ?? 'No active NIM rule' }}</div>
+                    </div>
+                    @activecan('admission-application.update')
+                        <button class="btn btn-primary w-100" wire:click="convertToStudent" wire:loading.attr="disabled" wire:target="convertToStudent">
+                            <i class="fas fa-user-plus me-1" wire:loading.remove wire:target="convertToStudent"></i>
+                            <span wire:loading.remove wire:target="convertToStudent">Convert to Student</span>
+                            <span wire:loading wire:target="convertToStudent">Converting...</span>
+                        </button>
+                    @endactivecan
+                @else
+                    <div class="text-muted small">Applicant harus berstatus accepted sebelum bisa dikonversi menjadi student.</div>
+                @endif
             </div>
         </div>
     </div>

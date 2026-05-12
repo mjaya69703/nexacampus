@@ -378,5 +378,21 @@ return [
             'order' => 5,
         ],
     ],
+    [
+        'resource' => 'nim-generation-rule',
+        'plural' => 'nim-generation-rules',
+        'area' => 'admission',
+        'component' => 'admin.admission.nim-generation-rules',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'NIM Rules',
+            'icon' => 'fas fa-id-card',
+            'group' => 'Admission',
+            'group_icon' => 'fas fa-user-plus',
+            'group_order' => 3,
+            'order' => 6,
+        ],
+    ],
 
 ];

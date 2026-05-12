@@ -1,5 +1,5 @@
+default/*.p
 !.gitignore
-!logo/favicon.png
-!logo/logo-horizontal.png
-!logo/logo-vertikal.png
-!profile/default.jpg
+!*
+!profile/default.png
+profile/
