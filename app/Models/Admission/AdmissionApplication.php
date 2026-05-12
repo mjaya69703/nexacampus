@@ -104,4 +104,14 @@ class AdmissionApplication extends Model
     {
         return $this->hasMany(AdmissionStatusHistory::class);
     }
+
+    public function examParticipants(): HasMany
+    {
+        return $this->hasMany(AdmissionExamParticipant::class);
+    }
+
+    public function scores(): HasMany
+    {
+        return $this->hasMany(AdmissionScore::class);
+    }
 }

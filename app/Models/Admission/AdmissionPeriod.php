@@ -65,4 +65,14 @@ class AdmissionPeriod extends Model
     {
         return $this->hasMany(AdmissionDocumentRequirement::class);
     }
+
+    public function examSchedules(): HasMany
+    {
+        return $this->hasMany(AdmissionExamSchedule::class);
+    }
+
+    public function quotas(): HasMany
+    {
+        return $this->hasMany(AdmissionQuota::class);
+    }
 }

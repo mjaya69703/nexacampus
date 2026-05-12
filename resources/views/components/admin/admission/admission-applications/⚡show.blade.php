@@ -79,9 +79,9 @@ new class extends Component
     public function statusBadgeClass(?string $status): string
     {
         return match ($status) {
-            'accepted', 'verified' => 'bg-green-lt text-green',
+            'accepted', 'verified', 'present' => 'bg-green-lt text-green',
             'under_review', 'pending', 'waitlisted' => 'bg-yellow-lt text-yellow',
-            'rejected' => 'bg-red-lt text-red',
+            'rejected', 'absent' => 'bg-red-lt text-red',
             default => 'bg-blue-lt text-blue',
         };
     }
@@ -119,6 +119,9 @@ new class extends Component
             'studyProgram',
             'documents.requirement',
             'documents.verifiedBy',
+            'examParticipants.schedule',
+            'scores.schedule',
+            'scores.scorer',
             'statusHistories.changedBy',
             'reviewedBy',
         ])->findOrFail($id);
@@ -290,6 +293,46 @@ new class extends Component
                         <div class="mt-3 fw-semibold">Belum ada dokumen yang diunggah.</div>
                     </div>
                 @endforelse
+            </div>
+
+            <div class="modern-card p-4 mb-4">
+                <h4 class="mb-3" style="font-weight:800;color:#1e293b;"><i class="fas fa-calendar-check me-2" style="color:#667eea;"></i>Selection Schedule & Scores</h4>
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="info-tile">
+                            <small>Assigned Sessions</small>
+                            @forelse($application->examParticipants as $participant)
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <div class="fw-bold">{{ $participant->schedule?->title }}</div>
+                                    <div class="text-muted small">
+                                        {{ str($participant->schedule?->exam_type)->replace('_', ' ')->title() }}
+                                        - {{ $participant->schedule?->exam_date?->format('d M Y') }}
+                                        {{ $participant->schedule?->exam_time?->format('H:i') }}
+                                    </div>
+                                    <span class="badge {{ $this->statusBadgeClass($participant->attendance_status) }}">{{ ucfirst($participant->attendance_status) }}</span>
+                                </div>
+                            @empty
+                                <div class="text-muted">Belum ada jadwal seleksi yang di-assign.</div>
+                            @endforelse
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="info-tile">
+                            <small>Scores</small>
+                            @forelse($application->scores as $score)
+                                <div class="d-flex justify-content-between align-items-start mb-3 pb-3 border-bottom">
+                                    <div>
+                                        <div class="fw-bold">{{ str($score->score_type)->replace('_', ' ')->title() }}</div>
+                                        <div class="text-muted small">{{ $score->schedule?->title ?? 'Manual Score' }} - weight {{ $score->weight }}</div>
+                                    </div>
+                                    <span class="badge bg-blue-lt text-blue">{{ $score->score }}</span>
+                                </div>
+                            @empty
+                                <div class="text-muted">Belum ada score.</div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modern-card p-4">

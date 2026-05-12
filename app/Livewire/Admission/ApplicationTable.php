@@ -3,7 +3,9 @@
 namespace App\Livewire\Admission;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\StudyProgram;
 use App\Models\Admission\AdmissionApplication;
+use App\Models\Admission\AdmissionPeriod;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
@@ -32,7 +34,7 @@ final class ApplicationTable extends BasePowerGridTable
     {
         return AdmissionApplication::query()
             ->with(['period', 'faculty', 'studyProgram'])
-            ->withCount('documents')
+            ->withCount(['documents', 'scores', 'examParticipants'])
             ->orderByDesc('created_at');
     }
 
@@ -59,6 +61,9 @@ final class ApplicationTable extends BasePowerGridTable
             ->add('class_type')
             ->add('status')
             ->add('documents_count')
+            ->add('scores_count')
+            ->add('exam_participants_count')
+            ->add('final_score')
             ->add('submitted_at', fn (AdmissionApplication $model) => $model->submitted_at?->format('d M Y H:i'))
             ->add('created_at');
     }
@@ -75,7 +80,10 @@ final class ApplicationTable extends BasePowerGridTable
             Column::make('Study Program', 'study_program_name')->sortable()->searchable(),
             Column::make('Class', 'class_type')->sortable(),
             Column::make('Status', 'status')->sortable(),
+            Column::make('Final Score', 'final_score')->sortable(),
             Column::make('Docs', 'documents_count')->sortable(),
+            Column::make('Scores', 'scores_count')->sortable()->hidden(),
+            Column::make('Sessions', 'exam_participants_count')->sortable()->hidden(),
             Column::make('Submitted', 'submitted_at')->sortable(),
             Column::action('Action'),
         ];
@@ -92,6 +100,14 @@ final class ApplicationTable extends BasePowerGridTable
                     ['id' => 'rejected', 'name' => 'Rejected'],
                     ['id' => 'waitlisted', 'name' => 'Waitlisted'],
                 ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('admission_period_id', 'admission_period_id')
+                ->dataSource(AdmissionPeriod::query()->orderByDesc('created_at')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('study_program_id', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
                 ->optionLabel('name'),
             Filter::select('class_type', 'class_type')

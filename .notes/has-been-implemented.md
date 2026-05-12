@@ -596,7 +596,7 @@ Schema::table('student_grades', function (Blueprint $table) {
 *Impact: Admin + Prospective Students | Module: New*
 
 ##### 4. Admission Management 🎓
-**Status:** 🚧 IN PROGRESS (Phase 1 implemented)  
+**Status:** 🚧 IN PROGRESS (Phase 2 implemented, Phase 3 pending)  
 **Roles Affected:** Admin (manage), Prospective Applicants (apply/track), Student (after conversion)  
 **Module Category:** New Module → `admission`
 
@@ -623,8 +623,8 @@ Sistem pendaftaran, seleksi, dan konversi mahasiswa baru end-to-end dengan arsit
 - ✅ **Upload security hardening** - SUDAH ADA. Upload dokumen dibatasi extension + MIME safe allowlist (`pdf`, `jpg`, `jpeg`, `png`, `webp`) dan sanitize konfigurasi allowed extensions.
 - ✅ **Email notification via Mailpit SMTP** - SUDAH ADA. Submit application dan status update mengirim email memakai template di `resources/views/templates/email`.
 - ✅ **Public/Admin UI polish** - SUDAH ADA. Public application/status/portal dan admin application detail dipoles mengikuti pola card/hero modern lecturer/student pages.
-- ❌ **Exam/interview scheduling** - BELUM ADA. Masuk Phase 2.
-- ❌ **Ranking/quota/waitlist automation** - BELUM ADA. Masuk Phase 2.
+- ✅ **Exam/interview scheduling** - SUDAH ADA. Admin bisa manage schedule seleksi, assign participant, update attendance, dan input score.
+- ✅ **Ranking/quota/waitlist automation** - SUDAH ADA. Selection dashboard menampilkan ranking by final score, quota usage, waitlist/accept/reject, dan bulk decision.
 - ❌ **Student conversion + NIM rule engine** - BELUM ADA. Masuk Phase 3.
 
 **Features:**
@@ -717,12 +717,12 @@ Sistem pendaftaran, seleksi, dan konversi mahasiswa baru end-to-end dengan arsit
    - ✅ Status history
 
 2. **Phase 2 - Selection Workflow**
-   - Exam/interview schedules
-   - Participant assignment
-   - Score input
-   - Ranking
-   - Quota and waitlist management
-   - Bulk status actions
+   - ✅ Exam/interview schedules
+   - ✅ Participant assignment
+   - ✅ Score input
+   - ✅ Ranking
+   - ✅ Quota and waitlist management
+   - ✅ Bulk status actions
 
 3. **Phase 3 - Student Conversion**
    - Flexible NIM generation rules
@@ -907,33 +907,33 @@ Schema::create('nim_sequence_counters', function (Blueprint $table) {
   - ✅ `app/Models/Admission/AdmissionApplication.php`
   - ✅ `app/Models/Admission/AdmissionDocumentRequirement.php`
   - ✅ `app/Models/Admission/AdmissionDocument.php`
-  - ⏳ `app/Models/Admission/AdmissionExamSchedule.php` (Phase 2)
-  - ⏳ `app/Models/Admission/AdmissionExamParticipant.php` (Phase 2)
-  - ⏳ `app/Models/Admission/AdmissionScore.php` (Phase 2)
-  - ⏳ `app/Models/Admission/AdmissionQuota.php` (Phase 2)
+  - ✅ `app/Models/Admission/AdmissionExamSchedule.php`
+  - ✅ `app/Models/Admission/AdmissionExamParticipant.php`
+  - ✅ `app/Models/Admission/AdmissionScore.php`
+  - ✅ `app/Models/Admission/AdmissionQuota.php`
   - ✅ `app/Models/Admission/AdmissionStatusHistory.php`
   - `app/Models/Admission/NimGenerationRule.php`
   - `app/Models/Admission/NimSequenceCounter.php`
 - Livewire Components:
   - ✅ `app/Livewire/Admission/ApplicationTable.php` (admin review)
   - ✅ `app/Livewire/Admission/AdmissionPeriodTable.php` (admin)
-  - `app/Livewire/Admission/ExamScheduleTable.php` (admin)
-  - `app/Livewire/Admission/QuotaTable.php` (admin)
+  - ✅ `app/Livewire/Admission/ExamScheduleTable.php` (admin)
+  - ✅ `app/Livewire/Admission/QuotaTable.php` (admin)
   - `app/Livewire/Admission/NimGenerationRuleTable.php` (admin)
 - Views:
   - ✅ `resources/views/components/admission/` (public registration, applicant portal, status tracking)
-  - ✅ `resources/views/components/admin/admission/` (review dashboard, periods, applications)
+  - ✅ `resources/views/components/admin/admission/` (review dashboard, periods, applications, exam schedules, quotas, selection)
 - Support/Services:
   - ✅ `app/Support/Admission/AdmissionNumberService.php`
   - ✅ `app/Support/Admission/AdmissionStatusService.php`
-  - `app/Support/Admission/AdmissionSelectionService.php`
+  - ✅ `app/Support/Admission/AdmissionSelectionService.php`
   - `app/Support/Admission/AdmissionConversionService.php`
   - `app/Support/Admission/NimGenerationService.php`
   - `app/Support/Admission/AdmissionDocumentService.php` (optional extraction if document logic grows)
 - Migrations:
   - ✅ `2026_05_11_010000_create_admission_phase_one_tables.php`
   - ✅ `2026_05_11_020000_add_academic_year_id_to_admission_periods.php`
-  - ⏳ Phase 2 exam/quota tables
+  - ✅ `2026_05_11_030000_create_admission_phase_two_tables.php`
   - ⏳ Phase 3 NIM generation tables
 - Routes:
   - ✅ Admin routes via `config/resources.php` / resource registry pattern
@@ -1261,6 +1261,41 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 ---
 
 ## 🔄 Update History
+
+- **2026-05-11 (Admission Phase 2 Implementation):**
+  - 🚧 **PHASE 2 IMPLEMENTED: Admission Selection Workflow** (Priority 4)
+    - Added Phase 2 admission tables:
+      - `admission_exam_schedules`
+      - `admission_exam_participants`
+      - `admission_scores`
+      - `admission_quotas`
+    - Added models and relationships for exam schedules, participants, scores, and quotas
+    - Added `AdmissionSelectionService` for final score recalculation, ranking query, quota matching, and accepted-count refresh
+    - Added admin Admission Exam Schedule management with PowerGrid/resource registry pattern
+      - Schedule create/edit/index/show
+      - Participant assignment from applications in the same admission period
+      - Attendance update: registered, present, absent
+      - Score input with score type, score, weight, notes
+      - Automatic `final_score` recalculation after score updates
+    - Added admin Admission Quota management with PowerGrid/resource registry pattern
+      - Scope by admission period, faculty, study program, and class type
+      - Tracks accepted count and remaining quota
+    - Added admin Selection dashboard:
+      - Filter by period, study program, and class type
+      - Ranking by final score
+      - Quota usage display
+      - Per-applicant accept/waitlist/reject decisions
+      - Bulk status actions for selected applicants
+    - Enhanced admin application table/detail:
+      - Added final score, score count, and assigned session visibility
+      - Added selection schedule and score summary on application detail
+    - Enhanced applicant portal:
+      - Applicant can view assigned exam/interview schedule
+      - Applicant can view attendance status, score summary, and final score
+    - Registered new resources/menus/permissions in `config/resources.php`:
+      - `admission-exam-schedule`
+      - `admission-quota`
+      - `admission-selection`
 
 - **2026-05-11 (Admission Phase 1 Implementation):**
   - 🚧 **PHASE 1 IMPLEMENTED: Admission Foundation & Applicant Portal** (Priority 4)

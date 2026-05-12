@@ -12,26 +12,34 @@ class AdmissionNumberService
     {
         $prefix = $period->code ?: 'ADM'.$period->academic_year;
 
-        $lastNumber = AdmissionApplication::query()
+        $next = AdmissionApplication::withTrashed()
             ->where('admission_period_id', $period->id)
             ->where('application_number', 'like', $prefix.'-%')
-            ->orderByDesc('id')
-            ->value('application_number');
+            ->pluck('application_number')
+            ->map(function (string $number): int {
+                preg_match('/-(\d+)$/', $number, $matches);
 
-        $next = 1;
+                return (int) ($matches[1] ?? 0);
+            })
+            ->max() + 1;
 
-        if ($lastNumber && preg_match('/-(\d+)$/', $lastNumber, $matches)) {
-            $next = ((int) $matches[1]) + 1;
-        }
+        do {
+            $applicationNumber = $prefix.'-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+            $next++;
+        } while (
+            AdmissionApplication::withTrashed()
+                ->where('application_number', $applicationNumber)
+                ->exists()
+        );
 
-        return $prefix.'-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        return $applicationNumber;
     }
 
     public function token(): string
     {
         do {
             $token = Str::random(48);
-        } while (AdmissionApplication::query()->where('access_token', $token)->exists());
+        } while (AdmissionApplication::withTrashed()->where('access_token', $token)->exists());
 
         return $token;
     }

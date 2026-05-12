@@ -21,7 +21,15 @@ new class extends Component
     public function mount(string $applicationNumber, string $token): void
     {
         $this->application = AdmissionApplication::query()
-            ->with(['period.documentRequirements', 'faculty', 'studyProgram', 'documents.requirement', 'statusHistories.changedBy'])
+            ->with([
+                'period.documentRequirements',
+                'faculty',
+                'studyProgram',
+                'documents.requirement',
+                'examParticipants.schedule',
+                'scores.schedule',
+                'statusHistories.changedBy',
+            ])
             ->where('application_number', $applicationNumber)
             ->where('access_token', $token)
             ->firstOrFail();
@@ -81,7 +89,15 @@ new class extends Component
 
         session()->flash('success', 'Document uploaded successfully.');
         $this->documentUploads[$key] = null;
-        $this->application->refresh()->load(['period.documentRequirements', 'faculty', 'studyProgram', 'documents.requirement', 'statusHistories.changedBy']);
+        $this->application->refresh()->load([
+            'period.documentRequirements',
+            'faculty',
+            'studyProgram',
+            'documents.requirement',
+            'examParticipants.schedule',
+            'scores.schedule',
+            'statusHistories.changedBy',
+        ]);
         $this->refreshStats();
     }
 
@@ -207,6 +223,7 @@ new class extends Component
             'verified_documents' => $verifiedCount,
             'completion' => min(100, (int) round(($uploadedRequired / $requiredCount) * 100)),
             'timeline_items' => $this->application->statusHistories->count(),
+            'assigned_sessions' => $this->application->examParticipants->count(),
         ];
     }
 };
@@ -285,13 +302,13 @@ new class extends Component
                         <i class="fas fa-folder-open"></i>
                         <span>Manage documents</span>
                     </a>
+                    <a href="#selection">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Selection schedule</span>
+                    </a>
                     <a href="#timeline">
                         <i class="fas fa-timeline"></i>
                         <span>View status history</span>
-                    </a>
-                    <a href="{{ route('admission.status') }}">
-                        <i class="fas fa-link"></i>
-                        <span>Recover portal link</span>
                     </a>
                 </div>
 
@@ -401,6 +418,77 @@ new class extends Component
                                 @endif
                             </div>
                         @endforeach
+                    </div>
+                </div>
+
+                <div class="admission-card mb-3" id="selection">
+                    <div class="admission-card-header">
+                        <div>
+                            <div class="section-kicker">Selection</div>
+                            <h3>Exam & Interview Schedule</h3>
+                        </div>
+                        <span>{{ $stats['assigned_sessions'] }} sessions</span>
+                    </div>
+                    <div class="admission-card-body">
+                        <div class="row g-3">
+                            <div class="col-lg-7">
+                                @forelse($application->examParticipants as $participant)
+                                    <div class="document-row">
+                                        <div class="d-flex justify-content-between gap-3">
+                                            <div>
+                                                <div class="fw-semibold">{{ $participant->schedule?->title }}</div>
+                                                <small class="text-muted">
+                                                    {{ str($participant->schedule?->exam_type)->replace('_', ' ')->title() }}
+                                                    - {{ $participant->schedule?->exam_date?->format('d F Y') }}
+                                                    at {{ $participant->schedule?->exam_time?->format('H:i') }}
+                                                </small>
+                                            </div>
+                                            <span class="badge @if($participant->attendance_status === 'present') bg-success @elseif($participant->attendance_status === 'absent') bg-danger @else bg-primary @endif">
+                                                {{ ucfirst($participant->attendance_status) }}
+                                            </span>
+                                        </div>
+                                        <div class="mt-3 row g-2">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Venue</small>
+                                                <div class="fw-semibold">{{ $participant->schedule?->venue ?? 'Online / TBA' }}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Meeting Link</small>
+                                                <div>
+                                                    @if($participant->schedule?->meeting_link)
+                                                        <a href="{{ $participant->schedule->meeting_link }}" target="_blank">Open link</a>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-muted">No exam or interview schedule assigned yet.</div>
+                                @endforelse
+                            </div>
+                            <div class="col-lg-5">
+                                <div class="document-row h-100">
+                                    <div class="fw-semibold mb-3">Score Summary</div>
+                                    @forelse($application->scores as $score)
+                                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                            <div>
+                                                <div class="fw-semibold">{{ str($score->score_type)->replace('_', ' ')->title() }}</div>
+                                                <small class="text-muted">Weight {{ $score->weight }}</small>
+                                            </div>
+                                            <span class="badge bg-blue-lt text-blue">{{ $score->score }}</span>
+                                        </div>
+                                    @empty
+                                        <div class="text-muted">Scores are not published yet.</div>
+                                    @endforelse
+                                    <div class="mt-3 pt-3 border-top">
+                                        <small class="text-muted">Final Score</small>
+                                        <div class="h3 mb-0">{{ $application->final_score ?? '-' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
