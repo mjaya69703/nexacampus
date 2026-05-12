@@ -1,0 +1,10 @@
+*
+!images/
+!images/.gitignore
+!images/logo/
+!images/profile/
+!images/logo/favicon.png
+!images/logo/logo-horizontal.png
+!images/logo/logo-vertikal.png
+!images/profile/default.jpg
+!.gitignore
