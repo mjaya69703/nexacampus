@@ -1,8 +1,7 @@
 <div>
-    @includeIf(data_get($setUp, 'header.includeViewOnTop'))
     <div class="dt--top-section">
         <div class="row">
-            <div class="col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center">
+            <div class="col-12 col-sm-6 d-flex flex-wrap align-items-center gap-1 justify-content-sm-start justify-content-center">
                 <div x-data="pgRenderActions">
                     <span class="{{ theme_style($theme, 'table.layout.actions') }}" x-html="toHtml"></span>
                 </div>
@@ -10,6 +9,8 @@
                 <div class="me-1">
                     @includeWhen(data_get($setUp, 'exportable'), data_get($theme, 'root') . '.header.export')
                 </div>
+
+                @includeIf(data_get($setUp, 'header.includeViewOnTop'))
 
                 @include(data_get($theme, 'root') . '.header.toggle-columns')
                 @includeIf(data_get($theme, 'root') . '.header.soft-deletes')

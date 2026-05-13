@@ -58,11 +58,7 @@ new class extends Component
 
     public function updatedPeriodFormAcademicYearId($value): void
     {
-        $selected = collect($this->academicYears)->firstWhere('id', (int) $value);
-
-        if ($selected) {
-            $this->periodForm['academic_year'] = $selected['year'];
-        }
+        $this->syncAcademicYearFromSelection($value);
     }
 
     public function addRequirement(): void
@@ -91,10 +87,12 @@ new class extends Component
 
     public function updatePeriod(): void
     {
+        $this->syncAcademicYearFromSelection($this->periodForm['academic_year_id'] ?? null);
+
         $validated = $this->validate([
             'periodForm.name' => 'required|string|max:255',
             'periodForm.code' => ['required', 'string', 'max:50', Rule::unique('admission_periods', 'code')->ignore($this->period->id)],
-            'periodForm.academic_year_id' => 'nullable|exists:academic_years,id',
+            'periodForm.academic_year_id' => 'required|exists:academic_years,id',
             'periodForm.academic_year' => 'required|integer|min:2000|max:2100',
             'periodForm.wave' => 'required|integer|min:1|max:20',
             'periodForm.opens_at' => 'required|date',
@@ -161,6 +159,15 @@ new class extends Component
 
         return implode(',', $allowed ?: ['pdf', 'jpg', 'jpeg', 'png']);
     }
+
+    private function syncAcademicYearFromSelection($value): void
+    {
+        $selected = collect($this->academicYears)->firstWhere('id', (int) $value);
+
+        if ($selected) {
+            $this->periodForm['academic_year'] = $selected['year'];
+        }
+    }
 };
 ?>
 
@@ -183,7 +190,7 @@ new class extends Component
                 @error('periodForm.code') <span class="text-danger">{{ $message }}</span> @enderror
             </div>
             <div class="form-group col-lg-3 mt-2">
-                <label>Academic Year Master</label>
+                <label>Academic Year</label>
                 <select class="form-control" wire:model.live="periodForm.academic_year_id">
                     <option value="">Select Academic Year</option>
                     @foreach ($academicYears as $academicYear)
@@ -191,11 +198,6 @@ new class extends Component
                     @endforeach
                 </select>
                 @error('periodForm.academic_year_id') <span class="text-danger">{{ $message }}</span> @enderror
-            </div>
-            <div class="form-group col-lg-3 mt-2">
-                <label>Academic Year</label>
-                <input type="number" class="form-control" wire:model.defer="periodForm.academic_year">
-                @error('periodForm.academic_year') <span class="text-danger">{{ $message }}</span> @enderror
             </div>
             <div class="form-group col-lg-3 mt-2">
                 <label>Wave</label>

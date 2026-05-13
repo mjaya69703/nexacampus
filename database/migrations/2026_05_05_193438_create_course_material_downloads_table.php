@@ -17,10 +17,6 @@ return new class extends Migration
                 ->constrained('course_materials')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
-            $table->foreignId('student_id')
-                ->constrained('users')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
             $table->timestamp('downloaded_at');
             $table->string('ip_address')->nullable();
             $table->timestamps();
