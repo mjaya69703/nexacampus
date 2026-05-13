@@ -11,8 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('course_material_downloads', function (Blueprint $table) {
+        if (Schema::hasColumn('course_material_downloads', 'student_profile_id')) {
+            return;
+        }
 
+        Schema::table('course_material_downloads', function (Blueprint $table) {
+            if (Schema::hasColumn('course_material_downloads', 'student_id')) {
+                $table->dropUnique('course_material_downloads_course_material_id_student_id_unique');
+                $table->dropForeign(['student_id']);
+                $table->dropColumn('student_id');
+            }
 
             $table->foreignId('student_profile_id')
                 ->after('course_material_id')
@@ -29,10 +37,18 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasColumn('course_material_downloads', 'student_profile_id')) {
+            return;
+        }
+
         Schema::table('course_material_downloads', function (Blueprint $table) {
             $table->dropUnique('cm_downloads_unique');
             $table->dropForeign(['student_profile_id']);
             $table->dropColumn('student_profile_id');
+
+            if (Schema::hasColumn('course_material_downloads', 'student_id')) {
+                return;
+            }
 
             $table->foreignId('student_id')
                 ->after('course_material_id')
