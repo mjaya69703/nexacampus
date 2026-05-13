@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Support\ResourceRegistry;
@@ -66,6 +66,8 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/registration', 'student.registration.index')->name('registration.index');
             Route::livewire('/study-plan', 'student.study-plan.index')->name('study-plan.index');
             Route::livewire('/grades', 'student.grades.index')->name('grades.index');
+            Route::livewire('/financial/invoices', 'student.financial.invoices')->name('financial.invoices');
+            Route::livewire('/financial/invoices/{id}', 'student.financial.invoice-detail')->name('financial.invoices.show');
             Route::livewire('/transcript', 'student.transcript.index')->name('transcript.index');
             Route::livewire('/schedule', 'student.schedule.index')->name('schedule.index');
             Route::livewire('/schedule/{offeringId}/attendance', 'student.schedule.attendance.index')->name('schedule.attendance');

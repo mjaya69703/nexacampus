@@ -88,6 +88,10 @@ class SidebarMenu
             }
         }
 
+        if (Route::currentRouteName() && str_starts_with(Route::currentRouteName(), $menu->route_name.'.')) {
+            return true;
+        }
+
         return false;
     }
 
@@ -126,6 +130,7 @@ class SidebarMenu
                 static::makeLink('student-materials', 'Materi', 'student.course-materials.index', 'fas fa-book-open'),
                 static::makeLink('student-grades', 'Nilai', 'student.grades.index', 'fas fa-chart-bar'),
                 static::makeLink('student-transcript', 'Transkrip', 'student.transcript.index', 'fas fa-file-invoice'),
+                static::makeLink('student-financial-invoices', 'Keuangan', 'student.financial.invoices', 'fas fa-wallet'),
             ]),
             'lecturer' => collect([
                 static::makeLink('lecturer-course-offerings', 'Kelas Saya', 'lecturer.course-offerings.index', 'fas fa-book'),

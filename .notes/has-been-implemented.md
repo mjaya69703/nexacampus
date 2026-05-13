@@ -964,12 +964,18 @@ Schema::create('nim_sequence_counters', function (Blueprint $table) {
 *Impact: Admin + Students | Module: New*
 
 ##### 5. Financial Management - Tuition & Payments 💰
-**Status:** 🚧 IN PROGRESS  
+**Status:** 🚧 IN PROGRESS (Phase 1.5 implemented: fee structure, invoice core, custom invoice lifecycle)  
 **Roles Affected:** Admin (manage billing), Students (view/pay)  
 **Module Category:** New Module → `financial`
 
 **Description:**
 Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billing dan transparent financial tracking.
+
+**Core Concepts:**
+- **`tuition_fees` = template/rule biaya semesteran**, bukan tagihan aktual. Template ini berlaku untuk kombinasi academic year + study program + semester.
+- **`student_invoices` = tagihan aktual per student profile.** Invoice dibuat dari tuition template atau manual/custom invoice.
+- **`invoice_items` = snapshot rincian tagihan.** Perubahan tuition template setelah invoice diterbitkan tidak otomatis mengubah invoice lama.
+- **Financial student identity menggunakan `student_profile_id`**, bukan `users.id`, supaya konsisten dengan Academic/Registration/KRS.
 
 **Features:**
 - **Tuition Fee Structure:**
@@ -981,17 +987,40 @@ Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billi
   
 - **Student Billing:**
   - Auto-generate invoices per semester
+  - Create custom/manual invoices for one student or bulk scopes
+  - Bulk invoice generation by study program, semester/current semester, academic year, and approved active students
+  - Invoice type support: tuition, custom, admission, registration, graduation, exam, library_fine, certificate, other
+  - Invoice lifecycle: draft → issued → partially paid/paid/overdue/cancelled
   - Itemized billing breakdown
+  - Dynamic manual invoice items (Bayar A, Bayar B, Bayar C, etc.)
   - Payment deadline tracking
   - Outstanding balance monitoring
   - Payment history per student
+  - Optional academic year for custom invoices; required for tuition/registration/exam-like invoice types
+  - Optional attachment for custom invoice supporting documents
   
 - **Payment Processing:**
   - Manual payment recording (cash/bank transfer)
+  - Student manual payment proof upload
+  - Student payment action from invoice detail/list
   - Payment gateway integration (optional)
   - Payment verification & approval
   - Receipt generation (PDF)
   - Bulk payment processing
+  - Student installment conversion request from invoice detail (Phase 2)
+  - Installment tenor simulation before submit; student chooses preferred number of installments
+  - Finance/admin approval required before an invoice becomes installment-based
+  - Rejected installment requests keep history and allow resubmission with a different tenor
+  - Approved installment invoices can no longer be paid as one normal full payment; student pays by installment schedule or pays multiple installment rows together
+
+- **Financial Holds & Clearance (Future Policy Layer):**
+  - Configurable rules for whether unpaid/overdue invoices block registration, KRS, exam card, transcript, graduation, or only show warnings
+  - Auto-create hold when invoice is overdue and outstanding amount remains
+  - Auto-release hold after invoice is paid or waived
+  - Dispensation/waiver support for students with approved payment relief
+  - Installment plan support so students are considered compliant while due installments are paid on schedule
+  - Global student warning appears when invoice/installment is overdue
+  - Hard student access freeze applies after configurable grace period; MVP policy target: overdue more than 7 days restricts student menu access to payment/financial pages only until resolved or approved relief exists
   
 - **Financial Reports:**
   - Payment summary per semester
@@ -1022,14 +1051,85 @@ Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billi
 - Testing & integration: 1 day
 
 **Technical Notes:**
-- New tables: `tuition_fees`, `student_invoices`, `invoice_items`, `payments`, `scholarships`, `student_scholarships`
+- Phase 1 tables: `tuition_fees`, `student_invoices`, `invoice_items`
+- Phase 1.5 focus: custom invoices, invoice lifecycle draft/issued, invoice detail actions, and publish/issue workflow
+- Later tables: `payments`, `scholarships`, `student_scholarships`, `financial_holds`, `invoice_installments`, `invoice_adjustments`
+- Later installment tables: `invoice_installment_requests`, `invoice_installments`; optional policy table for installment fees/grace periods if needed
+- Financial records use `student_profile_id` as student business identity, not `users.id`
 - Invoice generation logic
-- Payment status tracking (Pending → Paid → Overdue)
-- Integration dengan payment gateway (Midtrans/Xendit)
-- PDF receipt generation dengan Dompdf
-- Scheduled jobs untuk invoice generation
-- Consider double-entry accounting for accuracy
+- Invoice lifecycle should separate visibility from payment state: draft invoices are not visible to students; issued invoices are visible/payable
+- Tuition bulk generation may default to issued; custom invoices should default to draft to prevent accidental student-facing mistakes
+- Student invoice page lists all non-draft invoices and provides detail view; manual pay and automatic pay buttons are added in payment phases
+- Payment status tracking (issued/pending → partially_paid → paid/overdue/cancelled)
+- Manual payment first; payment gateway integration (Midtrans/Xendit) is optional later
+- PDF receipt generation dengan Dompdf (Phase 2)
+- Scheduled jobs untuk invoice generation (optional after manual generation is stable)
+- Avoid generated DB columns for outstanding balance; update via service for MySQL/SQLite compatibility
 - Implement role-based access (admin full access, student view-only)
+- Invoice edit rule: editable while no payment exists; after payment exists, use adjustment/void flow instead of changing original amount directly
+- Installment conversion rule: once approved, the invoice payment target is its installment schedule. Full payment is not offered as a separate mode, but student may pay multiple pending installments at once.
+- Installment fee policy must be configurable per campus/invoice type. Default open-source policy should be `none`, with room for `fixed`, `percentage`, `per_installment`, or `manual` finance-approved fee later.
+- Installment compliance rule: invoice is considered financially compliant while all due installment rows are paid or verified; overdue installment rows can trigger warnings/holds/freeze based on clearance policy.
+
+**Implementation Phases:**
+1. **Phase 1 - Fee Structure & Invoice Core** ✅
+   - ✅ Financial namespace and core models
+   - ✅ Tuition fee template/rule per academic year + study program + semester
+   - ✅ Student invoice table using `student_profile_id`
+   - ✅ Invoice item snapshot
+   - ✅ Invoice number generation
+   - ✅ Tuition invoice generation from active tuition fee
+   - ✅ Admin tuition fee list/create/edit
+   - ✅ Admin student invoice list/detail
+   - ✅ Student invoice list/detail read-only view
+
+2. **Phase 1.5 - Custom Invoice & Lifecycle** ✅
+   - ✅ Manual/custom invoice for one student
+   - ✅ Bulk invoice generation by selected scope
+   - ✅ Dynamic invoice items
+   - ✅ Invoice type support: tuition, custom, admission, registration, graduation, exam, library_fine, certificate, other
+   - ✅ Draft/issued/overdue/cancelled invoice lifecycle foundation
+   - ✅ Publish/issue workflow so draft invoices are hidden from student
+   - ✅ Edit-before-payment rule foundation
+   - ✅ Student financial sidebar menu
+   - ✅ Student invoice pages styled with existing student page pattern
+
+3. **Phase 2 - Payment Processing & Installment Workflow** ⏳
+   - Manual payment proof upload from student
+   - Admin/finance payment verification
+   - Payment records and payment history
+   - Receipt PDF generation
+   - Partial payment support
+   - Student installment conversion request
+   - Installment tenor simulation
+   - Admin/finance installment approval/rejection
+   - Approved installment schedule generation
+   - Rejected installment request history and resubmission with different tenor
+   - Disable normal full-payment mode after installment approval, while allowing payment of multiple installment rows together
+   - Optional payment gateway button remains disabled until gateway integration is configured
+
+4. **Phase 3 - Holds, Clearance & Relief Policy** ⏳
+   - Financial hold rules for registration, KRS, exam card, transcript, graduation, or warning-only mode
+   - Global overdue warning for unpaid invoice/installment
+   - Student access freeze after configurable grace period; MVP target: overdue more than 7 days only allows payment/financial pages
+   - Dispensation/waiver/payment relief workflow
+   - Auto-release hold after payment, waiver, or approved relief
+   - Clearance service used by academic modules instead of hardcoding finance checks inside KRS/registration
+
+5. **Phase 4 - Scholarships, Adjustments & Reporting** ⏳
+   - Scholarship master data
+   - Student scholarship assignment
+   - Invoice adjustment flow after payment exists
+   - Late penalties if campus enables them
+   - Financial reports: payment summary, outstanding report, revenue by study program, payment trend
+   - Export to Excel/PDF
+
+6. **Phase 5 - Payment Gateway & Automation** ⏳
+   - Midtrans/Xendit integration option
+   - Gateway callback/webhook handling
+   - Scheduled semester invoice generation
+   - Automated overdue refresh and hold evaluation
+   - Optional notification delivery for invoice issued, payment verified, overdue, installment approved/rejected
 
 **Database Changes Required:**
 ```php
@@ -1055,30 +1155,39 @@ Schema::create('tuition_fees', function (Blueprint $table) {
 Schema::create('student_invoices', function (Blueprint $table) {
     $table->id();
     $table->string('invoice_number')->unique(); // e.g., INV-2026-001-0001
-    $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
-    $table->foreignId('academic_year_id')->constrained()->cascadeOnDelete();
-    $table->integer('semester');
+    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
+    $table->foreignId('academic_year_id')->nullable()->constrained()->nullOnDelete();
+    $table->integer('semester')->nullable();
+    $table->string('invoice_type')->default('tuition'); // tuition, custom, admission, registration, graduation, exam, library_fine, certificate, other
+    $table->nullableMorphs('source'); // optional origin: tuition fee, admission application, etc.
     $table->decimal('total_amount', 12, 2);
     $table->decimal('paid_amount', 12, 2)->default(0);
-    $table->decimal('outstanding_amount', 12, 2)->storedAs('total_amount - paid_amount');
-    $table->enum('status', ['pending', 'partially_paid', 'paid', 'overdue'])->default('pending');
+    $table->decimal('outstanding_amount', 12, 2)->default(0);
+    $table->enum('status', ['draft', 'issued', 'partially_paid', 'paid', 'overdue', 'cancelled'])->default('draft');
     $table->date('due_date');
     $table->timestamp('paid_at')->nullable();
     $table->foreignId('paid_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamp('issued_at')->nullable();
+    $table->foreignId('issued_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamp('cancelled_at')->nullable();
+    $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->string('attachment_path')->nullable();
     $table->text('notes')->nullable();
     $table->timestamps();
     $table->softDeletes();
     
-    $table->index(['student_id', 'status']);
+    $table->index(['student_profile_id', 'status']);
     $table->index(['status', 'due_date']);
 });
 
 // Invoice line items
 Schema::create('invoice_items', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
+    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
+    $table->string('item_type')->default('fee'); // fee, discount, adjustment, penalty
     $table->string('description'); // e.g., "SPP Semester 5"
     $table->decimal('amount', 12, 2);
+    $table->integer('sort_order')->default(0);
     $table->timestamps();
 });
 
@@ -1087,10 +1196,11 @@ Schema::create('payments', function (Blueprint $table) {
     $table->id();
     $table->string('payment_number')->unique(); // e.g., PAY-2026-0001
     $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
+    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
     $table->decimal('amount', 12, 2);
     $table->enum('payment_method', ['cash', 'bank_transfer', 'credit_card', 'e_wallet']);
     $table->string('transaction_reference')->nullable(); // bank transfer ID, etc.
+    $table->string('proof_file_path')->nullable();
     $table->enum('status', ['pending', 'verified', 'failed'])->default('pending');
     $table->timestamp('paid_at');
     $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
@@ -1098,7 +1208,67 @@ Schema::create('payments', function (Blueprint $table) {
     $table->text('notes')->nullable();
     $table->timestamps();
     
-    $table->index(['student_id', 'paid_at']);
+    $table->index(['student_profile_id', 'paid_at']);
+});
+
+// Future: financial holds / clearance
+Schema::create('financial_holds', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
+    $table->foreignId('student_invoice_id')->nullable()->constrained('student_invoices')->nullOnDelete();
+    $table->string('hold_type'); // registration, study_plan, exam_card, transcript, graduation
+    $table->string('status')->default('active'); // active, released, waived
+    $table->text('reason')->nullable();
+    $table->timestamp('starts_at')->nullable();
+    $table->timestamp('released_at')->nullable();
+    $table->foreignId('released_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamps();
+});
+
+// Future: installment requests and schedules
+Schema::create('invoice_installment_requests', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
+    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
+    $table->unsignedTinyInteger('requested_tenor'); // e.g. 2, 3, 4, 6
+    $table->decimal('requested_fee_amount', 12, 2)->default(0);
+    $table->decimal('simulated_total_amount', 12, 2);
+    $table->json('simulation_snapshot')->nullable(); // installment no, amount, due date, fee breakdown
+    $table->string('status')->default('submitted'); // submitted, approved, rejected, cancelled
+    $table->text('student_reason')->nullable();
+    $table->text('finance_notes')->nullable();
+    $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamp('reviewed_at')->nullable();
+    $table->timestamps();
+
+    $table->index(['student_profile_id', 'status']);
+    $table->index(['student_invoice_id', 'status']);
+});
+
+Schema::create('invoice_installments', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
+    $table->foreignId('invoice_installment_request_id')->nullable()->constrained('invoice_installment_requests')->nullOnDelete();
+    $table->unsignedTinyInteger('installment_no');
+    $table->decimal('amount', 12, 2);
+    $table->decimal('fee_amount', 12, 2)->default(0);
+    $table->decimal('paid_amount', 12, 2)->default(0);
+    $table->date('due_date');
+    $table->string('status')->default('pending'); // pending, partially_paid, paid, overdue
+    $table->timestamps();
+
+    $table->unique(['student_invoice_id', 'installment_no']);
+});
+
+// Future: auditable amount changes after payment exists
+Schema::create('invoice_adjustments', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
+    $table->string('adjustment_type'); // discount, correction, penalty, waiver
+    $table->decimal('amount', 12, 2);
+    $table->text('reason')->nullable();
+    $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamps();
 });
 
 // Scholarships
@@ -1118,7 +1288,7 @@ Schema::create('scholarships', function (Blueprint $table) {
 // Student scholarship assignments
 Schema::create('student_scholarships', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
+    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
     $table->foreignId('scholarship_id')->constrained()->cascadeOnDelete();
     $table->foreignId('academic_year_id')->constrained()->cascadeOnDelete();
     $table->integer('semester');
@@ -1128,7 +1298,7 @@ Schema::create('student_scholarships', function (Blueprint $table) {
     $table->text('notes')->nullable();
     $table->timestamps();
     
-    $table->unique(['student_id', 'scholarship_id', 'academic_year_id', 'semester']);
+    $table->unique(['student_profile_id', 'scholarship_id', 'academic_year_id', 'semester']);
 });
 ```
 
@@ -1140,24 +1310,35 @@ Schema::create('student_scholarships', function (Blueprint $table) {
 
 **Files to Create/Modify:**
 - Models:
-  - `app/Models/Financial/TuitionFee.php`
-  - `app/Models/Financial/StudentInvoice.php`
-  - `app/Models/Financial/InvoiceItem.php`
+  - ✅ `app/Models/Financial/TuitionFee.php`
+  - ✅ `app/Models/Financial/StudentInvoice.php`
+  - ✅ `app/Models/Financial/InvoiceItem.php`
   - `app/Models/Financial/Payment.php`
   - `app/Models/Financial/Scholarship.php`
   - `app/Models/Financial/StudentScholarship.php`
 - Services:
-  - `app/Support/InvoiceGenerationService.php`
+  - ✅ `app/Support/Financial/InvoiceNumberService.php`
+  - ✅ `app/Support/Financial/InvoiceGenerationService.php`
+  - ✅ `app/Support/Financial/InvoiceStatusService.php`
+  - `app/Support/Financial/FinancialClearanceService.php`
+  - `app/Support/Financial/InvoicePublishingService.php`
+  - `app/Support/Financial/InvoiceAdjustmentService.php`
+  - `app/Support/Financial/InstallmentSimulationService.php`
+  - `app/Support/Financial/InstallmentApprovalService.php`
   - `app/Support/PaymentProcessingService.php`
 - Livewire Components:
-  - `app/Livewire/Financial/TuitionFeeTable.php`
-  - `app/Livewire/Financial/InvoiceTable.php`
+  - ✅ `app/Livewire/Financial/TuitionFeeTable.php`
+  - ✅ `app/Livewire/Financial/InvoiceTable.php`
   - `app/Livewire/Financial/PaymentTable.php`
   - `app/Livewire/Financial/ScholarshipTable.php`
   - `app/Livewire/Financial/StudentInvoiceView.php` (student side)
 - Views:
-  - `resources/views/components/admin/financial/` (all admin tables)
-  - `resources/views/components/student/financial/` (invoice view, payment history)
+  - ✅ `resources/views/components/admin/financial/tuition-fees/`
+  - ✅ `resources/views/components/admin/financial/student-invoices/`
+  - ✅ `resources/views/components/student/financial/` (invoice view)
+  - `resources/views/components/admin/financial/custom-invoices/` (or extend student-invoices create/edit with custom mode)
+  - `resources/views/components/admin/financial/installment-requests/` (approval/rejection)
+  - `resources/views/components/student/financial/invoices/` (list/detail/pay actions, installment request, following existing student page styling)
 - Commands:
   - `app/Console/Commands/GenerateSemesterInvoices.php` (scheduled job)
 - Migrations: 6 migration files
@@ -1261,6 +1442,45 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 ---
 
 ## 🔄 Update History
+
+- **2026-05-13 (Financial Spec Refinement):**
+  - 📝 **REFINED: Financial Invoice Core & Future Policies** (Priority 5)
+    - Clarified `tuition_fees` as semester fee template/rule, not actual student billing.
+    - Clarified `student_invoices` as actual per-student invoice snapshots with `invoice_items`.
+    - Added custom/manual invoice requirement for single student and bulk scopes.
+    - Added invoice types: tuition, custom, admission, registration, graduation, exam, library_fine, certificate, other.
+    - Added invoice lifecycle decision: custom invoices default draft, issued invoices become visible/payable to students.
+    - Added student invoice UX target: invoice list, detail, manual pay action, disabled automatic payment action for later phase.
+    - Added future financial hold/clearance policy layer instead of hardcoding KRS/registration blocking directly.
+    - Added future dispensation, waiver, installment plan, and invoice adjustment concepts.
+  - ðŸ“ **REFINED: Installment Conversion Policy** (Priority 5 / Phase 2)
+    - Added student-initiated installment conversion request with tenor simulation from invoice detail.
+    - Finance/admin approval is required before an invoice becomes installment-based.
+    - Rejected installment requests remain in history and student may submit another request with a different tenor.
+    - Once approved as installment, invoice no longer offers normal full payment; student pays installment rows, with option to pay multiple rows together.
+    - Added configurable installment fee policy with default open-source recommendation: no extra fee unless campus config enables fixed/percentage/per-installment/manual fee.
+    - Added overdue policy target: global warning on overdue invoice/installment, then hard student access freeze after more than 7 overdue days with payment pages still accessible.
+
+- **2026-05-13 (Financial Phase 1.5 Implementation):**
+  - 🚧 **PHASE 1.5 IMPLEMENTED: Custom Invoice & Lifecycle** (Priority 5)
+    - Added invoice type and lifecycle support to invoice core (`draft`, `issued`, `partially_paid`, `paid`, `overdue`, `cancelled`).
+    - Added custom/manual invoice creation with dynamic invoice items.
+    - Added single-student and bulk invoice creation modes for tuition/custom invoices.
+    - Added invoice issue/publish workflow; draft invoices are hidden from student invoice pages.
+    - Added edit-before-payment workflow; paid/partially paid/cancelled invoices are protected for future adjustment flow.
+    - Added student invoice detail page with manual payment and automatic payment buttons disabled for upcoming payment phase.
+    - Added `InvoicePublishingService` for draft-to-issued workflow.
+
+- **2026-05-13 (Financial Phase 1 Implementation):**
+  - 🚧 **PHASE 1 IMPLEMENTED: Fee Structure & Invoice Core** (Priority 5)
+    - Created `Financial` namespace for billing foundation.
+    - Added `tuition_fees`, `student_invoices`, and `invoice_items` tables.
+    - Standardized financial student references on `student_profile_id`.
+    - Added admin Tuition Fee CRUD with PowerGrid/resource registry pattern.
+    - Added admin Student Invoice list/detail and manual/bulk generation from active tuition fee.
+    - Added student invoice read-only page under `/student/financial/invoices`.
+    - Added `InvoiceNumberService`, `InvoiceGenerationService`, and `InvoiceStatusService`.
+    - Deferred manual payment verification, receipt PDF, scholarships, reports, and gateway integration to later phases.
 
 - **2026-05-13 (Admission Completion Audit):**
   - ✅ **ADMISSION MARKED COMPLETED** (Priority 4)

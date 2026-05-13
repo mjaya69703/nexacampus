@@ -394,5 +394,37 @@ return [
             'order' => 6,
         ],
     ],
+    [
+        'resource' => 'tuition-fee',
+        'plural' => 'tuition-fees',
+        'area' => 'financial',
+        'component' => 'admin.financial.tuition-fees',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Tuition Fees',
+            'icon' => 'fas fa-money-bill-wave',
+            'group' => 'Financial',
+            'group_icon' => 'fas fa-wallet',
+            'group_order' => 4,
+            'order' => 1,
+        ],
+    ],
+    [
+        'resource' => 'student-invoice',
+        'plural' => 'student-invoices',
+        'area' => 'financial',
+        'component' => 'admin.financial.student-invoices',
+        'actions' => ['index', 'create', 'edit', 'show', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Student Invoices',
+            'icon' => 'fas fa-file-invoice-dollar',
+            'group' => 'Financial',
+            'group_icon' => 'fas fa-wallet',
+            'group_order' => 4,
+            'order' => 2,
+        ],
+    ],
 
 ];
