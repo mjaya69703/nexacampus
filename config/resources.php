@@ -426,5 +426,37 @@ return [
             'order' => 2,
         ],
     ],
+    [
+        'resource' => 'payment',
+        'plural' => 'payments',
+        'area' => 'financial',
+        'component' => 'admin.financial.payments',
+        'actions' => ['index', 'show'],
+        'permissions' => ['viewAny', 'view', 'update'],
+        'menu' => [
+            'title' => 'Payments',
+            'icon' => 'fas fa-receipt',
+            'group' => 'Financial',
+            'group_icon' => 'fas fa-wallet',
+            'group_order' => 4,
+            'order' => 3,
+        ],
+    ],
+    [
+        'resource' => 'installment-request',
+        'plural' => 'installment-requests',
+        'area' => 'financial',
+        'component' => 'admin.financial.installment-requests',
+        'actions' => ['index', 'show'],
+        'permissions' => ['viewAny', 'view', 'update'],
+        'menu' => [
+            'title' => 'Installment Requests',
+            'icon' => 'fas fa-calendar-check',
+            'group' => 'Financial',
+            'group_icon' => 'fas fa-wallet',
+            'group_order' => 4,
+            'order' => 4,
+        ],
+    ],
 
 ];

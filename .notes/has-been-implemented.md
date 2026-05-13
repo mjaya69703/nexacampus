@@ -529,40 +529,39 @@ Schema::table('student_grades', function (Blueprint $table) {
    - Theme: Clean, functional admin interface - no unnecessary visual fluff
 
 **Technical Implementation:**
-- Service Layer: `app/Support/GradeBookExportService.php` handles lecturer grade book exports
-  - `lecturerRows(User $user, array $filters)`: Returns filtered collection scoped to lecturer course offerings
+- Service Layer: `app/Support/GradeExportService.php` handles both roles
+  - `rows(User $user, array $filters, bool $admin)`: Returns filtered collection
   - `statistics(Collection $rows)`: Calculate total_students, graded_count, average_score, median_score, highest_score, lowest_score, pass_rate, standard_deviation
   - `distribution(Collection $rows)`: Grade distribution (A+ through E) with counts and percentages
-  - `streamCsv()`, `streamXlsx()`, `pdf()`: Streaming exports dengan UTF-8 BOM support
-- Lecturer Controller:
-  - `app/Http/Controllers/Lecturer/GradeBookExportController.php` (csv, xlsx, pdf methods)
-- Admin export:
-  - Handled inside `app/Livewire/Academic/StudentGradeTable.php`
-  - Uses PowerGrid filter/search/sort/selected-row state via `prepareToExport()`
-  - CSV generated with native streamed response
-  - XLSX generated with PhpSpreadsheet to avoid OpenSpout v5 exporter mismatch
+  - `streamCsv()`, `streamXlsx()`: Streaming exports dengan UTF-8 BOM support
+  - Role detection via `$admin` parameter (not role checking inside service)
+  - Admin mode: Gets ALL grades from database
+  - Lecturer mode: Filters by CourseOfferingLecturer relationship
+- Controllers: Separate controllers untuk lecturer dan admin
+  - `app/Http/Controllers/Lecturer/GradeExportController.php` (csv, excel, pdf methods)
+  - `app/Http/Controllers/Admin/Academic/GradeExportController.php` (csv, excel, pdf methods with permission checks)
 - PDF Generation: Dompdf with DejaVu Sans font, landscape A4 paper
   - Template: `resources/views/exports/grade-book-pdf.blade.php`
   - Includes statistics table + detailed grade rows
 - UTF-8 Encoding: BOM (Byte Order Mark) added to CSV exports
-- Filter passing:
-  - Lecturer export uses query parameters from current Livewire filter state
-  - Admin export uses active PowerGrid state directly
-- Database Indexes: Added idempotent indexes on `grade_status` and `graded_at` columns for performance
+- Session-based filter passing: Livewire redirect dengan query parameters
+- Database Indexes: Added indexes on `grade_status` and `graded_at` columns for performance
+- ActivePermission: Used in controllers dan views untuk authorization
 
 **Files Created/Modified:**
-- ✅ Services: `app/Support/GradeBookExportService.php` (lecturer export service dengan statistics & distribution)
+- ✅ Services: `app/Support/GradeExportService.php` (complete export service dengan statistics & distribution)
 - ✅ Controllers:
-  - `app/Http/Controllers/Lecturer/GradeBookExportController.php` (csv, xlsx, pdf methods)
+  - `app/Http/Controllers/Lecturer/GradeExportController.php` (csv, excel, pdf methods)
+  - `app/Http/Controllers/Admin/Academic/GradeExportController.php` (csv, excel, pdf with ActivePermission checks)
 - ✅ Livewire Components:
   - New: `resources/views/components/lecturer/student-grades/⚡grade-book.blade.php` (anonymous component dengan statistics dashboard)
-  - Enhanced: `app/Livewire/Academic/StudentGradeTable.php` (PowerGrid filters + filter-aware CSV/XLSX export)
+  - Enhanced: `app/Livewire/Academic/StudentGradeTable.php` (added filter-aware export methods with Livewire events)
 - ✅ Views:
   - New: `resources/views/exports/grade-book-pdf.blade.php` (PDF template dengan statistics table)
   - Enhanced: `resources/views/components/lecturer/student-grades/⚡index.blade.php` (Grade Book navigation button)
-- ✅ Routes: Added lecturer grade-book route + CSV/XLSX/PDF routes untuk lecturer
-- ✅ Migrations: `2026_05_11_000001_add_grade_book_indexes.php` (idempotent indexes on grade_status & graded_at)
-- ✅ Dependencies: openspout/openspout ^5.0, phpoffice/phpspreadsheet ^5.7, dompdf/dompdf ^3.1
+- ✅ Routes: Added lecturer grade-book route + separate CSV/Excel/PDF routes untuk lecturer dan admin
+- ✅ Migrations: `2026_05_10_000001_add_grade_book_indexes.php` (indexes on grade_status & graded_at)
+- ✅ Dependencies: phpoffice/phpspreadsheet ^5.7, dompdf/dompdf ^3.1
 - ✅ Documentation: Updated status to COMPLETED
 
 **Success Metrics:**
@@ -595,69 +594,29 @@ Schema::table('student_grades', function (Blueprint $table) {
 #### **Priority 4: Core Business Operations (Admin)**
 *Impact: Admin + Prospective Students | Module: New*
 
-##### 4. Admission Management 🎓
-**Status:** ✅ COMPLETED  
-**Roles Affected:** Admin (manage), Prospective Applicants (apply/track), Student (after conversion)  
-**Module Category:** New Module → `admission`
+##### 4. PMB (Penerimaan Mahasiswa Baru) Management 🎓
+**Status:** 🚧 IN PROGRESS  
+**Roles Affected:** Admin (manage), Prospective Students (apply)  
+**Module Category:** New Module → `pmb` (Admission)
 
 **Description:**
-Sistem pendaftaran, seleksi, dan konversi mahasiswa baru end-to-end dengan arsitektur fleksibel untuk berbagai pola admission kampus.
-
-**Module Decision:**
-- ✅ **Use `Admission`, not `PMB`** - Naming dibuat general English agar konsisten dan reusable.
-- ✅ **New module, not Academic submodule** - Admission punya lifecycle pre-student sendiri: applicant → review → selection → accepted/waitlisted/rejected → converted to student.
-- ✅ **No new applicant role for MVP** - Applicant Portal menggunakan public/token-based access, bukan role baru.
-- ✅ **Create `student` role/user only after acceptance/conversion** - Applicant belum masuk role-based dashboard utama.
-- ✅ **Flexible NIM generation required** - Format NIM harus rule-based karena tiap kampus bisa beda format dan basis sequence.
-
-**Catatan Implementasi Phase 1 (2026-05-11):**
-- ✅ **Admission Period Management** - SUDAH ADA. Admin bisa manage period/intake, open/close date, active/published flag, dan document requirements.
-- ✅ **Academic Year Binding** - SUDAH ADA. Admission period terhubung ke master `academic_years` via `academic_year_id` agar sinkron dengan modul akademik lain.
-- ✅ **Public Application Form** - SUDAH ADA. Applicant bisa submit form pendaftaran via `/admission/apply`.
-- ✅ **Applicant Portal token-based** - SUDAH ADA. Applicant bisa cek status dan upload/update dokumen via secure token URL.
-- ✅ **Status Check Page** - SUDAH ADA. Applicant bisa akses portal menggunakan application number + email via `/admission/status`.
-- ✅ **Admin Application Review** - SUDAH ADA. Admin bisa melihat application list, detail applicant, verify/reject documents, update status, final score, dan review notes.
-- ✅ **Status History/Audit Trail** - SUDAH ADA. Perubahan status terekam di `admission_status_histories`.
-- ✅ **Document Requirements** - SUDAH ADA. Per period bisa set dokumen wajib/opsional, allowed extensions, max file size.
-- ✅ **Secure document preview** - SUDAH ADA. Admin dan applicant portal pakai route preview internal, bukan direct storage URL, sehingga preview image/PDF tidak kena 403 public storage.
-- ✅ **Upload security hardening** - SUDAH ADA. Upload dokumen dibatasi extension + MIME safe allowlist (`pdf`, `jpg`, `jpeg`, `png`, `webp`) dan sanitize konfigurasi allowed extensions.
-- ✅ **Email notification via Mailpit SMTP** - SUDAH ADA. Submit application dan status update mengirim email memakai template di `resources/views/templates/email`.
-- ✅ **Public/Admin UI polish** - SUDAH ADA. Public application/status/portal dan admin application detail dipoles mengikuti pola card/hero modern lecturer/student pages.
-- ✅ **Exam/interview scheduling** - SUDAH ADA. Admin bisa manage schedule seleksi, assign participant, update attendance, dan input score.
-- ✅ **Ranking/quota/waitlist automation** - SUDAH ADA. Selection dashboard menampilkan ranking by final score, quota usage, waitlist/accept/reject, dan bulk decision.
-- ✅ **Student conversion + NIM rule engine** - SUDAH ADA. Accepted applicant bisa dikonversi menjadi user/student profile/initial registration dengan NIM rule fleksibel.
+Sistem pendaftaran & seleksi mahasiswa baru end-to-end untuk streamline admission workflow.
 
 **Features:**
-- **Admission Period & Intake Management:**
-  - Manage admission periods/intakes (year, wave/batch, open/close dates)
-  - Configure available faculties, study programs, class types, and quotas per period
-  - Publish/unpublish admission period
-  - Track application counts and quota usage
-
-- **Online Application Form:**
+- **Online Registration Form:**
   - Personal info (name, birth date, gender, address)
   - Contact info (phone, email, emergency contact)
   - Education background (high school, major, graduation year)
-  - Configurable document uploads (ID card, high school certificate, photo, report cards, payment proof, etc.)
+  - Document uploads (ID card, high school certificate, photo, report cards)
   - Program selection (faculty, study program, class type)
-  - Payment confirmation upload/status (manual first, payment gateway optional later)
-  - Draft/submitted state with validation before submission
-
-- **Applicant Portal (Public/Token-Based):**
-  - Track application status without adding a new `applicant` role
-  - Access by application number + secure token/email verification link
-  - View missing/verified documents
-  - Upload/update documents when requested by admin
-  - View exam/interview schedule and final decision
+  - Payment confirmation upload
   
 - **Application Review:**
-  - Application list dengan status tracking (Submitted → Under Review → Accepted/Rejected/Waitlisted)
+  - Application list dengan status tracking (Submitted → Under Review → Accepted/Rejected)
   - Document verification checklist
-  - Status history/audit trail
   - Interview scheduling & notes
   - Test score input (entrance exam, TOEFL, etc.)
   - Bulk approval/rejection
-  - Admin notes and internal review assignment
   
 - **Selection Process:**
   - Entrance exam management (schedule, venue, participants)
@@ -669,16 +628,9 @@ Sistem pendaftaran, seleksi, dan konversi mahasiswa baru end-to-end dengan arsit
 - **Registration Completion:**
   - Convert accepted applicants to students
   - Auto-create user account
-  - Generate student ID (NIM) using configurable generation rules
+  - Generate student ID (NIM)
   - Initial enrollment setup
   - Welcome email/notification
-
-- **Flexible NIM Generation Rules:**
-  - Rule template with tokens such as `{year}`, `{period_code}`, `{faculty_code}`, `{program_code}`, `{class_type}`, `{sequence}`
-  - Sequence scope options: global, per year, per admission period, per faculty, per study program, per class type
-  - Configurable padding length and starting number
-  - Preview/test generated NIM before activating rule
-  - Collision check before conversion
 
 **Why Important:**
 - Core business process untuk kampus
@@ -688,72 +640,27 @@ Sistem pendaftaran, seleksi, dan konversi mahasiswa baru end-to-end dengan arsit
 - Reduce manual paperwork
 - 80% reduction in application processing time
 
-**Estimated Effort:** High (8-12 days, recommended phased implementation)
-- Phase 1 Foundation & Applicant Portal: 3-4 days
-- Phase 2 Review, Exam, Selection & Quota: 3-4 days
-- Phase 3 Conversion, NIM Rules & Acceptance Letter: 2-3 days
+**Estimated Effort:** High (5-7 days)
+- Application form & upload: 2 days
+- Review workflow: 2 days
+- Selection & conversion: 2 days
 - Testing & refinement: 1 day
 
 **Technical Notes:**
-- New namespace: `Admission`
-- New tables use `admission_*` prefix, not `pmb_*`
+- New tables: `pmb_applications`, `pmb_documents`, `pmb_exam_schedules`, `pmb_scores`
 - File upload handling untuk documents
 - Status workflow engine
 - Integration dengan student registration system
 - Email notifications untuk status updates
 - Consider payment gateway integration untuk registration fee
-- Admin access via existing admin/superuser role + permissions
-- Applicant access via signed/tokenized public routes, not role-based dashboard
-- Use PowerGrid for admin list/table pages, following existing admin pattern
-- Use anonymous Livewire views for public applicant-facing pages, following existing project pattern
-
-**Implementation Phases:**
-1. **Phase 1 - Foundation & Portal**
-   - ✅ Admission periods
-   - ✅ Public application form
-   - ✅ Secure applicant portal/status tracking
-   - ✅ Document requirements and uploads
-   - ✅ Admin application list/detail review
-   - ✅ Status history
-
-2. **Phase 2 - Selection Workflow**
-   - ✅ Exam/interview schedules
-   - ✅ Participant assignment
-   - ✅ Score input
-   - ✅ Ranking
-   - ✅ Quota and waitlist management
-   - ✅ Bulk status actions
-
-3. **Phase 3 - Student Conversion**
-   - ✅ Flexible NIM generation rules
-   - ✅ Convert accepted applicant to user + student profile/registration
-   - ✅ Acceptance letter PDF
-   - ✅ Welcome notification/email
+- Implement role-based access (admin only for review)
 
 **Database Changes Required:**
 ```php
-// Admission periods / intakes
-Schema::create('admission_periods', function (Blueprint $table) {
-    $table->id();
-    $table->string('name'); // e.g. Admission 2026 - Wave 1
-    $table->string('code')->unique(); // e.g. ADM2026W1
-    $table->foreignId('academic_year_id')->nullable()->constrained('academic_years')->nullOnDelete();
-    $table->year('academic_year');
-    $table->unsignedTinyInteger('wave')->default(1);
-    $table->date('opens_at');
-    $table->date('closes_at');
-    $table->boolean('is_active')->default(false);
-    $table->boolean('is_published')->default(false);
-    $table->timestamps();
-    $table->softDeletes();
-});
-
 // Main application table
-Schema::create('admission_applications', function (Blueprint $table) {
+Schema::create('pmb_applications', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('admission_period_id')->constrained('admission_periods')->cascadeOnDelete();
-    $table->string('application_number')->unique(); // e.g., ADM-2026-0001
-    $table->string('access_token')->unique(); // for public applicant portal
+    $table->string('application_number')->unique(); // e.g., PMB-2026-0001
     $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete(); // linked after acceptance
     $table->string('full_name');
     $table->string('email');
@@ -770,54 +677,37 @@ Schema::create('admission_applications', function (Blueprint $table) {
     $table->foreignId('study_program_id')->nullable()->constrained()->nullOnDelete();
     $table->string('class_type')->nullable(); // regular, evening, weekend
     $table->enum('status', ['draft', 'submitted', 'under_review', 'accepted', 'rejected', 'waitlisted'])->default('draft');
-    $table->decimal('final_score', 6, 2)->nullable();
+    $table->decimal('entrance_exam_score', 5, 2)->nullable();
+    $table->decimal('toefl_score', 5, 2)->nullable();
     $table->text('review_notes')->nullable();
     $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
     $table->timestamp('submitted_at')->nullable();
     $table->timestamp('reviewed_at')->nullable();
     $table->timestamp('accepted_at')->nullable();
-    $table->timestamp('converted_at')->nullable();
     $table->timestamps();
     $table->softDeletes();
     
-    $table->index(['admission_period_id', 'status']);
-    $table->index(['faculty_id', 'study_program_id']);
     $table->index(['status', 'created_at']);
-});
-
-// Configurable document requirements per period/program
-Schema::create('admission_document_requirements', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('admission_period_id')->nullable()->constrained('admission_periods')->cascadeOnDelete();
-    $table->foreignId('study_program_id')->nullable()->constrained()->nullOnDelete();
-    $table->string('document_type'); // id_card, certificate, photo, report_card, payment_proof
-    $table->string('label');
-    $table->boolean('is_required')->default(true);
-    $table->string('allowed_extensions')->nullable(); // pdf,jpg,png
-    $table->integer('max_size_kb')->nullable();
-    $table->timestamps();
+    $table->index(['faculty_id', 'study_program_id']);
 });
 
 // Document uploads
-Schema::create('admission_documents', function (Blueprint $table) {
+Schema::create('pmb_documents', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('admission_application_id')->constrained('admission_applications')->cascadeOnDelete();
-    $table->foreignId('document_requirement_id')->nullable()->constrained('admission_document_requirements')->nullOnDelete();
+    $table->foreignId('application_id')->constrained()->cascadeOnDelete();
     $table->string('document_type'); // id_card, high_school_certificate, photo, report_card, payment_proof
     $table->string('file_path');
     $table->string('file_name');
     $table->integer('file_size');
-    $table->enum('verification_status', ['pending', 'verified', 'rejected'])->default('pending');
-    $table->text('verification_notes')->nullable();
+    $table->boolean('is_verified')->default(false);
     $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
     $table->timestamp('verified_at')->nullable();
     $table->timestamps();
 });
 
 // Exam schedules
-Schema::create('admission_exam_schedules', function (Blueprint $table) {
+Schema::create('pmb_exam_schedules', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('admission_period_id')->constrained('admission_periods')->cascadeOnDelete();
     $table->string('exam_type'); // written_test, interview, practical
     $table->date('exam_date');
     $table->time('exam_time');
@@ -827,124 +717,39 @@ Schema::create('admission_exam_schedules', function (Blueprint $table) {
     $table->timestamps();
 });
 
-// Exam participants
-Schema::create('admission_exam_participants', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('admission_exam_schedule_id')->constrained('admission_exam_schedules')->cascadeOnDelete();
-    $table->foreignId('admission_application_id')->constrained('admission_applications')->cascadeOnDelete();
-    $table->enum('attendance_status', ['registered', 'present', 'absent'])->default('registered');
-    $table->timestamps();
-    $table->unique(['admission_exam_schedule_id', 'admission_application_id']);
-});
-
 // Exam scores
-Schema::create('admission_scores', function (Blueprint $table) {
+Schema::create('pmb_scores', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('admission_application_id')->constrained('admission_applications')->cascadeOnDelete();
-    $table->foreignId('admission_exam_schedule_id')->nullable()->constrained('admission_exam_schedules')->nullOnDelete();
-    $table->string('score_type'); // entrance_exam, interview, toefl, portfolio
+    $table->foreignId('application_id')->constrained()->cascadeOnDelete();
+    $table->foreignId('exam_schedule_id')->constrained()->cascadeOnDelete();
     $table->decimal('score', 5, 2);
-    $table->decimal('weight', 5, 2)->default(100);
     $table->text('notes')->nullable();
     $table->foreignId('scored_by')->constrained('users')->cascadeOnDelete();
     $table->timestamps();
 });
-
-// Quota per period/program/class type
-Schema::create('admission_quotas', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('admission_period_id')->constrained('admission_periods')->cascadeOnDelete();
-    $table->foreignId('faculty_id')->nullable()->constrained()->nullOnDelete();
-    $table->foreignId('study_program_id')->nullable()->constrained()->nullOnDelete();
-    $table->string('class_type')->nullable();
-    $table->integer('quota');
-    $table->integer('accepted_count')->default(0);
-    $table->timestamps();
-});
-
-// Status history / audit trail
-Schema::create('admission_status_histories', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('admission_application_id')->constrained('admission_applications')->cascadeOnDelete();
-    $table->string('from_status')->nullable();
-    $table->string('to_status');
-    $table->text('notes')->nullable();
-    $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
-    $table->timestamps();
-});
-
-// Flexible NIM generation rules
-Schema::create('nim_generation_rules', function (Blueprint $table) {
-    $table->id();
-    $table->string('name');
-    $table->string('pattern'); // e.g. {year}{program_code}{sequence}
-    $table->string('sequence_scope')->default('study_program_year'); // global, year, period, faculty, study_program, class_type
-    $table->unsignedTinyInteger('sequence_padding')->default(4);
-    $table->unsignedInteger('sequence_start')->default(1);
-    $table->boolean('is_active')->default(false);
-    $table->timestamps();
-});
-
-Schema::create('nim_sequence_counters', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('nim_generation_rule_id')->constrained('nim_generation_rules')->cascadeOnDelete();
-    $table->string('scope_key'); // resolved key based on sequence_scope
-    $table->unsignedInteger('last_number')->default(0);
-    $table->timestamps();
-    $table->unique(['nim_generation_rule_id', 'scope_key']);
-});
 ```
 
 **New Dependencies:**
-- Dompdf (already available from Grade Book) - for acceptance letter generation
-- Laravel Queues - for email/status notifications
-- Intervention Image (optional) - only if photo resizing/validation is needed
-- Payment gateway SDK (optional later) - Midtrans/Xendit for registration fee
+- Intervention Image (for photo processing)
+- Laravel Queues (for email notifications)
+- Dompdf (for acceptance letter generation)
+- Payment gateway SDK (optional - Midtrans/Xendit)
 
 **Files to Create/Modify:**
 - Models: 
-  - ✅ `app/Models/Admission/AdmissionPeriod.php`
-  - ✅ `app/Models/Admission/AdmissionApplication.php`
-  - ✅ `app/Models/Admission/AdmissionDocumentRequirement.php`
-  - ✅ `app/Models/Admission/AdmissionDocument.php`
-  - ✅ `app/Models/Admission/AdmissionExamSchedule.php`
-  - ✅ `app/Models/Admission/AdmissionExamParticipant.php`
-  - ✅ `app/Models/Admission/AdmissionScore.php`
-  - ✅ `app/Models/Admission/AdmissionQuota.php`
-  - ✅ `app/Models/Admission/AdmissionStatusHistory.php`
-  - ✅ `app/Models/Admission/NimGenerationRule.php`
-  - ✅ `app/Models/Admission/NimSequenceCounter.php`
+  - `app/Models/Pmb/PmbApplication.php`
+  - `app/Models/Pmb/PmbDocument.php`
+  - `app/Models/Pmb/PmbExamSchedule.php`
+  - `app/Models/Pmb/PmbScore.php`
 - Livewire Components:
-  - ✅ `app/Livewire/Admission/ApplicationTable.php` (admin review)
-  - ✅ `app/Livewire/Admission/AdmissionPeriodTable.php` (admin)
-  - ✅ `app/Livewire/Admission/ExamScheduleTable.php` (admin)
-  - ✅ `app/Livewire/Admission/QuotaTable.php` (admin)
-  - ✅ `app/Livewire/Admission/NimGenerationRuleTable.php` (admin)
+  - `app/Livewire/Pmb/ApplicationForm.php` (public registration)
+  - `app/Livewire/Pmb/ApplicationTable.php` (admin review)
+  - `app/Livewire/Pmb/ExamScheduleTable.php` (admin)
 - Views:
-  - ✅ `resources/views/components/admission/` (public registration, applicant portal, status tracking)
-  - ✅ `resources/views/components/admin/admission/` (review dashboard, periods, applications, exam schedules, quotas, selection)
-- Support/Services:
-  - ✅ `app/Support/Admission/AdmissionNumberService.php`
-  - ✅ `app/Support/Admission/AdmissionStatusService.php`
-  - ✅ `app/Support/Admission/AdmissionSelectionService.php`
-  - ✅ `app/Support/Admission/AdmissionConversionService.php`
-  - ✅ `app/Support/Admission/NimGenerationService.php`
-  - `app/Support/Admission/AdmissionDocumentService.php` (optional extraction if document logic grows)
-- Migrations:
-  - ✅ `2026_05_11_010000_create_admission_phase_one_tables.php`
-  - ✅ `2026_05_11_020000_add_academic_year_id_to_admission_periods.php`
-  - ✅ `2026_05_11_030000_create_admission_phase_two_tables.php`
-  - ✅ `2026_05_11_040000_create_admission_phase_three_tables.php`
-- Routes:
-  - ✅ Admin routes via `config/resources.php` / resource registry pattern
-  - ✅ Public routes: `/admission`, `/admission/apply`, `/admission/status`, tokenized applicant portal URL
-  - ✅ Document preview routes for admin and tokenized applicant portal
-
-**UI Pattern Decision:**
-- **Admin Side:** PowerGrid-first for list pages, consistent with existing admin modules.
-- **Applicant Side:** Public anonymous Livewire pages under `resources/views/components/admission/`, not `resources/views/components/applicant/`.
-- **No applicant dashboard role in MVP:** Avoid adding sidebar/dashboard/role-selection complexity until truly needed.
-- **Future role option:** Add `applicant` role only if applicants need authenticated dashboard, messaging, or long-running pre-student workflows.
+  - `resources/views/components/pmb/` (registration form, status tracking)
+  - `resources/views/components/admin/pmb/` (review dashboard, exam management)
+- Migrations: 4 migration files for PMB tables
+- Routes: Add public routes for registration form
 
 **Success Metrics:**
 - 80% reduction in application processing time
@@ -954,8 +759,7 @@ Schema::create('nim_sequence_counters', function (Blueprint $table) {
 
 **Dependencies:**
 - Requires: Existing faculties & study_programs tables ✅
-- Requires: Existing users/student profile/student registration structure for conversion ✅
-- Blocks: None
+- Blocks: Student profile creation (auto-convert on acceptance)
 - Related: Financial Management (registration fee payment)
 
 ---
@@ -964,18 +768,12 @@ Schema::create('nim_sequence_counters', function (Blueprint $table) {
 *Impact: Admin + Students | Module: New*
 
 ##### 5. Financial Management - Tuition & Payments 💰
-**Status:** 🚧 IN PROGRESS (Phase 1.5 implemented: fee structure, invoice core, custom invoice lifecycle)  
+**Status:** 🚧 IN PROGRESS  
 **Roles Affected:** Admin (manage billing), Students (view/pay)  
 **Module Category:** New Module → `financial`
 
 **Description:**
 Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billing dan transparent financial tracking.
-
-**Core Concepts:**
-- **`tuition_fees` = template/rule biaya semesteran**, bukan tagihan aktual. Template ini berlaku untuk kombinasi academic year + study program + semester.
-- **`student_invoices` = tagihan aktual per student profile.** Invoice dibuat dari tuition template atau manual/custom invoice.
-- **`invoice_items` = snapshot rincian tagihan.** Perubahan tuition template setelah invoice diterbitkan tidak otomatis mengubah invoice lama.
-- **Financial student identity menggunakan `student_profile_id`**, bukan `users.id`, supaya konsisten dengan Academic/Registration/KRS.
 
 **Features:**
 - **Tuition Fee Structure:**
@@ -987,40 +785,17 @@ Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billi
   
 - **Student Billing:**
   - Auto-generate invoices per semester
-  - Create custom/manual invoices for one student or bulk scopes
-  - Bulk invoice generation by study program, semester/current semester, academic year, and approved active students
-  - Invoice type support: tuition, custom, admission, registration, graduation, exam, library_fine, certificate, other
-  - Invoice lifecycle: draft → issued → partially paid/paid/overdue/cancelled
   - Itemized billing breakdown
-  - Dynamic manual invoice items (Bayar A, Bayar B, Bayar C, etc.)
   - Payment deadline tracking
   - Outstanding balance monitoring
   - Payment history per student
-  - Optional academic year for custom invoices; required for tuition/registration/exam-like invoice types
-  - Optional attachment for custom invoice supporting documents
   
 - **Payment Processing:**
   - Manual payment recording (cash/bank transfer)
-  - Student manual payment proof upload
-  - Student payment action from invoice detail/list
   - Payment gateway integration (optional)
   - Payment verification & approval
   - Receipt generation (PDF)
   - Bulk payment processing
-  - Student installment conversion request from invoice detail (Phase 2)
-  - Installment tenor simulation before submit; student chooses preferred number of installments
-  - Finance/admin approval required before an invoice becomes installment-based
-  - Rejected installment requests keep history and allow resubmission with a different tenor
-  - Approved installment invoices can no longer be paid as one normal full payment; student pays by installment schedule or pays multiple installment rows together
-
-- **Financial Holds & Clearance (Future Policy Layer):**
-  - Configurable rules for whether unpaid/overdue invoices block registration, KRS, exam card, transcript, graduation, or only show warnings
-  - Auto-create hold when invoice is overdue and outstanding amount remains
-  - Auto-release hold after invoice is paid or waived
-  - Dispensation/waiver support for students with approved payment relief
-  - Installment plan support so students are considered compliant while due installments are paid on schedule
-  - Global student warning appears when invoice/installment is overdue
-  - Hard student access freeze applies after configurable grace period; MVP policy target: overdue more than 7 days restricts student menu access to payment/financial pages only until resolved or approved relief exists
   
 - **Financial Reports:**
   - Payment summary per semester
@@ -1051,85 +826,14 @@ Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billi
 - Testing & integration: 1 day
 
 **Technical Notes:**
-- Phase 1 tables: `tuition_fees`, `student_invoices`, `invoice_items`
-- Phase 1.5 focus: custom invoices, invoice lifecycle draft/issued, invoice detail actions, and publish/issue workflow
-- Later tables: `payments`, `scholarships`, `student_scholarships`, `financial_holds`, `invoice_installments`, `invoice_adjustments`
-- Later installment tables: `invoice_installment_requests`, `invoice_installments`; optional policy table for installment fees/grace periods if needed
-- Financial records use `student_profile_id` as student business identity, not `users.id`
+- New tables: `tuition_fees`, `student_invoices`, `invoice_items`, `payments`, `scholarships`, `student_scholarships`
 - Invoice generation logic
-- Invoice lifecycle should separate visibility from payment state: draft invoices are not visible to students; issued invoices are visible/payable
-- Tuition bulk generation may default to issued; custom invoices should default to draft to prevent accidental student-facing mistakes
-- Student invoice page lists all non-draft invoices and provides detail view; manual pay and automatic pay buttons are added in payment phases
-- Payment status tracking (issued/pending → partially_paid → paid/overdue/cancelled)
-- Manual payment first; payment gateway integration (Midtrans/Xendit) is optional later
-- PDF receipt generation dengan Dompdf (Phase 2)
-- Scheduled jobs untuk invoice generation (optional after manual generation is stable)
-- Avoid generated DB columns for outstanding balance; update via service for MySQL/SQLite compatibility
+- Payment status tracking (Pending → Paid → Overdue)
+- Integration dengan payment gateway (Midtrans/Xendit)
+- PDF receipt generation dengan Dompdf
+- Scheduled jobs untuk invoice generation
+- Consider double-entry accounting for accuracy
 - Implement role-based access (admin full access, student view-only)
-- Invoice edit rule: editable while no payment exists; after payment exists, use adjustment/void flow instead of changing original amount directly
-- Installment conversion rule: once approved, the invoice payment target is its installment schedule. Full payment is not offered as a separate mode, but student may pay multiple pending installments at once.
-- Installment fee policy must be configurable per campus/invoice type. Default open-source policy should be `none`, with room for `fixed`, `percentage`, `per_installment`, or `manual` finance-approved fee later.
-- Installment compliance rule: invoice is considered financially compliant while all due installment rows are paid or verified; overdue installment rows can trigger warnings/holds/freeze based on clearance policy.
-
-**Implementation Phases:**
-1. **Phase 1 - Fee Structure & Invoice Core** ✅
-   - ✅ Financial namespace and core models
-   - ✅ Tuition fee template/rule per academic year + study program + semester
-   - ✅ Student invoice table using `student_profile_id`
-   - ✅ Invoice item snapshot
-   - ✅ Invoice number generation
-   - ✅ Tuition invoice generation from active tuition fee
-   - ✅ Admin tuition fee list/create/edit
-   - ✅ Admin student invoice list/detail
-   - ✅ Student invoice list/detail read-only view
-
-2. **Phase 1.5 - Custom Invoice & Lifecycle** ✅
-   - ✅ Manual/custom invoice for one student
-   - ✅ Bulk invoice generation by selected scope
-   - ✅ Dynamic invoice items
-   - ✅ Invoice type support: tuition, custom, admission, registration, graduation, exam, library_fine, certificate, other
-   - ✅ Draft/issued/overdue/cancelled invoice lifecycle foundation
-   - ✅ Publish/issue workflow so draft invoices are hidden from student
-   - ✅ Edit-before-payment rule foundation
-   - ✅ Student financial sidebar menu
-   - ✅ Student invoice pages styled with existing student page pattern
-
-3. **Phase 2 - Payment Processing & Installment Workflow** ⏳
-   - Manual payment proof upload from student
-   - Admin/finance payment verification
-   - Payment records and payment history
-   - Receipt PDF generation
-   - Partial payment support
-   - Student installment conversion request
-   - Installment tenor simulation
-   - Admin/finance installment approval/rejection
-   - Approved installment schedule generation
-   - Rejected installment request history and resubmission with different tenor
-   - Disable normal full-payment mode after installment approval, while allowing payment of multiple installment rows together
-   - Optional payment gateway button remains disabled until gateway integration is configured
-
-4. **Phase 3 - Holds, Clearance & Relief Policy** ⏳
-   - Financial hold rules for registration, KRS, exam card, transcript, graduation, or warning-only mode
-   - Global overdue warning for unpaid invoice/installment
-   - Student access freeze after configurable grace period; MVP target: overdue more than 7 days only allows payment/financial pages
-   - Dispensation/waiver/payment relief workflow
-   - Auto-release hold after payment, waiver, or approved relief
-   - Clearance service used by academic modules instead of hardcoding finance checks inside KRS/registration
-
-5. **Phase 4 - Scholarships, Adjustments & Reporting** ⏳
-   - Scholarship master data
-   - Student scholarship assignment
-   - Invoice adjustment flow after payment exists
-   - Late penalties if campus enables them
-   - Financial reports: payment summary, outstanding report, revenue by study program, payment trend
-   - Export to Excel/PDF
-
-6. **Phase 5 - Payment Gateway & Automation** ⏳
-   - Midtrans/Xendit integration option
-   - Gateway callback/webhook handling
-   - Scheduled semester invoice generation
-   - Automated overdue refresh and hold evaluation
-   - Optional notification delivery for invoice issued, payment verified, overdue, installment approved/rejected
 
 **Database Changes Required:**
 ```php
@@ -1155,39 +859,30 @@ Schema::create('tuition_fees', function (Blueprint $table) {
 Schema::create('student_invoices', function (Blueprint $table) {
     $table->id();
     $table->string('invoice_number')->unique(); // e.g., INV-2026-001-0001
-    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
-    $table->foreignId('academic_year_id')->nullable()->constrained()->nullOnDelete();
-    $table->integer('semester')->nullable();
-    $table->string('invoice_type')->default('tuition'); // tuition, custom, admission, registration, graduation, exam, library_fine, certificate, other
-    $table->nullableMorphs('source'); // optional origin: tuition fee, admission application, etc.
+    $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
+    $table->foreignId('academic_year_id')->constrained()->cascadeOnDelete();
+    $table->integer('semester');
     $table->decimal('total_amount', 12, 2);
     $table->decimal('paid_amount', 12, 2)->default(0);
-    $table->decimal('outstanding_amount', 12, 2)->default(0);
-    $table->enum('status', ['draft', 'issued', 'partially_paid', 'paid', 'overdue', 'cancelled'])->default('draft');
+    $table->decimal('outstanding_amount', 12, 2)->storedAs('total_amount - paid_amount');
+    $table->enum('status', ['pending', 'partially_paid', 'paid', 'overdue'])->default('pending');
     $table->date('due_date');
     $table->timestamp('paid_at')->nullable();
     $table->foreignId('paid_by')->nullable()->constrained('users')->nullOnDelete();
-    $table->timestamp('issued_at')->nullable();
-    $table->foreignId('issued_by')->nullable()->constrained('users')->nullOnDelete();
-    $table->timestamp('cancelled_at')->nullable();
-    $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
-    $table->string('attachment_path')->nullable();
     $table->text('notes')->nullable();
     $table->timestamps();
     $table->softDeletes();
     
-    $table->index(['student_profile_id', 'status']);
+    $table->index(['student_id', 'status']);
     $table->index(['status', 'due_date']);
 });
 
 // Invoice line items
 Schema::create('invoice_items', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
-    $table->string('item_type')->default('fee'); // fee, discount, adjustment, penalty
+    $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
     $table->string('description'); // e.g., "SPP Semester 5"
     $table->decimal('amount', 12, 2);
-    $table->integer('sort_order')->default(0);
     $table->timestamps();
 });
 
@@ -1196,11 +891,10 @@ Schema::create('payments', function (Blueprint $table) {
     $table->id();
     $table->string('payment_number')->unique(); // e.g., PAY-2026-0001
     $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
+    $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
     $table->decimal('amount', 12, 2);
     $table->enum('payment_method', ['cash', 'bank_transfer', 'credit_card', 'e_wallet']);
     $table->string('transaction_reference')->nullable(); // bank transfer ID, etc.
-    $table->string('proof_file_path')->nullable();
     $table->enum('status', ['pending', 'verified', 'failed'])->default('pending');
     $table->timestamp('paid_at');
     $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
@@ -1208,67 +902,7 @@ Schema::create('payments', function (Blueprint $table) {
     $table->text('notes')->nullable();
     $table->timestamps();
     
-    $table->index(['student_profile_id', 'paid_at']);
-});
-
-// Future: financial holds / clearance
-Schema::create('financial_holds', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
-    $table->foreignId('student_invoice_id')->nullable()->constrained('student_invoices')->nullOnDelete();
-    $table->string('hold_type'); // registration, study_plan, exam_card, transcript, graduation
-    $table->string('status')->default('active'); // active, released, waived
-    $table->text('reason')->nullable();
-    $table->timestamp('starts_at')->nullable();
-    $table->timestamp('released_at')->nullable();
-    $table->foreignId('released_by')->nullable()->constrained('users')->nullOnDelete();
-    $table->timestamps();
-});
-
-// Future: installment requests and schedules
-Schema::create('invoice_installment_requests', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
-    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
-    $table->unsignedTinyInteger('requested_tenor'); // e.g. 2, 3, 4, 6
-    $table->decimal('requested_fee_amount', 12, 2)->default(0);
-    $table->decimal('simulated_total_amount', 12, 2);
-    $table->json('simulation_snapshot')->nullable(); // installment no, amount, due date, fee breakdown
-    $table->string('status')->default('submitted'); // submitted, approved, rejected, cancelled
-    $table->text('student_reason')->nullable();
-    $table->text('finance_notes')->nullable();
-    $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
-    $table->timestamp('reviewed_at')->nullable();
-    $table->timestamps();
-
-    $table->index(['student_profile_id', 'status']);
-    $table->index(['student_invoice_id', 'status']);
-});
-
-Schema::create('invoice_installments', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
-    $table->foreignId('invoice_installment_request_id')->nullable()->constrained('invoice_installment_requests')->nullOnDelete();
-    $table->unsignedTinyInteger('installment_no');
-    $table->decimal('amount', 12, 2);
-    $table->decimal('fee_amount', 12, 2)->default(0);
-    $table->decimal('paid_amount', 12, 2)->default(0);
-    $table->date('due_date');
-    $table->string('status')->default('pending'); // pending, partially_paid, paid, overdue
-    $table->timestamps();
-
-    $table->unique(['student_invoice_id', 'installment_no']);
-});
-
-// Future: auditable amount changes after payment exists
-Schema::create('invoice_adjustments', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
-    $table->string('adjustment_type'); // discount, correction, penalty, waiver
-    $table->decimal('amount', 12, 2);
-    $table->text('reason')->nullable();
-    $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-    $table->timestamps();
+    $table->index(['student_id', 'paid_at']);
 });
 
 // Scholarships
@@ -1288,7 +922,7 @@ Schema::create('scholarships', function (Blueprint $table) {
 // Student scholarship assignments
 Schema::create('student_scholarships', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
+    $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
     $table->foreignId('scholarship_id')->constrained()->cascadeOnDelete();
     $table->foreignId('academic_year_id')->constrained()->cascadeOnDelete();
     $table->integer('semester');
@@ -1298,7 +932,7 @@ Schema::create('student_scholarships', function (Blueprint $table) {
     $table->text('notes')->nullable();
     $table->timestamps();
     
-    $table->unique(['student_profile_id', 'scholarship_id', 'academic_year_id', 'semester']);
+    $table->unique(['student_id', 'scholarship_id', 'academic_year_id', 'semester']);
 });
 ```
 
@@ -1310,35 +944,24 @@ Schema::create('student_scholarships', function (Blueprint $table) {
 
 **Files to Create/Modify:**
 - Models:
-  - ✅ `app/Models/Financial/TuitionFee.php`
-  - ✅ `app/Models/Financial/StudentInvoice.php`
-  - ✅ `app/Models/Financial/InvoiceItem.php`
+  - `app/Models/Financial/TuitionFee.php`
+  - `app/Models/Financial/StudentInvoice.php`
+  - `app/Models/Financial/InvoiceItem.php`
   - `app/Models/Financial/Payment.php`
   - `app/Models/Financial/Scholarship.php`
   - `app/Models/Financial/StudentScholarship.php`
 - Services:
-  - ✅ `app/Support/Financial/InvoiceNumberService.php`
-  - ✅ `app/Support/Financial/InvoiceGenerationService.php`
-  - ✅ `app/Support/Financial/InvoiceStatusService.php`
-  - `app/Support/Financial/FinancialClearanceService.php`
-  - `app/Support/Financial/InvoicePublishingService.php`
-  - `app/Support/Financial/InvoiceAdjustmentService.php`
-  - `app/Support/Financial/InstallmentSimulationService.php`
-  - `app/Support/Financial/InstallmentApprovalService.php`
+  - `app/Support/InvoiceGenerationService.php`
   - `app/Support/PaymentProcessingService.php`
 - Livewire Components:
-  - ✅ `app/Livewire/Financial/TuitionFeeTable.php`
-  - ✅ `app/Livewire/Financial/InvoiceTable.php`
+  - `app/Livewire/Financial/TuitionFeeTable.php`
+  - `app/Livewire/Financial/InvoiceTable.php`
   - `app/Livewire/Financial/PaymentTable.php`
   - `app/Livewire/Financial/ScholarshipTable.php`
   - `app/Livewire/Financial/StudentInvoiceView.php` (student side)
 - Views:
-  - ✅ `resources/views/components/admin/financial/tuition-fees/`
-  - ✅ `resources/views/components/admin/financial/student-invoices/`
-  - ✅ `resources/views/components/student/financial/` (invoice view)
-  - `resources/views/components/admin/financial/custom-invoices/` (or extend student-invoices create/edit with custom mode)
-  - `resources/views/components/admin/financial/installment-requests/` (approval/rejection)
-  - `resources/views/components/student/financial/invoices/` (list/detail/pay actions, installment request, following existing student page styling)
+  - `resources/views/components/admin/financial/` (all admin tables)
+  - `resources/views/components/student/financial/` (invoice view, payment history)
 - Commands:
   - `app/Console/Commands/GenerateSemesterInvoices.php` (scheduled job)
 - Migrations: 6 migration files
@@ -1352,7 +975,7 @@ Schema::create('student_scholarships', function (Blueprint $table) {
 **Dependencies:**
 - Requires: Existing academic_years, study_programs, users tables ✅
 - Blocks: None
-- Related: Admission (registration fee), Student Services (payment verification)
+- Related: PMB (registration fee), Student Services (payment verification)
 
 ---
 
@@ -1417,21 +1040,21 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 ## 📊 Implementation Statistics
 
 ### Current Sprint (Week 1-2)
-- **Total Features In Progress:** 1
+- **Total Features In Progress:** 3
 - **Roles Impacted:** Lecturer, Student, Admin
-- **Modules Affected:** Academic (enhancement), Publication (new), Admission (new), Financial (new)
-- **Estimated Total Effort:** ~21-28 days
+- **Modules Affected:** Academic (enhancement), Publication (new), PMB (new), Financial (new)
+- **Estimated Total Effort:** ~18-23 days
 
 ### Completion Tracking
-- ✅ Completed Features: 4 (Course Materials Management, Announcement System, Grade Book with Export, Admission Management)
-- 🚧 In Progress: 1
+- ✅ Completed Features: 3 (Course Materials Management, Announcement System, Grade Book with Export)
+- 🚧 In Progress: 2
 - ⏸️ Planned: 40+
 - ❌ Not Started: 40+
 
 ### Module Distribution
 - **Academic:** 13 features (existing + enhancements)
 - **Publication:** 1 feature (new module — announcements ✅)
-- **Admission:** 1 feature (new module)
+- **PMB (Admission):** 1 feature (new module)
 - **Financial:** 1 feature (new module)
 - **Student Services:** 1 feature (planned)
 - **Lecturer HR:** 1 feature (planned)
@@ -1442,184 +1065,6 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 ---
 
 ## 🔄 Update History
-
-- **2026-05-13 (Financial Spec Refinement):**
-  - 📝 **REFINED: Financial Invoice Core & Future Policies** (Priority 5)
-    - Clarified `tuition_fees` as semester fee template/rule, not actual student billing.
-    - Clarified `student_invoices` as actual per-student invoice snapshots with `invoice_items`.
-    - Added custom/manual invoice requirement for single student and bulk scopes.
-    - Added invoice types: tuition, custom, admission, registration, graduation, exam, library_fine, certificate, other.
-    - Added invoice lifecycle decision: custom invoices default draft, issued invoices become visible/payable to students.
-    - Added student invoice UX target: invoice list, detail, manual pay action, disabled automatic payment action for later phase.
-    - Added future financial hold/clearance policy layer instead of hardcoding KRS/registration blocking directly.
-    - Added future dispensation, waiver, installment plan, and invoice adjustment concepts.
-  - ðŸ“ **REFINED: Installment Conversion Policy** (Priority 5 / Phase 2)
-    - Added student-initiated installment conversion request with tenor simulation from invoice detail.
-    - Finance/admin approval is required before an invoice becomes installment-based.
-    - Rejected installment requests remain in history and student may submit another request with a different tenor.
-    - Once approved as installment, invoice no longer offers normal full payment; student pays installment rows, with option to pay multiple rows together.
-    - Added configurable installment fee policy with default open-source recommendation: no extra fee unless campus config enables fixed/percentage/per-installment/manual fee.
-    - Added overdue policy target: global warning on overdue invoice/installment, then hard student access freeze after more than 7 overdue days with payment pages still accessible.
-
-- **2026-05-13 (Financial Phase 1.5 Implementation):**
-  - 🚧 **PHASE 1.5 IMPLEMENTED: Custom Invoice & Lifecycle** (Priority 5)
-    - Added invoice type and lifecycle support to invoice core (`draft`, `issued`, `partially_paid`, `paid`, `overdue`, `cancelled`).
-    - Added custom/manual invoice creation with dynamic invoice items.
-    - Added single-student and bulk invoice creation modes for tuition/custom invoices.
-    - Added invoice issue/publish workflow; draft invoices are hidden from student invoice pages.
-    - Added edit-before-payment workflow; paid/partially paid/cancelled invoices are protected for future adjustment flow.
-    - Added student invoice detail page with manual payment and automatic payment buttons disabled for upcoming payment phase.
-    - Added `InvoicePublishingService` for draft-to-issued workflow.
-
-- **2026-05-13 (Financial Phase 1 Implementation):**
-  - 🚧 **PHASE 1 IMPLEMENTED: Fee Structure & Invoice Core** (Priority 5)
-    - Created `Financial` namespace for billing foundation.
-    - Added `tuition_fees`, `student_invoices`, and `invoice_items` tables.
-    - Standardized financial student references on `student_profile_id`.
-    - Added admin Tuition Fee CRUD with PowerGrid/resource registry pattern.
-    - Added admin Student Invoice list/detail and manual/bulk generation from active tuition fee.
-    - Added student invoice read-only page under `/student/financial/invoices`.
-    - Added `InvoiceNumberService`, `InvoiceGenerationService`, and `InvoiceStatusService`.
-    - Deferred manual payment verification, receipt PDF, scholarships, reports, and gateway integration to later phases.
-
-- **2026-05-13 (Admission Completion Audit):**
-  - ✅ **ADMISSION MARKED COMPLETED** (Priority 4)
-    - Confirmed local Git history includes Phase 1, Phase 2, and Phase 3 commits through `feat(admission): implement NIM generation rules and acceptance letter functionality`.
-    - Verified admission admin/public route registration with `php artisan route:list --path=admission` (28 routes).
-    - Verified local migration status includes all admission Phase 1-3 migrations as ran.
-    - Verified baseline test suite with `php artisan test --compact` after fixing test/migration blockers unrelated to admission.
-    - Remaining admission-payment integration is intentionally deferred to Financial Management as registration fee/payment work.
-
-- **2026-05-11 (Admission Phase 3 Implementation):**
-  - ✅ **PHASE 3 IMPLEMENTED: Student Conversion & NIM Rules** (Priority 4)
-    - Added NIM generation tables:
-      - `nim_generation_rules`
-      - `nim_sequence_counters`
-    - Added `NimGenerationRule` and `NimSequenceCounter` models
-    - Added `NimGenerationService`:
-      - Active rule lookup
-      - NIM preview
-      - Token rendering: `{year}`, `{yy}`, `{period_code}`, `{faculty_code}`, `{program_code}`, `{class_type}`, `{sequence}`
-      - Sequence scopes: global, year, period, faculty, study program, class type, study program + year
-      - Counter locking and collision check against existing/soft-deleted student profiles
-    - Added admin NIM Rule management with PowerGrid/resource registry pattern
-      - Create/edit/index
-      - Active rule toggle
-      - Pattern preview
-    - Added `AdmissionConversionService`:
-      - Converts accepted applicant to active `users` account
-      - Assigns `student` role
-      - Creates `student_profiles` with generated NIM
-      - Creates initial approved `student_registrations` when admission period is bound to academic year
-      - Marks application as converted via `converted_at` and `user_id`
-    - Added welcome email:
-      - `AdmissionConvertedToStudent`
-      - `resources/views/templates/email/admission-converted-to-student.blade.php`
-    - Added acceptance letter PDF:
-      - Controller: `AcceptanceLetterController`
-      - Template: `resources/views/exports/admission-acceptance-letter.blade.php`
-    - Enhanced admin application detail:
-      - NIM preview for accepted applicant
-      - Convert to Student action
-      - Acceptance letter button after conversion
-    - Enhanced applicant portal:
-      - Shows NIM and conversion timestamp after conversion
-    - Registered `nim-generation-rule` resource/menu/permissions in `config/resources.php`
-
-- **2026-05-11 (Admission Phase 2 Implementation):**
-  - 🚧 **PHASE 2 IMPLEMENTED: Admission Selection Workflow** (Priority 4)
-    - Added Phase 2 admission tables:
-      - `admission_exam_schedules`
-      - `admission_exam_participants`
-      - `admission_scores`
-      - `admission_quotas`
-    - Added models and relationships for exam schedules, participants, scores, and quotas
-    - Added `AdmissionSelectionService` for final score recalculation, ranking query, quota matching, and accepted-count refresh
-    - Added admin Admission Exam Schedule management with PowerGrid/resource registry pattern
-      - Schedule create/edit/index/show
-      - Participant assignment from applications in the same admission period
-      - Attendance update: registered, present, absent
-      - Score input with score type, score, weight, notes
-      - Automatic `final_score` recalculation after score updates
-    - Added admin Admission Quota management with PowerGrid/resource registry pattern
-      - Scope by admission period, faculty, study program, and class type
-      - Tracks accepted count and remaining quota
-    - Added admin Selection dashboard:
-      - Filter by period, study program, and class type
-      - Ranking by final score
-      - Quota usage display
-      - Per-applicant accept/waitlist/reject decisions
-      - Bulk status actions for selected applicants
-    - Enhanced admin application table/detail:
-      - Added final score, score count, and assigned session visibility
-      - Added selection schedule and score summary on application detail
-    - Enhanced applicant portal:
-      - Applicant can view assigned exam/interview schedule
-      - Applicant can view attendance status, score summary, and final score
-    - Registered new resources/menus/permissions in `config/resources.php`:
-      - `admission-exam-schedule`
-      - `admission-quota`
-      - `admission-selection`
-
-- **2026-05-11 (Admission Phase 1 Implementation):**
-  - 🚧 **PHASE 1 IMPLEMENTED: Admission Foundation & Applicant Portal** (Priority 4)
-    - Created new `Admission` namespace and `admission_*` database tables for Phase 1
-    - Added admin Admission Period management with configurable document requirements
-    - Added Academic Year binding for Admission Period via `academic_year_id`
-    - Added admin Admission Application review table/detail using PowerGrid/resource registry pattern
-    - Added document verification workflow: pending, verified, rejected, verification notes
-    - Added secure document preview routes for admin and tokenized applicant portal
-    - Added status review workflow: submitted, under_review, accepted, rejected, waitlisted
-    - Added public applicant flow:
-      - `/admission/apply` public application form
-      - `/admission/status` application lookup using application number + email
-      - tokenized applicant portal URL for status tracking and document updates
-    - Added polished public UI and admin detail UI following existing lecturer/student modern card pattern
-    - Added Mailpit/local SMTP email flow:
-      - application submitted email
-      - admission status updated email
-      - templates under `resources/views/templates/email`
-    - Added upload security hardening:
-      - extension + MIME validation for document uploads
-      - safe allowlist: `pdf`, `jpg`, `jpeg`, `png`, `webp`
-      - sanitized admin-configured `allowed_extensions`
-    - Added support services:
-      - `AdmissionNumberService` for application number + token generation
-      - `AdmissionStatusService` for status changes and audit history
-    - Synced permissions and menus from `config/resources.php`
-    - Migrations completed:
-      - `2026_05_11_010000_create_admission_phase_one_tables.php`
-      - `2026_05_11_020000_add_academic_year_id_to_admission_periods.php`
-    - Verification completed:
-      - `php -l` for new PHP files: OK
-      - `php artisan route:list --name=admission`: OK
-      - `php artisan route:list --name=admission.documents`: OK
-      - `php artisan view:cache`: OK
-      - `php artisan migrate --force`: OK
-      - `php artisan migrate:status --pending`: no pending migrations
-
-- **2026-05-11 (Admission Module Planning Refinement):**
-  - 🚧 **REFINED: Admission Management** (Priority 4)
-    - Renamed module direction from `pmb` to `admission` for general English naming consistency
-    - Confirmed Admission as a new module, not an Academic submodule
-    - Confirmed MVP should not add a new `applicant` role
-    - Applicant Portal will use public/token-based access for status tracking and document updates
-    - Accepted applicants are converted into real `student` users only during registration completion
-    - Added flexible NIM generation rule engine requirement:
-      - Template tokens: `{year}`, `{period_code}`, `{faculty_code}`, `{program_code}`, `{class_type}`, `{sequence}`
-      - Sequence scopes: global, year, admission period, faculty, study program, class type
-      - Padding, starting number, preview, and collision checks
-    - Expanded technical scope:
-      - Admission periods/intakes
-      - Configurable document requirements
-      - Status history/audit trail
-      - Exam participants and score weighting
-      - Quota/waitlist management
-      - Conversion service and acceptance letter generation
-    - UI decision:
-      - Admin side follows PowerGrid/resource registry pattern
-      - Applicant side uses `resources/views/components/admission/` public pages
-      - No `resources/views/components/applicant/` role folder for MVP
 
 - **2026-05-09 (Grade Book with Export Implementation):**
   - ✅ **COMPLETED: Grade Book with Export** (Priority 3)
@@ -1633,32 +1078,22 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
       - Real-time search by student name/NIM/course
       - Responsive table dengan color-coded grade badges
       - Export buttons: CSV, Excel, PDF (dengan statistics included in PDF)
-    - Admin interface: PowerGrid table with integrated filter-aware export
-      - Export buttons live in PowerGrid header/dropdown
-      - Export respects current PowerGrid search, filters, sorting, visible columns, and selected rows
-      - Added academic filters: academic year, study program, course offering, class, semester, letter grade, lifecycle, result status
-      - CSV/XLSX export handled in `StudentGradeTable.php` using PowerGrid `prepareToExport()` + native stream/PhpSpreadsheet
-    - Service layer architecture: `GradeBookExportService` untuk lecturer grade book:
-      - `lecturerRows(User $user, array $filters)`: Filtered collection scoped to lecturer course offerings
+    - Admin interface: PowerGrid table + export buttons in card header (NOT in PowerGrid header)
+      - Direct route links untuk CSV/Excel/PDF exports
+      - ActivePermission checks: `student-grade.viewAny` or `student-grade.view`
+    - Service layer architecture: `GradeExportService` dengan comprehensive methods:
+      - `rows(User $user, array $filters, bool $admin)`: Filtered collection based on role
       - `statistics(Collection $rows)`: 8 statistical metrics calculation
       - `distribution(Collection $rows)`: Grade distribution analysis
-      - `streamCsv()`, `streamXlsx()`, `pdf()`: Streaming exports dengan proper headers
-    - Lecturer export controller:
-      - `app/Http/Controllers/Lecturer/GradeBookExportController.php`
-      - Export query parameters mirror active Livewire filters
+      - `streamCsv()`, `streamXlsx()`: Streaming exports dengan proper headers
+      - Admin mode via `$admin` parameter (not role checking inside service)
+    - Separate controllers untuk lecturer dan admin:
+      - Lecturer: No permission check (implicit access via authentication)
+      - Admin: ActivePermission checks in controller methods
     - PDF template: `resources/views/exports/grade-book-pdf.blade.php` dengan DejaVu Sans font
-    - Database performance optimization dengan idempotent indexes on `grade_status` & `graded_at` columns
-    - Post-implementation fixes completed:
-      - Lecturer export dropdown clipping fixed
-      - Lecturer filter options and filtered exports verified
-      - Admin PowerGrid selectable filter options fixed
-      - Admin CSV/XLSX 500 error fixed by bypassing incompatible OpenSpout v5 PowerGrid exporter
-    - Verification completed:
-      - CSV export smoke test: OK
-      - XLSX export smoke test: OK
-      - `php -l`, `php artisan view:cache`, `composer validate --strict`: OK
-      - `php artisan migrate:status --pending`: no pending migrations
-    - Dependencies added: openspout/openspout ^5.0, phpoffice/phpspreadsheet ^5.7, dompdf/dompdf ^3.1
+    - Database performance optimization dengan indexes on `grade_status` & `graded_at` columns
+    - Files changed: ~15 files, +2,000+ insertions
+    - Dependencies added: phpoffice/phpspreadsheet ^5.7, dompdf/dompdf ^3.1
 
 - **2026-05-08 (Announcement System Implementation):**
   - ✅ **COMPLETED: Announcement System** (Priority 2)
@@ -1722,7 +1157,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
   - Added 5 high-priority features currently in progress
   - Organized by global priority order across roles
   - Included detailed technical specifications for each feature
-  - Added module categorization (Academic, Admission, Financial)
+  - Added module categorization (Academic, PMB, Financial)
   - Created planning queue for future features
 - Last updated by: AI Assistant (based on actual git commit history)
 

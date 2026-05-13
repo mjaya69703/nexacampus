@@ -79,6 +79,21 @@ class StudentInvoice extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function installmentRequests(): HasMany
+    {
+        return $this->hasMany(InvoiceInstallmentRequest::class);
+    }
+
+    public function installments(): HasMany
+    {
+        return $this->hasMany(InvoiceInstallment::class);
+    }
+
     public function source(): MorphTo
     {
         return $this->morphTo();
@@ -96,11 +111,18 @@ class StudentInvoice extends Model
 
     public function isEditable(): bool
     {
-        return (float) $this->paid_amount <= 0 && ! in_array($this->status, ['paid', 'partially_paid', 'cancelled'], true);
+        return (float) $this->paid_amount <= 0
+            && ! $this->payments()->exists()
+            && ! in_array($this->status, ['paid', 'partially_paid', 'cancelled'], true);
     }
 
     public function isVisibleToStudent(): bool
     {
         return $this->status !== 'draft';
+    }
+
+    public function hasApprovedInstallments(): bool
+    {
+        return $this->installments()->exists();
     }
 }

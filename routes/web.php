@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Support\ResourceRegistry;
@@ -58,6 +59,10 @@ Route::middleware('is_installed')->group(function () {
                 ->name('admission.applications.acceptance-letter');
 
             Route::livewire('/dashboard', 'admin.dashboard.index')->name('dashboard.index');
+
+            Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'admin'])
+                ->middleware('active_permission:payment.view')
+                ->name('financial.payments.receipt');
         });
 
         // Student Routes
@@ -68,6 +73,7 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/grades', 'student.grades.index')->name('grades.index');
             Route::livewire('/financial/invoices', 'student.financial.invoices')->name('financial.invoices');
             Route::livewire('/financial/invoices/{id}', 'student.financial.invoice-detail')->name('financial.invoices.show');
+            Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'student'])->name('financial.payments.receipt');
             Route::livewire('/transcript', 'student.transcript.index')->name('transcript.index');
             Route::livewire('/schedule', 'student.schedule.index')->name('schedule.index');
             Route::livewire('/schedule/{offeringId}/attendance', 'student.schedule.attendance.index')->name('schedule.attendance');

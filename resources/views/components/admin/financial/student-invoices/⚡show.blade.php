@@ -16,12 +16,15 @@ new class extends Component
             'studentProfile.studyProgram',
             'academicYear',
             'items',
+            'payments.verifiedBy',
+            'installments',
+            'installmentRequests.reviewedBy',
             'issuedBy',
             'cancelledBy',
         ])->findOrFail($id);
 
         app(InvoiceStatusService::class)->refresh($this->invoice);
-        $this->invoice->refresh()->load(['studentProfile.user', 'studentProfile.studyProgram', 'academicYear', 'items', 'issuedBy', 'cancelledBy']);
+        $this->reloadInvoice();
     }
 
     public function issue(InvoicePublishingService $publishingService): void
@@ -33,7 +36,7 @@ new class extends Component
             session()->flash('error', $exception->getMessage());
         }
 
-        $this->invoice->refresh()->load(['studentProfile.user', 'studentProfile.studyProgram', 'academicYear', 'items', 'issuedBy', 'cancelledBy']);
+        $this->reloadInvoice();
     }
 
     public function render()
@@ -58,8 +61,26 @@ new class extends Component
             'cancelled' => 'bg-secondary',
             'issued' => 'bg-primary',
             'draft' => 'bg-light text-dark',
+            'verified', 'approved' => 'bg-success',
+            'pending', 'submitted' => 'bg-warning text-dark',
+            'rejected' => 'bg-danger',
             default => 'bg-warning text-dark',
         };
+    }
+
+    private function reloadInvoice(): void
+    {
+        $this->invoice->refresh()->load([
+            'studentProfile.user',
+            'studentProfile.studyProgram',
+            'academicYear',
+            'items',
+            'payments.verifiedBy',
+            'installments',
+            'installmentRequests.reviewedBy',
+            'issuedBy',
+            'cancelledBy',
+        ]);
     }
 };
 ?>
@@ -148,6 +169,70 @@ new class extends Component
                 </table>
             </div>
         </div>
+
+        @if($invoice->installments->isNotEmpty())
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Installment Schedule</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Due Date</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-end">Paid</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($invoice->installments->sortBy('installment_no') as $installment)
+                                <tr>
+                                    <td>{{ $installment->installment_no }}</td>
+                                    <td>{{ $installment->due_date?->format('d M Y') }}</td>
+                                    <td class="text-end">{{ $this->money((float) $installment->amount + (float) $installment->fee_amount) }}</td>
+                                    <td class="text-end">{{ $this->money($installment->paid_amount) }}</td>
+                                    <td><span class="badge {{ $this->statusClass($installment->status) }}">{{ str($installment->status)->replace('_', ' ')->title() }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+
+        @if($invoice->payments->isNotEmpty())
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Payment History</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>Payment</th>
+                                <th class="text-end">Amount</th>
+                                <th>Status</th>
+                                <th>Paid At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($invoice->payments->sortByDesc('created_at') as $payment)
+                                <tr>
+                                    <td>
+                                        <a href="{{ route('admin.financial.payments.show', ['id' => $payment->id]) }}">{{ $payment->payment_number }}</a>
+                                    </td>
+                                    <td class="text-end">{{ $this->money($payment->amount) }}</td>
+                                    <td><span class="badge {{ $this->statusClass($payment->status) }}">{{ str($payment->status)->replace('_', ' ')->title() }}</span></td>
+                                    <td>{{ $payment->paid_at?->format('d M Y H:i') ?? '-' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="col-lg-4">

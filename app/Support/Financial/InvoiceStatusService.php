@@ -16,10 +16,18 @@ class InvoiceStatusService
         $paidAmount = (float) $invoice->paid_amount;
         $outstandingAmount = max(0, $totalAmount - $paidAmount);
 
+        $hasInstallments = $invoice->installments()->exists();
+        $hasOverdueInstallment = $hasInstallments
+            && $invoice->installments()
+                ->whereIn('status', ['pending', 'partially_paid', 'overdue'])
+                ->whereDate('due_date', '<', now()->toDateString())
+                ->exists();
+
         $status = match (true) {
             $outstandingAmount <= 0 => 'paid',
+            $hasOverdueInstallment => 'overdue',
             $paidAmount > 0 => 'partially_paid',
-            $invoice->due_date?->isPast() => 'overdue',
+            ! $hasInstallments && $invoice->due_date?->isPast() => 'overdue',
             default => 'issued',
         };
 

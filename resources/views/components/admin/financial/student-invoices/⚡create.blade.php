@@ -17,12 +17,12 @@ new class extends Component
         'academic_year_id' => '',
         'semester' => 1,
         'due_date' => '',
-        'invoice_type' => 'custom',
+        'invoice_type' => 'tuition',
         'notes' => '',
-        'issue_immediately' => false,
+        'issue_immediately' => true,
     ];
     public array $items = [
-        ['item_type' => 'fee', 'description' => '', 'amount' => 0],
+        ['item_type' => 'fee', 'description' => '', 'amount' => null],
     ];
 
     public function mount(): void
@@ -56,7 +56,7 @@ new class extends Component
 
     public function addItem(): void
     {
-        $this->items[] = ['item_type' => 'fee', 'description' => '', 'amount' => 0];
+        $this->items[] = ['item_type' => 'fee', 'description' => '', 'amount' => null];
     }
 
     public function removeItem(int $index): void
@@ -76,6 +76,12 @@ new class extends Component
         $students = $this->studentsForGeneration($validated);
         $created = 0;
         $errors = [];
+
+        if ($students->isEmpty()) {
+            session()->flash('error', 'Tidak ada student profile aktif yang cocok dengan target invoice. Invoice hanya bisa dibuat untuk mahasiswa yang sudah punya student profile.');
+
+            return;
+        }
 
         foreach ($students as $student) {
             try {
@@ -127,13 +133,24 @@ new class extends Component
         ]);
     }
 
+    public function eligibleBulkStudentsCount(): int
+    {
+        return $this->studentsForGeneration([
+            'generation_mode' => 'active_students',
+            'academic_year_id' => $this->form['academic_year_id'] ?: null,
+            'semester' => $this->form['semester'] ?: null,
+        ])->count();
+    }
+
     private function rules(): array
     {
-        $academicYearRule = in_array($this->form['invoice_type'] ?? 'custom', ['tuition', 'registration', 'exam'], true)
+        $isCustomInvoice = ($this->form['invoice_kind'] ?? 'tuition') === 'custom';
+        $invoiceType = $isCustomInvoice ? ($this->form['invoice_type'] ?? 'custom') : 'tuition';
+        $academicYearRule = in_array($invoiceType, ['tuition', 'registration', 'exam'], true)
             ? 'required|exists:academic_years,id'
             : 'nullable|exists:academic_years,id';
 
-        return [
+        $rules = [
             'form.invoice_kind' => 'required|in:tuition,custom',
             'form.generation_mode' => 'required|in:single,active_students',
             'form.student_profile_id' => 'required_if:form.generation_mode,single|nullable|exists:student_profiles,id',
@@ -143,11 +160,18 @@ new class extends Component
             'form.invoice_type' => 'required|in:tuition,custom,admission,registration,graduation,exam,library_fine,certificate,other',
             'form.notes' => 'nullable|string|max:1000',
             'form.issue_immediately' => 'required|boolean',
-            'items' => 'required_if:form.invoice_kind,custom|array|min:1',
-            'items.*.item_type' => 'required_if:form.invoice_kind,custom|in:fee,discount,adjustment,penalty',
-            'items.*.description' => 'required_if:form.invoice_kind,custom|string|max:255',
-            'items.*.amount' => 'required_if:form.invoice_kind,custom|numeric|min:0.01',
         ];
+
+        if ($isCustomInvoice) {
+            $rules += [
+                'items' => 'required|array|min:1',
+                'items.*.item_type' => 'required|in:fee,discount,adjustment,penalty',
+                'items.*.description' => 'required|string|max:255',
+                'items.*.amount' => 'required|numeric|min:0.01',
+            ];
+        }
+
+        return $rules;
     }
 
     private function studentsForGeneration(array $validated): Collection
@@ -191,6 +215,18 @@ new class extends Component
             </div>
             <div class="card-body">
                 <form wire:submit.prevent="save">
+                    @if (empty($students))
+                        <div class="alert alert-warning">
+                            <div class="d-flex gap-2">
+                                <i class="fas fa-triangle-exclamation mt-1"></i>
+                                <div>
+                                    <strong>Belum ada student profile aktif.</strong>
+                                    Invoice financial tidak dibuat dari user biasa, tapi dari <code>student_profiles</code>. Convert/admission-kan mahasiswa dulu atau aktifkan student profile sebelum membuat invoice.
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Invoice Kind</label>
@@ -220,6 +256,23 @@ new class extends Component
                                     @endforeach
                                 </select>
                                 @error('form.student_profile_id') <span class="text-danger">{{ $message }}</span> @enderror
+                            </div>
+                        @else
+                            @php($eligibleBulkStudentsCount = $this->eligibleBulkStudentsCount())
+                            <div class="col-12 mb-3">
+                                <div class="alert {{ $eligibleBulkStudentsCount > 0 ? 'alert-info' : 'alert-warning' }} mb-0">
+                                    <div class="d-flex gap-2">
+                                        <i class="fas {{ $eligibleBulkStudentsCount > 0 ? 'fa-circle-info' : 'fa-triangle-exclamation' }} mt-1"></i>
+                                        <div>
+                                            <strong>{{ $eligibleBulkStudentsCount }} mahasiswa eligible.</strong>
+                                            @if ($eligibleBulkStudentsCount > 0)
+                                                Bulk invoice akan dibuat hanya untuk student profile aktif yang cocok dengan academic year, semester, dan registrasi approved aktif.
+                                            @else
+                                                Tidak ada student profile aktif yang cocok dengan filter ini. Invoice tidak akan dibuat sampai ada mahasiswa eligible.
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         @endif
 
@@ -338,6 +391,8 @@ new class extends Component
                 <ul class="mb-0 ps-3">
                     <li>Tuition invoice mengambil item dari tuition fee aktif.</li>
                     <li>Custom invoice memakai item manual dan default draft.</li>
+                    <li>Invoice hanya dibuat untuk mahasiswa yang sudah punya student profile aktif.</li>
+                    <li>Mode bulk memfilter student profile aktif dengan registrasi approved aktif pada tahun akademik/semester yang dipilih.</li>
                     <li>Draft invoice belum tampil di halaman student.</li>
                     <li>Invoice yang sudah punya payment nanti tidak diedit langsung, tapi via adjustment.</li>
                 </ul>
