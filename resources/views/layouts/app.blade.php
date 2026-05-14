@@ -396,6 +396,7 @@
             <!-- BEGIN PAGE BODY -->
             <main id="content" class="page-body">
                 <div class="container-xl">
+                    @include('layouts.partials.financial-clearance-banner')
                     {{ $slot }}
                 </div>
             </main>

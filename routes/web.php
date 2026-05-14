@@ -66,7 +66,7 @@ Route::middleware('is_installed')->group(function () {
         });
 
         // Student Routes
-        Route::middleware('active_role:student')->prefix('student')->as('student.')->group(function () {
+        Route::middleware(['active_role:student', 'financial_clearance'])->prefix('student')->as('student.')->group(function () {
             Route::livewire('/dashboard', 'student.dashboard.index')->name('dashboard.index');
             Route::livewire('/registration', 'student.registration.index')->name('registration.index');
             Route::livewire('/study-plan', 'student.study-plan.index')->name('study-plan.index');

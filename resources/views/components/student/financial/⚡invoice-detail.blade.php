@@ -838,14 +838,15 @@ new class extends Component
                     <div class="p-3">
                         @if($invoice->installments->isNotEmpty())
                             <div class="alert alert-info mb-3">
-                                <i class="fas fa-info-circle me-2"></i>Nominal default mengikuti cicilan terdekat. Kamu bisa bayar beberapa cicilan sekaligus dengan menaikkan nominal.
+                                <i class="fas fa-info-circle me-2"></i>Nominal disarankan mengikuti cicilan terdekat. Kamu boleh bayar sebagian atau beberapa cicilan sekaligus selama tidak melebihi outstanding invoice.
                             </div>
                         @endif
 
                         <form wire:submit="submitPayment" class="d-grid gap-3">
                             <div>
                                 <label class="form-label small fw-semibold">Nominal Bayar</label>
-                                <input type="number" min="1" step="1" wire:model="paymentAmount" class="form-control">
+                                <input type="number" min="1" max="{{ (int) round((float) $invoice->outstanding_amount) }}" step="1" wire:model="paymentAmount" class="form-control">
+                                <div class="form-hint">Maksimal {{ $this->money($invoice->outstanding_amount) }}. Nominal pending lain ikut diperhitungkan saat submit.</div>
                                 @error('paymentAmount') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
                             <div>

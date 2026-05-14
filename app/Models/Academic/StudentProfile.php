@@ -2,6 +2,7 @@
 
 namespace App\Models\Academic;
 
+use App\Models\Financial\FinancialHold;
 use App\Models\Financial\StudentInvoice;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -96,5 +97,10 @@ class StudentProfile extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(StudentInvoice::class);
+    }
+
+    public function financialHolds(): HasMany
+    {
+        return $this->hasMany(FinancialHold::class);
     }
 }

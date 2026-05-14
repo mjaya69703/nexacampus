@@ -94,6 +94,11 @@ class StudentInvoice extends Model
         return $this->hasMany(InvoiceInstallment::class);
     }
 
+    public function financialHolds(): HasMany
+    {
+        return $this->hasMany(FinancialHold::class);
+    }
+
     public function source(): MorphTo
     {
         return $this->morphTo();

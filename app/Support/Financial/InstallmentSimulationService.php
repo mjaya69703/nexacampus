@@ -21,35 +21,35 @@ class InstallmentSimulationService
         }
 
         $feeAmount = max(0, $feeAmount);
+        $baseAmount = (int) round($baseAmount);
+        $feeAmount = (int) round($feeAmount);
         $totalAmount = $baseAmount + $feeAmount;
-        $baseCents = (int) round($baseAmount * 100);
-        $feeCents = (int) round($feeAmount * 100);
-        $basePerInstallment = intdiv($baseCents, $tenor);
-        $baseRemainder = $baseCents % $tenor;
-        $feePerInstallment = intdiv($feeCents, $tenor);
-        $feeRemainder = $feeCents % $tenor;
+        $basePerInstallment = intdiv($baseAmount, $tenor);
+        $baseRemainder = $baseAmount % $tenor;
+        $feePerInstallment = intdiv($feeAmount, $tenor);
+        $feeRemainder = $feeAmount % $tenor;
         $firstDueDate = $this->firstDueDate($invoice);
 
         $rows = [];
 
         for ($i = 1; $i <= $tenor; $i++) {
-            $amountCents = $basePerInstallment + ($i <= $baseRemainder ? 1 : 0);
-            $rowFeeCents = $feePerInstallment + ($i <= $feeRemainder ? 1 : 0);
+            $amount = $basePerInstallment + ($i === $tenor ? $baseRemainder : 0);
+            $rowFeeAmount = $feePerInstallment + ($i === $tenor ? $feeRemainder : 0);
 
             $rows[] = [
                 'installment_no' => $i,
-                'amount' => round($amountCents / 100, 2),
-                'fee_amount' => round($rowFeeCents / 100, 2),
-                'total_amount' => round(($amountCents + $rowFeeCents) / 100, 2),
+                'amount' => $amount,
+                'fee_amount' => $rowFeeAmount,
+                'total_amount' => $amount + $rowFeeAmount,
                 'due_date' => $firstDueDate->addMonthsNoOverflow($i - 1)->toDateString(),
             ];
         }
 
         return [
             'tenor' => $tenor,
-            'base_amount' => round($baseAmount, 2),
-            'fee_amount' => round($feeAmount, 2),
-            'total_amount' => round($totalAmount, 2),
+            'base_amount' => $baseAmount,
+            'fee_amount' => $feeAmount,
+            'total_amount' => $totalAmount,
             'installments' => $rows,
         ];
     }

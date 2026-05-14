@@ -34,7 +34,7 @@ new class extends Component
             ->orderBy('sort_order')
             ->get()
             ->map(fn ($item) => [
-                'item_type' => $item->item_type,
+                'item_type' => in_array($item->item_type, ['discount', 'adjustment', 'penalty'], true) ? $item->item_type : 'fee',
                 'description' => $item->description,
                 'amount' => abs((float) $item->amount),
             ])

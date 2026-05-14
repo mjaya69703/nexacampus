@@ -28,8 +28,17 @@ class PaymentProcessingService
             throw new RuntimeException('Nominal pembayaran wajib lebih dari nol.');
         }
 
+        $invoice = app(InvoiceStatusService::class)->refresh($invoice);
+        $pendingAmount = (float) $invoice->payments()
+            ->where('status', 'pending')
+            ->sum('amount');
+
         if ($amount > (float) $invoice->outstanding_amount) {
             throw new RuntimeException('Nominal pembayaran melebihi outstanding invoice.');
+        }
+
+        if ($pendingAmount + $amount > (float) $invoice->outstanding_amount) {
+            throw new RuntimeException('Total payment pending akan melebihi outstanding invoice. Tunggu verifikasi payment sebelumnya atau kirim nominal yang lebih kecil.');
         }
 
         $installment = null;
@@ -72,6 +81,13 @@ class PaymentProcessingService
         return DB::transaction(function () use ($payment, $verifiedBy, $notes) {
             $payment->loadMissing('invoice.installments');
             $invoice = $payment->invoice()->lockForUpdate()->firstOrFail();
+            app(InvoiceStatusService::class)->refresh($invoice);
+            $invoice->refresh()->load('installments');
+            $paymentAmount = (float) $payment->amount;
+
+            if ($paymentAmount > (float) $invoice->outstanding_amount) {
+                throw new RuntimeException('Nominal payment melebihi outstanding invoice saat ini. Tolak payment ini atau minta mahasiswa mengirim ulang nominal yang sesuai.');
+            }
 
             $payment->update([
                 'status' => 'verified',
@@ -81,17 +97,18 @@ class PaymentProcessingService
             ]);
 
             if ($payment->invoice_installment_id) {
-                $this->applyToInstallment($payment->installment()->lockForUpdate()->firstOrFail(), (float) $payment->amount);
+                $this->applyToInstallment($payment->installment()->lockForUpdate()->firstOrFail(), $paymentAmount);
             } elseif ($invoice->installments()->exists()) {
-                $this->allocateToInstallments($invoice, (float) $payment->amount);
+                $this->allocateToInstallments($invoice, $paymentAmount);
             }
 
             $invoice->update([
-                'paid_amount' => (float) $invoice->paid_amount + (float) $payment->amount,
+                'paid_amount' => (float) $invoice->paid_amount + $paymentAmount,
             ]);
 
             $this->refreshInstallmentOverdue($invoice);
-            app(InvoiceStatusService::class)->refresh($invoice->refresh());
+            $invoice = app(InvoiceStatusService::class)->refresh($invoice->refresh());
+            app(FinancialClearanceService::class)->evaluate($invoice->studentProfile);
 
             return $payment->refresh()->load(['invoice', 'studentProfile.user', 'verifiedBy']);
         });

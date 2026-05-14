@@ -768,7 +768,7 @@ Schema::create('pmb_scores', function (Blueprint $table) {
 *Impact: Admin + Students | Module: New*
 
 ##### 5. Financial Management - Tuition & Payments 💰
-**Status:** 🚧 IN PROGRESS  
+**Status:** 🚧 IN PROGRESS (Phase 3 implemented: payment processing, installments, financial holds/clearance policy)  
 **Roles Affected:** Admin (manage billing), Students (view/pay)  
 **Module Category:** New Module → `financial`
 
@@ -977,6 +977,28 @@ Schema::create('student_scholarships', function (Blueprint $table) {
 - Blocks: None
 - Related: PMB (registration fee), Student Services (payment verification)
 
+**Implementation Phases (Actual):**
+1. **Phase 1 - Fee Structure & Invoice Core** ✅
+   - Tuition fee templates per academic year + study program + semester.
+   - Student invoices use `student_profile_id` as financial identity.
+   - Invoice item snapshots, invoice number generation, admin invoice management, and student invoice read-only pages.
+
+2. **Phase 2 - Payment Processing & Installments** ✅
+   - Student manual payment proof upload.
+   - Admin payment verification/rejection with inline proof preview.
+   - Payment records, payment history, and receipt PDF.
+   - Installment request simulation, admin approval/rejection, and installment schedule generation.
+   - Approved installment invoices are paid through installment schedule while allowing multiple installment rows to be paid together.
+
+3. **Phase 3 - Holds, Clearance & Relief Policy** ✅
+   - Financial clearance policies seeded for conservative defaults: `tuition`, `registration`, and `exam`.
+   - Admin clearance policy dashboard to create/edit/toggle rules without editing code or database manually.
+   - Default blocking targets: tuition blocks registration/KRS, registration blocks KRS, exam blocks exam card.
+   - 7-day grace period before blocking; overdue students receive global warning banner first.
+   - `financial_holds` audit trail with active/released/waived statuses.
+   - Admin financial hold management with release and temporary dispensation/waiver.
+   - Student registration and KRS routes use `FinancialClearanceService` via middleware, keeping finance checks centralized.
+
 ---
 
 ## 📋 Planning Queue (Not Started Yet)
@@ -1066,8 +1088,67 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 
 ## 🔄 Update History
 
-- **2026-05-09 (Grade Book with Export Implementation):**
+- **2026-05-14 (Financial Clearance Holds & Policy Dashboard Implementation):**
+  - ✅ **PHASE 3/3.5: Financial Holds, Clearance Policy & Relief** (Pending Commit)
+    - Added configurable financial clearance policy dashboard under Financial menu.
+    - Added `financial_clearance_policies` and `financial_holds` tables with conservative default policies.
+    - Added global student warning banner for overdue/blocked financial workflows.
+    - Added centralized `FinancialClearanceService` and `financial_clearance` middleware for student route gating.
+    - Added configurable hold target mapping in `config/financial.php` so new student menu targets can be mapped without changing route definitions.
+    - Added admin Financial Holds management with release and temporary dispensation/waiver actions.
+    - Integrated payment verification with hold re-evaluation and auto-release behavior.
+    - Hardened installment/payment edge cases: rounded installment schedules, pending payment cap, and verify-time overpayment guard.
+    - Fixed invoice edit item-type normalization for tuition-generated invoice items.
+    - Files changed: financial clearance middleware/service/models, config/resources, student layout banner, financial admin views, invoice/payment services.
+
+- **2026-05-14 (Financial Payment Processing & Installment Workflow):**
+  - ✅ **PHASE 2: Payment Verification & Installments** (Commit: d773ced)
+    - Student manual payment proof upload from invoice detail.
+    - Admin payment verification/rejection workflow with inline proof preview.
+    - Payment records, payment history, receipt PDF route/template, and payment admin table.
+    - Student installment request flow with tenor simulation.
+    - Admin installment request approval/rejection and installment schedule generation.
+    - Payment allocation across approved installment rows.
+    - Files changed: payment/installment models, services, migrations, admin/student financial views, routes, resource registry.
+
+- **2026-05-13 (Financial Fee Structure & Invoice Lifecycle):**
+  - ✅ **PHASE 1: Tuition Billing & Invoice Core** (Commit: f712a8b)
+    - Financial module namespace with tuition fee, student invoice, and invoice item models.
+    - Tuition fee template/rule management by academic year, study program, and semester.
+    - Student invoice generation using `student_profile_id` as financial identity.
+    - Custom invoice draft/issue lifecycle and edit-before-payment rule.
+    - Admin tuition fee and student invoice management pages.
+    - Student financial menu and invoice list/detail pages.
+    - Documented financial phase plan and installment policy.
+
+- **2026-05-13 (Admission Final Audit & Stabilization):**
+  - ✅ **COMPLETED: Admission Module Stabilization** (Priority 4, Commit: 4c57412)
+    - Final audit for Admission implementation after phase 1-3 delivery.
+    - Stabilized related course material tests and migration consistency.
+    - Confirmed admission lifecycle from public application through conversion is ready to proceed into financial integration.
+
+- **2026-05-12 (Admission Conversion & Acceptance Letter):**
+  - ✅ **PHASE 3: Student Conversion, NIM Rules & Acceptance Letter** (Commit: b6cce8b)
+    - Flexible NIM generation rules and sequence counters.
+    - Accepted applicant conversion to user/student profile/registration.
+    - Acceptance letter PDF generation and welcome notification foundation.
+
+- **2026-05-12 (Admission Selection Workflow):**
+  - ✅ **PHASE 2: Exam, Ranking, Quota & Waitlist** (Commit: 4d18935)
+    - Exam/interview scheduling and participant assignment.
+    - Score input, ranking, quota usage, waitlist, and bulk decision workflow.
+    - Selection dashboard for admin-side admission processing.
+
+- **2026-05-11 (Admission Foundation & Applicant Portal):**
+  - ✅ **PHASE 1: Admission Foundation & Portal** (Commit: e4c702f)
+    - Admission periods with academic year binding.
+    - Public application form, status check, and token-based applicant portal.
+    - Document requirements, secure upload/preview, admin review, and status history.
+    - Email notifications and public/admin UI polish.
+
+- **2026-05-11 (Grade Book with Export Implementation):**
   - ✅ **COMPLETED: Grade Book with Export** (Priority 3)
+    - Commit: 5263f87
     - Role-based UI pattern decision: Lecturer (dedicated page) vs Admin (PowerGrid table)
     - PhpSpreadsheet integration for Excel export (.xlsx format)
     - Dompdf integration for PDF generation with formatted reports

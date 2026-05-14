@@ -458,5 +458,37 @@ return [
             'order' => 4,
         ],
     ],
+    [
+        'resource' => 'financial-hold',
+        'plural' => 'financial-holds',
+        'area' => 'financial',
+        'component' => 'admin.financial.financial-holds',
+        'actions' => ['index', 'show'],
+        'permissions' => ['viewAny', 'view', 'update'],
+        'menu' => [
+            'title' => 'Financial Holds',
+            'icon' => 'fas fa-lock',
+            'group' => 'Financial',
+            'group_icon' => 'fas fa-wallet',
+            'group_order' => 4,
+            'order' => 5,
+        ],
+    ],
+    [
+        'resource' => 'clearance-policy',
+        'plural' => 'clearance-policies',
+        'area' => 'financial',
+        'component' => 'admin.financial.clearance-policies',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Clearance Policies',
+            'icon' => 'fas fa-shield-halved',
+            'group' => 'Financial',
+            'group_icon' => 'fas fa-wallet',
+            'group_order' => 4,
+            'order' => 6,
+        ],
+    ],
 
 ];
