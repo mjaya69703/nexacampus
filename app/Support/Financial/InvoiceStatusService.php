@@ -12,7 +12,7 @@ class InvoiceStatusService
             return $invoice;
         }
 
-        $totalAmount = (float) $invoice->items()->sum('amount');
+        $totalAmount = app(InvoiceAdjustmentService::class)->totalWithAdjustments($invoice);
         $paidAmount = (float) $invoice->paid_amount;
         $outstandingAmount = max(0, $totalAmount - $paidAmount);
 

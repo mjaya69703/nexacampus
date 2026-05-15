@@ -9,7 +9,11 @@ use Livewire\Component;
 new class extends Component
 {
     public array $academicYears = [];
-    public array $students = [];
+
+    public string $studentSearch = '';
+
+    public array $selectedStudentProfileIds = [];
+
     public array $form = [
         'invoice_kind' => 'tuition',
         'generation_mode' => 'single',
@@ -29,17 +33,6 @@ new class extends Component
     {
         $this->academicYears = AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name', 'code'])
             ->map(fn (AcademicYear $year) => ['id' => $year->id, 'label' => $year->name.' ('.$year->code.')'])
-            ->toArray();
-
-        $this->students = StudentProfile::query()
-            ->with(['user', 'studyProgram'])
-            ->where('is_active', true)
-            ->orderBy('nim')
-            ->get()
-            ->map(fn (StudentProfile $student) => [
-                'id' => $student->id,
-                'label' => ($student->nim ?? '-').' - '.$student->user?->name.' ('.$student->studyProgram?->name.')',
-            ])
             ->toArray();
     }
 
@@ -142,6 +135,32 @@ new class extends Component
         ])->count();
     }
 
+    public function studentOptions(): array
+    {
+        return StudentProfile::query()
+            ->with(['user', 'studyProgram'])
+            ->where('is_active', true)
+            ->when($this->studentSearch !== '', function ($query) {
+                $search = '%'.$this->studentSearch.'%';
+
+                $query->where(function ($query) use ($search) {
+                    $query->where('nim', 'like', $search)
+                        ->orWhereHas('user', fn ($query) => $query
+                            ->where('first_name', 'like', $search)
+                            ->orWhere('last_name', 'like', $search)
+                            ->orWhere('email', 'like', $search));
+                });
+            })
+            ->orderBy('nim')
+            ->limit(25)
+            ->get()
+            ->map(fn (StudentProfile $student) => [
+                'id' => $student->id,
+                'label' => ($student->nim ?? '-').' - '.$student->user?->name.' ('.$student->studyProgram?->name.')',
+            ])
+            ->toArray();
+    }
+
     private function rules(): array
     {
         $isCustomInvoice = ($this->form['invoice_kind'] ?? 'tuition') === 'custom';
@@ -152,8 +171,10 @@ new class extends Component
 
         $rules = [
             'form.invoice_kind' => 'required|in:tuition,custom',
-            'form.generation_mode' => 'required|in:single,active_students',
+            'form.generation_mode' => 'required|in:single,selected_students,active_students',
             'form.student_profile_id' => 'required_if:form.generation_mode,single|nullable|exists:student_profiles,id',
+            'selectedStudentProfileIds' => 'required_if:form.generation_mode,selected_students|array',
+            'selectedStudentProfileIds.*' => 'exists:student_profiles,id',
             'form.academic_year_id' => $academicYearRule,
             'form.semester' => 'required_if:form.invoice_kind,tuition|nullable|integer|min:1|max:14',
             'form.due_date' => 'required_if:form.invoice_kind,custom|nullable|date',
@@ -180,6 +201,14 @@ new class extends Component
             return StudentProfile::query()
                 ->with(['user', 'studyProgram'])
                 ->whereKey($validated['student_profile_id'])
+                ->get();
+        }
+
+        if ($validated['generation_mode'] === 'selected_students') {
+            return StudentProfile::query()
+                ->with(['user', 'studyProgram'])
+                ->where('is_active', true)
+                ->whereKey($this->selectedStudentProfileIds)
                 ->get();
         }
 
@@ -215,7 +244,7 @@ new class extends Component
             </div>
             <div class="card-body">
                 <form wire:submit.prevent="save">
-                    @if (empty($students))
+                    @if (StudentProfile::where('is_active', true)->doesntExist())
                         <div class="alert alert-warning">
                             <div class="d-flex gap-2">
                                 <i class="fas fa-triangle-exclamation mt-1"></i>
@@ -241,6 +270,7 @@ new class extends Component
                             <label class="form-label">Mode</label>
                             <select class="form-control" wire:model.live="form.generation_mode">
                                 <option value="single">Single Student</option>
+                                <option value="selected_students">Selected Students</option>
                                 <option value="active_students">Approved Active Students</option>
                             </select>
                             @error('form.generation_mode') <span class="text-danger">{{ $message }}</span> @enderror
@@ -249,13 +279,33 @@ new class extends Component
                         @if (($form['generation_mode'] ?? 'single') === 'single')
                             <div class="col-12 mb-3">
                                 <label class="form-label">Student <span class="text-danger">*</span></label>
-                                <select class="form-control" wire:model="form.student_profile_id">
-                                    <option value="">Select Student</option>
-                                    @foreach ($students as $student)
-                                        <option value="{{ $student['id'] }}">{{ $student['label'] }}</option>
+                                <input type="text" class="form-control mb-2" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari NIM, nama, atau email...">
+                                <div class="border rounded p-2" style="max-height: 260px; overflow-y: auto;">
+                                    @foreach ($this->studentOptions() as $student)
+                                        <label class="form-check mb-2" wire:key="invoice-single-student-{{ $student['id'] }}">
+                                            <input class="form-check-input" type="radio" wire:model="form.student_profile_id" value="{{ $student['id'] }}">
+                                            <span class="form-check-label">{{ $student['label'] }}</span>
+                                        </label>
                                     @endforeach
-                                </select>
+                                </div>
+                                <small class="text-muted">Search hanya menampilkan 25 kandidat teratas.</small>
                                 @error('form.student_profile_id') <span class="text-danger">{{ $message }}</span> @enderror
+                            </div>
+                        @elseif (($form['generation_mode'] ?? 'single') === 'selected_students')
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Students <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control mb-2" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari NIM, nama, atau email...">
+                                <div class="border rounded p-2" style="max-height: 260px; overflow-y: auto;">
+                                    @foreach ($this->studentOptions() as $student)
+                                        <label class="form-check mb-2" wire:key="invoice-selected-student-{{ $student['id'] }}">
+                                            <input class="form-check-input" type="checkbox" wire:model="selectedStudentProfileIds" value="{{ $student['id'] }}">
+                                            <span class="form-check-label">{{ $student['label'] }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <small class="text-muted">{{ count($selectedStudentProfileIds) }} mahasiswa dipilih. Search hanya menampilkan 25 kandidat teratas.</small>
+                                @error('selectedStudentProfileIds') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                                @error('selectedStudentProfileIds.*') <span class="text-danger d-block">{{ $message }}</span> @enderror
                             </div>
                         @else
                             @php($eligibleBulkStudentsCount = $this->eligibleBulkStudentsCount())

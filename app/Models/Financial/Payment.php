@@ -6,6 +6,7 @@ use App\Models\Academic\StudentProfile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -72,5 +73,10 @@ class Payment extends Model
     public function verifiedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function creditTransactions(): HasMany
+    {
+        return $this->hasMany(StudentCreditTransaction::class);
     }
 }

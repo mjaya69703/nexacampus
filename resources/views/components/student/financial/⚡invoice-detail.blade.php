@@ -36,7 +36,7 @@ new class extends Component
         abort_unless($studentProfile, 404);
 
         $this->invoice = StudentInvoice::query()
-            ->with(['academicYear', 'items', 'payments.verifiedBy', 'installments', 'installmentRequests.reviewedBy'])
+            ->with(['academicYear', 'items', 'adjustments.createdBy', 'payments.verifiedBy', 'installments', 'installmentRequests.reviewedBy'])
             ->where('student_profile_id', $studentProfile->id)
             ->where('status', '!=', 'draft')
             ->findOrFail($id);
@@ -182,6 +182,27 @@ new class extends Component
         return str($type ?: 'invoice')->replace('_', ' ')->title()->toString();
     }
 
+    public function adjustmentLabel(?string $type): string
+    {
+        return match ($type) {
+            'scholarship' => 'Beasiswa',
+            'discount' => 'Diskon',
+            'waiver' => 'Keringanan',
+            'penalty' => 'Denda',
+            'correction' => 'Koreksi',
+            'write_off' => 'Penghapusan',
+            default => $this->typeLabel($type),
+        };
+    }
+
+    public function signedMoney(float|string|null $amount): string
+    {
+        $value = (float) $amount;
+        $prefix = $value > 0 ? '+' : ($value < 0 ? '-' : '');
+
+        return $prefix.$this->money(abs($value));
+    }
+
     public function canRequestInstallment(): bool
     {
         return ! in_array($this->invoice->status, ['paid', 'cancelled'], true)
@@ -209,6 +230,7 @@ new class extends Component
         $this->invoice->refresh()->load([
             'academicYear',
             'items',
+            'adjustments.createdBy',
             'payments.verifiedBy',
             'installments',
             'installmentRequests.reviewedBy',
@@ -386,6 +408,23 @@ new class extends Component
             color: #4338ca;
             font-weight: 800;
             white-space: nowrap;
+        }
+
+        .amount-pill-success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .amount-pill-warning {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .adjustment-card {
+            border-radius: 16px;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+            border: 1px solid #bbf7d0;
         }
 
         .timeline-item {
@@ -651,6 +690,10 @@ new class extends Component
                     </div>
                 </div>
                 <div class="card-body p-4">
+                    @php
+                        $itemTotal = (float) $invoice->items->sum('amount');
+                        $adjustmentTotal = (float) $invoice->adjustments->sum('amount');
+                    @endphp
                     <div class="d-grid gap-3">
                         @foreach ($invoice->items->sortBy('sort_order') as $item)
                             <div class="material-card">
@@ -664,19 +707,72 @@ new class extends Component
                                             <div class="text-secondary small mt-1">{{ str($item->item_type)->replace('_', ' ')->title() }}</div>
                                         </div>
                                     </div>
-                                    <div class="amount-pill">{{ $this->money($item->amount) }}</div>
+                                    <div class="amount-pill {{ (float) $item->amount < 0 ? 'amount-pill-success' : ($item->item_type === 'penalty' ? 'amount-pill-warning' : '') }}">
+                                        {{ (float) $item->amount < 0 ? $this->signedMoney($item->amount) : $this->money($item->amount) }}
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
                     </div>
 
-                    <div class="material-card mt-4" style="background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); border-color: #c7d2fe;">
-                        <div class="d-flex justify-content-between align-items-center gap-3">
-                            <div>
-                                <div class="fw-bold">Total Invoice</div>
-                                <div class="text-secondary small">Nominal final yang perlu diselesaikan</div>
+                    @if($invoice->adjustments->isNotEmpty())
+                        <div class="mt-4">
+                            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                                <div>
+                                    <div class="fw-bold" style="color: #111827;">Penyesuaian Tagihan</div>
+                                    <div class="text-secondary small">Potongan, beasiswa, koreksi, atau denda yang diterapkan finance</div>
+                                </div>
+                                <span class="amount-pill {{ $adjustmentTotal <= 0 ? 'amount-pill-success' : 'amount-pill-warning' }}">
+                                    {{ $this->signedMoney($adjustmentTotal) }}
+                                </span>
                             </div>
-                            <div class="h3 mb-0 text-end" style="font-weight: 800; color: #4338ca;">{{ $this->money($invoice->total_amount) }}</div>
+                            <div class="d-grid gap-3">
+                                @foreach($invoice->adjustments->sortBy('created_at') as $adjustment)
+                                    <div class="adjustment-card">
+                                        <div class="invoice-line">
+                                            <div class="d-flex align-items-start gap-3">
+                                                <div class="invoice-line-icon" style="background: {{ (float) $adjustment->amount <= 0 ? '#dcfce7' : '#fef3c7' }}; color: {{ (float) $adjustment->amount <= 0 ? '#15803d' : '#b45309' }};">
+                                                    <i class="fas {{ (float) $adjustment->amount <= 0 ? 'fa-tags' : 'fa-triangle-exclamation' }}"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold" style="color: #111827;">{{ $this->adjustmentLabel($adjustment->adjustment_type) }}</div>
+                                                    <div class="text-secondary small mt-1">
+                                                        {{ $adjustment->reason ?: 'Penyesuaian dari finance' }}
+                                                        @if($adjustment->created_at)
+                                                            <span class="mx-1">/</span>{{ $adjustment->created_at->format('d M Y') }}
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="amount-pill {{ (float) $adjustment->amount <= 0 ? 'amount-pill-success' : 'amount-pill-warning' }}">
+                                                {{ $this->signedMoney($adjustment->amount) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="material-card mt-4" style="background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); border-color: #c7d2fe;">
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex justify-content-between align-items-center gap-3">
+                                <div class="text-secondary small">Subtotal item</div>
+                                <div class="fw-bold">{{ $this->money($itemTotal) }}</div>
+                            </div>
+                            @if($invoice->adjustments->isNotEmpty())
+                                <div class="d-flex justify-content-between align-items-center gap-3">
+                                    <div class="text-secondary small">Total penyesuaian</div>
+                                    <div class="fw-bold {{ $adjustmentTotal <= 0 ? 'text-success' : 'text-warning' }}">{{ $this->signedMoney($adjustmentTotal) }}</div>
+                                </div>
+                            @endif
+                            <div class="d-flex justify-content-between align-items-center gap-3 pt-2" style="border-top: 1px solid #c7d2fe;">
+                                <div>
+                                    <div class="fw-bold">Total Invoice</div>
+                                    <div class="text-secondary small">Nominal final yang perlu diselesaikan</div>
+                                </div>
+                                <div class="h3 mb-0 text-end" style="font-weight: 800; color: #4338ca;">{{ $this->money($invoice->total_amount) }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>

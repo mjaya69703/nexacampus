@@ -768,7 +768,7 @@ Schema::create('pmb_scores', function (Blueprint $table) {
 *Impact: Admin + Students | Module: New*
 
 ##### 5. Financial Management - Tuition & Payments 💰
-**Status:** 🚧 IN PROGRESS (Phase 3 implemented: payment processing, installments, financial holds/clearance policy)  
+**Status:** 🚧 IN PROGRESS (Phase 4 implemented: scholarships, adjustments, credit balance, and reports)
 **Roles Affected:** Admin (manage billing), Students (view/pay)  
 **Module Category:** New Module → `financial`
 
@@ -796,19 +796,37 @@ Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billi
   - Payment verification & approval
   - Receipt generation (PDF)
   - Bulk payment processing
+  - Overpayment handling via student credit balance, so verified excess payment can be tracked for refund or future use instead of silently disappearing
+  - Finance can reject mismatched payment proof/amount during verification
+
+- **Adjustments, Discounts & Credit Balance:**
+  - Invoice adjustment flow for invoices that already have payment history
+  - Adjustment types: correction, discount, scholarship, waiver, penalty, write-off
+  - Admin/finance discount and waiver are direct actions, not approval-based for MVP
+  - Optional discount/voucher code model can be added later, but Phase 4 uses direct finance/admin application first
+  - Student credit balance records overpayment, refund, credit applied, and manual credit correction
+  - Overpayment creates auditable credit balance transaction linked to the payment/invoice
+  - Credit balance can support refund workflow later without changing original payment history
+  - Adjustment records are auditable and should not rewrite original invoice item snapshots
   
 - **Financial Reports:**
   - Payment summary per semester
   - Outstanding payments report
   - Revenue by study program
   - Payment trend analysis
+  - Adjustment/discount/waiver report
+  - Scholarship utilization report
+  - Student credit balance and overpayment report
   - Export to Excel/PDF
   
 - **Scholarship Management:**
   - Scholarship types & criteria
   - Student scholarship assignment
+  - Percentage-based and fixed-amount scholarship support
   - Scholarship amount & duration
   - Renewal tracking
+  - Scholarship can be auto-applied during invoice generation when the assignment matches academic year/semester
+  - Existing invoices can receive scholarship through invoice adjustment, not by editing original invoice items directly
 
 **Why Important:**
 - Critical untuk cash flow management
@@ -827,6 +845,7 @@ Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billi
 
 **Technical Notes:**
 - New tables: `tuition_fees`, `student_invoices`, `invoice_items`, `payments`, `scholarships`, `student_scholarships`
+- Phase 4 tables: `invoice_adjustments`, `student_credit_balances`, `student_credit_transactions`, `scholarships`, `student_scholarships`
 - Invoice generation logic
 - Payment status tracking (Pending → Paid → Overdue)
 - Integration dengan payment gateway (Midtrans/Xendit)
@@ -834,6 +853,10 @@ Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billi
 - Scheduled jobs untuk invoice generation
 - Consider double-entry accounting for accuracy
 - Implement role-based access (admin full access, student view-only)
+- Phase 4 should treat invoice totals as item snapshot plus adjustment ledger, so paid invoices are not edited destructively
+- Overpayment policy: verified amount beyond outstanding balance becomes student credit balance; finance can later refund or apply the credit
+- Late penalty policy should be soft/configurable. Default MVP behavior is manual penalty adjustment only; automatic daily penalties are optional and disabled by default
+- If automatic penalty is enabled later, invoice should snapshot the penalty rule (`none`, `manual`, `daily`) and create auditable penalty adjustments instead of silently mutating invoice items
 
 **Database Changes Required:**
 ```php
@@ -905,14 +928,54 @@ Schema::create('payments', function (Blueprint $table) {
     $table->index(['student_id', 'paid_at']);
 });
 
+// Future: auditable invoice adjustments after payment exists
+Schema::create('invoice_adjustments', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('student_invoice_id')->constrained('student_invoices')->cascadeOnDelete();
+    $table->string('adjustment_type'); // correction, discount, scholarship, waiver, penalty, write_off
+    $table->decimal('amount', 12, 2); // signed amount: negative reduces invoice, positive increases invoice
+    $table->nullableMorphs('source'); // optional origin: scholarship assignment, admin action, penalty policy, etc.
+    $table->text('reason')->nullable();
+    $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamps();
+
+    $table->index(['student_invoice_id', 'adjustment_type']);
+});
+
+// Future: student credit balance summary
+Schema::create('student_credit_balances', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
+    $table->decimal('balance', 12, 2)->default(0);
+    $table->timestamps();
+
+    $table->unique('student_profile_id');
+});
+
+// Future: auditable credit movement ledger
+Schema::create('student_credit_transactions', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
+    $table->foreignId('student_invoice_id')->nullable()->constrained('student_invoices')->nullOnDelete();
+    $table->foreignId('payment_id')->nullable()->constrained('payments')->nullOnDelete();
+    $table->string('transaction_type'); // overpayment, refund, credit_applied, manual_adjustment
+    $table->decimal('amount', 12, 2); // signed amount: positive adds credit, negative consumes/refunds credit
+    $table->text('notes')->nullable();
+    $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamps();
+
+    $table->index(['student_profile_id', 'transaction_type']);
+});
+
 // Scholarships
 Schema::create('scholarships', function (Blueprint $table) {
     $table->id();
     $table->string('name');
     $table->text('description')->nullable();
     $table->enum('type', ['full', 'partial', 'merit', 'need_based']);
-    $table->decimal('discount_percentage', 5, 2)->nullable(); // for partial
-    $table->decimal('fixed_amount', 12, 2)->nullable(); // for fixed amount
+    $table->enum('discount_type', ['percentage', 'fixed'])->default('percentage');
+    $table->decimal('discount_percentage', 5, 2)->nullable();
+    $table->decimal('fixed_amount', 12, 2)->nullable();
     $table->integer('duration_semesters')->default(1);
     $table->text('requirements')->nullable();
     $table->boolean('is_active')->default(true);
@@ -948,16 +1011,26 @@ Schema::create('student_scholarships', function (Blueprint $table) {
   - `app/Models/Financial/StudentInvoice.php`
   - `app/Models/Financial/InvoiceItem.php`
   - `app/Models/Financial/Payment.php`
-  - `app/Models/Financial/Scholarship.php`
-  - `app/Models/Financial/StudentScholarship.php`
+  - ✅ `app/Models/Financial/InvoiceAdjustment.php`
+  - ✅ `app/Models/Financial/StudentCreditBalance.php`
+  - ✅ `app/Models/Financial/StudentCreditTransaction.php`
+  - ✅ `app/Models/Financial/Scholarship.php`
+  - ✅ `app/Models/Financial/StudentScholarship.php`
 - Services:
   - `app/Support/InvoiceGenerationService.php`
   - `app/Support/PaymentProcessingService.php`
+  - ✅ `app/Support/Financial/InvoiceAdjustmentService.php`
+  - ✅ `app/Support/Financial/StudentCreditService.php`
+  - ✅ `app/Support/Financial/ScholarshipApplicationService.php`
+  - ✅ `app/Support/Financial/FinancialReportExportService.php`
 - Livewire Components:
   - `app/Livewire/Financial/TuitionFeeTable.php`
   - `app/Livewire/Financial/InvoiceTable.php`
   - `app/Livewire/Financial/PaymentTable.php`
-  - `app/Livewire/Financial/ScholarshipTable.php`
+  - ✅ `app/Livewire/Financial/ScholarshipTable.php`
+  - ✅ `app/Livewire/Financial/StudentScholarshipTable.php`
+  - ✅ `app/Livewire/Financial/InvoiceAdjustmentTable.php`
+  - ✅ `app/Livewire/Financial/StudentCreditTable.php`
   - `app/Livewire/Financial/StudentInvoiceView.php` (student side)
 - Views:
   - `resources/views/components/admin/financial/` (all admin tables)
@@ -998,6 +1071,25 @@ Schema::create('student_scholarships', function (Blueprint $table) {
    - `financial_holds` audit trail with active/released/waived statuses.
    - Admin financial hold management with release and temporary dispensation/waiver.
    - Student registration and KRS routes use `FinancialClearanceService` via middleware, keeping finance checks centralized.
+
+4. **Phase 4 - Scholarships, Adjustments & Reporting** ✅
+   - Scholarship master data and student scholarship assignment.
+   - Percentage-based and fixed-amount scholarship support.
+   - Apply scholarship automatically during invoice generation when assignment matches, or manually to existing invoices as an adjustment.
+   - Invoice adjustment flow after payment exists: correction, discount, scholarship, waiver, penalty, write-off.
+   - Direct admin/finance discount and waiver actions for MVP; voucher/code-based discounts are optional later.
+   - Student credit balance for overpayment, refund tracking, and future credit application.
+   - Verified overpayment becomes an auditable credit transaction instead of breaking invoice totals.
+   - Late penalties are soft/configurable: manual penalty adjustment first, automatic daily penalties optional and disabled by default.
+   - Financial reports: payment summary, outstanding report, revenue by study program, payment trend, adjustment/discount summary, scholarship utilization, and credit balance report.
+   - Export financial reports to Excel/PDF.
+
+5. **Phase 5 - Payment Gateway & Automation** ⏳
+   - Midtrans/Xendit integration option.
+   - Gateway callback/webhook handling.
+   - Scheduled semester invoice generation.
+   - Automated overdue refresh and financial hold evaluation.
+   - Optional notification delivery for invoice issued, payment verified, overdue, installment approved/rejected.
 
 ---
 
@@ -1088,8 +1180,21 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 
 ## 🔄 Update History
 
+- **2026-05-14 (Financial Scholarships, Adjustments & Reporting Implementation):**
+  - ✅ **PHASE 4: Scholarships, Adjustments, Credit Balance & Reports** (Pending Commit)
+    - Added invoice adjustment ledger for correction, discount, scholarship, waiver, penalty, and write-off.
+    - Added scholarship master data and student scholarship assignment workflow.
+    - Added automatic scholarship application when matching invoices are issued, plus manual scholarship apply from invoice detail.
+    - Added student credit balance and credit transaction ledger for verified overpayment, refund, and manual credit correction.
+    - Updated payment verification so verify-time overpayment becomes auditable student credit instead of breaking invoice totals.
+    - Updated invoice totals to include adjustment ledger without editing original invoice item snapshots.
+    - Added admin pages for scholarships, student scholarships, invoice adjustments, student credits, and financial reports.
+    - Added CSV, Excel, and PDF export for financial invoice summary reports.
+    - Kept late penalties soft/configurable via manual penalty adjustment first; automatic penalties remain optional for later automation.
+    - Files changed: financial phase four migration, models, services, PowerGrid tables, admin financial views, report export controller/service, resource registry, and routes.
+
 - **2026-05-14 (Financial Clearance Holds & Policy Dashboard Implementation):**
-  - ✅ **PHASE 3/3.5: Financial Holds, Clearance Policy & Relief** (Pending Commit)
+  - ✅ **PHASE 3: Financial Holds, Clearance Policy & Relief** (Pending Commit)
     - Added configurable financial clearance policy dashboard under Financial menu.
     - Added `financial_clearance_policies` and `financial_holds` tables with conservative default policies.
     - Added global student warning banner for overdue/blocked financial workflows.

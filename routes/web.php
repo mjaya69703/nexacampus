@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
@@ -63,6 +64,16 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'admin'])
                 ->middleware('active_permission:payment.view')
                 ->name('financial.payments.receipt');
+
+            Route::get('/financial/reports/export/csv', [FinancialReportExportController::class, 'csv'])
+                ->middleware('active_permission:financial-report.viewAny')
+                ->name('financial.reports.export.csv');
+            Route::get('/financial/reports/export/xlsx', [FinancialReportExportController::class, 'xlsx'])
+                ->middleware('active_permission:financial-report.viewAny')
+                ->name('financial.reports.export.xlsx');
+            Route::get('/financial/reports/export/pdf', [FinancialReportExportController::class, 'pdf'])
+                ->middleware('active_permission:financial-report.viewAny')
+                ->name('financial.reports.export.pdf');
         });
 
         // Student Routes

@@ -13,6 +13,15 @@ return [
         'other' => 'Other',
     ],
 
+    'adjustment_types' => [
+        'correction' => 'Correction',
+        'discount' => 'Discount',
+        'scholarship' => 'Scholarship',
+        'waiver' => 'Waiver',
+        'penalty' => 'Penalty',
+        'write_off' => 'Write Off',
+    ],
+
     'hold_targets' => [
         'registration' => [
             'label' => 'Registration',

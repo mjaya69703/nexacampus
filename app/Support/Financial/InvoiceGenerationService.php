@@ -69,7 +69,10 @@ class InvoiceGenerationService
             $this->createItems($invoice, $tuitionFee, $academicYear, $semester);
 
             if ($issueImmediately) {
-                return app(InvoicePublishingService::class)->issue($invoice, $createdBy);
+                $invoice = app(InvoicePublishingService::class)->issue($invoice, $createdBy);
+                app(ScholarshipApplicationService::class)->applyMatchingScholarships($invoice, $createdBy);
+
+                return app(InvoiceStatusService::class)->refresh($invoice);
             }
 
             return app(InvoiceStatusService::class)->refresh($invoice);
@@ -124,7 +127,10 @@ class InvoiceGenerationService
             }
 
             if ($issueImmediately) {
-                return app(InvoicePublishingService::class)->issue($invoice, $createdBy);
+                $invoice = app(InvoicePublishingService::class)->issue($invoice, $createdBy);
+                app(ScholarshipApplicationService::class)->applyMatchingScholarships($invoice, $createdBy);
+
+                return app(InvoiceStatusService::class)->refresh($invoice);
             }
 
             return app(InvoiceStatusService::class)->refresh($invoice);

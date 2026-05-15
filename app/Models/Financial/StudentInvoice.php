@@ -79,6 +79,11 @@ class StudentInvoice extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(InvoiceAdjustment::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

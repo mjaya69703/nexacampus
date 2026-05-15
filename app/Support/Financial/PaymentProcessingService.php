@@ -85,26 +85,32 @@ class PaymentProcessingService
             $invoice->refresh()->load('installments');
             $paymentAmount = (float) $payment->amount;
 
-            if ($paymentAmount > (float) $invoice->outstanding_amount) {
-                throw new RuntimeException('Nominal payment melebihi outstanding invoice saat ini. Tolak payment ini atau minta mahasiswa mengirim ulang nominal yang sesuai.');
-            }
+            $outstandingAmount = (float) $invoice->outstanding_amount;
+            $appliedAmount = min($paymentAmount, $outstandingAmount);
+            $overpaidAmount = max(0, $paymentAmount - $outstandingAmount);
 
             $payment->update([
                 'status' => 'verified',
                 'verified_by' => $verifiedBy,
                 'verified_at' => now(),
-                'verification_notes' => $notes,
+                'verification_notes' => $overpaidAmount > 0
+                    ? trim(($notes ? $notes."\n" : '').'Overpayment '.number_format($overpaidAmount, 2, '.', '').' dicatat sebagai saldo kredit mahasiswa.')
+                    : $notes,
             ]);
 
-            if ($payment->invoice_installment_id) {
-                $this->applyToInstallment($payment->installment()->lockForUpdate()->firstOrFail(), $paymentAmount);
-            } elseif ($invoice->installments()->exists()) {
-                $this->allocateToInstallments($invoice, $paymentAmount);
+            if ($appliedAmount > 0) {
+                if ($payment->invoice_installment_id) {
+                    $this->applyToInstallment($payment->installment()->lockForUpdate()->firstOrFail(), $appliedAmount);
+                } elseif ($invoice->installments()->exists()) {
+                    $this->allocateToInstallments($invoice, $appliedAmount);
+                }
+
+                $invoice->update([
+                    'paid_amount' => (float) $invoice->paid_amount + $appliedAmount,
+                ]);
             }
 
-            $invoice->update([
-                'paid_amount' => (float) $invoice->paid_amount + $paymentAmount,
-            ]);
+            app(StudentCreditService::class)->addOverpayment($payment, $overpaidAmount, $verifiedBy);
 
             $this->refreshInstallmentOverdue($invoice);
             $invoice = app(InvoiceStatusService::class)->refresh($invoice->refresh());

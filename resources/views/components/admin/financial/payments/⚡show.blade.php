@@ -19,6 +19,7 @@ new class extends Component
             'studentProfile.user',
             'studentProfile.studyProgram',
             'installment',
+            'creditTransactions',
             'submittedBy',
             'verifiedBy',
         ])->findOrFail($id);
@@ -100,6 +101,7 @@ new class extends Component
             'studentProfile.user',
             'studentProfile.studyProgram',
             'installment',
+            'creditTransactions',
             'submittedBy',
             'verifiedBy',
         ]);
@@ -277,6 +279,17 @@ new class extends Component
                         <small class="text-muted">Notes</small>
                         <div>{{ $payment->verification_notes ?: '-' }}</div>
                     </div>
+                    @if($payment->creditTransactions->isNotEmpty())
+                        <div class="alert alert-success mt-3 mb-0">
+                            <div class="fw-bold">Credit Balance Created</div>
+                            @foreach($payment->creditTransactions as $transaction)
+                                <div class="small">
+                                    {{ str($transaction->transaction_type)->replace('_', ' ')->title() }}:
+                                    {{ $this->money($transaction->amount) }}
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 @endif
             </div>
         </div>
