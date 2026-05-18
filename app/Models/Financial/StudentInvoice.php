@@ -25,14 +25,17 @@ class StudentInvoice extends Model
         'invoice_type',
         'source_type',
         'source_id',
+        'invoice_schedule_id',
         'total_amount',
         'paid_amount',
         'outstanding_amount',
         'status',
         'due_date',
         'paid_at',
+        'overdue_notified_at',
         'issued_at',
         'issued_by',
+        'issued_notified_at',
         'cancelled_at',
         'cancelled_by',
         'attachment_path',
@@ -50,7 +53,9 @@ class StudentInvoice extends Model
             'outstanding_amount' => 'decimal:2',
             'due_date' => 'date',
             'paid_at' => 'datetime',
+            'overdue_notified_at' => 'datetime',
             'issued_at' => 'datetime',
+            'issued_notified_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
     }
@@ -87,6 +92,11 @@ class StudentInvoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function schedule(): BelongsTo
+    {
+        return $this->belongsTo(InvoiceSchedule::class, 'invoice_schedule_id');
     }
 
     public function installmentRequests(): HasMany

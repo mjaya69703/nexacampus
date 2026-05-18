@@ -395,6 +395,22 @@ return [
         ],
     ],
     [
+        'resource' => 'financial-dashboard',
+        'plural' => 'dashboard',
+        'area' => 'financial',
+        'component' => 'admin.financial.dashboard',
+        'actions' => [],
+        'permissions' => ['viewAny', 'view'],
+        'menu' => [
+            'title' => 'Dashboard',
+            'icon' => 'fas fa-chart-pie',
+            'group' => 'Financial',
+            'group_icon' => 'fas fa-wallet',
+            'group_order' => 4,
+            'order' => 0,
+        ],
+    ],
+    [
         'resource' => 'tuition-fee',
         'plural' => 'tuition-fees',
         'area' => 'financial',
@@ -491,6 +507,22 @@ return [
         ],
     ],
     [
+        'resource' => 'invoice-schedule',
+        'plural' => 'invoice-schedules',
+        'area' => 'financial',
+        'component' => 'admin.financial.invoice-schedules',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Invoice Schedules',
+            'icon' => 'fas fa-clock',
+            'group' => 'Financial',
+            'group_icon' => 'fas fa-wallet',
+            'group_order' => 4,
+            'order' => 7,
+        ],
+    ],
+    [
         'resource' => 'scholarship',
         'plural' => 'scholarships',
         'area' => 'financial',
@@ -503,7 +535,7 @@ return [
             'group' => 'Financial',
             'group_icon' => 'fas fa-wallet',
             'group_order' => 4,
-            'order' => 7,
+            'order' => 8,
         ],
     ],
     [
@@ -519,7 +551,7 @@ return [
             'group' => 'Financial',
             'group_icon' => 'fas fa-wallet',
             'group_order' => 4,
-            'order' => 8,
+            'order' => 9,
         ],
     ],
     [
@@ -535,7 +567,7 @@ return [
             'group' => 'Financial',
             'group_icon' => 'fas fa-wallet',
             'group_order' => 4,
-            'order' => 9,
+            'order' => 10,
         ],
     ],
     [
@@ -551,7 +583,7 @@ return [
             'group' => 'Financial',
             'group_icon' => 'fas fa-wallet',
             'group_order' => 4,
-            'order' => 10,
+            'order' => 11,
         ],
     ],
     [
@@ -567,7 +599,7 @@ return [
             'group' => 'Financial',
             'group_icon' => 'fas fa-wallet',
             'group_order' => 4,
-            'order' => 11,
+            'order' => 12,
         ],
     ],
 

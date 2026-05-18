@@ -5,6 +5,7 @@ namespace App\Support\Financial;
 use App\Models\Academic\AcademicYear;
 use App\Models\Academic\StudentProfile;
 use App\Models\Financial\InvoiceItem;
+use App\Models\Financial\InvoiceSchedule;
 use App\Models\Financial\StudentInvoice;
 use App\Models\Financial\TuitionFee;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ class InvoiceGenerationService
         ?string $dueDate = null,
         ?int $createdBy = null,
         bool $issueImmediately = true,
+        ?InvoiceSchedule $schedule = null,
     ): StudentInvoice {
         $studentProfile->loadMissing(['user', 'studyProgram']);
 
@@ -49,7 +51,7 @@ class InvoiceGenerationService
             throw new RuntimeException('Invoice untuk student, tahun akademik, dan semester ini sudah ada.');
         }
 
-        return DB::transaction(function () use ($studentProfile, $academicYear, $semester, $dueDate, $createdBy, $tuitionFee, $issueImmediately) {
+        return DB::transaction(function () use ($studentProfile, $academicYear, $semester, $dueDate, $createdBy, $tuitionFee, $issueImmediately, $schedule) {
             $invoice = StudentInvoice::create([
                 'invoice_number' => app(InvoiceNumberService::class)->generate(),
                 'student_profile_id' => $studentProfile->id,
@@ -58,6 +60,7 @@ class InvoiceGenerationService
                 'invoice_type' => 'tuition',
                 'source_type' => $tuitionFee::class,
                 'source_id' => $tuitionFee->id,
+                'invoice_schedule_id' => $schedule?->id,
                 'total_amount' => 0,
                 'paid_amount' => 0,
                 'outstanding_amount' => 0,
@@ -89,18 +92,20 @@ class InvoiceGenerationService
         ?string $notes = null,
         ?int $createdBy = null,
         bool $issueImmediately = false,
+        ?InvoiceSchedule $schedule = null,
     ): StudentInvoice {
         if (empty($items)) {
             throw new RuntimeException('Invoice wajib memiliki minimal satu item.');
         }
 
-        return DB::transaction(function () use ($studentProfile, $items, $invoiceType, $dueDate, $academicYear, $semester, $notes, $createdBy, $issueImmediately) {
+        return DB::transaction(function () use ($studentProfile, $items, $invoiceType, $dueDate, $academicYear, $semester, $notes, $createdBy, $issueImmediately, $schedule) {
             $invoice = StudentInvoice::create([
                 'invoice_number' => app(InvoiceNumberService::class)->generate(),
                 'student_profile_id' => $studentProfile->id,
                 'academic_year_id' => $academicYear?->id,
                 'semester' => $semester,
                 'invoice_type' => $invoiceType,
+                'invoice_schedule_id' => $schedule?->id,
                 'total_amount' => 0,
                 'paid_amount' => 0,
                 'outstanding_amount' => 0,

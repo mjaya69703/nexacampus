@@ -26,6 +26,7 @@ class InvoicePublishingService
 
         $invoice = app(InvoiceStatusService::class)->refresh($invoice->refresh());
         app(ScholarshipApplicationService::class)->applyMatchingScholarships($invoice, $userId);
+        app(FinancialNotificationService::class)->invoiceIssued($invoice->refresh());
 
         return app(InvoiceStatusService::class)->refresh($invoice->refresh());
     }

@@ -102,6 +102,10 @@ Setelah login, pilih role yang ingin digunakan bila akun memiliki lebih dari sat
 - Global warning banner pada halaman mahasiswa jika ada tagihan overdue.
 - Temporary dispensation/waiver dan release hold oleh admin.
 - Middleware financial clearance yang membaca mapping route dari konfigurasi.
+- Dashboard financial khusus admin untuk memantau revenue, outstanding, pending payment, overdue invoice, financial hold, invoice schedule, student credit, dan scholarship dari satu halaman.
+- Invoice schedule untuk menerbitkan invoice otomatis pada waktu yang ditentukan admin.
+- Scheduled overdue refresh dan financial hold evaluation agar status tagihan/hold tetap sinkron walau tidak sedang dibuka manual.
+- Email notification untuk invoice terbit, payment verified/rejected, invoice overdue, dan cicilan approved/rejected.
 
 ## Peran dan Akses
 
@@ -141,6 +145,22 @@ Atau jalankan manual:
 php artisan serve
 php artisan queue:listen --tries=1
 npm run dev
+```
+
+### Scheduler Production
+
+Untuk menjalankan automation keuangan seperti invoice schedule, overdue refresh, financial hold evaluation, dan email reminder, pastikan Laravel Scheduler aktif di server:
+
+```bash
+* * * * * cd /path/to/nexacampus && php artisan schedule:run >> storage/logs/scheduler.log 2>&1
+```
+
+Command automation yang dijalankan scheduler:
+
+```bash
+php artisan financial:run-invoice-schedules
+php artisan financial:refresh-overdue
+php artisan financial:evaluate-holds
 ```
 
 ### Testing

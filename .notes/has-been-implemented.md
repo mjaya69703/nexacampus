@@ -768,7 +768,7 @@ Schema::create('pmb_scores', function (Blueprint $table) {
 *Impact: Admin + Students | Module: New*
 
 ##### 5. Financial Management - Tuition & Payments 💰
-**Status:** 🚧 IN PROGRESS (Phase 4 implemented: scholarships, adjustments, credit balance, and reports)
+**Status:** 🚧 IN PROGRESS (Phase 5 implemented: invoice scheduling, automation, and email notifications; payment gateway deferred)
 **Roles Affected:** Admin (manage billing), Students (view/pay)  
 **Module Category:** New Module → `financial`
 
@@ -1084,12 +1084,25 @@ Schema::create('student_scholarships', function (Blueprint $table) {
    - Financial reports: payment summary, outstanding report, revenue by study program, payment trend, adjustment/discount summary, scholarship utilization, and credit balance report.
    - Export financial reports to Excel/PDF.
 
-5. **Phase 5 - Payment Gateway & Automation** ⏳
-   - Midtrans/Xendit integration option.
-   - Gateway callback/webhook handling.
-   - Scheduled semester invoice generation.
-   - Automated overdue refresh and financial hold evaluation.
-   - Optional notification delivery for invoice issued, payment verified, overdue, installment approved/rejected.
+5. **Phase 5 - Invoice Scheduling, Automation & Email Notifications** ✅
+   - Admin financial dashboard with revenue, outstanding, pending payment, overdue invoice, hold, schedule, credit, and scholarship summary.
+   - Admin invoice schedule dashboard for planned invoice publishing.
+   - Scheduled tuition/custom invoice generation by active students, selected students, or a single student.
+   - Schedule status tracking: pending, running, completed, failed, cancelled.
+   - Scheduler command: `financial:run-invoice-schedules`.
+   - Automated overdue refresh command: `financial:refresh-overdue`.
+   - Automated financial hold evaluation command: `financial:evaluate-holds`.
+   - Laravel Scheduler entries for invoice schedules, overdue refresh, and hold evaluation.
+   - Financial email namespace: `app/Mail/Financial`.
+   - Financial email templates under `resources/views/templates/email/financial`.
+   - Email delivery for invoice issued, invoice overdue, payment verified/rejected, and installment approved/rejected.
+   - Payment gateway integration moved to Future Recommendations.
+
+**Future Recommendations:**
+- Midtrans/Xendit payment gateway integration.
+- Gateway callback/webhook handling with idempotency and signature verification.
+- Student wallet/credit usage for paying future invoices.
+- Notification center / in-app notification bell.
 
 ---
 

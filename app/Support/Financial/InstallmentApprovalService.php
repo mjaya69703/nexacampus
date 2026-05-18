@@ -45,7 +45,10 @@ class InstallmentApprovalService
                 'reviewed_at' => now(),
             ]);
 
-            return $request->refresh()->load(['invoice.installments', 'reviewedBy']);
+            $request = $request->refresh()->load(['invoice.installments', 'invoice.studentProfile.user', 'reviewedBy']);
+            app(FinancialNotificationService::class)->installmentApproved($request);
+
+            return $request;
         });
     }
 
@@ -62,6 +65,9 @@ class InstallmentApprovalService
             'reviewed_at' => now(),
         ]);
 
-        return $request->refresh()->load('reviewedBy');
+        $request = $request->refresh()->load(['invoice.studentProfile.user', 'reviewedBy']);
+        app(FinancialNotificationService::class)->installmentRejected($request);
+
+        return $request;
     }
 }

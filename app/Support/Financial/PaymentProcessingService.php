@@ -116,7 +116,10 @@ class PaymentProcessingService
             $invoice = app(InvoiceStatusService::class)->refresh($invoice->refresh());
             app(FinancialClearanceService::class)->evaluate($invoice->studentProfile);
 
-            return $payment->refresh()->load(['invoice', 'studentProfile.user', 'verifiedBy']);
+            $payment = $payment->refresh()->load(['invoice', 'studentProfile.user', 'verifiedBy']);
+            app(FinancialNotificationService::class)->paymentVerified($payment);
+
+            return $payment;
         });
     }
 
@@ -133,7 +136,10 @@ class PaymentProcessingService
             'verification_notes' => $notes,
         ]);
 
-        return $payment->refresh()->load(['invoice', 'studentProfile.user', 'verifiedBy']);
+        $payment = $payment->refresh()->load(['invoice', 'studentProfile.user', 'verifiedBy']);
+        app(FinancialNotificationService::class)->paymentRejected($payment);
+
+        return $payment;
     }
 
     public function refreshInstallmentOverdue(StudentInvoice $invoice): void

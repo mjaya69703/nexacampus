@@ -47,6 +47,10 @@ Route::middleware('is_installed')->group(function () {
                 );
             }
 
+            Route::livewire('/financial/dashboard', 'admin.financial.dashboard.index')
+                ->middleware('active_permission:financial-dashboard.viewAny')
+                ->name('financial.dashboard.index');
+
             Route::livewire('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', 'admin.academic.attendance-sessions.show')
                 ->middleware('active_permission:course-offering.view')
                 ->name('academic.attendance-sessions.show');
