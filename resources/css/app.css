@@ -452,7 +452,18 @@ body[data-bs-theme=dark] .app-dashboard .list-group-item-action:hover {
 /* SCROLL FIX */
 .table-responsive {
     border-radius: 10px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive .power-grid-table,
+.table-responsive > table {
+    min-width: max-content;
+}
+
+.table-responsive .power-grid-table {
+    margin-bottom: 0;
 }
 
 /* LABEL */

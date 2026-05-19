@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\EnsureActiveRoleHasPermission;
+use App\Http\Middleware\EnsureFinancialClearance;
 use App\Http\Middleware\EnsureRoleIsActive;
 use App\Http\Middleware\EnsureSystemIsInstalled;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // 'maintenance' => \App\Http\Middleware\CheckForMaintenanceMode::class,
             'active_role' => EnsureRoleIsActive::class,
             'active_permission' => EnsureActiveRoleHasPermission::class,
+            'financial_clearance' => EnsureFinancialClearance::class,
             'is_installed' => EnsureSystemIsInstalled::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,

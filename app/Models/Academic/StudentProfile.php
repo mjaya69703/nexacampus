@@ -2,11 +2,17 @@
 
 namespace App\Models\Academic;
 
+use App\Models\Financial\FinancialHold;
+use App\Models\Financial\StudentCreditBalance;
+use App\Models\Financial\StudentCreditTransaction;
+use App\Models\Financial\StudentInvoice;
+use App\Models\Financial\StudentScholarship;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -90,5 +96,30 @@ class StudentProfile extends Model
     public function studyPlans(): HasMany
     {
         return $this->hasMany(StudyPlan::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(StudentInvoice::class);
+    }
+
+    public function financialHolds(): HasMany
+    {
+        return $this->hasMany(FinancialHold::class);
+    }
+
+    public function creditBalance(): HasOne
+    {
+        return $this->hasOne(StudentCreditBalance::class);
+    }
+
+    public function creditTransactions(): HasMany
+    {
+        return $this->hasMany(StudentCreditTransaction::class);
+    }
+
+    public function scholarships(): HasMany
+    {
+        return $this->hasMany(StudentScholarship::class);
     }
 }

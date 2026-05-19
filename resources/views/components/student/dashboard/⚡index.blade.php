@@ -8,6 +8,8 @@ use App\Models\Academic\StudyPlan;
 use App\Models\Academic\StudyPlanDetail;
 use App\Models\Academic\StudyResult;
 use App\Models\Academic\TranscriptEntry;
+use App\Models\Financial\StudentInvoice;
+use App\Support\Financial\InvoiceStatusService;
 use Livewire\Component;
 
 new class extends Component
@@ -22,6 +24,8 @@ new class extends Component
     public ?string $currentStudyPlanStatus = null;
     public ?string $lastLoginAt = null;
     public $recentGrades = [];
+    public $recentFinancialInvoices = [];
+    public array $financialSummary = [];
 
     public function mount(): void
     {
@@ -169,6 +173,38 @@ new class extends Component
             ->limit(8)
             ->get();
 
+        StudentInvoice::query()
+            ->where('student_profile_id', $studentProfile->id)
+            ->whereIn('status', ['issued', 'partially_paid'])
+            ->whereDate('due_date', '<', now()->toDateString())
+            ->get()
+            ->each(fn (StudentInvoice $invoice) => app(InvoiceStatusService::class)->refresh($invoice));
+
+        $studentInvoices = StudentInvoice::query()
+            ->where('student_profile_id', $studentProfile->id)
+            ->where('status', '!=', 'draft')
+            ->get();
+
+        $this->financialSummary = [
+            'total_invoices' => $studentInvoices->count(),
+            'outstanding' => (float) $studentInvoices
+                ->whereNotIn('status', ['paid', 'cancelled'])
+                ->sum('outstanding_amount'),
+            'overdue' => $studentInvoices->where('status', 'overdue')->count(),
+            'paid' => $studentInvoices->where('status', 'paid')->count(),
+        ];
+
+        $this->recentFinancialInvoices = $studentInvoices
+            ->sortBy(fn (StudentInvoice $invoice) => match ($invoice->status) {
+                'overdue' => 1,
+                'partially_paid' => 2,
+                'issued' => 3,
+                'paid' => 4,
+                default => 9,
+            })
+            ->take(3)
+            ->values();
+
         if ($currentStudyPlan) {
             $dayOrder = [
                 'Monday' => 1,
@@ -263,6 +299,32 @@ new class extends Component
             'absent' => 0,
             'rate' => null,
         ];
+
+        $this->financialSummary = [
+            'total_invoices' => 0,
+            'outstanding' => 0,
+            'overdue' => 0,
+            'paid' => 0,
+        ];
+
+        $this->recentFinancialInvoices = collect();
+    }
+
+    public function money(float|string|null $amount): string
+    {
+        return 'Rp '.number_format((float) $amount, 0, ',', '.');
+    }
+
+    public function financialStatusClass(?string $status): string
+    {
+        return match ($status) {
+            'paid' => 'bg-green-lt text-green',
+            'partially_paid' => 'bg-blue-lt text-blue',
+            'overdue' => 'bg-red-lt text-red',
+            'cancelled' => 'bg-secondary-lt text-secondary',
+            'issued' => 'bg-indigo-lt text-indigo',
+            default => 'bg-yellow-lt text-yellow',
+        };
     }
 
     private function formatTime(mixed $value): string
@@ -429,6 +491,34 @@ new class extends Component
             font-size: 0.85rem;
             font-weight: 500;
         }
+
+        .finance-widget {
+            border-radius: 20px;
+            border: none;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .finance-widget-header {
+            background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+            border-bottom: 2px solid #e2e8f0;
+            padding: 1rem 1.25rem;
+        }
+
+        .finance-line {
+            padding: 1rem;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #eef2ff;
+            transition: all 0.25s ease;
+        }
+
+        .finance-line:hover {
+            transform: translateX(4px);
+            border-color: #c7d2fe;
+            box-shadow: 0 8px 22px rgba(102, 126, 234, 0.12);
+        }
     </style>
 @endpush
 
@@ -561,6 +651,72 @@ new class extends Component
                     <div style="font-weight: 600; color: #1f2937;">Absensi</div>
                     <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">Cek kehadiran per mata kuliah</div>
                 </a>
+            </div>
+        </div>
+
+        <div class="card finance-widget mb-4">
+            <div class="finance-widget-header">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div>
+                            <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;">Ringkasan Keuangan</h3>
+                            <div class="small text-secondary">Status tagihan dan pembayaran terbaru</div>
+                        </div>
+                    </div>
+                    <a href="{{ route('student.financial.invoices') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-file-invoice me-1"></i> Lihat Invoice
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="finance-line h-100">
+                            <div class="text-secondary small mb-1">Total Invoice</div>
+                            <div class="h3 mb-0">{{ number_format($financialSummary['total_invoices']) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="finance-line h-100">
+                            <div class="text-secondary small mb-1">Belum Dibayar</div>
+                            <div class="h3 mb-0 {{ $financialSummary['outstanding'] > 0 ? 'text-danger' : 'text-success' }}">{{ $this->money($financialSummary['outstanding']) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="finance-line h-100">
+                            <div class="text-secondary small mb-1">Overdue</div>
+                            <div class="h3 mb-0 text-danger">{{ number_format($financialSummary['overdue']) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="finance-line h-100">
+                            <div class="text-secondary small mb-1">Lunas</div>
+                            <div class="h3 mb-0 text-success">{{ number_format($financialSummary['paid']) }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-3">
+                    @forelse($recentFinancialInvoices as $invoice)
+                        <div class="finance-line">
+                            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                                <div>
+                                    <div class="fw-bold" style="color: #1f2937;">{{ $invoice->invoice_number }}</div>
+                                    <div class="text-secondary small mt-1">{{ str($invoice->invoice_type)->replace('_', ' ')->title() }} / Due {{ $invoice->due_date?->format('d M Y') }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold {{ (float) $invoice->outstanding_amount > 0 ? 'text-danger' : 'text-success' }}">{{ $this->money($invoice->outstanding_amount) }}</div>
+                                    <span class="badge {{ $this->financialStatusClass($invoice->status) }}">{{ str($invoice->status)->replace('_', ' ')->title() }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="finance-line text-center text-secondary">Belum ada invoice mahasiswa.</div>
+                    @endforelse
+                </div>
             </div>
         </div>
     @endif
@@ -698,9 +854,9 @@ new class extends Component
         </div>
     </div>
 
-    {{-- Recent Grades & Upcoming Schedules --}}
+    {{-- Recent Grades, Upcoming Schedules & Announcements --}}
     <div class="row g-3">
-        <div class="col-lg-6">
+        <div class="col-lg-4">
             <div class="card modern-card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
                     <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-graduation-cap me-2" style="color: #10b981;"></i>Nilai Terbaru</h3>
@@ -737,7 +893,7 @@ new class extends Component
             </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-lg-4">
             <div class="card modern-card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
                     <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-calendar-days me-2" style="color: #f59e0b;"></i>Jadwal Ringkas</h3>
@@ -776,5 +932,56 @@ new class extends Component
                 </div>
             </div>
         </div>
+
+        {{-- Announcements --}}
+        @if($hasProfile)
+        @php
+            $recentAnnouncements = \App\Models\Publication\Announcement::queryForStudent(auth()->user())
+                ->with('creator')->limit(6)->get();
+            $unreadAnnouncementCount = \App\Models\Publication\Announcement::unreadCountForStudent(auth()->user());
+        @endphp
+        <div class="col-lg-4">
+            <div class="card modern-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
+                    <h3 class="card-title mb-0" style="font-weight: 700; color: #1f2937;">
+                        <i class="fas fa-bullhorn me-2" style="color: #667eea;"></i>Pengumuman
+                        @if($unreadAnnouncementCount > 0)
+                            <span class="badge ms-1" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;font-size:0.72rem;">
+                                {{ $unreadAnnouncementCount }} baru
+                            </span>
+                        @endif
+                    </h3>
+                    <a href="{{ route('student.announcements.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Semua</a>
+                </div>
+                <div class="card-body p-4">
+                    @forelse($recentAnnouncements as $ann)
+                        @php $annIsRead = $ann->isReadBy(auth()->id()); @endphp
+                        <a href="{{ route('student.announcements.show', $ann->id) }}" class="text-decoration-none">
+                            <div style="display:flex;align-items:center;gap:0.65rem;padding:0.7rem;border-radius:12px;background:{{ !$annIsRead ? '#f5f0ff' : '#f8fafc' }};margin-bottom:0.5rem;border:2px solid {{ !$annIsRead ? '#c4b5fd' : 'transparent' }};transition:all 0.2s;">
+                                <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <i class="{{ $ann->priority->icon() }}" style="color:white;font-size:0.8rem;"></i>
+                                </div>
+                                <div class="flex-grow-1" style="min-width:0;">
+                                    <div style="font-weight:{{ !$annIsRead ? '700' : '600' }};color:#1e293b;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                        @if($ann->is_pinned)<i class="fas fa-thumbtack me-1" style="color:#f59e0b;font-size:0.7rem;"></i>@endif
+                                        {{ $ann->title }}
+                                    </div>
+                                    <div style="font-size:0.75rem;color:#64748b;">{{ $ann->creator?->name ?? '-' }} · {{ $ann->published_at?->diffForHumans() }}</div>
+                                </div>
+                                @if(!$annIsRead)
+                                    <span style="width:7px;height:7px;border-radius:50%;background:#667eea;flex-shrink:0;"></span>
+                                @endif
+                            </div>
+                        </a>
+                    @empty
+                        <div class="p-4 text-center text-secondary">
+                            <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
+                            Belum ada pengumuman.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>

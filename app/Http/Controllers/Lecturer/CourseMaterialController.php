@@ -209,14 +209,16 @@ class CourseMaterialController extends Controller
 
     private function trackStudentDownload(CourseMaterial $material, $user): void
     {
-        if (! $user || ! $user->hasRole('student')) {
+        $studentProfileId = $user?->studentProfile?->id;
+
+        if (! $user || ! $user->hasRole('student') || ! $studentProfileId) {
             return;
         }
 
         CourseMaterialDownload::updateOrCreate(
             [
                 'course_material_id' => $material->id,
-                'student_id' => $user->id,
+                'student_profile_id' => $studentProfileId,
             ],
             [
                 'downloaded_at' => now(),

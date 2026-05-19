@@ -3,17 +3,29 @@
 namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\AcademicYear;
+use App\Models\Academic\CourseOffering;
 use App\Models\Academic\StudentGrade;
+use App\Models\Academic\StudyProgram;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Components\Exports\Export;
+use PowerComponents\LivewirePowerGrid\Components\SetUp\Exportable;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use PowerComponents\LivewirePowerGrid\Traits\WithExport;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class StudentGradeTable extends BasePowerGridTable
 {
+    use WithExport;
+
     public string $tableName = 'studentGradeTable';
 
     protected ?string $bulkActionModel = StudentGrade::class;
@@ -24,7 +36,12 @@ final class StudentGradeTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return [
+            ...$this->powerGridSetUp(showToggleColumns: true),
+            PowerGrid::exportable('student-grades')
+                ->type(Exportable::TYPE_XLS, Exportable::TYPE_CSV)
+                ->stripTags(true),
+        ];
     }
 
     public function datasource(): Builder
@@ -60,8 +77,11 @@ final class StudentGradeTable extends BasePowerGridTable
             ->add('study_program', fn (StudentGrade $model) => $model->studyPlanDetail?->studyPlan?->studentProfile?->studyProgram?->name ?? '-')
             ->add('academic_year', fn (StudentGrade $model) => $model->studyPlanDetail?->studyPlan?->academicYear?->name ?? '-')
             ->add('course_label', fn (StudentGrade $model) => ($model->studyPlanDetail?->courseOffering?->course?->code ?? '-').' - '.($model->studyPlanDetail?->courseOffering?->course?->name ?? '-'))
+            ->add('class_label', fn (StudentGrade $model) => $model->studyPlanDetail?->courseOffering?->label ?? '-')
+            ->add('semester_no', fn (StudentGrade $model) => $model->studyPlanDetail?->courseOffering?->semester_no ?? '-')
             ->add('final_score')
             ->add('letter_grade')
+            ->add('grade_point')
             ->add('grade_status')
             ->add('result_status')
             ->add('components_count')
@@ -76,13 +96,195 @@ final class StudentGradeTable extends BasePowerGridTable
             Column::make('Prodi', 'study_program')->sortable()->searchable(),
             Column::make('Tahun Akademik', 'academic_year')->sortable()->searchable(),
             Column::make('Mata Kuliah', 'course_label')->sortable()->searchable(),
+            Column::make('Kelas', 'class_label')->searchable(),
+            Column::make('Semester', 'semester_no'),
             Column::make('Final Score', 'final_score')->sortable(),
             Column::make('Nilai Huruf', 'letter_grade')->sortable(),
+            Column::make('Grade Point', 'grade_point')->sortable(),
             Column::make('Lifecycle', 'grade_status')->sortable()->searchable(),
             Column::make('Status', 'result_status')->sortable(),
             Column::make('Komponen', 'components_count')->sortable(),
             Column::action('Action'),
         ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('academic_year', 'academic_year_id')
+                ->dataSource(AcademicYear::query()
+                    ->orderByDesc('start_date')
+                    ->get(['id', 'name'])
+                    ->map(fn (AcademicYear $year) => [
+                        'id' => $year->id,
+                        'name' => $year->name,
+                    ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studyPlanDetail.studyPlan', fn (Builder $studyPlan) => $studyPlan->where('academic_year_id', $value))),
+
+            Filter::select('study_program', 'study_program_id')
+                ->dataSource(StudyProgram::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                    ->map(fn (StudyProgram $program) => [
+                        'id' => $program->id,
+                        'name' => $program->name,
+                    ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studyPlanDetail.studyPlan.studentProfile', fn (Builder $student) => $student->where('study_program_id', $value))),
+
+            Filter::select('course_label', 'course_offering_id')
+                ->dataSource(
+                    CourseOffering::query()
+                        ->with('course')
+                        ->orderByDesc('created_at')
+                        ->get()
+                        ->map(fn (CourseOffering $offering) => [
+                            'id' => $offering->id,
+                            'label' => ($offering->course?->code ?? '-').' - '.($offering->course?->name ?? '-').' / '.$offering->label,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('label')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studyPlanDetail', fn (Builder $detail) => $detail->where('course_offering_id', $value))),
+
+            Filter::select('class_label', 'class_offering_id')
+                ->dataSource(
+                    CourseOffering::query()
+                        ->with('course')
+                        ->whereNotNull('label')
+                        ->orderBy('label')
+                        ->get()
+                        ->map(fn (CourseOffering $offering) => [
+                            'id' => $offering->id,
+                            'label' => ($offering->label ?? '-').' / '.($offering->course?->code ?? '-'),
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('label')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studyPlanDetail', fn (Builder $detail) => $detail->where('course_offering_id', $value))),
+
+            Filter::select('semester_no', 'semester_no')
+                ->dataSource(collect(range(1, 8))->map(fn (int $semester) => ['id' => $semester, 'label' => 'Semester '.$semester]))
+                ->optionValue('id')
+                ->optionLabel('label')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studyPlanDetail.courseOffering', fn (Builder $offering) => $offering->where('semester_no', $value))),
+
+            Filter::select('letter_grade', 'letter_grade')
+                ->dataSource(collect(['A', 'AB', 'B', 'BC', 'C', 'D', 'E'])->map(fn (string $grade) => ['id' => $grade, 'label' => $grade]))
+                ->optionValue('id')
+                ->optionLabel('label'),
+
+            Filter::select('grade_status', 'grade_status')
+                ->dataSource(collect(['Draft', 'Finalized', 'Published'])->map(fn (string $status) => ['id' => $status, 'label' => $status]))
+                ->optionValue('id')
+                ->optionLabel('label'),
+
+            Filter::select('result_status', 'result_status')
+                ->dataSource(collect(['Passed', 'Failed', 'Incomplete', 'Withdrawn', 'Cancelled'])->map(fn (string $status) => ['id' => $status, 'label' => $status]))
+                ->optionValue('id')
+                ->optionLabel('label'),
+        ];
+    }
+
+    public function exportToXLS(bool $selected = false): StreamedResponse|bool
+    {
+        $payload = $this->exportPayload($selected);
+
+        if ($payload === false) {
+            return false;
+        }
+
+        return response()->streamDownload(function () use ($payload) {
+            $spreadsheet = new Spreadsheet;
+            $sheet = $spreadsheet->getActiveSheet();
+
+            $sheet->fromArray($payload['headers'], null, 'A1');
+
+            foreach ($payload['rows'] as $index => $row) {
+                $sheet->fromArray(array_values($row), null, 'A'.($index + 2));
+            }
+
+            foreach (range('A', $this->spreadsheetLastColumn(count($payload['headers']))) as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            (new Xlsx($spreadsheet))->save('php://output');
+        }, $this->exportFileName('xlsx'), [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function exportToCsv(bool $selected = false): StreamedResponse|bool
+    {
+        $payload = $this->exportPayload($selected);
+
+        if ($payload === false) {
+            return false;
+        }
+
+        return response()->streamDownload(function () use ($payload) {
+            echo "\xEF\xBB\xBF";
+
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $payload['headers']);
+
+            foreach ($payload['rows'] as $row) {
+                fputcsv($handle, array_values($row));
+            }
+
+            fclose($handle);
+        }, $this->exportFileName('csv'), [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    private function exportPayload(bool $selected): array|bool
+    {
+        if ($selected && count($this->checkboxValues) === 0) {
+            return false;
+        }
+
+        $columns = $this->columnsWithCurrentHiddenState();
+        $rows = $this->prepareToExport($selected);
+
+        return (new Export)->prepare(
+            collect($rows),
+            $columns,
+            (bool) data_get($this->setUp, 'exportable.stripTags', true),
+        );
+    }
+
+    private function columnsWithCurrentHiddenState(): array
+    {
+        $currentHiddenStates = collect($this->columns)
+            ->mapWithKeys(fn ($column) => [data_get($column, 'field') => data_get($column, 'hidden')]);
+
+        return array_map(function ($column) use ($currentHiddenStates) {
+            $column->hidden = (bool) $currentHiddenStates->get($column->field, $column->hidden);
+
+            return $column;
+        }, $this->columns());
+    }
+
+    private function exportFileName(string $extension): string
+    {
+        return 'student-grades-'.now()->format('Ymd-His').'.'.$extension;
+    }
+
+    private function spreadsheetLastColumn(int $columnCount): string
+    {
+        $column = '';
+
+        while ($columnCount > 0) {
+            $columnCount--;
+            $column = chr(65 + ($columnCount % 26)).$column;
+            $columnCount = intdiv($columnCount, 26);
+        }
+
+        return $column ?: 'A';
     }
 
     #[On('show')]

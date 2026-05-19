@@ -134,7 +134,7 @@ final class StudentCourseMaterialTable extends BasePowerGridTable
         CourseMaterialDownload::updateOrCreate(
             [
                 'course_material_id' => $material->id,
-                'student_id' => $user->id,
+                'student_profile_id' => $studentProfileId,
             ],
             [
                 'downloaded_at' => now(),

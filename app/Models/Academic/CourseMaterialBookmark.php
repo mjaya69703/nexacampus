@@ -2,7 +2,6 @@
 
 namespace App\Models\Academic;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,6 +19,6 @@ class CourseMaterialBookmark extends Model
 
     public function studentProfile(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'student_profile_id');
+        return $this->belongsTo(StudentProfile::class);
     }
 }

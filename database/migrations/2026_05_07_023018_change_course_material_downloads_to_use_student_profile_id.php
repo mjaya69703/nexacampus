@@ -11,19 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('course_material_downloads', 'student_profile_id')) {
+            return;
+        }
+
         Schema::table('course_material_downloads', function (Blueprint $table) {
-            // Drop old foreign key and column
-            $table->dropForeign(['student_id']);
-            $table->dropColumn('student_id');
-            
-            // Add new column with correct reference
+            if (Schema::hasColumn('course_material_downloads', 'student_id')) {
+                $table->dropUnique('course_material_downloads_course_material_id_student_id_unique');
+                $table->dropForeign(['student_id']);
+                $table->dropColumn('student_id');
+            }
+
             $table->foreignId('student_profile_id')
                 ->after('course_material_id')
                 ->constrained('student_profiles')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
-            
-            // Recreate unique index with custom name to avoid MySQL 64 char limit
+
             $table->unique(['course_material_id', 'student_profile_id'], 'cm_downloads_unique');
         });
     }
@@ -33,20 +37,25 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasColumn('course_material_downloads', 'student_profile_id')) {
+            return;
+        }
+
         Schema::table('course_material_downloads', function (Blueprint $table) {
-            // Drop new foreign key and column
-            $table->dropForeign(['student_profile_id']);
             $table->dropUnique('cm_downloads_unique');
+            $table->dropForeign(['student_profile_id']);
             $table->dropColumn('student_profile_id');
-            
-            // Restore old column
+
+            if (Schema::hasColumn('course_material_downloads', 'student_id')) {
+                return;
+            }
+
             $table->foreignId('student_id')
                 ->after('course_material_id')
                 ->constrained('users')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
-            
-            // Restore old unique index
+
             $table->unique(['course_material_id', 'student_id']);
         });
     }

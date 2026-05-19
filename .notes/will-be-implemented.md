@@ -92,7 +92,7 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)*
 
 ---
 
-##### 2. 🚧 IN PROGRESS - Announcements / Pengumuman 📢
+##### 2. ✅ COMPLETED - Announcements / Pengumuman 📢
 **Deskripsi:** Sistem pengumuman untuk komunikasi dosen-mahasiswa yang efektif dan terdokumentasi
 
 **Module:** Publication (base ownership di Admin/Superuser)
@@ -1576,6 +1576,10 @@ Setelah implementasi fitur-fitur admin di atas, success metrics yang diharapkan:
 
 ### 🔄 Update History - Admin Section
 
+- **2026-05-08:** 
+  - Announcement System marked as ✅ COMPLETED (moved to has-been-implemented.md)
+  - Implemented with multi-scope targeting, PHP Enums, Jodit Editor, auto-mark as read
+  - 22 files changed (~3,317 lines added), 10 routes, 6 permissions synced
 - **2026-05-05:** 
   - Admin section revised dengan fokus ke fitur CRUD bisnis (bukan internal admin tools)
   - Added 15 business-critical features: PMB, Financial, Student Services, Lecturer HR, Alumni, dll
@@ -2290,6 +2294,9 @@ Setelah implementasi fitur-fitur di atas, success metrics yang diharapkan:
 
 ### 🔄 Update History - Student Section
 
+- **2026-05-08:** 
+  - Announcement System marked as ✅ COMPLETED (moved to has-been-implemented.md)
+  - Student view: targeted announcements, search/filter, custom pagination, unread badges
 - **2026-05-05:** 
   - Initial student section created dengan comprehensive feature requirements
   - Added 7 completed features: Dashboard, Registration, Study Plan, Schedule, Attendance, Grades, Transcript
@@ -2353,6 +2360,10 @@ Setelah implementasi fitur-fitur di atas, success metrics yang diharapkan:
 
 ### 🔄 Update History
 
+- **2026-05-08 (Revision):** 
+  - Announcement System marked as ✅ COMPLETED across all roles (Lecturer, Student, Admin)
+  - Moved detailed implementation notes to has-been-implemented.md
+  - 22 files implemented (~3,317 lines), multi-scope targeting with PHP Enums
 - **2026-05-05 (Revision):** 
   - Initial document created dengan comprehensive lecturer feature requirements
   - Admin section revised dengan fokus ke **fitur CRUD bisnis** (bukan internal admin tools)

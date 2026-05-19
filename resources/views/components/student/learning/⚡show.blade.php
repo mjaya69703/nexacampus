@@ -288,15 +288,16 @@ new class extends Component
     private function trackDownload(CourseMaterial $material): void
     {
         $user = auth()->user();
+        $studentProfileId = $user?->studentProfile?->id;
 
-        if (! $user) {
+        if (! $user || ! $studentProfileId) {
             return;
         }
 
         CourseMaterialDownload::updateOrCreate(
             [
                 'course_material_id' => $material->id,
-                'student_profile_id' => $user->studentProfile?->id,
+                'student_profile_id' => $studentProfileId,
             ],
             [
                 'downloaded_at' => now(),

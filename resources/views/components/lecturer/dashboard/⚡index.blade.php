@@ -5,6 +5,7 @@ use App\Models\Academic\AttendanceSession;
 use App\Models\Academic\CourseOfferingLecturer;
 use App\Models\Academic\StudentGrade;
 use App\Models\Academic\StudyPlanDetail;
+use App\Models\Publication\Announcement;
 use Livewire\Component;
 
 new class extends Component
@@ -14,6 +15,8 @@ new class extends Component
     public array $stats = [];
     public array $recentClasses = [];
     public array $upcomingSessions = [];
+    public array $recentAnnouncements = [];
+    public int $unreadAnnouncementCount = 0;
 
     public function mount(): void
     {
@@ -115,6 +118,23 @@ new class extends Component
                     ];
                 })
                 ->all();
+
+        // Recent announcements for this lecturer
+        $this->unreadAnnouncementCount = Announcement::unreadCountForLecturer($user);
+        $this->recentAnnouncements = Announcement::queryForLecturer($user)
+            ->with('creator')
+            ->limit(5)
+            ->get()
+            ->map(fn ($a) => [
+                'id'           => $a->id,
+                'title'        => $a->title,
+                'priority'     => $a->priority,
+                'creator_name' => $a->creator?->name ?? '-',
+                'published_at' => $a->published_at?->diffForHumans(),
+                'is_read'      => $a->isReadBy($user->id),
+                'is_pinned'    => $a->is_pinned,
+            ])
+            ->all();
     }
 
     private function formatTime(mixed $value): string
@@ -405,67 +425,120 @@ new class extends Component
             </div>
         </div>
 
-        {{-- Content Grid --}}
-        <div class="row g-4">
-            {{-- Recent Classes --}}
-            <div class="col-lg-6">
-                <div class="modern-card h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h3 class="h5 mb-0" style="font-weight: 700; color: #1f2937;">📚 Kelas Terbaru</h3>
-                            <a href="{{ route('lecturer.course-offerings.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Lihat Semua</a>
+        {{-- Announcements Widget --}}
+        <div class="row g-4 mt-0">
+            <div class="col-lg-8">
+                {{-- Content Grid: 2 columns --}}
+                <div class="row g-4 mb-4">
+                    {{-- Recent Classes --}}
+                    <div class="col-12">
+                        <div class="modern-card">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h3 class="h5 mb-0" style="font-weight: 700; color: #1f2937;">📚 Kelas Terbaru</h3>
+                                    <a href="{{ route('lecturer.course-offerings.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Lihat Semua</a>
+                                </div>
+                                <div class="timeline">
+                                    @forelse ($recentClasses as $class)
+                                        <div class="timeline-item">
+                                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">{{ $class['course'] }}</div>
+                                            <div style="font-size: 0.85rem; color: #6b7280;">
+                                                <span>{{ $class['class'] }}</span> •
+                                                <span>{{ $class['academic_year'] }}</span> •
+                                                <span class="badge bg-primary-lt text-primary">{{ $class['role'] }}</span>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                                            <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+                                            <div>Belum ada kelas aktif</div>
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
                         </div>
-                        <div class="timeline">
-                            @forelse ($recentClasses as $class)
-                                <div class="timeline-item">
-                                    <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">{{ $class['course'] }}</div>
-                                    <div style="font-size: 0.85rem; color: #6b7280;">
-                                        <span>{{ $class['class'] }}</span> • 
-                                        <span>{{ $class['academic_year'] }}</span> • 
-                                        <span class="badge bg-primary-lt text-primary">{{ $class['role'] }}</span>
-                                    </div>
+                    </div>
+
+                    {{-- Upcoming Teaching Schedule --}}
+                    <div class="col-12">
+                        <div class="modern-card">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h3 class="h5 mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-clock me-2" style="color: #f59e0b;"></i>Jadwal Mengajar Terdekat</h3>
+                                    <a href="{{ route('lecturer.course-offerings.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Lihat Semua</a>
                                 </div>
-                            @empty
-                                <div style="text-align: center; padding: 2rem; color: #6b7280;">
-                                    <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
-                                    <div>Belum ada kelas aktif</div>
+                                <div class="timeline">
+                                    @forelse ($upcomingSessions as $session)
+                                        <div class="timeline-item">
+                                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">{{ $session['course'] }}</div>
+                                            <div style="font-size: 0.85rem; color: #6b7280;">
+                                                <span><i class="fas fa-hashtag me-1"></i>Pertemuan #{{ $session['meeting_no'] }}</span> •
+                                                <span><i class="fas fa-calendar-day me-1"></i>{{ $session['meeting_date'] }}</span> •
+                                                <span><i class="fas fa-clock me-1"></i>{{ $session['start_time'] }} - {{ $session['end_time'] }}</span>
+                                            </div>
+                                            <div style="margin-top: 0.5rem;">
+                                                <span class="badge {{ $session['status'] === 'Opened' ? 'bg-success-lt text-success' : ($session['status'] === 'Closed' ? 'bg-danger-lt text-danger' : 'bg-secondary-lt text-secondary') }}">
+                                                    <i class="fas {{ $session['status'] === 'Opened' ? 'fa-circle-check' : ($session['status'] === 'Closed' ? 'fa-circle-xmark' : 'fa-file-alt') }} me-1"></i>{{ $session['status'] }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                                            <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-calendar-times"></i></div>
+                                            <div>Tidak ada jadwal terdekat</div>
+                                        </div>
+                                    @endforelse
                                 </div>
-                            @endforelse
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Upcoming Teaching Schedule --}}
-            <div class="col-lg-6">
+            {{-- Announcements sidebar --}}
+            <div class="col-lg-4">
                 <div class="modern-card h-100">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h3 class="h5 mb-0" style="font-weight: 700; color: #1f2937;"><i class="fas fa-clock me-2" style="color: #f59e0b;"></i>Jadwal Mengajar Terdekat</h3>
-                            <a href="{{ route('lecturer.course-offerings.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Lihat Semua Kelas</a>
+                            <h3 class="h5 mb-0" style="font-weight: 700; color: #1f2937;">
+                                <i class="fas fa-bullhorn me-2" style="color: #667eea;"></i>Pengumuman
+                                @if($unreadAnnouncementCount > 0)
+                                    <span class="badge ms-1" style="background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color: white; font-size: 0.72rem;">
+                                        {{ $unreadAnnouncementCount }} baru
+                                    </span>
+                                @endif
+                            </h3>
+                            <a href="{{ route('lecturer.announcements.index') }}" class="btn btn-outline-primary" style="border-radius: 8px;">Semua</a>
                         </div>
-                        <div class="timeline">
-                            @forelse ($upcomingSessions as $session)
-                                <div class="timeline-item">
-                                    <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">{{ $session['course'] }}</div>
-                                    <div style="font-size: 0.85rem; color: #6b7280;">
-                                        <span><i class="fas fa-hashtag me-1"></i>Pertemuan #{{ $session['meeting_no'] }}</span> • 
-                                        <span><i class="fas fa-calendar-day me-1"></i>{{ $session['meeting_date'] }}</span> • 
-                                        <span><i class="fas fa-clock me-1"></i>{{ $session['start_time'] }} - {{ $session['end_time'] }}</span>
+                        @forelse($recentAnnouncements as $ann)
+                            <a href="{{ route('lecturer.announcements.show', $ann['id']) }}" class="text-decoration-none">
+                                <div style="display:flex;align-items:center;gap:0.65rem;padding:0.7rem;border-radius:12px;background:{{ !$ann['is_read'] ? '#f5f0ff' : '#f8fafc' }};margin-bottom:0.5rem;border:2px solid {{ !$ann['is_read'] ? '#c4b5fd' : 'transparent' }};transition:all 0.2s;">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        <i class="{{ $ann['priority']->icon() }}" style="color:white;font-size:0.8rem;"></i>
                                     </div>
-                                    <div style="margin-top: 0.5rem;">
-                                        <span class="badge {{ $session['status'] === 'Opened' ? 'bg-success-lt text-success' : ($session['status'] === 'Closed' ? 'bg-danger-lt text-danger' : 'bg-secondary-lt text-secondary') }}">
-                                            <i class="fas {{ $session['status'] === 'Opened' ? 'fa-circle-check' : ($session['status'] === 'Closed' ? 'fa-circle-xmark' : 'fa-file-alt') }} me-1"></i>{{ $session['status'] }}
-                                        </span>
+                                    <div class="flex-grow-1" style="min-width:0;">
+                                        <div style="font-weight:{{ !$ann['is_read'] ? '700' : '600' }};color:#1e293b;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                            @if($ann['is_pinned'])<i class="fas fa-thumbtack me-1" style="color:#f59e0b;font-size:0.7rem;"></i>@endif
+                                            {{ $ann['title'] }}
+                                        </div>
+                                        <div style="font-size:0.75rem;color:#64748b;">{{ $ann['creator_name'] }} · {{ $ann['published_at'] }}</div>
                                     </div>
+                                    @if(!$ann['is_read'])
+                                        <span style="width:7px;height:7px;border-radius:50%;background:#667eea;flex-shrink:0;"></span>
+                                    @endif
                                 </div>
-                            @empty
-                                <div style="text-align: center; padding: 2rem; color: #6b7280;">
-                                    <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-calendar-times"></i></div>
-                                    <div>Tidak ada jadwal terdekat</div>
-                                </div>
-                            @endforelse
-                        </div>
+                            </a>
+                        @empty
+                            <div style="text-align:center;padding:2rem;color:#6b7280;">
+                                <i class="fas fa-inbox" style="font-size:2rem;color:#cbd5e1;"></i>
+                                <div class="mt-2" style="font-size:0.9rem;">Belum ada pengumuman.</div>
+                            </div>
+                        @endforelse
+                        @activecan('announcement.create')
+                            <a href="{{ route('lecturer.announcements.create') }}" class="btn w-100 mt-3" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:10px;font-weight:600;">
+                                <i class="fas fa-plus me-1"></i> Buat Pengumuman
+                            </a>
+                        @endactivecan
                     </div>
                 </div>
             </div>

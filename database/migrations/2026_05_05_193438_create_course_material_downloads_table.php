@@ -17,15 +17,15 @@ return new class extends Migration
                 ->constrained('course_materials')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
-            $table->foreignId('student_id')
-                ->constrained('users')
+            $table->foreignId('student_profile_id')
+                ->constrained('student_profiles')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
             $table->timestamp('downloaded_at');
             $table->string('ip_address')->nullable();
             $table->timestamps();
 
-            $table->unique(['course_material_id', 'student_id']);
+            $table->unique(['course_material_id', 'student_profile_id'], 'cm_downloads_unique');
         });
     }
 
