@@ -1106,6 +1106,308 @@ Schema::create('student_scholarships', function (Blueprint $table) {
 
 ---
 
+## 🧭 Draft Next Priorities (Priority 6-10)
+
+Draft berikut adalah kandidat lanjutan setelah Priority 1-5 sudah dianggap clear. Sumbernya digabung dari `will-be-implemented.md`, status implementasi aktual di dokumen ini, dan dependency yang sudah tersedia dari Academic, Admission, dan Financial.
+
+---
+
+#### **Priority 6: Student Services & Administration**
+*Impact: Admin + Students | Module: New*
+
+##### 6. Student Services - Letters, Leave, Transfer & Graduation 📋
+**Status:** 🚧 IN PROGRESS (Phase 1 implemented: Letter Request Center)  
+**Roles Affected:** Admin/Student Affairs (manage), Students (request/track), Academic/Finance (clearance checks)  
+**Module Category:** New Module → `student-services`
+
+**Description:**
+One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pindah program, pengajuan kelulusan, dan complaint/feedback. Modul ini jadi jembatan antara kebutuhan administrasi mahasiswa dan approval internal kampus.
+
+**Why Next:**
+- Paling nyambung setelah Financial karena banyak layanan administrasi butuh financial clearance.
+- Memberikan workflow nyata untuk mahasiswa selain akademik dan pembayaran.
+- Cocok untuk kampus karena surat, cuti, transkrip, dan kelulusan adalah proses operasional harian.
+
+**Core Features:**
+- ✅ Letter/certificate request: active student letter, transcript request, internship recommendation, and custom/manual letter types.
+- ✅ Online approval workflow with status tracking.
+- ✅ PDF letter generation using existing Dompdf pattern.
+- ✅ Manual upload fulfillment for custom/final letter files.
+- ✅ Hybrid fulfillment mode so admin can choose generate PDF or upload final file.
+- ✅ Correction workflow: admin can request correction and student can revise/resubmit without creating a new request.
+- ✅ Optional digital signature/signatory placeholder through signer name and position.
+- Leave of absence application with attachments and multi-step approval.
+- Student transfer request with curriculum/credit mapping notes.
+- Graduation application with eligibility checklist.
+- Complaint/feedback submission with department assignment and SLA tracking.
+
+**Integration Notes:**
+- ✅ Use `student_profile_id` as student identity.
+- ✅ Integrate `FinancialClearanceService` for transcript/graduation/letter restrictions.
+- ✅ Use existing admin resource registry + PowerGrid pattern.
+- ✅ Student side follows existing modern student page pattern.
+
+**Estimated Effort:** High (6-7 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Letter Request Center**
+   - ✅ Letter type master data.
+   - ✅ Fulfillment modes: auto_generate, manual_upload, hybrid.
+   - ✅ Student request form with dynamic fields and optional attachment.
+   - ✅ Admin review/approve/reject/correction workflow.
+   - ✅ Student correction/resubmit flow for requests marked `revision_requested`.
+   - ✅ Status history/audit trail.
+   - ✅ PDF generation.
+   - ✅ Admin final file upload for manual fulfillment.
+   - ✅ Student download for issued letters.
+   - ✅ Financial clearance check for selected letter types.
+2. **Phase 2 - Leave & Transfer Workflow**
+   - Leave application, attachment, approval history.
+   - Return from leave status.
+   - Internal transfer request and evaluation notes.
+3. **Phase 3 - Graduation & Complaints**
+   - Graduation application and requirement checklist.
+   - Complaint category, assignment, response, and resolution tracking.
+
+**Candidate Tables:**
+- ✅ `service_letter_types`
+- ✅ `service_letter_requests`
+- `student_leave_applications`
+- `student_transfer_requests`
+- `graduation_applications`
+- `student_complaints`
+- ✅ `service_request_status_histories`
+
+---
+
+#### **Priority 7: Assignment Management**
+*Impact: Lecturer + Students | Module: Academic Enhancement*
+
+##### 7. Assignment Submission & Grading 📝
+**Status:** 📝 DRAFT / NOT STARTED  
+**Roles Affected:** Lecturer (create/grade), Students (submit/track), Admin (monitor)  
+**Module Category:** Academic → New Submodule: `assignments`
+
+**Description:**
+Sistem pengumpulan tugas online yang terhubung dengan course offering, materi perkuliahan, dan grade book. Dosen membuat tugas, mahasiswa submit file/text, dosen memberi nilai dan feedback.
+
+**Why Next:**
+- Melengkapi e-learning yang sudah punya materi, diskusi, bookmark, dan download tracking.
+- Nyambung langsung ke grade book/export yang sudah ada.
+- Memberikan workflow akademik harian yang sangat sering dipakai.
+
+**Core Features:**
+- Assignment per course offering/session.
+- Assignment detail: title, description, due date, max score, allowed file types, max file size, rubric/instructions.
+- File submission and optional text submission.
+- Multiple file support.
+- Resubmission before deadline.
+- Late submission policy.
+- Submission status: not submitted, submitted, late, graded, returned.
+- Lecturer grading with score and feedback.
+- Student view for grade and feedback.
+- Optional reminder email before deadline.
+
+**Integration Notes:**
+- Link to `course_offerings`, student enrollments/KRS, and existing grade book.
+- Assignment score can later become grade component input.
+- Reuse secure file preview/download patterns from Admission and Course Materials.
+- Student UI should mirror Course Materials page style.
+
+**Estimated Effort:** Medium-High (3-4 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Assignment Core**
+   - Lecturer create/edit/list assignments.
+   - Student list/detail assignments.
+   - Submission upload and deadline validation.
+2. **Phase 2 - Grading & Feedback**
+   - Lecturer submission review.
+   - Score/feedback.
+   - Student graded result view.
+3. **Phase 3 - Grade Book Integration**
+   - Optional mapping to grade components.
+   - Export/report integration.
+
+**Candidate Tables:**
+- `assignments`
+- `assignment_submissions`
+- `assignment_submission_files`
+- `assignment_grades`
+- `assignment_status_histories`
+
+---
+
+#### **Priority 8: Student Progress Analytics & Academic Advising**
+*Impact: Lecturer + Students + Academic Advisors | Module: Academic Enhancement*
+
+##### 8. Progress Analytics & Advisor Dashboard 📈
+**Status:** 📝 DRAFT / NOT STARTED  
+**Roles Affected:** Lecturer/Academic Advisor (monitor), Students (view progress), Admin (oversight)  
+**Module Category:** Academic → New Submodule: `academic-analytics`
+
+**Description:**
+Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, materi, dan status finansial. Modul ini juga menjadi fondasi paling sehat untuk fitur AI academic assistant di masa depan.
+
+**Why Next:**
+- Data akademik, nilai, materi, admission, dan financial sudah cukup kaya untuk dianalisis.
+- Membantu dosen PA mendeteksi mahasiswa berisiko lebih awal.
+- AI akan lebih berguna jika analytics dan action workflow-nya sudah rapi.
+
+**Core Features:**
+- Student progress tracker: SKS completed, remaining credits, IPS/IPK trend.
+- Semester-by-semester academic performance.
+- Failed/repeated course detection.
+- Attendance risk indicator.
+- Financial risk indicator from overdue/hold state.
+- Advisor dashboard per assigned students.
+- Recommendation list: meet advisor, retake course, resolve KRS/payment issue, improve attendance.
+- Student-facing progress page with charts.
+- Export progress summary to PDF.
+
+**Integration Notes:**
+- Read from transcript/grade snapshots, study plans, attendance, course offerings, and financial holds.
+- Do not duplicate source-of-truth grades; calculate from existing academic records.
+- Use ApexCharts already used in financial dashboard.
+- Future AI should consume this analytics layer, not raw scattered queries.
+
+**Estimated Effort:** Medium-High (4-5 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Student Progress Tracker**
+   - Student academic progress page.
+   - GPA/SKS trend charts.
+   - Remaining requirement summary.
+2. **Phase 2 - Advisor Dashboard**
+   - Advisor-student assignment.
+   - Risk indicators and student list.
+   - Advisor notes/recommendations.
+3. **Phase 3 - AI-Ready Insight Layer**
+   - Consolidated analytics service.
+   - Explainable risk reasons.
+   - Recommendation history.
+
+**Candidate Tables:**
+- `academic_advisor_assignments`
+- `student_progress_snapshots`
+- `student_advisor_notes`
+- `student_recommendations`
+
+---
+
+#### **Priority 9: Lecturer HR & Administration**
+*Impact: Admin + Lecturers | Module: New / Academic Support*
+
+##### 9. Lecturer HR, Workload & Certification 👨‍🏫
+**Status:** 📝 DRAFT / NOT STARTED  
+**Roles Affected:** Admin/HR (manage), Lecturer (view/update profile), Academic (workload planning)  
+**Module Category:** New Module → `lecturer-hr`
+
+**Description:**
+Modul administrasi dosen untuk biodata lengkap, riwayat pendidikan, workload mengajar, sertifikasi, pelatihan, evaluasi, dan cuti dosen.
+
+**Why Next:**
+- Course offering dan lecturer assignment sudah ada, sehingga workload bisa dihitung dari data real.
+- Berguna untuk akreditasi dan manajemen SDM akademik.
+- Menambah sisi operasional kampus selain mahasiswa.
+
+**Core Features:**
+- Lecturer profile enhancement: education, employment status, join date, signature/photo.
+- Teaching load calculation by semester/SKS/course offering.
+- Workload cap and overload warning.
+- Certification and training records.
+- Expiry reminder for certification/training.
+- Lecturer leave request and substitute lecturer assignment.
+- Performance evaluation summary from teaching, student evaluation, research/community service placeholders.
+
+**Integration Notes:**
+- Enhance existing lecturer profile instead of duplicating user identity.
+- Use course offering lecturer assignments for workload calculation.
+- Future integration with Lecture Evaluation and Research modules.
+
+**Estimated Effort:** Medium-High (4-5 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Lecturer Profile & Documents**
+   - Extended biodata.
+   - Education/certification/training records.
+   - Signature/photo upload.
+2. **Phase 2 - Teaching Workload**
+   - Workload dashboard.
+   - Semester filters.
+   - Overload/underload indicators.
+3. **Phase 3 - Leave & Evaluation**
+   - Lecturer leave request.
+   - Substitute assignment.
+   - Performance summary foundation.
+
+**Candidate Tables:**
+- `lecturer_educations`
+- `lecturer_certifications`
+- `lecturer_trainings`
+- `lecturer_workload_snapshots`
+- `lecturer_leaves`
+- `lecturer_performance_reviews`
+
+---
+
+#### **Priority 10: Alumni & Career Services**
+*Impact: Admin + Alumni + Students | Module: New*
+
+##### 10. Alumni Management, Tracer Study & Career Services 🎓
+**Status:** 📝 DRAFT / NOT STARTED  
+**Roles Affected:** Admin/Career Center (manage), Alumni (update/survey), Students (career access)  
+**Module Category:** New Module → `alumni`
+
+**Description:**
+Modul alumni untuk database lulusan, tracer study, engagement alumni, career services, job board, dan laporan outcome lulusan untuk kebutuhan akreditasi.
+
+**Why Next:**
+- Natural follow-up setelah graduation workflow di Student Services.
+- Tracer study dan outcome lulusan penting untuk akreditasi kampus.
+- Bisa menjadi modul publik/engagement yang memperkuat value NexaCampus.
+
+**Core Features:**
+- Alumni profile database: graduation year, program, GPA, contact, location.
+- Employment status tracking: working, entrepreneur, studying, unemployed.
+- Tracer study survey distribution and response tracking.
+- Job relevance, time to employment, salary range, employer feedback.
+- Alumni events and engagement.
+- Job posting board and internship/career opportunities.
+- Reports by batch, study program, employment status, industry, and location.
+
+**Integration Notes:**
+- Alumni can be created from graduated student profiles.
+- Keep privacy controls for alumni directory visibility.
+- Email survey delivery can reuse mail patterns from Admission/Financial.
+- Career/job board can later connect to Student Services and Internship module.
+
+**Estimated Effort:** Medium (3-4 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Alumni Database**
+   - Alumni profile.
+   - Conversion from graduated student.
+   - Admin list/detail.
+2. **Phase 2 - Tracer Study**
+   - Survey campaign.
+   - Alumni response form.
+   - Analytics dashboard.
+3. **Phase 3 - Career Services**
+   - Job posting board.
+   - Career events.
+   - Employer/partner records.
+
+**Candidate Tables:**
+- `alumni_profiles`
+- `tracer_study_campaigns`
+- `tracer_study_responses`
+- `alumni_events`
+- `job_postings`
+- `employer_partners`
+
+---
+
 ## 📋 Planning Queue (Not Started Yet)
 
 Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi aktif.

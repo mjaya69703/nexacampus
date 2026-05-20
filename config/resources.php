@@ -602,5 +602,37 @@ return [
             'order' => 12,
         ],
     ],
+    [
+        'resource' => 'service-letter-type',
+        'plural' => 'service-letter-types',
+        'area' => 'student-services',
+        'component' => 'admin.student-services.letter-types',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Letter Types',
+            'icon' => 'fas fa-file-signature',
+            'group' => 'Student Services',
+            'group_icon' => 'fas fa-hands-helping',
+            'group_order' => 5,
+            'order' => 1,
+        ],
+    ],
+    [
+        'resource' => 'service-letter-request',
+        'plural' => 'service-letter-requests',
+        'area' => 'student-services',
+        'component' => 'admin.student-services.letter-requests',
+        'actions' => ['index', 'show'],
+        'permissions' => ['viewAny', 'view', 'update'],
+        'menu' => [
+            'title' => 'Letter Requests',
+            'icon' => 'fas fa-envelope-open-text',
+            'group' => 'Student Services',
+            'group_icon' => 'fas fa-hands-helping',
+            'group_order' => 5,
+            'order' => 2,
+        ],
+    ],
 
 ];

@@ -7,6 +7,7 @@ use App\Models\Financial\StudentCreditBalance;
 use App\Models\Financial\StudentCreditTransaction;
 use App\Models\Financial\StudentInvoice;
 use App\Models\Financial\StudentScholarship;
+use App\Models\StudentService\ServiceLetterRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -121,5 +122,10 @@ class StudentProfile extends Model
     public function scholarships(): HasMany
     {
         return $this->hasMany(StudentScholarship::class);
+    }
+
+    public function serviceLetterRequests(): HasMany
+    {
+        return $this->hasMany(ServiceLetterRequest::class);
     }
 }

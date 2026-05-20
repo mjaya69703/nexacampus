@@ -7,6 +7,7 @@ use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
+use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -78,6 +79,10 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/financial/reports/export/pdf', [FinancialReportExportController::class, 'pdf'])
                 ->middleware('active_permission:financial-report.viewAny')
                 ->name('financial.reports.export.pdf');
+
+            Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
+                ->middleware('active_permission:service-letter-request.view')
+                ->name('student-services.letter-requests.download');
         });
 
         // Student Routes
@@ -101,6 +106,11 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/course-materials/{id}/download/{fileId}', [CourseMaterialController::class, 'download'])->name('course-materials.download');
             Route::livewire('/announcements', 'student.publication.announcements.index')->name('announcements.index');
             Route::livewire('/announcements/{id}', 'student.publication.announcements.show')->name('announcements.show');
+            Route::livewire('/services/letters', 'student.student-services.letters')->name('student-services.letters');
+            Route::livewire('/services/letters/create', 'student.student-services.letter-create')->name('student-services.letters.create');
+            Route::livewire('/services/letters/{id}/edit', 'student.student-services.letter-edit')->name('student-services.letters.edit');
+            Route::livewire('/services/letters/{id}', 'student.student-services.letter-detail')->name('student-services.letters.show');
+            Route::get('/services/letters/{request}/download', [ServiceLetterDownloadController::class, 'student'])->name('student-services.letters.download');
         });
 
         // Lecturer Routes
