@@ -272,9 +272,15 @@ new class extends Component
             return;
         }
 
+        if (($this->form['academic_status'] ?? null) === 'Cuti') {
+            session()->flash('error', 'Pengajuan cuti akademik dilakukan melalui menu Layanan > Cuti Akademik.');
+
+            return;
+        }
+
         $validated = $this->validate([
             'form.semester_no' => ['nullable', 'integer', 'min:1', 'max:14'],
-            'form.academic_status' => ['required', Rule::in(['Aktif', 'Cuti', 'Nonaktif', 'Lulus', 'Drop Out', 'Keluar'])],
+            'form.academic_status' => ['required', Rule::in(['Aktif', 'Nonaktif', 'Lulus', 'Drop Out', 'Keluar'])],
             'form.notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -567,12 +573,19 @@ new class extends Component
                                 </label>
                                 <select class="form-select" wire:model="form.academic_status" @disabled(! $canEditRegistration) style="border-radius: 10px; padding: 0.75rem;">
                                     <option value="Aktif">Aktif</option>
-                                    <option value="Cuti">Cuti</option>
+                                    @if (($form['academic_status'] ?? null) === 'Cuti')
+                                        <option value="Cuti" disabled>Cuti - melalui layanan cuti akademik</option>
+                                    @endif
                                     <option value="Nonaktif">Nonaktif</option>
                                     <option value="Lulus">Lulus</option>
                                     <option value="Drop Out">Drop Out</option>
                                     <option value="Keluar">Keluar</option>
                                 </select>
+                                <small class="text-muted d-block mt-1">
+                                    Pengajuan cuti sekarang lewat
+                                    <a href="{{ route('student.student-services.leaves') }}" class="fw-semibold">Layanan &gt; Cuti Akademik</a>
+                                    agar bisa direview dengan lampiran dan history.
+                                </small>
                                 @error('form.academic_status')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror

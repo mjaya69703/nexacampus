@@ -634,5 +634,21 @@ return [
             'order' => 2,
         ],
     ],
+    [
+        'resource' => 'leave-application',
+        'plural' => 'leave-applications',
+        'area' => 'student-services',
+        'component' => 'admin.student-services.leave-applications',
+        'actions' => ['index', 'show'],
+        'permissions' => ['viewAny', 'view', 'update'],
+        'menu' => [
+            'title' => 'Leave Applications',
+            'icon' => 'fas fa-calendar-minus',
+            'group' => 'Student Services',
+            'group_icon' => 'fas fa-hands-helping',
+            'group_order' => 5,
+            'order' => 3,
+        ],
+    ],
 
 ];

@@ -131,7 +131,10 @@ class SidebarMenu
                 static::makeLink('student-grades', 'Nilai', 'student.grades.index', 'fas fa-chart-bar'),
                 static::makeLink('student-transcript', 'Transkrip', 'student.transcript.index', 'fas fa-file-invoice'),
                 static::makeLink('student-financial-invoices', 'Keuangan', 'student.financial.invoices', 'fas fa-wallet'),
-                static::makeLink('student-services-letters', 'Layanan', 'student.student-services.letters', 'fas fa-hands-helping'),
+                static::makeGroup('student-services', 'Layanan', 'fas fa-hands-helping', [
+                    static::makeChildLink('student.student-services.letters', 'Surat'),
+                    static::makeChildLink('student.student-services.leaves', 'Cuti Akademik'),
+                ]),
             ]),
             'lecturer' => collect([
                 static::makeLink('lecturer-course-offerings', 'Kelas Saya', 'lecturer.course-offerings.index', 'fas fa-book'),

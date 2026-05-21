@@ -22,6 +22,7 @@ new class extends Component
     public bool $hasActiveAcademicYear = false;
     public bool $hasActiveRegistration = false;
     public bool $isRegistrationApproved = false;
+    public bool $isAcademicallyActive = false;
     public bool $canModifyStudyPlan = true;
     public bool $isStudyPlanPeriodOpen = false;
     public ?string $studyPlanPeriodName = null;
@@ -30,6 +31,7 @@ new class extends Component
     public ?string $studyPlanStatus = null;
     public ?string $activeAcademicYearName = null;
     public ?string $registrationStatus = null;
+    public ?string $registrationAcademicStatus = null;
     public array $studentInfo = [];
     public array $selectedCourses = [];
     public array $availableOfferings = [];
@@ -423,7 +425,9 @@ new class extends Component
             $this->currentRegistrationId = null;
             $this->registrationSemesterNo = null;
             $this->registrationStatus = null;
+            $this->registrationAcademicStatus = null;
             $this->isRegistrationApproved = false;
+            $this->isAcademicallyActive = false;
 
             return;
         }
@@ -432,7 +436,9 @@ new class extends Component
         $this->currentRegistrationId = $registration->id;
         $this->registrationSemesterNo = $registration->semester_no;
         $this->registrationStatus = $registration->registration_status;
+        $this->registrationAcademicStatus = $registration->academic_status;
         $this->isRegistrationApproved = $registration->registration_status === 'Approved';
+        $this->isAcademicallyActive = $registration->academic_status === 'Aktif';
 
         if ($registration->semester_no) {
             $this->semesterFilter = $registration->semester_no;
@@ -565,8 +571,14 @@ new class extends Component
 
     private function ensureApprovedRegistration(): bool
     {
-        if ($this->isRegistrationApproved) {
+        if ($this->isRegistrationApproved && $this->isAcademicallyActive) {
             return true;
+        }
+
+        if ($this->isRegistrationApproved && ! $this->isAcademicallyActive) {
+            session()->flash('error', 'KRS hanya bisa diproses jika status akademik semester ini Aktif.');
+
+            return false;
         }
 
         session()->flash('error', 'KRS hanya bisa diproses jika registrasi semester sudah Approved.');
@@ -735,6 +747,10 @@ new class extends Component
     @elseif (! $isRegistrationApproved)
         <div class="alert alert-warning">
             Registrasi semester Anda belum <strong>Approved</strong>. KRS dapat diambil setelah registrasi disetujui.
+        </div>
+    @elseif (! $isAcademicallyActive)
+        <div class="alert alert-warning">
+            Status akademik semester ini adalah <strong>{{ $registrationAcademicStatus ?? '-' }}</strong>. KRS hanya dapat diambil oleh mahasiswa dengan status akademik <strong>Aktif</strong>.
         </div>
     @else
         {{-- Hero Section --}}

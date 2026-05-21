@@ -11,6 +11,7 @@ new class extends Component
 {
     public bool $hasProfile = false;
     public bool $hasApprovedRegistration = false;
+    public bool $isAcademicallyActive = false;
     public bool $hasStudyPlan = false;
     public bool $hasApprovedStudyPlan = false;
     public bool $hasSchedules = false;
@@ -79,6 +80,12 @@ new class extends Component
         }
 
         $this->hasApprovedRegistration = true;
+
+        if ($registration->academic_status !== 'Aktif') {
+            return;
+        }
+
+        $this->isAcademicallyActive = true;
 
         $studyPlan = StudyPlan::query()
             ->with(['details.courseOffering.course'])
@@ -379,6 +386,10 @@ new class extends Component
     @elseif (! $hasApprovedRegistration)
         <div class="alert alert-warning">
             Registrasi semester belum disetujui dengan status {{ $registrationStatus ?? '-' }}. Jadwal belum dapat ditampilkan.
+        </div>
+    @elseif (! $isAcademicallyActive)
+        <div class="alert alert-warning">
+            Status akademik semester ini adalah {{ $academicStatus ?? '-' }}. Jadwal hanya tersedia untuk mahasiswa aktif.
         </div>
     @elseif (! $hasStudyPlan)
         <div class="alert alert-warning">KRS belum tersedia. Jadwal belum dapat ditampilkan.</div>

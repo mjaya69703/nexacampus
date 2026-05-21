@@ -11,11 +11,13 @@ new class extends Component
 {
     public bool $hasProfile = false;
     public bool $hasApprovedRegistration = false;
+    public bool $isAcademicallyActive = false;
     public bool $hasStudyPlanAccess = false;
     public ?int $studentProfileId = null;
     public ?int $activeAcademicYearId = null;
     public ?string $activeAcademicYearName = null;
     public ?string $registrationStatus = null;
+    public ?string $academicStatus = null;
     public ?string $courseName = null;
     public ?int $offeringId = null;
     public array $attendanceItems = [];
@@ -65,12 +67,19 @@ new class extends Component
             ->first();
 
         $this->registrationStatus = $registration?->registration_status;
+        $this->academicStatus = $registration?->academic_status;
 
         if (! $registration || $registration->registration_status !== 'Approved') {
             return;
         }
 
         $this->hasApprovedRegistration = true;
+
+        if ($registration->academic_status !== 'Aktif') {
+            return;
+        }
+
+        $this->isAcademicallyActive = true;
 
         $studyPlanDetail = StudyPlanDetail::query()
             ->with('courseOffering.course')
@@ -296,6 +305,8 @@ new class extends Component
         <div class="alert alert-warning">Profil mahasiswa belum tersedia.</div>
     @elseif (! $hasApprovedRegistration)
         <div class="alert alert-warning">Registrasi semester belum disetujui, data kehadiran belum bisa diakses.</div>
+    @elseif (! $isAcademicallyActive)
+        <div class="alert alert-warning">Status akademik semester ini adalah {{ $academicStatus ?? '-' }}, data kehadiran belum bisa diakses.</div>
     @elseif (! $hasStudyPlanAccess)
         <div class="alert alert-danger">Data kelas tidak ditemukan atau Anda tidak memiliki akses.</div>
     @else

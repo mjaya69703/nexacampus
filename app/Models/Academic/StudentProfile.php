@@ -8,6 +8,7 @@ use App\Models\Financial\StudentCreditTransaction;
 use App\Models\Financial\StudentInvoice;
 use App\Models\Financial\StudentScholarship;
 use App\Models\StudentService\ServiceLetterRequest;
+use App\Models\StudentService\StudentLeaveApplication;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -127,5 +128,10 @@ class StudentProfile extends Model
     public function serviceLetterRequests(): HasMany
     {
         return $this->hasMany(ServiceLetterRequest::class);
+    }
+
+    public function leaveApplications(): HasMany
+    {
+        return $this->hasMany(StudentLeaveApplication::class);
     }
 }

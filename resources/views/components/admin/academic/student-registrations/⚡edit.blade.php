@@ -59,7 +59,11 @@ new class extends Component {
                 $updateData['approved_at'] = now();
                 $updateData['approved_by'] = auth()->id();
 
-                if ($this->registration->semester_no !== null && $this->registration->studentProfile) {
+                if (
+                    $this->registration->academic_status !== 'Cuti'
+                    && $this->registration->semester_no !== null
+                    && $this->registration->studentProfile
+                ) {
                     $this->registration->studentProfile->update([
                         'current_semester' => $this->registration->semester_no,
                         'updated_by' => auth()->id(),

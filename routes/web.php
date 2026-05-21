@@ -111,6 +111,10 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/services/letters/{id}/edit', 'student.student-services.letter-edit')->name('student-services.letters.edit');
             Route::livewire('/services/letters/{id}', 'student.student-services.letter-detail')->name('student-services.letters.show');
             Route::get('/services/letters/{request}/download', [ServiceLetterDownloadController::class, 'student'])->name('student-services.letters.download');
+            Route::livewire('/services/leaves', 'student.student-services.leaves')->name('student-services.leaves');
+            Route::livewire('/services/leaves/create', 'student.student-services.leave-create')->name('student-services.leaves.create');
+            Route::livewire('/services/leaves/{id}/edit', 'student.student-services.leave-edit')->name('student-services.leaves.edit');
+            Route::livewire('/services/leaves/{id}', 'student.student-services.leave-detail')->name('student-services.leaves.show');
         });
 
         // Lecturer Routes

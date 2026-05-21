@@ -4,6 +4,7 @@ return [
     'invoice_types' => [
         'tuition' => 'Tuition',
         'registration' => 'Registration',
+        'leave' => 'Leave',
         'exam' => 'Exam',
         'custom' => 'Custom',
         'admission' => 'Admission',

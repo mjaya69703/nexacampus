@@ -1116,7 +1116,7 @@ Draft berikut adalah kandidat lanjutan setelah Priority 1-5 sudah dianggap clear
 *Impact: Admin + Students | Module: New*
 
 ##### 6. Student Services - Letters, Leave, Transfer & Graduation 📋
-**Status:** 🚧 IN PROGRESS (Phase 1 implemented: Letter Request Center)  
+**Status:** 🚧 IN PROGRESS (Phase 2A implemented: Letter Request Center + Leave Application Workflow)  
 **Roles Affected:** Admin/Student Affairs (manage), Students (request/track), Academic/Finance (clearance checks)  
 **Module Category:** New Module → `student-services`
 
@@ -1136,7 +1136,7 @@ One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pind
 - ✅ Hybrid fulfillment mode so admin can choose generate PDF or upload final file.
 - ✅ Correction workflow: admin can request correction and student can revise/resubmit without creating a new request.
 - ✅ Optional digital signature/signatory placeholder through signer name and position.
-- Leave of absence application with attachments and multi-step approval.
+- ✅ Leave of absence application with attachments and multi-step approval.
 - Student transfer request with curriculum/credit mapping notes.
 - Graduation application with eligibility checklist.
 - Complaint/feedback submission with department assignment and SLA tracking.
@@ -1161,18 +1161,33 @@ One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pind
    - ✅ Admin final file upload for manual fulfillment.
    - ✅ Student download for issued letters.
    - ✅ Financial clearance check for selected letter types.
-2. **Phase 2 - Leave & Transfer Workflow**
-   - Leave application, attachment, approval history.
-   - Return from leave status.
+2. **Phase 2A - Leave Application Workflow**
+   - ✅ Leave application with academic year, semester, duration, reason, and attachment.
+   - ✅ Admin review/approve/reject/correction workflow.
+   - ✅ Student correction/resubmit flow.
+   - ✅ Approval history/status audit trail.
+   - ✅ Admin action to activate leave after approval.
+   - ✅ Return from leave action to restore active student status.
+   - ✅ Student semester registration no longer acts as the leave request entry point; students are routed to Student Services leave workflow.
+   - ✅ Leave activation creates/updates semester registration snapshot with `academic_status = Cuti` without increasing `student_profiles.current_semester`.
+   - ✅ Admin registration approval does not increase `current_semester` for `academic_status = Cuti`.
+   - ✅ KRS, schedule, and attendance student pages require approved registration with `academic_status = Aktif`, so approved leave snapshots do not unlock academic activity.
+   - ✅ Optional leave fee during approval; if fee is set, system issues a `leave` invoice and activation is blocked until paid.
+3. **Phase 2B - Internal Transfer Workflow**
    - Internal transfer request and evaluation notes.
-3. **Phase 3 - Graduation & Complaints**
+   - From/to study program tracking.
+   - Admin review/approve/reject/correction workflow.
+   - Manual apply transfer action after approval.
+   - Curriculum/credit mapping notes as MVP, full mapping engine later.
+4. **Phase 3 - Graduation & Complaints**
    - Graduation application and requirement checklist.
    - Complaint category, assignment, response, and resolution tracking.
 
 **Candidate Tables:**
 - ✅ `service_letter_types`
 - ✅ `service_letter_requests`
-- `student_leave_applications`
+- ✅ `student_leave_applications`
+- ✅ `student_leave_status_histories`
 - `student_transfer_requests`
 - `graduation_applications`
 - `student_complaints`
