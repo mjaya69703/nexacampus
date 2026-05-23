@@ -55,6 +55,7 @@ class ServiceLetterRequestService
             ]);
 
             $this->recordHistory($request, null, 'submitted', 'Request submitted by student.', auth()->id());
+            app(StudentServiceNotificationService::class)->serviceLetter($request, 'submitted', 'Pengajuan surat berhasil dikirim.');
 
             return $request;
         });
@@ -78,6 +79,7 @@ class ServiceLetterRequestService
 
             $request->update($updates);
             $this->recordHistory($request, $from, $status, $notes, $userId);
+            app(StudentServiceNotificationService::class)->serviceLetter($request, $status, $notes);
 
             return $request->refresh();
         });
@@ -117,6 +119,7 @@ class ServiceLetterRequestService
             ]);
 
             $this->recordHistory($request, $from, 'issued', 'Letter issued.', $userId);
+            app(StudentServiceNotificationService::class)->serviceLetter($request, 'issued', 'Surat sudah diterbitkan dan bisa diunduh.');
 
             return $request->refresh();
         });
@@ -152,6 +155,7 @@ class ServiceLetterRequestService
             ]);
 
             $this->recordHistory($request, $from, 'submitted', 'Request corrected and resubmitted by student.', auth()->id());
+            app(StudentServiceNotificationService::class)->serviceLetter($request, 'submitted', 'Perbaikan pengajuan surat berhasil dikirim ulang.');
 
             return $request->refresh();
         });

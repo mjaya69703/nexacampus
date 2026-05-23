@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
+use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
@@ -52,6 +53,9 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/financial/dashboard', 'admin.financial.dashboard.index')
                 ->middleware('active_permission:financial-dashboard.viewAny')
                 ->name('financial.dashboard.index');
+            Route::livewire('/student-services/dashboard', 'admin.student-services.dashboard.index')
+                ->middleware('active_permission:student-service-dashboard.viewAny')
+                ->name('student-services.dashboard.index');
 
             Route::livewire('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', 'admin.academic.attendance-sessions.show')
                 ->middleware('active_permission:course-offering.view')
@@ -87,6 +91,9 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/student-services/graduation-documents/{document}/preview', [GraduationDocumentController::class, 'adminPreview'])
                 ->middleware('active_permission:graduation-application.view')
                 ->name('student-services.graduation-documents.preview');
+            Route::get('/student-services/complaint-attachments/{attachment}/download', [ComplaintAttachmentController::class, 'admin'])
+                ->middleware('active_permission:student-complaint.view')
+                ->name('student-services.complaint-attachments.download');
         });
 
         // Student Routes
@@ -128,6 +135,10 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/services/graduations/{id}/edit', 'student.student-services.graduation-edit')->name('student-services.graduations.edit');
             Route::livewire('/services/graduations/{id}', 'student.student-services.graduation-detail')->name('student-services.graduations.show');
             Route::get('/services/graduation-documents/{document}/preview', [GraduationDocumentController::class, 'studentPreview'])->name('student-services.graduation-documents.preview');
+            Route::livewire('/services/complaints', 'student.student-services.complaints')->name('student-services.complaints');
+            Route::livewire('/services/complaints/create', 'student.student-services.complaint-create')->name('student-services.complaints.create');
+            Route::livewire('/services/complaints/{id}', 'student.student-services.complaint-detail')->name('student-services.complaints.show');
+            Route::get('/services/complaint-attachments/{attachment}/download', [ComplaintAttachmentController::class, 'student'])->name('student-services.complaint-attachments.download');
         });
 
         // Lecturer Routes

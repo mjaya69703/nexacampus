@@ -136,6 +136,7 @@ class SidebarMenu
                     static::makeChildLink('student.student-services.leaves', 'Cuti Akademik'),
                     static::makeChildLink('student.student-services.transfers', 'Pindah Program'),
                     static::makeChildLink('student.student-services.graduations', 'Yudisium'),
+                    static::makeChildLink('student.student-services.complaints', 'Pengaduan'),
                 ]),
             ]),
             'lecturer' => collect([

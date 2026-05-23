@@ -38,6 +38,7 @@ class StudentTransferRequestService
             ]);
 
             $this->recordHistory($request, null, 'submitted', 'Transfer request submitted by student.', auth()->id());
+            app(StudentServiceNotificationService::class)->transfer($request, 'submitted', 'Pengajuan pindah berhasil dikirim.');
 
             return $request;
         });
@@ -79,6 +80,7 @@ class StudentTransferRequestService
             ]);
 
             $this->recordHistory($request, $from, 'submitted', 'Transfer request corrected and resubmitted by student.', auth()->id());
+            app(StudentServiceNotificationService::class)->transfer($request, 'submitted', 'Perbaikan pengajuan pindah berhasil dikirim ulang.');
 
             return $request->refresh();
         });
@@ -96,6 +98,7 @@ class StudentTransferRequestService
             ]);
 
             $this->recordHistory($request, $from, $status, $notes, $userId);
+            app(StudentServiceNotificationService::class)->transfer($request, $status, $notes);
 
             return $request->refresh();
         });
@@ -144,6 +147,7 @@ class StudentTransferRequestService
                 : ($evaluation['admin_notes'] ?? null);
 
             $this->recordHistory($request, $from, $status, $historyNotes, $userId);
+            app(StudentServiceNotificationService::class)->transfer($request, $status, $historyNotes);
 
             return $request->refresh();
         });
@@ -192,6 +196,7 @@ class StudentTransferRequestService
             ]);
 
             $this->recordHistory($request, $from, 'applied', $notes ?: 'Transfer applied by admin.', $userId);
+            app(StudentServiceNotificationService::class)->transfer($request, 'applied', $notes ?: 'Pindah internal sudah diterapkan ke profil akademik kamu.');
 
             return $request->refresh();
         });

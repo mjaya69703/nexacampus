@@ -1209,12 +1209,20 @@ One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pind
    - ✅ Bulk finalize approved applications from a graduation batch so many students can share the same official yudisium date without manual per-student date entry.
    - ✅ Finalized applications are treated as final and cannot be revised by normal workflow.
 5. **Phase 3B - Complaints**
-   - Complaint category, assignment, response, and resolution tracking.
-   - Include complaint SLA/status guidance in the complaint detail page, following the yudisium guidance pattern.
+   - ✅ Supporting Organization module foundation: work unit master data and work unit members.
+   - ✅ Work unit membership stores lightweight position (`member`, `coordinator`, `head`) without replacing the existing role/permission system.
+   - ✅ Work units are designed as cross-module operational scope for complaint assignment, approval routing, notifications, and staff dashboards.
+   - ✅ Complaint category master data with default work unit routing and default SLA hours.
+   - ✅ Student complaint/ticket creation with priority, Jodit rich-text description, upload progress, and multiple attachments.
+   - ✅ Admin complaint queue with work-unit/user assignment, status actions, response thread, multi-attachment support, status history, auto refresh, and practical PowerGrid filters.
+   - ✅ Student and admin complaint detail pages use lightweight Livewire polling on the opened ticket only, so admin/student replies appear without manual refresh.
+   - ✅ Admin complaint access is scoped for non-admin staff to tickets assigned to their user or active work units.
+   - ✅ Complaint SLA/status guidance, overdue/sisa SLA labels, and quick claim action for staff.
+   - ✅ Complaint attachments are served through secure role/student scoped download routes instead of raw public URLs.
 6. **Phase 4 - Student Services Operations Dashboard & Notifications**
-   - Admin queue dashboard for pending letters, leave, transfer, yudisium, complaints, correction-needed, ready-to-approve, and ready-to-finalize items.
-   - Email/status notifications for request submitted, approved, rejected, correction requested, leave activated, transfer applied, and graduation finalized.
-   - Cross-feature operational overview for staff so daily work can start from one Student Services dashboard instead of separate resource menus.
+   - ✅ Admin queue dashboard for pending letters, leave, transfer, yudisium, complaints, correction-needed, ready-to-approve, and ready-to-finalize items.
+   - ✅ Email/status notifications for request submitted, approved, rejected, correction requested, leave activated, transfer applied, graduation finalized, and complaint replies/status changes.
+   - ✅ Cross-feature operational overview for staff so daily work can start from one Student Services dashboard instead of separate resource menus.
 
 **Candidate Tables:**
 - ✅ `service_letter_types`
@@ -1229,7 +1237,13 @@ One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pind
 - ✅ `graduation_documents`
 - ✅ `graduation_status_histories`
 - ✅ `graduation_policies`
-- `student_complaints`
+- ✅ `work_units`
+- ✅ `work_unit_user`
+- ✅ `student_complaint_categories`
+- ✅ `student_complaints`
+- ✅ `student_complaint_messages`
+- ✅ `student_complaint_attachments`
+- ✅ `student_complaint_status_histories`
 - ✅ `service_request_status_histories`
 
 ---

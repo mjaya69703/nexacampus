@@ -35,6 +35,7 @@ class StudentLeaveApplicationService
             ]);
 
             $this->recordHistory($application, null, 'submitted', 'Leave application submitted by student.', auth()->id());
+            app(StudentServiceNotificationService::class)->leave($application, 'submitted', 'Pengajuan cuti berhasil dikirim.');
 
             return $application;
         });
@@ -72,6 +73,7 @@ class StudentLeaveApplicationService
             ]);
 
             $this->recordHistory($application, $from, 'submitted', 'Leave application corrected and resubmitted by student.', auth()->id());
+            app(StudentServiceNotificationService::class)->leave($application, 'submitted', 'Perbaikan pengajuan cuti berhasil dikirim ulang.');
 
             return $application->refresh();
         });
@@ -95,6 +97,7 @@ class StudentLeaveApplicationService
 
             $application->update($updates);
             $this->recordHistory($application, $from, $status, $notes, $userId);
+            app(StudentServiceNotificationService::class)->leave($application, $status, $notes);
 
             return $application->refresh();
         });
@@ -139,6 +142,7 @@ class StudentLeaveApplicationService
                 : $notes;
 
             $this->recordHistory($application, $from, $status, $historyNotes, $userId);
+            app(StudentServiceNotificationService::class)->leave($application, $status, $historyNotes);
 
             return $application->refresh();
         });
@@ -179,6 +183,7 @@ class StudentLeaveApplicationService
             ]);
 
             $this->recordHistory($application, $from, 'activated', $notes ?: 'Leave activated by admin.', $userId);
+            app(StudentServiceNotificationService::class)->leave($application, 'activated', $notes ?: 'Cuti akademik kamu sudah diaktifkan.');
 
             return $application->refresh();
         });
@@ -206,6 +211,7 @@ class StudentLeaveApplicationService
             ]);
 
             $this->recordHistory($application, $from, 'returned', $notes ?: 'Student returned to active status.', $userId);
+            app(StudentServiceNotificationService::class)->leave($application, 'returned', $notes ?: 'Status akademik kamu sudah dikembalikan menjadi aktif.');
 
             return $application->refresh();
         });

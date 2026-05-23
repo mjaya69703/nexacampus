@@ -42,6 +42,7 @@ class GraduationApplicationService
 
             $this->storeRequirementDocuments($application, $documentUploads, $studentProfile);
             $this->recordHistory($application, null, 'submitted', 'Graduation application submitted by student.', auth()->id());
+            app(StudentServiceNotificationService::class)->graduation($application, 'submitted', 'Pengajuan yudisium berhasil dikirim.');
 
             return $application;
         });
@@ -84,6 +85,7 @@ class GraduationApplicationService
 
             $this->storeRequirementDocuments($application, $documentUploads, $application->studentProfile);
             $this->recordHistory($application, $from, 'submitted', 'Graduation application corrected and resubmitted by student.', auth()->id());
+            app(StudentServiceNotificationService::class)->graduation($application, 'submitted', 'Perbaikan pengajuan yudisium berhasil dikirim ulang.');
 
             return $application->refresh();
         });
@@ -111,6 +113,7 @@ class GraduationApplicationService
 
             $application->update($updates);
             $this->recordHistory($application, $from, $status, $notes, $userId);
+            app(StudentServiceNotificationService::class)->graduation($application, $status, $notes);
 
             return $application->refresh();
         });
@@ -145,6 +148,7 @@ class GraduationApplicationService
             ]);
 
             $this->recordHistory($application, $from, 'approved', $notes, $userId);
+            app(StudentServiceNotificationService::class)->graduation($application, 'approved', $notes);
 
             return $application->refresh();
         });
@@ -172,6 +176,7 @@ class GraduationApplicationService
 
             if ($from !== $status) {
                 $this->recordHistory($application, $from, $status, 'Review checklist started by admin.', $userId);
+                app(StudentServiceNotificationService::class)->graduation($application, $status, 'Review checklist dimulai oleh admin.');
             }
 
             return $application->refresh();
@@ -209,6 +214,7 @@ class GraduationApplicationService
             ]);
 
             $this->recordHistory($application, $from, 'finalized', $notes ?: 'Graduation finalized by admin.', $userId);
+            app(StudentServiceNotificationService::class)->graduation($application, 'finalized', $notes ?: 'Yudisium sudah difinalisasi.');
 
             return $application->refresh();
         });
