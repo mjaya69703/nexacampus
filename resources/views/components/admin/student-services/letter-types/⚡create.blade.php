@@ -45,8 +45,8 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Student Services',
-            'pages' => 'Create Letter Type',
+            'menus' => 'Layanan Mahasiswa',
+            'pages' => 'Buat Jenis Surat',
         ]);
     }
 
@@ -82,7 +82,7 @@ new class extends Component
         <x-alert />
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">Create Letter Type</h3>
+                <h3 class="card-title mb-0">Buat Jenis Surat</h3>
                 <a href="{{ route('admin.student-services.letter-types.index') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-1"></i> Back
                 </a>

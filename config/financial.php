@@ -5,6 +5,7 @@ return [
         'tuition' => 'Tuition',
         'registration' => 'Registration',
         'leave' => 'Leave',
+        'transfer' => 'Transfer',
         'exam' => 'Exam',
         'custom' => 'Custom',
         'admission' => 'Admission',

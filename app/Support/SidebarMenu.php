@@ -134,6 +134,8 @@ class SidebarMenu
                 static::makeGroup('student-services', 'Layanan', 'fas fa-hands-helping', [
                     static::makeChildLink('student.student-services.letters', 'Surat'),
                     static::makeChildLink('student.student-services.leaves', 'Cuti Akademik'),
+                    static::makeChildLink('student.student-services.transfers', 'Pindah Program'),
+                    static::makeChildLink('student.student-services.graduations', 'Yudisium'),
                 ]),
             ]),
             'lecturer' => collect([

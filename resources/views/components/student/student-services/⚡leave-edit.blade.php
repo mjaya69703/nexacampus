@@ -116,8 +116,10 @@ new class extends Component
 
     <div class="card service-card">
         <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
-            <h3 class="card-title mb-0">{{ $application->application_number }}</h3>
-            <small class="text-muted">Perbaiki data pengajuan cuti akademik.</small>
+            <div>
+                <h3 class="card-title mb-0">{{ $application->application_number }}</h3>
+                <small class="text-muted d-block mt-1">Perbaiki data pengajuan cuti akademik.</small>
+            </div>
         </div>
         <div class="card-body p-4">
             <form wire:submit.prevent="save">

@@ -8,8 +8,8 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Student Services',
-            'pages' => 'Letter Types',
+            'menus' => 'Layanan Mahasiswa',
+            'pages' => 'Jenis Surat',
         ]);
     }
 
@@ -29,7 +29,7 @@ new class extends Component
     <x-alert />
 
     <div class="row g-3 mb-3">
-        @foreach ([['label' => 'Letter Types', 'value' => $this->stats()['total']], ['label' => 'Active', 'value' => $this->stats()['active']], ['label' => 'Auto Generate', 'value' => $this->stats()['auto']], ['label' => 'With Clearance', 'value' => $this->stats()['clearance']]] as $card)
+        @foreach ([['label' => 'Jenis Surat', 'value' => $this->stats()['total']], ['label' => 'Aktif', 'value' => $this->stats()['active']], ['label' => 'Otomatis', 'value' => $this->stats()['auto']], ['label' => 'Pakai Clearance', 'value' => $this->stats()['clearance']]] as $card)
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body">
@@ -44,12 +44,12 @@ new class extends Component
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>
-                <h3 class="card-title mb-0">Letter Types</h3>
+                <h3 class="card-title mb-0">Jenis Surat</h3>
                 <small class="text-muted">Template dan aturan layanan surat mahasiswa.</small>
             </div>
             @activecan('service-letter-type.create')
                 <a href="{{ route('admin.student-services.letter-types.create') }}" class="btn btn-ghost-primary">
-                    <i class="fas fa-plus me-1"></i> Create Type
+                    <i class="fas fa-plus me-1"></i> Buat Jenis Surat
                 </a>
             @endactivecan
         </div>

@@ -8,8 +8,8 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Student Services',
-            'pages' => 'Letter Requests',
+            'menus' => 'Layanan Mahasiswa',
+            'pages' => 'Pengajuan Surat',
         ]);
     }
 
@@ -44,7 +44,7 @@ new class extends Component
     <div class="card">
         <div class="card-header">
             <div>
-                <h3 class="card-title mb-0">Letter Requests</h3>
+                <h3 class="card-title mb-0">Pengajuan Surat</h3>
                 <small class="text-muted">Review, approve, dan terbitkan surat mahasiswa.</small>
             </div>
         </div>

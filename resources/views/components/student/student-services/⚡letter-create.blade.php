@@ -159,7 +159,7 @@ new class extends Component
         <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
             <div>
                 <h3 class="card-title mb-0">Ajukan Surat</h3>
-                <small class="text-muted">Pilih jenis surat dan lengkapi informasi yang dibutuhkan.</small>
+                <small class="text-muted d-block mt-1">Pilih jenis surat dan lengkapi informasi yang dibutuhkan.</small>
             </div>
         </div>
         <div class="card-body p-4">

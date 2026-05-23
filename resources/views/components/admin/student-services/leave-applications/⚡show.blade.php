@@ -127,8 +127,8 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Student Services',
-            'pages' => 'Leave Application Detail',
+            'menus' => 'Layanan Mahasiswa',
+            'pages' => 'Detail Pengajuan Cuti',
         ]);
     }
 
@@ -185,7 +185,7 @@ new class extends Component
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
                     <h3 class="card-title mb-0">{{ $application->application_number }}</h3>
-                    <small class="text-muted">Leave Application</small>
+                    <small class="text-muted">Pengajuan Cuti</small>
                 </div>
                 <a href="{{ route('admin.student-services.leave-applications.index') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-1"></i> Back

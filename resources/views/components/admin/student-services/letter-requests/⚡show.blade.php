@@ -94,8 +94,8 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Student Services',
-            'pages' => 'Letter Request Detail',
+            'menus' => 'Layanan Mahasiswa',
+            'pages' => 'Detail Pengajuan Surat',
         ]);
     }
 

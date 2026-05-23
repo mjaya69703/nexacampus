@@ -8,8 +8,8 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Student Services',
-            'pages' => 'Leave Applications',
+            'menus' => 'Layanan Mahasiswa',
+            'pages' => 'Pengajuan Cuti',
         ]);
     }
 
@@ -44,7 +44,7 @@ new class extends Component
     <div class="card">
         <div class="card-header">
             <div>
-                <h3 class="card-title mb-0">Leave Applications</h3>
+                <h3 class="card-title mb-0">Pengajuan Cuti</h3>
                 <small class="text-muted">Review dan kelola pengajuan cuti akademik mahasiswa.</small>
             </div>
         </div>

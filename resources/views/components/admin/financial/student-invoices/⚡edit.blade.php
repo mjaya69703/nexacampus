@@ -67,7 +67,7 @@ new class extends Component
         $validated = $this->validate([
             'form.academic_year_id' => 'nullable|exists:academic_years,id',
             'form.semester' => 'nullable|integer|min:1|max:14',
-            'form.invoice_type' => 'required|in:tuition,custom,admission,registration,leave,graduation,exam,library_fine,certificate,other',
+            'form.invoice_type' => 'required|in:tuition,custom,admission,registration,leave,transfer,graduation,exam,library_fine,certificate,other',
             'form.due_date' => 'required|date',
             'form.notes' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
@@ -142,6 +142,7 @@ new class extends Component
                                 <option value="admission">Admission</option>
                                 <option value="registration">Registration</option>
                                 <option value="leave">Leave</option>
+                                <option value="transfer">Transfer</option>
                                 <option value="graduation">Graduation</option>
                                 <option value="exam">Exam</option>
                                 <option value="library_fine">Library Fine</option>

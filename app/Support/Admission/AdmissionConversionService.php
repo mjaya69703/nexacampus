@@ -82,6 +82,7 @@ class AdmissionConversionService
                 'academic_status' => 'Aktif',
                 'entry_date' => now()->toDateString(),
                 'current_semester' => 1,
+                'class_type' => $application->class_type,
                 'is_active' => true,
                 'desc' => 'Converted from admission application '.$application->application_number.'.',
                 'created_by' => $userId,

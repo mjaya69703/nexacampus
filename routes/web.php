@@ -7,6 +7,7 @@ use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
+use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
@@ -83,6 +84,9 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
                 ->middleware('active_permission:service-letter-request.view')
                 ->name('student-services.letter-requests.download');
+            Route::get('/student-services/graduation-documents/{document}/preview', [GraduationDocumentController::class, 'adminPreview'])
+                ->middleware('active_permission:graduation-application.view')
+                ->name('student-services.graduation-documents.preview');
         });
 
         // Student Routes
@@ -115,6 +119,15 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/services/leaves/create', 'student.student-services.leave-create')->name('student-services.leaves.create');
             Route::livewire('/services/leaves/{id}/edit', 'student.student-services.leave-edit')->name('student-services.leaves.edit');
             Route::livewire('/services/leaves/{id}', 'student.student-services.leave-detail')->name('student-services.leaves.show');
+            Route::livewire('/services/transfers', 'student.student-services.transfers')->name('student-services.transfers');
+            Route::livewire('/services/transfers/create', 'student.student-services.transfer-create')->name('student-services.transfers.create');
+            Route::livewire('/services/transfers/{id}/edit', 'student.student-services.transfer-edit')->name('student-services.transfers.edit');
+            Route::livewire('/services/transfers/{id}', 'student.student-services.transfer-detail')->name('student-services.transfers.show');
+            Route::livewire('/services/graduations', 'student.student-services.graduations')->name('student-services.graduations');
+            Route::livewire('/services/graduations/create', 'student.student-services.graduation-create')->name('student-services.graduations.create');
+            Route::livewire('/services/graduations/{id}/edit', 'student.student-services.graduation-edit')->name('student-services.graduations.edit');
+            Route::livewire('/services/graduations/{id}', 'student.student-services.graduation-detail')->name('student-services.graduations.show');
+            Route::get('/services/graduation-documents/{document}/preview', [GraduationDocumentController::class, 'studentPreview'])->name('student-services.graduation-documents.preview');
         });
 
         // Lecturer Routes

@@ -7,8 +7,10 @@ use App\Models\Financial\StudentCreditBalance;
 use App\Models\Financial\StudentCreditTransaction;
 use App\Models\Financial\StudentInvoice;
 use App\Models\Financial\StudentScholarship;
+use App\Models\StudentService\GraduationApplication;
 use App\Models\StudentService\ServiceLetterRequest;
 use App\Models\StudentService\StudentLeaveApplication;
+use App\Models\StudentService\StudentTransferRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +37,7 @@ class StudentProfile extends Model
         'entry_date',
         'graduation_date',
         'current_semester',
+        'class_type',
         'is_active',
         'desc',
         'created_by',
@@ -55,7 +58,7 @@ class StudentProfile extends Model
     {
         return LogOptions::defaults()
             ->useLogName('student_profile')
-            ->logOnly(['nim', 'academic_status', 'current_semester', 'is_active'])
+            ->logOnly(['nim', 'academic_status', 'current_semester', 'class_type', 'is_active'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -130,8 +133,18 @@ class StudentProfile extends Model
         return $this->hasMany(ServiceLetterRequest::class);
     }
 
+    public function graduationApplications(): HasMany
+    {
+        return $this->hasMany(GraduationApplication::class);
+    }
+
     public function leaveApplications(): HasMany
     {
         return $this->hasMany(StudentLeaveApplication::class);
+    }
+
+    public function transferRequests(): HasMany
+    {
+        return $this->hasMany(StudentTransferRequest::class);
     }
 }

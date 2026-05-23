@@ -1116,7 +1116,7 @@ Draft berikut adalah kandidat lanjutan setelah Priority 1-5 sudah dianggap clear
 *Impact: Admin + Students | Module: New*
 
 ##### 6. Student Services - Letters, Leave, Transfer & Graduation 📋
-**Status:** 🚧 IN PROGRESS (Phase 2A implemented: Letter Request Center + Leave Application Workflow)  
+**Status:** 🚧 IN PROGRESS (Phase 3A implemented: Letter Request Center, Leave, Transfer, and Yudisium Workflow)  
 **Roles Affected:** Admin/Student Affairs (manage), Students (request/track), Academic/Finance (clearance checks)  
 **Module Category:** New Module → `student-services`
 
@@ -1137,8 +1137,8 @@ One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pind
 - ✅ Correction workflow: admin can request correction and student can revise/resubmit without creating a new request.
 - ✅ Optional digital signature/signatory placeholder through signer name and position.
 - ✅ Leave of absence application with attachments and multi-step approval.
-- Student transfer request with curriculum/credit mapping notes.
-- Graduation application with eligibility checklist.
+- ✅ Student transfer request with curriculum/credit mapping notes.
+- ✅ Graduation/yudisium application with eligibility checklist.
 - Complaint/feedback submission with department assignment and SLA tracking.
 
 **Integration Notes:**
@@ -1174,22 +1174,61 @@ One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pind
    - ✅ KRS, schedule, and attendance student pages require approved registration with `academic_status = Aktif`, so approved leave snapshots do not unlock academic activity.
    - ✅ Optional leave fee during approval; if fee is set, system issues a `leave` invoice and activation is blocked until paid.
 3. **Phase 2B - Internal Transfer Workflow**
-   - Internal transfer request and evaluation notes.
-   - From/to study program tracking.
-   - Admin review/approve/reject/correction workflow.
-   - Manual apply transfer action after approval.
-   - Curriculum/credit mapping notes as MVP, full mapping engine later.
-4. **Phase 3 - Graduation & Complaints**
-   - Graduation application and requirement checklist.
+   - ✅ Internal transfer request and evaluation notes.
+   - ✅ From/to study program tracking.
+   - ✅ Transfer type rules: pindah prodi only lists programs in the same faculty, pindah fakultas requires choosing a program in a different faculty, and pindah kelas only changes `student_profiles.class_type` while keeping the same study program.
+   - ✅ Admin review/approve/reject/correction workflow.
+   - ✅ Student correction/resubmit flow.
+   - ✅ Optional transfer fee during approval; if fee is set, system issues a `transfer` invoice and apply transfer is blocked until paid.
+   - ✅ Manual apply transfer action after approval.
+   - ✅ Curriculum/credit mapping notes as MVP, full mapping engine later.
+   - Transfer application/conversion updates `student_profiles.study_program_id` for prodi/faculty transfer, updates `student_profiles.class_type` for class transfer, and can update `current_semester` from admin recommended semester.
+   - Future: full curriculum/credit conversion engine to map old curriculum, accepted credits/SKS, equivalent courses, remaining courses, transcript treatment, GPA/IPK impact, and recommended semester automatically.
+   - Future: post-transfer academic cleanup hooks for advisor reassignment, study plan reset/revalidation, course offering eligibility, scholarship/tuition reassessment, and transfer decision PDF/SK generation.
+   - Future: multi-step approval after department head/dean/finance roles are formalized.
+4. **Phase 3A - Graduation / Yudisium Workflow**
+   - ✅ Student yudisium application with graduation batch, thesis/final project title, notes, and attachment.
+   - ✅ Yudisium application window is selected from admin-managed `academic_periods` with type `Yudisium`, but official yudisium metadata is stored in Student Services graduation batches.
+   - ✅ Admin-managed graduation/yudisium batch stores official yudisium date, optional SK number/date, status, scope, and links to the academic period window.
+   - ✅ Student chooses an open yudisium batch; batch visibility respects academic period date window and optional study-program scope.
+   - ✅ Admin-managed graduation/yudisium policy dashboard, with global fallback and optional study-program-specific policy.
+   - ✅ Eligibility gate uses only supported system data: active status, current semester, passed SKS, latest GPA, incomplete transcript entries, graduation financial hold, and open yudisium period.
+   - ✅ Unsupported operational requirements such as final project completion, library/lab clearance, and document completeness remain manual admin checklist until their supporting modules exist.
+   - ✅ Financial clearance block for `graduation` hold before submit.
+   - ✅ Eligibility snapshot from student profile, study program, passed credits, latest GPA, and financial hold state.
+   - ✅ Admin review/under review/approve/reject/correction workflow.
+   - ✅ Student correction/resubmit flow before finalization.
+   - ✅ Autosaved admin checklist for transcript, final project, library/lab clearance, and document completeness, including checked by, checked at, and notes per item.
+   - ✅ Admin-managed yudisium document requirements with global or study-program-specific scope.
+   - ✅ Student yudisium document upload per requirement with file type/size validation.
+   - ✅ Admin document preview and per-document verification/rejection notes.
+   - ✅ Yudisium approval requires required documents to be verified.
+   - ✅ Student detail page shows document verification status and auto-refreshes review progress.
+   - ✅ Workflow guidance on admin and student yudisium detail pages so staff/student can see the next required action clearly.
+   - ✅ Finalize graduation action uses the official yudisium date from the selected batch, changes `student_profiles.academic_status` to `Lulus`, sets `graduation_date`, and deactivates the student profile.
+   - ✅ Bulk finalize approved applications from a graduation batch so many students can share the same official yudisium date without manual per-student date entry.
+   - ✅ Finalized applications are treated as final and cannot be revised by normal workflow.
+5. **Phase 3B - Complaints**
    - Complaint category, assignment, response, and resolution tracking.
+   - Include complaint SLA/status guidance in the complaint detail page, following the yudisium guidance pattern.
+6. **Phase 4 - Student Services Operations Dashboard & Notifications**
+   - Admin queue dashboard for pending letters, leave, transfer, yudisium, complaints, correction-needed, ready-to-approve, and ready-to-finalize items.
+   - Email/status notifications for request submitted, approved, rejected, correction requested, leave activated, transfer applied, and graduation finalized.
+   - Cross-feature operational overview for staff so daily work can start from one Student Services dashboard instead of separate resource menus.
 
 **Candidate Tables:**
 - ✅ `service_letter_types`
 - ✅ `service_letter_requests`
 - ✅ `student_leave_applications`
 - ✅ `student_leave_status_histories`
-- `student_transfer_requests`
-- `graduation_applications`
+- ✅ `student_transfer_requests`
+- ✅ `student_transfer_status_histories`
+- ✅ `graduation_batches`
+- ✅ `graduation_applications`
+- ✅ `graduation_document_requirements`
+- ✅ `graduation_documents`
+- ✅ `graduation_status_histories`
+- ✅ `graduation_policies`
 - `student_complaints`
 - ✅ `service_request_status_histories`
 
