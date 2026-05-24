@@ -125,6 +125,7 @@ class SidebarMenu
                     static::makeChildLink('student.registration.index', 'Registrasi'),
                     static::makeChildLink('student.study-plan.index', 'KRS'),
                     static::makeChildLink('student.schedule.index', 'Jadwal'),
+                    static::makeChildLink('student.progress.index', 'Progress'),
                 ]),
                 static::makeGroup('student-learning', 'Pembelajaran', 'fas fa-book-open', [
                     static::makeChildLink('student.course-materials.index', 'Materi'),
@@ -146,17 +147,48 @@ class SidebarMenu
                     static::makeChildLink('student.announcements.index', 'Pengumuman'),
                 ]),
             ]),
-            'lecturer' => collect([
-                static::makeLink('lecturer-course-offerings', 'Kelas Saya', 'lecturer.course-offerings.index', 'fas fa-book'),
-                static::makeGroup('lecturer-publication', 'Publikasi', 'fas fa-bullhorn', [
-                    static::makeChildLink('lecturer.announcements.index', 'Pengumuman'),
-                ]),
-                static::makeLink('lecturer-course-materials', 'Materi', 'lecturer.course-materials.list', 'fas fa-book-open'),
-                static::makeLink('lecturer-assignments', 'Tugas', 'lecturer.assignments.index', 'fas fa-clipboard-check'),
-                static::makeLink('lecturer-student-grades', 'Nilai', 'lecturer.student-grades.index', 'fas fa-chart-bar'),
-            ]),
+            'lecturer' => static::lecturerMenus(),
             default => collect(),
         };
+    }
+
+    protected static function lecturerMenus(): Collection
+    {
+        $menus = collect([
+            static::makeGroup('lecturer-teaching', 'Mengajar', 'fas fa-chalkboard-teacher', [
+                static::makeChildLink('lecturer.course-offerings.index', 'Kelas Saya'),
+            ]),
+            static::makeGroup('lecturer-learning', 'Pembelajaran', 'fas fa-book-open', [
+                static::makeChildLink('lecturer.course-materials.list', 'Materi'),
+                static::makeChildLink('lecturer.assignments.index', 'Tugas'),
+            ]),
+            static::makeGroup('lecturer-assessment', 'Evaluasi', 'fas fa-chart-bar', [
+                static::makeChildLink('lecturer.student-grades.index', 'Nilai'),
+                static::makeChildLink('lecturer.student-grades.grade-book', 'Grade Book'),
+            ]),
+            static::makeGroup('lecturer-publication', 'Publikasi', 'fas fa-bullhorn', [
+                static::makeChildLink('lecturer.announcements.index', 'Pengumuman'),
+            ]),
+        ]);
+
+        if (! static::lecturerHasAdvisorAssignments()) {
+            return $menus;
+        }
+
+        $menus->splice(1, 0, [
+            static::makeGroup('lecturer-advising', 'Bimbingan Akademik', 'fas fa-user-graduate', [
+                static::makeChildLink('lecturer.academic-advising.index', 'Mahasiswa Bimbingan'),
+            ]),
+        ]);
+
+        return $menus;
+    }
+
+    protected static function lecturerHasAdvisorAssignments(): bool
+    {
+        $lecturerProfileId = auth()->user()?->lecturerProfile?->id;
+
+        return app(AcademicAdvisorService::class)->hasActiveAssignmentsForLecturer($lecturerProfileId);
     }
 
     protected static function makeLink(string $id, string $title, string $routeName, ?string $icon = null): Fluent

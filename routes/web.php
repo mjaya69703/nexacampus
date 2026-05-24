@@ -103,6 +103,7 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/dashboard', 'student.dashboard.index')->name('dashboard.index');
             Route::livewire('/registration', 'student.registration.index')->name('registration.index');
             Route::livewire('/study-plan', 'student.study-plan.index')->name('study-plan.index');
+            Route::livewire('/progress', 'student.progress.index')->name('progress.index');
             Route::livewire('/grades', 'student.grades.index')->name('grades.index');
             Route::livewire('/financial/invoices', 'student.financial.invoices')->name('financial.invoices');
             Route::livewire('/financial/invoices/{id}', 'student.financial.invoice-detail')->name('financial.invoices.show');
@@ -181,6 +182,8 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/student-grades/grade-book/export/xlsx', [GradeBookExportController::class, 'xlsx'])->name('student-grades.grade-book.export.xlsx');
             Route::get('/student-grades/grade-book/export/pdf', [GradeBookExportController::class, 'pdf'])->name('student-grades.grade-book.export.pdf');
             Route::livewire('/student-grades/{id}/edit', 'lecturer.student-grades.edit')->name('student-grades.edit');
+            Route::livewire('/academic-advising', 'lecturer.academic-advising.index')->name('academic-advising.index');
+            Route::livewire('/academic-advising/{assignmentId}', 'lecturer.academic-advising.show')->name('academic-advising.show');
             Route::livewire('/students', 'lecturer.students.index')->name('students.index');
         });
     });

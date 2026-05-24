@@ -1316,7 +1316,7 @@ Sistem pengumpulan tugas online yang terhubung dengan course offering, materi pe
 *Impact: Lecturer + Students + Academic Advisors | Module: Academic Enhancement*
 
 ##### 8. Progress Analytics & Advisor Dashboard 📈
-**Status:** 📝 DRAFT / NOT STARTED  
+**Status:** 🚧 IN PROGRESS (Phase 1-3 implemented: Advisor Foundation, Student Progress, Advisor Follow-up)  
 **Roles Affected:** Lecturer/Academic Advisor (monitor), Students (view progress), Admin (oversight)  
 **Module Category:** Academic → New Submodule: `academic-analytics`
 
@@ -1348,18 +1348,25 @@ Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, mater
 **Estimated Effort:** Medium-High (4-5 days)
 
 **Recommended Phases:**
-1. **Phase 1 - Student Progress Tracker**
-   - Student academic progress page.
-   - GPA/SKS trend charts.
-   - Remaining requirement summary.
-2. **Phase 2 - Advisor Dashboard**
-   - Advisor-student assignment.
-   - Risk indicators and student list.
-   - Advisor notes/recommendations.
-3. **Phase 3 - AI-Ready Insight Layer**
-   - Consolidated analytics service.
-   - Explainable risk reasons.
-   - Recommendation history.
+1. **Phase 1 - Advisor Assignment Foundation**
+   - ✅ Harden existing Dosen Wali assignment workflow.
+   - ✅ Searchable student/lecturer picker and bulk assignment flow.
+   - ✅ Active assignment conflict validation, including open-ended/general assignments.
+   - ✅ Advisor resolver service for active advisor, assigned students, and conditional lecturer menu.
+2. **Phase 2 - Student Progress Tracker**
+   - ✅ Student academic progress page.
+   - ✅ GPA/SKS trend charts.
+   - ✅ Remaining requirement summary.
+   - ✅ Student-facing active advisor information.
+   - ✅ Attendance, financial, KRS, and academic risk indicators.
+   - ✅ Student-facing recommendations based on current risk reasons.
+3. **Phase 3 - Advisor Dashboard & Recommendations**
+   - ✅ Lecturer advisor dashboard for assigned students only.
+   - ✅ Risk indicators and student list.
+   - ✅ Advisor notes/recommendations and follow-up history.
+   - ✅ Dedicated lecturer advising detail page per student, replacing modal-style note entry.
+   - ✅ Student-visible advisor notes when marked visible by lecturer.
+   - ✅ Consolidated student analytics service with explainable risk reasons.
 
 **Candidate Tables:**
 - `academic_advisor_assignments`
