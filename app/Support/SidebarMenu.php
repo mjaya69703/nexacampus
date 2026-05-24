@@ -121,22 +121,29 @@ class SidebarMenu
     {
         return match ($role) {
             'student' => collect([
-                static::makeLink('student-registration', 'Registrasi', 'student.registration.index', 'fas fa-clipboard-list'),
-                static::makeLink('student-study-plan', 'KRS', 'student.study-plan.index', 'fas fa-file-alt'),
-                static::makeLink('student-schedule', 'Jadwal', 'student.schedule.index', 'fas fa-calendar'),
-                static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
-                    static::makeChildLink('student.announcements.index', 'Pengumuman'),
+                static::makeGroup('student-academic', 'Akademik', 'fas fa-graduation-cap', [
+                    static::makeChildLink('student.registration.index', 'Registrasi'),
+                    static::makeChildLink('student.study-plan.index', 'KRS'),
+                    static::makeChildLink('student.schedule.index', 'Jadwal'),
                 ]),
-                static::makeLink('student-materials', 'Materi', 'student.course-materials.index', 'fas fa-book-open'),
-                static::makeLink('student-grades', 'Nilai', 'student.grades.index', 'fas fa-chart-bar'),
-                static::makeLink('student-transcript', 'Transkrip', 'student.transcript.index', 'fas fa-file-invoice'),
-                static::makeLink('student-financial-invoices', 'Keuangan', 'student.financial.invoices', 'fas fa-wallet'),
+                static::makeGroup('student-learning', 'Pembelajaran', 'fas fa-book-open', [
+                    static::makeChildLink('student.course-materials.index', 'Materi'),
+                    static::makeChildLink('student.assignments.index', 'Tugas'),
+                    static::makeChildLink('student.grades.index', 'Nilai'),
+                    static::makeChildLink('student.transcript.index', 'Transkrip'),
+                ]),
+                static::makeGroup('student-financial', 'Keuangan', 'fas fa-wallet', [
+                    static::makeChildLink('student.financial.invoices', 'Tagihan'),
+                ]),
                 static::makeGroup('student-services', 'Layanan', 'fas fa-hands-helping', [
                     static::makeChildLink('student.student-services.letters', 'Surat'),
                     static::makeChildLink('student.student-services.leaves', 'Cuti Akademik'),
                     static::makeChildLink('student.student-services.transfers', 'Pindah Program'),
                     static::makeChildLink('student.student-services.graduations', 'Yudisium'),
                     static::makeChildLink('student.student-services.complaints', 'Pengaduan'),
+                ]),
+                static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
+                    static::makeChildLink('student.announcements.index', 'Pengumuman'),
                 ]),
             ]),
             'lecturer' => collect([
@@ -145,6 +152,7 @@ class SidebarMenu
                     static::makeChildLink('lecturer.announcements.index', 'Pengumuman'),
                 ]),
                 static::makeLink('lecturer-course-materials', 'Materi', 'lecturer.course-materials.list', 'fas fa-book-open'),
+                static::makeLink('lecturer-assignments', 'Tugas', 'lecturer.assignments.index', 'fas fa-clipboard-check'),
                 static::makeLink('lecturer-student-grades', 'Nilai', 'lecturer.student-grades.index', 'fas fa-chart-bar'),
             ]),
             default => collect(),

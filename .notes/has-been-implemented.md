@@ -1252,7 +1252,7 @@ One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pind
 *Impact: Lecturer + Students | Module: Academic Enhancement*
 
 ##### 7. Assignment Submission & Grading 📝
-**Status:** 📝 DRAFT / NOT STARTED  
+**Status:** ✅ IMPLEMENTED (Phase 1-3: Assignment Core, Submission, Review, Grade Book Sync, Reports)  
 **Roles Affected:** Lecturer (create/grade), Students (submit/track), Admin (monitor)  
 **Module Category:** Academic → New Submodule: `assignments`
 
@@ -1265,44 +1265,50 @@ Sistem pengumpulan tugas online yang terhubung dengan course offering, materi pe
 - Memberikan workflow akademik harian yang sangat sering dipakai.
 
 **Core Features:**
-- Assignment per course offering/session.
-- Assignment detail: title, description, due date, max score, allowed file types, max file size, rubric/instructions.
-- File submission and optional text submission.
-- Multiple file support.
-- Resubmission before deadline.
-- Late submission policy.
-- Submission status: not submitted, submitted, late, graded, returned.
-- Lecturer grading with score and feedback.
-- Student view for grade and feedback.
-- Optional reminder email before deadline.
+- ✅ Assignment per course offering/session.
+- ✅ Assignment detail: title, rich description/rubric, deadline, max score, allowed file types, max file size, and lecturer instruction attachments.
+- ✅ File submission and optional text submission.
+- ✅ Multiple file support.
+- ✅ Resubmission before deadline and for returned revisions.
+- ✅ Late submission policy with configurable late acceptance.
+- ✅ Submission status: not submitted, submitted, late, graded, returned/missing.
+- ✅ Lecturer grading with score and feedback.
+- ✅ Student view for grade, feedback, returned status, and revision notes.
+- ✅ Assignment analytics/export for lecturer review.
+- ✅ Reminder email before deadline for students who have not submitted yet.
 
 **Integration Notes:**
 - Link to `course_offerings`, student enrollments/KRS, and existing grade book.
-- Assignment score can later become grade component input.
+- Assignment score can be synced into existing grade book components.
 - Reuse secure file preview/download patterns from Admission and Course Materials.
 - Student UI should mirror Course Materials page style.
 
-**Estimated Effort:** Medium-High (3-4 days)
+**Estimated Effort:** High (5-6 days)
 
 **Recommended Phases:**
 1. **Phase 1 - Assignment Core**
-   - Lecturer create/edit/list assignments.
-   - Student list/detail assignments.
-   - Submission upload and deadline validation.
+   - ✅ Lecturer create/edit/list assignments per course offering.
+   - ✅ Assignment instruction attachments with secure preview for lecturer/student.
+   - ✅ Student list/detail assignments from enrolled course offerings.
+   - ✅ Submission upload, text answer, multiple files, and deadline validation.
 2. **Phase 2 - Grading & Feedback**
-   - Lecturer submission review.
-   - Score/feedback.
-   - Student graded result view.
+   - ✅ Lecturer submission review dashboard per assignment.
+   - ✅ Score/feedback.
+   - ✅ Return-for-revision workflow.
+   - ✅ Student graded result and feedback view.
 3. **Phase 3 - Grade Book Integration**
-   - Optional mapping to grade components.
-   - Export/report integration.
+   - ✅ Assignment score sync to grade book components with configurable component weight.
+   - ✅ Assignment analytics summary on lecturer review page.
+   - ✅ CSV/XLSX/PDF assignment report export.
+   - ✅ Email reminder before deadline.
 
 **Candidate Tables:**
-- `assignments`
-- `assignment_submissions`
-- `assignment_submission_files`
-- `assignment_grades`
-- `assignment_status_histories`
+- ✅ `assignments`
+- ✅ `assignment_files`
+- ✅ `assignment_submissions`
+- ✅ `assignment_submission_files`
+- ✅ `assignment_grades`
+- ✅ `assignment_status_histories`
 
 ---
 

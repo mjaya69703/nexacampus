@@ -1,13 +1,15 @@
 <?php
 
+use App\Http\Controllers\Academic\AssignmentFileController;
+use App\Http\Controllers\Academic\AssignmentReportExportController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
-use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
+use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
 use App\Support\ResourceRegistry;
@@ -112,6 +114,10 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/materials', 'student.course-materials')->name('course-materials.index');
             Route::livewire('/course-offerings/{offeringId}/materials', 'student.course-materials')->name('course-materials.offering');
             Route::livewire('/learning/{material}', 'student.learning.show')->name('learning.show');
+            Route::livewire('/assignments', 'student.assignments.index')->name('assignments.index');
+            Route::livewire('/assignments/{id}', 'student.assignments.show')->name('assignments.show');
+            Route::get('/assignments/instructions/{file}', [AssignmentFileController::class, 'studentInstruction'])->name('assignments.instructions.preview');
+            Route::get('/assignments/submissions/files/{file}', [AssignmentFileController::class, 'studentSubmission'])->name('assignments.submissions.files.preview');
             Route::get('/learning/{material}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->name('learning.preview');
             Route::get('/learning/{material}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->name('learning.link');
             Route::get('/course-materials/{id}/download/{fileId}', [CourseMaterialController::class, 'download'])->name('course-materials.download');
@@ -159,6 +165,15 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/course-materials/{id}/download', [CourseMaterialController::class, 'download'])->name('course-materials.download');
             Route::get('/course-materials/{id}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->name('course-materials.preview');
             Route::get('/course-materials/{id}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->name('course-materials.link');
+            Route::livewire('/assignments', 'lecturer.assignments.index')->name('assignments.index');
+            Route::livewire('/course-offerings/{offeringId}/assignments/create', 'lecturer.assignments.create')->name('assignments.create');
+            Route::livewire('/assignments/{id}/edit', 'lecturer.assignments.edit')->name('assignments.edit');
+            Route::livewire('/assignments/{id}', 'lecturer.assignments.show')->name('assignments.show');
+            Route::get('/assignments/instructions/{file}', [AssignmentFileController::class, 'lecturerInstruction'])->name('assignments.instructions.preview');
+            Route::get('/assignments/submissions/files/{file}', [AssignmentFileController::class, 'lecturerSubmission'])->name('assignments.submissions.files.preview');
+            Route::get('/assignments/{assignment}/report/csv', [AssignmentReportExportController::class, 'csv'])->name('assignments.report.csv');
+            Route::get('/assignments/{assignment}/report/xlsx', [AssignmentReportExportController::class, 'xlsx'])->name('assignments.report.xlsx');
+            Route::get('/assignments/{assignment}/report/pdf', [AssignmentReportExportController::class, 'pdf'])->name('assignments.report.pdf');
             Route::livewire('/attendance-sessions/{sessionId}/edit', 'lecturer.attendance-sessions.edit')->name('attendance-sessions.edit');
             Route::livewire('/student-grades', 'lecturer.student-grades.index')->name('student-grades.index');
             Route::livewire('/student-grades/grade-book', 'lecturer.student-grades.grade-book')->name('student-grades.grade-book');

@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('financial:run-invoice-schedules')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('financial:refresh-overdue')->dailyAt('00:10')->withoutOverlapping();
 Schedule::command('financial:evaluate-holds')->dailyAt('00:20')->withoutOverlapping();
+Schedule::command('academic:send-assignment-reminders')->dailyAt('07:00')->withoutOverlapping();
