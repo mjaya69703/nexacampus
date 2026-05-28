@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -99,5 +100,28 @@ class EmployeeAttendanceRecord extends Model
     public function checkOutLocation(): BelongsTo
     {
         return $this->belongsTo(EmployeeAttendanceLocation::class, 'check_out_location_id');
+    }
+
+    public function getCheckInPhotoUrlAttribute(): ?string
+    {
+        return $this->photoUrl($this->check_in_photo_path);
+    }
+
+    public function getCheckOutPhotoUrlAttribute(): ?string
+    {
+        return $this->photoUrl($this->check_out_photo_path);
+    }
+
+    private function photoUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (str($path)->startsWith(['http://', 'https://'])) {
+            return $path;
+        }
+
+        return Storage::disk('public')->url($path);
     }
 }

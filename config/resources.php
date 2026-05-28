@@ -436,7 +436,7 @@ return [
         'plural' => 'employee-attendance-records',
         'area' => 'organization',
         'component' => 'admin.organization.employee-attendance-records',
-        'actions' => ['index', 'create', 'delete'],
+        'actions' => ['index', 'create', 'show', 'delete'],
         'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
         'menu' => [
             'title' => 'Absensi Pegawai',

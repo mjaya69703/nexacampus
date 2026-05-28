@@ -230,6 +230,32 @@ new class extends Component
             transition: width .2s ease;
         }
 
+        .attendance-proof-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+
+        .attendance-proof-thumb {
+            width: 54px;
+            height: 54px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            padding: 0;
+            background: #111827;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .attendance-proof-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
         .info-badge {
             display: inline-flex;
             align-items: center;
@@ -403,6 +429,7 @@ new class extends Component
                                         <th>Masuk</th>
                                         <th>Keluar</th>
                                         <th>Lokasi</th>
+                                        <th>Bukti</th>
                                         <th>Durasi</th>
                                     </tr>
                                 </thead>
@@ -417,11 +444,25 @@ new class extends Component
                                                 <div>{{ $record->checkInLocation?->name ?? $record->checkOutLocation?->name ?? '-' }}</div>
                                                 <div class="text-secondary">{{ $record->check_in_distance_meters !== null ? $record->check_in_distance_meters.' m' : '-' }}</div>
                                             </td>
+                                            <td>
+                                                <div class="attendance-proof-list">
+                                                    @foreach ([['label' => 'Masuk', 'url' => $record->check_in_photo_url], ['label' => 'Keluar', 'url' => $record->check_out_photo_url]] as $photo)
+                                                        @if ($photo['url'])
+                                                            <button type="button" class="attendance-proof-thumb" data-bs-toggle="modal" data-bs-target="#attendancePhoto{{ $record->id }}{{ $loop->index }}" title="Foto {{ $photo['label'] }}">
+                                                                <img src="{{ $photo['url'] }}" alt="Foto {{ $photo['label'] }}">
+                                                            </button>
+                                                        @endif
+                                                    @endforeach
+                                                    @if (! $record->check_in_photo_url && ! $record->check_out_photo_url)
+                                                        <span class="text-secondary">-</span>
+                                                    @endif
+                                                </div>
+                                            </td>
                                             <td>{{ $record->work_minutes }} menit</td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="text-center text-secondary py-4">Belum ada riwayat absensi.</td>
+                                            <td colspan="7" class="text-center text-secondary py-4">Belum ada riwayat absensi.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -432,6 +473,34 @@ new class extends Component
             </div>
         </div>
     </div>
+
+    @foreach ($records as $record)
+        @foreach ([['label' => 'Masuk', 'url' => $record->check_in_photo_url, 'time' => $record->check_in_at?->format('d M Y H:i')], ['label' => 'Keluar', 'url' => $record->check_out_photo_url, 'time' => $record->check_out_at?->format('d M Y H:i')]] as $photo)
+            @if ($photo['url'])
+                <div class="modal fade" id="attendancePhoto{{ $record->id }}{{ $loop->index }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <div>
+                                    <h5 class="modal-title mb-0">Foto Check-{{ $photo['label'] }}</h5>
+                                    <small class="text-secondary">{{ $photo['time'] ?? '-' }}</small>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-0">
+                                <img src="{{ $photo['url'] }}" alt="Foto Check-{{ $photo['label'] }}" class="w-100 d-block">
+                            </div>
+                            <div class="modal-footer">
+                                <a href="{{ $photo['url'] }}" target="_blank" rel="noopener" class="btn btn-outline-primary">
+                                    <i class="fas fa-up-right-from-square me-1"></i>Buka Foto
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        @endforeach
+    @endforeach
 </div>
 
 @push('scripts')

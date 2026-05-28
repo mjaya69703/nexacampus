@@ -57,7 +57,8 @@ final class EmployeeAttendanceRecordTable extends BasePowerGridTable
             ->add('work_unit_name', fn (EmployeeAttendanceRecord $model) => $model->workUnit?->name ?? '-')
             ->add('source_name', fn (EmployeeAttendanceRecord $model) => $model->source?->name ?? '-')
             ->add('location_name', fn (EmployeeAttendanceRecord $model) => $model->checkInLocation?->name ?? '-')
-            ->add('location_status_badge', fn (EmployeeAttendanceRecord $model) => $this->locationStatusBadge($model->location_status));
+            ->add('location_status_badge', fn (EmployeeAttendanceRecord $model) => $this->locationStatusBadge($model->location_status))
+            ->add('photo_badge', fn (EmployeeAttendanceRecord $model) => $this->photoBadge($model));
     }
 
     public function columns(): array
@@ -72,6 +73,7 @@ final class EmployeeAttendanceRecordTable extends BasePowerGridTable
             Column::make('Unit', 'work_unit_name')->searchable(),
             Column::make('Lokasi', 'location_name')->searchable(),
             Column::make('Radius', 'location_status_badge', 'location_status')->sortable(),
+            Column::make('Bukti', 'photo_badge'),
             Column::make('Sumber', 'source_name')->searchable(),
             Column::action('Aksi'),
         ];
@@ -108,18 +110,31 @@ final class EmployeeAttendanceRecordTable extends BasePowerGridTable
         $this->dispatch('pg:eventRefresh-employeeAttendanceRecordTable');
     }
 
+    #[On('show')]
+    public function show($rowId): void
+    {
+        $this->redirectRoute('admin.organization.employee-attendance-records.show', ['id' => $rowId]);
+    }
+
     public function actions(EmployeeAttendanceRecord $row): array
     {
-        if (! ActivePermission::check('employee-attendance-record.delete')) {
-            return [];
+        $actions = [];
+
+        if (ActivePermission::check('employee-attendance-record.view')) {
+            $actions[] = Button::add('show')
+                ->slot('<i class="fa fa-eye"></i>')
+                ->class('btn btn-primary')
+                ->dispatch('show', ['rowId' => $row->id]);
         }
 
-        return [
-            Button::add('delete')
+        if (ActivePermission::check('employee-attendance-record.delete')) {
+            $actions[] = Button::add('delete')
                 ->slot('<i class="fa fa-trash"></i>')
                 ->class('btn btn-danger')
-                ->dispatch('delete', ['id' => $row->id]),
-        ];
+                ->dispatch('delete', ['id' => $row->id]);
+        }
+
+        return $actions;
     }
 
     private function statusBadge(string $status): string
@@ -146,5 +161,16 @@ final class EmployeeAttendanceRecordTable extends BasePowerGridTable
         };
 
         return '<span class="badge '.$class.'">'.str($status ?: 'unverified')->replace('_', ' ')->title().'</span>';
+    }
+
+    private function photoBadge(EmployeeAttendanceRecord $record): string
+    {
+        $count = collect([$record->check_in_photo_path, $record->check_out_photo_path])
+            ->filter()
+            ->count();
+
+        $class = $count > 0 ? 'bg-indigo-lt text-indigo' : 'bg-secondary-lt text-secondary';
+
+        return '<span class="badge '.$class.'">'.$count.' foto</span>';
     }
 }
