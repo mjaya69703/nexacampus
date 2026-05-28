@@ -3,6 +3,7 @@
 use App\Models\Organization\EmployeeAttendanceLocation;
 use App\Models\Organization\EmployeeAttendanceRecord;
 use App\Support\Organization\EmployeeAttendanceService;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -14,7 +15,9 @@ new class extends Component
     public float|string|null $latitude = null;
     public float|string|null $longitude = null;
     public int|string|null $accuracy = null;
+    public bool $photoReady = false;
     public int $uploadProgress = 0;
+    public string $uploadStatus = 'Belum ada foto';
     public string $gpsStatus = 'Menunggu lokasi';
 
     public function mount(): void
@@ -24,18 +27,32 @@ new class extends Component
 
     public function checkIn(EmployeeAttendanceService $service): void
     {
-        $payload = $this->validatedPayload();
-        $service->checkInSelf($this->employeeProfile(), auth()->id(), $payload);
-        $this->resetCapture();
-        session()->flash('success', 'Check-in berhasil dicatat.');
+        try {
+            $payload = $this->validatedPayload();
+            $service->checkInSelf($this->employeeProfile(), auth()->id(), $payload);
+            $this->resetCapture();
+            session()->flash('success', 'Check-in berhasil dicatat.');
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
+            session()->flash('error', 'Absensi gagal diproses. Coba ulangi setelah foto dan lokasi siap.');
+        }
     }
 
     public function checkOut(EmployeeAttendanceService $service): void
     {
-        $payload = $this->validatedPayload();
-        $service->checkOutSelf($this->employeeProfile(), auth()->id(), $payload);
-        $this->resetCapture();
-        session()->flash('success', 'Check-out berhasil dicatat.');
+        try {
+            $payload = $this->validatedPayload();
+            $service->checkOutSelf($this->employeeProfile(), auth()->id(), $payload);
+            $this->resetCapture();
+            session()->flash('success', 'Check-out berhasil dicatat.');
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
+            session()->flash('error', 'Absensi gagal diproses. Coba ulangi setelah foto dan lokasi siap.');
+        }
     }
 
     public function render()
@@ -86,6 +103,12 @@ new class extends Component
             'accuracy' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        if (! $this->photoReady) {
+            throw ValidationException::withMessages([
+                'attendancePhoto' => 'Foto masih diproses. Tunggu sampai status foto siap dipakai.',
+            ]);
+        }
+
         $path = $this->attendancePhoto->store('employee-attendance', 'public');
 
         return [
@@ -99,7 +122,9 @@ new class extends Component
     private function resetCapture(): void
     {
         $this->attendancePhoto = null;
+        $this->photoReady = false;
         $this->uploadProgress = 0;
+        $this->uploadStatus = 'Belum ada foto';
         $this->resetValidation();
     }
 
@@ -121,16 +146,33 @@ new class extends Component
 @push('styles')
     <style>
         .attendance-hero {
-            background: linear-gradient(135deg, rgba(20, 72, 132, .98), rgba(16, 107, 92, .96));
-            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 0;
+            border-radius: 20px;
             color: #fff;
             overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+        }
+
+        .attendance-hero::before {
+            content: '';
+            position: absolute;
+            inset: -60% -30% auto auto;
+            width: 420px;
+            height: 420px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .12);
+        }
+
+        .attendance-hero > .card-body {
+            position: relative;
         }
 
         .attendance-camera {
             aspect-ratio: 4 / 3;
             background: #111827;
-            border-radius: 8px;
+            border-radius: 16px;
             overflow: hidden;
             position: relative;
         }
@@ -155,10 +197,48 @@ new class extends Component
 
         .attendance-metric {
             border: 1px solid rgba(98, 105, 118, .18);
-            border-radius: 8px;
+            border-radius: 14px;
             padding: 1rem;
             height: 100%;
             background: var(--tblr-bg-surface);
+        }
+
+        .attendance-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            border-radius: 999px;
+            padding: .45rem .75rem;
+            font-size: .82rem;
+            font-weight: 700;
+            background: #eef2ff;
+            color: #4338ca;
+        }
+
+        .attendance-upload-progress {
+            height: 8px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #e2e8f0;
+        }
+
+        .attendance-upload-progress > span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width .2s ease;
+        }
+
+        .info-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: .42rem .75rem;
+            background: rgba(255, 255, 255, .18);
+            border-radius: 8px;
+            color: white;
+            font-size: .84rem;
+            backdrop-filter: blur(10px);
         }
     </style>
 @endpush
@@ -166,13 +246,25 @@ new class extends Component
 <div>
     <x-alert />
 
-    <div class="attendance-hero mb-3">
-        <div class="p-4">
-            <div class="row align-items-center g-3">
+    <div class="card attendance-hero mb-4">
+        <div class="card-body p-4 p-lg-5">
+            <div class="row align-items-center g-4">
                 <div class="col-lg-7">
-                    <div class="subheader text-white-50">Absensi Mandiri</div>
-                    <h1 class="mb-2">{{ now()->format('d M Y') }}</h1>
-                    <div class="text-white-75">{{ $employee->user?->name }} · {{ $employee->primaryWorkUnit?->name ?? 'Unit kerja belum diisi' }}</div>
+                    <div class="d-flex align-items-start gap-3">
+                        <div style="width: 72px; height: 72px; background: rgba(255,255,255,.2); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; backdrop-filter: blur(10px);">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: .9rem; opacity: .88; margin-bottom: .35rem;">Kepegawaian Saya</div>
+                            <h1 class="h2 mb-2" style="font-weight: 800;">Absensi Mandiri</h1>
+                            <div style="opacity: .9; margin-bottom: 1rem;">{{ $employee->user?->name }} - {{ $employee->primaryWorkUnit?->name ?? 'Unit kerja belum diisi' }}</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="info-badge"><i class="fas fa-calendar-day me-2"></i>{{ now()->format('d M Y') }}</span>
+                                <span class="info-badge"><i class="fas fa-right-to-bracket me-2"></i>{{ $todayRecord?->check_in_at?->format('H:i') ?? 'Belum check-in' }}</span>
+                                <span class="info-badge"><i class="fas fa-right-from-bracket me-2"></i>{{ $todayRecord?->check_out_at?->format('H:i') ?? 'Belum check-out' }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-lg-5">
                     <div class="row g-2">
@@ -201,18 +293,15 @@ new class extends Component
                     <h3 class="card-title mb-0">Verifikasi Kehadiran</h3>
                 </div>
                 <div class="card-body">
-                    <div class="attendance-camera mb-3">
+                    <div class="attendance-camera mb-3" wire:ignore>
                         <video id="attendanceCamera" playsinline autoplay muted class="d-none"></video>
-                        @if ($attendancePhoto)
-                            <img src="{{ $attendancePhoto->temporaryUrl() }}" alt="Preview absensi">
-                        @else
-                            <div class="attendance-camera-empty">
-                                <div>
-                                    <i class="fas fa-camera fa-2x mb-2"></i>
-                                    <div>Ambil foto atau pilih gambar untuk bukti absensi.</div>
-                                </div>
+                        <img id="attendancePreview" class="d-none" alt="Preview absensi">
+                        <div id="attendanceCameraEmpty" class="attendance-camera-empty">
+                            <div>
+                                <i class="fas fa-camera fa-2x mb-2"></i>
+                                <div>Ambil foto atau pilih gambar untuk bukti absensi.</div>
                             </div>
-                        @endif
+                        </div>
                     </div>
 
                     <input id="attendancePhotoInput" type="file" accept="image/*" capture="user" class="d-none">
@@ -229,11 +318,22 @@ new class extends Component
                         </button>
                     </div>
 
-                    @if ($uploadProgress > 0 && $uploadProgress < 100)
-                        <div class="progress mb-3">
-                            <div class="progress-bar" style="width: {{ $uploadProgress }}%">{{ $uploadProgress }}%</div>
+                    <div class="attendance-metric mb-3">
+                        <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                            <div>
+                                <div class="subheader">Foto Absensi</div>
+                                <div class="fw-semibold" id="uploadStatusText">{{ $uploadStatus }}</div>
+                            </div>
+                            <span class="attendance-status-pill" id="photoReadyBadge">
+                                <i class="fas {{ $photoReady ? 'fa-circle-check' : 'fa-circle-dot' }}"></i>
+                                {{ $photoReady ? 'Siap' : 'Belum siap' }}
+                            </span>
                         </div>
-                    @endif
+                        <div class="attendance-upload-progress">
+                            <span id="uploadProgressBar" style="width: {{ $uploadProgress }}%;"></span>
+                        </div>
+                        <div class="small text-secondary mt-2" id="uploadProgressText">{{ $uploadProgress > 0 ? $uploadProgress.'%' : 'Foto akan dikompres ke WebP sebelum dikirim.' }}</div>
+                    </div>
 
                     @error('attendancePhoto') <div class="text-danger mb-2">{{ $message }}</div> @enderror
 
@@ -253,10 +353,10 @@ new class extends Component
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-primary" wire:click="checkIn" @disabled($todayRecord?->check_in_at)>
+                        <button type="button" id="checkInButton" class="btn btn-primary" wire:click="checkIn" @disabled($todayRecord?->check_in_at || ! $photoReady)>
                             <i class="fas fa-right-to-bracket me-2"></i>Check-in
                         </button>
-                        <button type="button" class="btn btn-outline-primary" wire:click="checkOut" @disabled(! $todayRecord?->check_in_at || $todayRecord?->check_out_at)>
+                        <button type="button" id="checkOutButton" class="btn btn-outline-primary" wire:click="checkOut" @disabled(! $todayRecord?->check_in_at || $todayRecord?->check_out_at || ! $photoReady)>
                             <i class="fas fa-right-from-bracket me-2"></i>Check-out
                         </button>
                     </div>
@@ -338,15 +438,63 @@ new class extends Component
     <script>
         (() => {
             let stream = null;
+            let uploadReady = @js($photoReady);
+            const checkInLocked = @js((bool) $todayRecord?->check_in_at);
+            const checkOutLocked = @js(! $todayRecord?->check_in_at || (bool) $todayRecord?->check_out_at);
+
+            const setUploadUi = (status, progress = null, ready = uploadReady, previewUrl = null) => {
+                uploadReady = ready;
+                const statusText = document.getElementById('uploadStatusText');
+                const progressBar = document.getElementById('uploadProgressBar');
+                const progressText = document.getElementById('uploadProgressText');
+                const badge = document.getElementById('photoReadyBadge');
+                const preview = document.getElementById('attendancePreview');
+                const empty = document.getElementById('attendanceCameraEmpty');
+                const checkIn = document.getElementById('checkInButton');
+                const checkOut = document.getElementById('checkOutButton');
+
+                if (statusText) statusText.textContent = status;
+                if (progress !== null) {
+                    const normalized = Math.max(0, Math.min(100, Math.round(progress)));
+                    if (progressBar) progressBar.style.width = `${normalized}%`;
+                    if (progressText) progressText.textContent = normalized > 0 ? `${normalized}%` : 'Foto akan dikompres ke WebP sebelum dikirim.';
+                }
+                if (badge) {
+                    badge.innerHTML = ready
+                        ? '<i class="fas fa-circle-check"></i> Siap'
+                        : '<i class="fas fa-circle-dot"></i> Belum siap';
+                }
+                if (previewUrl && preview) {
+                    preview.src = previewUrl;
+                    preview.classList.remove('d-none');
+                    empty?.classList.add('d-none');
+                }
+                if (checkIn) checkIn.disabled = checkInLocked || ! ready;
+                if (checkOut) checkOut.disabled = checkOutLocked || ! ready;
+            };
 
             const uploadWebp = async (blob) => {
                 const file = new File([blob], `attendance-${Date.now()}.webp`, { type: 'image/webp' });
-                @this.upload('attendancePhoto', file, () => {
-                    @this.set('uploadProgress', 100);
-                }, () => {
-                    @this.set('uploadProgress', 0);
+                const previewUrl = URL.createObjectURL(blob);
+
+                setUploadUi('Mengupload foto...', 1, false, previewUrl);
+                await @this.set('photoReady', false);
+                await @this.set('uploadStatus', 'Mengupload foto...');
+                await @this.set('uploadProgress', 1);
+
+                @this.upload('attendancePhoto', file, async () => {
+                    await @this.set('photoReady', true);
+                    await @this.set('uploadStatus', 'Foto siap dipakai.');
+                    await @this.set('uploadProgress', 100);
+                    setUploadUi('Foto siap dipakai.', 100, true, previewUrl);
+                }, async () => {
+                    await @this.set('photoReady', false);
+                    await @this.set('uploadStatus', 'Upload foto gagal. Coba ambil ulang.');
+                    await @this.set('uploadProgress', 0);
+                    setUploadUi('Upload foto gagal. Coba ambil ulang.', 0, false);
                 }, (event) => {
                     const progress = event?.detail?.progress ?? event?.progress ?? event ?? 0;
+                    setUploadUi('Mengupload foto...', progress, false, previewUrl);
                     @this.set('uploadProgress', Math.round(progress));
                 });
             };
@@ -394,14 +542,25 @@ new class extends Component
             document.getElementById('attendancePhotoInput')?.addEventListener('change', async (event) => {
                 const file = event.target.files?.[0];
                 if (file) {
-                    await uploadWebp(await imageToWebp(file));
+                    try {
+                        setUploadUi('Mengompres foto...', 0, false);
+                        await @this.set('uploadStatus', 'Mengompres foto...');
+                        await uploadWebp(await imageToWebp(file));
+                    } catch (error) {
+                        setUploadUi('Gagal membaca foto. Coba pilih gambar lain.', 0, false);
+                    }
                 }
             });
             document.getElementById('startCameraButton')?.addEventListener('click', async () => {
                 const video = document.getElementById('attendanceCamera');
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-                video.srcObject = stream;
-                video.classList.remove('d-none');
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                    video.srcObject = stream;
+                    video.classList.remove('d-none');
+                    document.getElementById('attendanceCameraEmpty')?.classList.add('d-none');
+                } catch (error) {
+                    document.getElementById('attendancePhotoInput')?.click();
+                }
             });
             document.getElementById('capturePhotoButton')?.addEventListener('click', async () => {
                 const video = document.getElementById('attendanceCamera');
@@ -414,9 +573,18 @@ new class extends Component
                 canvas.width = video.videoWidth || 960;
                 canvas.height = video.videoHeight || 720;
                 canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                canvas.toBlob(uploadWebp, 'image/webp', 0.78);
+                setUploadUi('Mengompres foto...', 0, false);
+                canvas.toBlob((blob) => {
+                    if (! blob) {
+                        setUploadUi('Gagal mengambil foto. Coba ulangi.', 0, false);
+                        return;
+                    }
+
+                    uploadWebp(blob);
+                }, 'image/webp', 0.78);
             });
 
+            setUploadUi(@js($uploadStatus), @js($uploadProgress), uploadReady);
             locate();
         })();
     </script>
