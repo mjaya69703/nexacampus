@@ -1316,7 +1316,7 @@ Sistem pengumpulan tugas online yang terhubung dengan course offering, materi pe
 *Impact: Lecturer + Students + Academic Advisors | Module: Academic Enhancement*
 
 ##### 8. Progress Analytics & Advisor Dashboard 📈
-**Status:** 🚧 IN PROGRESS (Phase 1-3 implemented: Advisor Foundation, Student Progress, Advisor Follow-up)  
+**Status:** ✅ IMPLEMENTED (Phase 1-3 implemented: Advisor Foundation, Student Progress, Advisor Follow-up)  
 **Roles Affected:** Lecturer/Academic Advisor (monitor), Students (view progress), Admin (oversight)  
 **Module Category:** Academic → New Submodule: `academic-analytics`
 
@@ -1376,59 +1376,96 @@ Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, mater
 
 ---
 
-#### **Priority 9: Lecturer HR & Administration**
-*Impact: Admin + Lecturers | Module: New / Academic Support*
+#### **Priority 9: Kepegawaian, Struktur Organisasi & Scope Jabatan**
+*Impact: Admin + Staff/Tendik + Lecturer + Academic Leadership | Module: Organization / Kepegawaian*
 
-##### 9. Lecturer HR, Workload & Certification 👨‍🏫
-**Status:** 📝 DRAFT / NOT STARTED  
-**Roles Affected:** Admin/HR (manage), Lecturer (view/update profile), Academic (workload planning)  
-**Module Category:** New Module → `lecturer-hr`
+##### 9. Kepegawaian, Position Scope & Operational Structure
+**Status:** IN PROGRESS (Phase 3 completed: Employee Attendance & Leave foundation)  
+**Roles Affected:** Admin/Superuser (manage), Staff/Tendik (operate), Kaprodi/Dekan/Kepala Unit (scoped access), Lecturer (future child module)  
+**Module Category:** Existing Module Enhancement -> `organization`
 
 **Description:**
-Modul administrasi dosen untuk biodata lengkap, riwayat pendidikan, workload mengajar, sertifikasi, pelatihan, evaluasi, dan cuti dosen.
+Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan operasional, dan scope data seperti fakultas, program studi, atau unit kerja. Kaprodi, Dekan, Tendik, Kepala Unit, dan Staff Unit tidak menjadi `active_role` baru; mereka bekerja melalui admin/staff portal dengan role/permission + position scope.
 
 **Why Next:**
-- Course offering dan lecturer assignment sudah ada, sehingga workload bisa dihitung dari data real.
-- Berguna untuk akreditasi dan manajemen SDM akademik.
-- Menambah sisi operasional kampus selain mahasiswa.
+- `work_units` dan `work_unit_user` sudah ada sebagai dasar assignment tiket, approval routing, notifikasi, dan pembatasan data staff.
+- Student Services complaints sudah memakai work unit untuk assignment, SLA, dan scoped access.
+- Modul berikutnya seperti approval engine, cuti pegawai, absensi pegawai, dan Kaprodi/Dekan dashboard butuh fondasi siapa mengelola area apa.
+- Menghindari modul `lecturer-hr` yang terlalu sempit dan janggal karena HR/Kepegawaian seharusnya mencakup pegawai lintas role.
 
 **Core Features:**
-- Lecturer profile enhancement: education, employment status, join date, signature/photo.
-- Teaching load calculation by semester/SKS/course offering.
-- Workload cap and overload warning.
-- Certification and training records.
-- Expiry reminder for certification/training.
-- Lecturer leave request and substitute lecturer assignment.
-- Performance evaluation summary from teaching, student evaluation, research/community service placeholders.
+- Employee profile foundation untuk dosen, tendik, staff, admin, kontrak, dan tamu.
+- Organizational position master data: Rektor, Wakil Rektor, Dekan, Wakil Dekan, Kaprodi, Sekprodi, Kepala Unit, Staff Unit, Tendik, Dosen.
+- Position assignment dengan scope `faculty_id`, `study_program_id`, atau `work_unit_id`.
+- Position scope resolver untuk membaca fakultas/prodi/unit yang dikelola user.
+- Work-unit-scoped assignment tetap mensinkronkan membership ke `work_unit_user` agar complaint access existing tetap jalan.
+- Approval template foundation untuk alur approval berurutan.
+- Approval request engine dengan step `pending/current/approved/rejected/skipped`.
+- Approver routing berbasis role, permission, jabatan organisasi, atau unit kerja.
+- Approval action history untuk audit approve/reject/cancel.
+- Admin UI untuk Template Approval dan Approval queue/detail.
+- Employee attendance sources and records for manual/admin attendance input.
+- Employee attendance office locations with GPS radius validation.
+- Employee attendance self-service camera/upload evidence with client-side WebP conversion.
+- Employee leave types, balances, requests, and approval-engine-backed approval status sync.
+- Admin UI untuk Absensi Pegawai, Lokasi Absensi, Saldo Cuti Pegawai, Jenis Cuti Pegawai, dan Cuti Pegawai.
+- Employee self-service UI untuk Absensi Saya dan Cuti Saya, visible untuk user yang punya Employee Profile aktif.
 
 **Integration Notes:**
-- Enhance existing lecturer profile instead of duplicating user identity.
-- Use course offering lecturer assignments for workload calculation.
-- Future integration with Lecture Evaluation and Research modules.
+- Reuse existing `Organization` namespace and `work_units` module instead of creating a parallel HR namespace.
+- Keep roles/permissions as feature access; use position assignments for data scope.
+- Existing Student Services workflows are not migrated into the approval engine in Phase 1/2/3.
+- Phase 3 integrates employee leave/cuti pegawai into the approval engine without changing student leave workflows.
+- Phase 3 includes employee self-service pages shared across active roles when the user has an active Employee Profile.
+- Lecturer workload, lecturer certification, and lecturer performance review are deferred child modules after the kepegawaian foundation is stable.
 
-**Estimated Effort:** Medium-High (4-5 days)
+**Estimated Effort:** High (phased)
 
 **Recommended Phases:**
-1. **Phase 1 - Lecturer Profile & Documents**
-   - Extended biodata.
-   - Education/certification/training records.
-   - Signature/photo upload.
-2. **Phase 2 - Teaching Workload**
-   - Workload dashboard.
-   - Semester filters.
-   - Overload/underload indicators.
-3. **Phase 3 - Leave & Evaluation**
-   - Lecturer leave request.
-   - Substitute assignment.
-   - Performance summary foundation.
+1. **Phase 1 - Organization, Employee & Position Scope**
+   - Employee profiles.
+   - Organizational positions.
+   - Employee position assignments with faculty/program/unit scope.
+   - Position scope resolver.
+   - Work unit membership sync for active work-unit assignments.
+2. **Phase 2 - Approval Engine**
+   - Completed reusable lightweight approval templates and sequential approval requests.
+   - Completed admin Template Approval and Approval request screens.
+   - Completed approver resolution for role, permission, organizational position, and work unit.
+   - Employee leave integration is deferred to Phase 3 to keep Phase 2 focused on the engine foundation.
+   - Keep existing Student Services request workflows unchanged until a dedicated migration/refactor phase.
+3. **Phase 3 - Employee Attendance & Leave**
+   - Completed employee attendance sources and attendance records.
+   - Completed manual admin attendance input with check-in/check-out and work-minute calculation.
+   - Completed office attendance locations with configurable GPS radius.
+   - Completed self-service attendance camera/upload evidence, upload progress, WebP client-side conversion, GPS capture, and radius validation.
+   - Completed employee leave types, balances, leave requests, and approval engine integration.
+   - Completed admin leave balance grant/adjustment screen.
+   - Completed approval callback sync from approval request final status into employee leave request status and balance usage.
+   - Completed admin screens for Absensi Pegawai, Jenis Cuti Pegawai, and Cuti Pegawai.
+   - Completed employee self-service screens for Absensi Saya and Cuti Saya.
+   - Teaching attendance remains an optional source placeholder for later lecturer workload integration.
+4. **Phase 4 - User Certification / Training Records**
+   - User-based development records for certifications, training, workshops, seminars, awards, licenses, and attachments.
+   - Works for lecturers, staff, admins, and students instead of being lecturer-only.
 
 **Candidate Tables:**
-- `lecturer_educations`
-- `lecturer_certifications`
-- `lecturer_trainings`
-- `lecturer_workload_snapshots`
-- `lecturer_leaves`
-- `lecturer_performance_reviews`
+- `employee_profiles`
+- `organizational_positions`
+- `employee_position_assignments`
+- `approval_templates`
+- `approval_template_steps`
+- `approval_requests`
+- `approval_steps`
+- `approval_actions`
+- `employee_attendance_records`
+- `employee_attendance_sources`
+- `employee_leave_types`
+- `employee_leave_requests`
+- `employee_leave_balances`
+- `employee_leave_attachments`
+- `user_development_records`
+- `user_development_attachments`
 
 ---
 

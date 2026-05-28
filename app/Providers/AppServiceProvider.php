@@ -36,6 +36,19 @@ class AppServiceProvider extends ServiceProvider
             $system = Cache::rememberForever('global_system', function () {
                 return System::first();
             });
+            $campus ??= (object) [
+                'name' => config('app.name', 'NexaCampus'),
+                'logo_horizontal' => asset('storage/images/default/logo-horizontal.png'),
+                'alamat' => '-',
+                'whatsapp' => '-',
+                'email_info' => '-',
+                'email_humas' => '-',
+            ];
+            $system ??= (object) [
+                'app_name' => config('app.name', 'NexaCampus'),
+                'app_description' => 'Sistem informasi akademik perguruan tinggi terpadu.',
+                'app_url' => url('/'),
+            ];
             $view->with([
                 'campus' => $campus,
                 'system' => $system,

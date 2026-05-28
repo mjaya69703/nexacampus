@@ -16,7 +16,9 @@ use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('welcome', [
+        'pages' => 'Beranda',
+    ]);
 });
 
 Route::livewire('/welcome', 'setup-wizard')->name('system.setup-wizard');
@@ -37,6 +39,8 @@ Route::middleware('is_installed')->group(function () {
 
         Route::livewire('/auth/select-role', 'auth.select-role')->name('auth.select-role');
         Route::livewire('/profile', 'profile-index')->name('home.profile-index');
+        Route::livewire('/employee/attendance', 'employee.attendance.index')->name('employee.attendance.index');
+        Route::livewire('/employee/leaves', 'employee.leaves.index')->name('employee.leaves.index');
         Route::get('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('/auth/switch-role', [AuthController::class, 'switchRole'])->name('auth.switch-role');
         // Route::livewire('/', 'admin.dashboard.index')->name('root.home-index');

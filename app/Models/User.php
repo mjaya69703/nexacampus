@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Academic\LecturerProfile;
 use App\Models\Academic\StudentProfile;
+use App\Models\Organization\EmployeeProfile;
 use App\Models\Organization\WorkUnit;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -130,6 +131,11 @@ class User extends Authenticatable
     public function lecturerProfile(): HasOne
     {
         return $this->hasOne(LecturerProfile::class);
+    }
+
+    public function employeeProfile(): HasOne
+    {
+        return $this->hasOne(EmployeeProfile::class);
     }
 
     public function workUnits(): BelongsToMany

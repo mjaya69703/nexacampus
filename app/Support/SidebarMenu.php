@@ -46,6 +46,7 @@ class SidebarMenu
         })->values();
 
         return static::commonMenus($role)
+            ->concat(static::employeeMenus())
             ->concat($databaseMenus)
             ->concat(static::roleMenus($role))
             ->unique(function ($menu) {
@@ -114,6 +115,22 @@ class SidebarMenu
                 routeName: 'home.profile-index',
                 icon: 'fas fa-user',
             ),
+        ]);
+    }
+
+    protected static function employeeMenus(): Collection
+    {
+        $employeeProfile = auth()->user()?->employeeProfile;
+
+        if (! $employeeProfile || ! $employeeProfile->is_active) {
+            return collect();
+        }
+
+        return collect([
+            static::makeGroup('employee-self-service', 'Kepegawaian Saya', 'fas fa-id-badge', [
+                static::makeChildLink('employee.attendance.index', 'Absensi Saya'),
+                static::makeChildLink('employee.leaves.index', 'Cuti Saya'),
+            ]),
         ]);
     }
 
