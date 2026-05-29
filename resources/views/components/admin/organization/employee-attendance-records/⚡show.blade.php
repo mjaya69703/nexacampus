@@ -56,7 +56,6 @@ new class extends Component
 ?>
 
 @push('styles')
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQPHQYp9zRZBvYeO1z8q0w6e1Ztf1w=" crossorigin="">
     <style>
         .attendance-photo-card {
             border: 1px solid #e5e7eb;
@@ -229,7 +228,6 @@ new class extends Component
 </div>
 
 @push('scripts')
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         (() => {
             const mapElement = document.getElementById('adminAttendanceMap');
@@ -293,10 +291,23 @@ new class extends Component
                 scrollWheelZoom: false,
             }).setView([-6.2, 106.816666], 12);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            const primaryTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            }).addTo(map);
+            const fallbackTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap contributors',
-            }).addTo(map);
+            });
+            let fallbackLoaded = false;
+
+            primaryTiles.on('tileerror', () => {
+                if (fallbackLoaded) return;
+                fallbackLoaded = true;
+                primaryTiles.remove();
+                fallbackTiles.addTo(map);
+                setTimeout(() => map.invalidateSize(), 150);
+            });
 
             const layers = [];
             const renderedLocations = new Set();
@@ -362,7 +373,9 @@ new class extends Component
                 summary && distances.length > 0 && (summary.textContent = distances.join(' - '));
             }
 
-            setTimeout(() => map.invalidateSize(), 250);
+            [150, 500, 1000].forEach((delay) => {
+                setTimeout(() => map.invalidateSize(), delay);
+            });
         })();
     </script>
 @endpush
