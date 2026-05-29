@@ -144,6 +144,7 @@ new class extends Component
 ?>
 
 @push('styles')
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQPHQYp9zRZBvYeO1z8q0w6e1Ztf1w=" crossorigin="">
     <style>
         .attendance-hero {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -254,6 +255,25 @@ new class extends Component
             height: 100%;
             object-fit: cover;
             display: block;
+        }
+
+        .attendance-map {
+            height: 320px;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #eef2ff;
+        }
+
+        .attendance-distance-label {
+            border: 0;
+            border-radius: 999px;
+            padding: .35rem .6rem;
+            background: rgba(17, 24, 39, .88);
+            color: #fff;
+            font-size: .76rem;
+            font-weight: 700;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, .18);
         }
 
         .info-badge {
@@ -368,7 +388,7 @@ new class extends Component
                             <div>
                                 <div class="subheader">GPS</div>
                                 <div class="fw-semibold" id="gpsStatusText">{{ $gpsStatus }}</div>
-                                <div class="text-secondary">{{ $latitude && $longitude ? $latitude.', '.$longitude : 'Koordinat belum tersedia' }}</div>
+                                <div class="text-secondary" id="gpsCoordinateText">{{ $latitude && $longitude ? $latitude.', '.$longitude : 'Koordinat belum tersedia' }}</div>
                             </div>
                             <button type="button" id="refreshLocationButton" class="btn btn-outline-primary">
                                 <i class="fas fa-location-crosshairs"></i>
@@ -376,6 +396,18 @@ new class extends Component
                         </div>
                         @error('latitude') <div class="text-danger mt-2">{{ $message }}</div> @enderror
                         @error('longitude') <div class="text-danger mt-2">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="attendance-metric mb-3">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                            <div>
+                                <div class="subheader">Peta Radius Absensi</div>
+                                <div class="fw-semibold" id="attendanceMapStatus">Menunggu lokasi</div>
+                                <div class="text-secondary" id="attendanceMapDistance">Jarak belum dihitung</div>
+                            </div>
+                            <span class="badge bg-indigo-lt text-indigo">{{ $locations->count() }} lokasi</span>
+                        </div>
+                        <div id="employeeAttendanceMap" class="attendance-map" wire:ignore></div>
                     </div>
 
                     <div class="d-grid gap-2">
@@ -504,12 +536,147 @@ new class extends Component
 </div>
 
 @push('scripts')
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         (() => {
             let stream = null;
             let uploadReady = @js($photoReady);
             const checkInLocked = @js((bool) $todayRecord?->check_in_at);
             const checkOutLocked = @js(! $todayRecord?->check_in_at || (bool) $todayRecord?->check_out_at);
+            const officeLocations = @js($locations->map(fn ($location) => [
+                'id' => $location->id,
+                'name' => $location->name,
+                'latitude' => (float) $location->latitude,
+                'longitude' => (float) $location->longitude,
+                'radius' => (int) $location->radius_meters,
+            ])->values());
+            let attendanceMap = null;
+            let userMarker = null;
+            let distanceLine = null;
+            let distanceMarker = null;
+            const officeLayers = [];
+
+            const formatDistance = (meters) => {
+                if (meters === null || Number.isNaN(meters)) return 'Jarak belum dihitung';
+
+                return meters >= 1000
+                    ? `${(meters / 1000).toFixed(2)} km`
+                    : `${Math.round(meters)} m`;
+            };
+
+            const distanceMeters = (fromLat, fromLng, toLat, toLng) => {
+                const earthRadius = 6371000;
+                const latDelta = (toLat - fromLat) * Math.PI / 180;
+                const lngDelta = (toLng - fromLng) * Math.PI / 180;
+                const fromRad = fromLat * Math.PI / 180;
+                const toRad = toLat * Math.PI / 180;
+                const a = Math.sin(latDelta / 2) ** 2
+                    + Math.cos(fromRad) * Math.cos(toRad) * Math.sin(lngDelta / 2) ** 2;
+
+                return earthRadius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+            };
+
+            const nearestOffice = (latitude, longitude) => officeLocations
+                .map((location) => ({
+                    ...location,
+                    distance: distanceMeters(latitude, longitude, location.latitude, location.longitude),
+                }))
+                .sort((a, b) => a.distance - b.distance)[0] ?? null;
+
+            const ensureAttendanceMap = () => {
+                if (attendanceMap || ! window.L || ! document.getElementById('employeeAttendanceMap')) {
+                    return attendanceMap;
+                }
+
+                attendanceMap = L.map('employeeAttendanceMap', {
+                    zoomControl: true,
+                    scrollWheelZoom: false,
+                }).setView([-6.2, 106.816666], 12);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors',
+                }).addTo(attendanceMap);
+
+                officeLocations.forEach((location) => {
+                    const point = [location.latitude, location.longitude];
+                    const radius = L.circle(point, {
+                        radius: location.radius,
+                        color: '#4f46e5',
+                        weight: 2,
+                        fillColor: '#6366f1',
+                        fillOpacity: .14,
+                    }).addTo(attendanceMap);
+                    const marker = L.marker(point).addTo(attendanceMap)
+                        .bindPopup(`${location.name}<br>Radius ${formatDistance(location.radius)}`);
+
+                    officeLayers.push(radius, marker);
+                });
+
+                if (officeLayers.length > 0) {
+                    attendanceMap.fitBounds(L.featureGroup(officeLayers).getBounds(), { padding: [24, 24], maxZoom: 16 });
+                }
+
+                setTimeout(() => attendanceMap.invalidateSize(), 250);
+
+                return attendanceMap;
+            };
+
+            const updateAttendanceMap = (latitude, longitude) => {
+                const map = ensureAttendanceMap();
+                if (! map) return;
+
+                const userPoint = [latitude, longitude];
+                const nearest = nearestOffice(latitude, longitude);
+                const mapStatus = document.getElementById('attendanceMapStatus');
+                const mapDistance = document.getElementById('attendanceMapDistance');
+
+                if (userMarker) userMarker.remove();
+                if (distanceLine) distanceLine.remove();
+                if (distanceMarker) distanceMarker.remove();
+
+                userMarker = L.marker(userPoint, {
+                    title: 'Posisi kamu',
+                }).addTo(map).bindPopup('Posisi kamu');
+
+                if (! nearest) {
+                    mapStatus && (mapStatus.textContent = 'Belum ada lokasi kantor aktif');
+                    mapDistance && (mapDistance.textContent = 'Admin perlu menambahkan lokasi absensi.');
+                    map.setView(userPoint, 16);
+                    return;
+                }
+
+                const officePoint = [nearest.latitude, nearest.longitude];
+                const insideRadius = nearest.distance <= nearest.radius;
+                const distanceText = formatDistance(nearest.distance);
+
+                distanceLine = L.polyline([userPoint, officePoint], {
+                    color: insideRadius ? '#16a34a' : '#dc2626',
+                    weight: 3,
+                    dashArray: insideRadius ? null : '8 8',
+                }).addTo(map);
+
+                distanceMarker = L.marker([
+                    (latitude + nearest.latitude) / 2,
+                    (longitude + nearest.longitude) / 2,
+                ], {
+                    interactive: false,
+                    icon: L.divIcon({
+                        className: 'attendance-distance-label',
+                        html: distanceText,
+                    }),
+                }).addTo(map);
+
+                mapStatus && (mapStatus.textContent = insideRadius ? `Di dalam radius ${nearest.name}` : `Di luar radius ${nearest.name}`);
+                mapDistance && (mapDistance.textContent = `Jarak ${distanceText}, radius ${formatDistance(nearest.radius)}`);
+
+                const bounds = L.latLngBounds([userPoint, officePoint]);
+                if (insideRadius) {
+                    map.setView(userPoint, 17);
+                } else {
+                    map.fitBounds(bounds.pad(.25), { padding: [24, 24], maxZoom: 15 });
+                }
+            };
 
             const setUploadUi = (status, progress = null, ready = uploadReady, previewUrl = null) => {
                 uploadReady = ready;
@@ -593,12 +760,19 @@ new class extends Component
 
                 status && (status.textContent = 'Mengambil lokasi...');
                 navigator.geolocation.getCurrentPosition((position) => {
-                    @this.set('latitude', position.coords.latitude.toFixed(7));
-                    @this.set('longitude', position.coords.longitude.toFixed(7));
+                    const latitude = Number(position.coords.latitude.toFixed(7));
+                    const longitude = Number(position.coords.longitude.toFixed(7));
+                    @this.set('latitude', latitude);
+                    @this.set('longitude', longitude);
                     @this.set('accuracy', Math.round(position.coords.accuracy));
                     @this.set('gpsStatus', `Akurasi ${Math.round(position.coords.accuracy)} meter`);
+                    const coordinateText = document.getElementById('gpsCoordinateText');
+                    coordinateText && (coordinateText.textContent = `${latitude}, ${longitude}`);
+                    updateAttendanceMap(latitude, longitude);
                 }, () => {
                     @this.set('gpsStatus', 'Izin lokasi ditolak atau gagal dibaca');
+                    const mapStatus = document.getElementById('attendanceMapStatus');
+                    mapStatus && (mapStatus.textContent = 'Izin lokasi ditolak atau gagal dibaca');
                 }, {
                     enableHighAccuracy: true,
                     timeout: 12000,
@@ -654,6 +828,7 @@ new class extends Component
             });
 
             setUploadUi(@js($uploadStatus), @js($uploadProgress), uploadReady);
+            ensureAttendanceMap();
             locate();
         })();
     </script>
