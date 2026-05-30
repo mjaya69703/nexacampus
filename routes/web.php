@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
+use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
@@ -39,6 +40,8 @@ Route::middleware('is_installed')->group(function () {
 
         Route::livewire('/auth/select-role', 'auth.select-role')->name('auth.select-role');
         Route::livewire('/profile', 'profile-index')->name('home.profile-index');
+        Route::get('/profile/development-attachments/{attachment}/preview', [UserDevelopmentAttachmentController::class, 'profilePreview'])
+            ->name('profile.development-attachments.preview');
         Route::livewire('/employee/attendance', 'employee.attendance.index')->name('employee.attendance.index');
         Route::livewire('/employee/leaves', 'employee.leaves.index')->name('employee.leaves.index');
         Route::get('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
@@ -70,6 +73,10 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/admission/documents/{document}/preview', [AdmissionDocumentController::class, 'adminPreview'])
                 ->middleware('active_permission:admission-application.view')
                 ->name('admission.documents.preview');
+
+            Route::get('/organization/user-development-attachments/{attachment}/preview', [UserDevelopmentAttachmentController::class, 'adminPreview'])
+                ->middleware('active_permission:user-development-record.view')
+                ->name('organization.user-development-records.attachments.preview');
 
             Route::get('/admission/applications/{application}/acceptance-letter', [AcceptanceLetterController::class, 'show'])
                 ->middleware('active_permission:admission-application.view')

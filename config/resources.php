@@ -304,6 +304,22 @@ return [
         ],
     ],
     [
+        'resource' => 'user-development-record',
+        'plural' => 'user-development-records',
+        'area' => 'organization',
+        'component' => 'admin.organization.user-development-records',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Sertifikasi & Pelatihan',
+            'icon' => 'fas fa-certificate',
+            'group' => 'Kepegawaian',
+            'group_icon' => 'fas fa-building-user',
+            'group_order' => 35,
+            'order' => 20,
+        ],
+    ],
+    [
         'resource' => 'employee-profile',
         'plural' => 'employee-profiles',
         'area' => 'organization',

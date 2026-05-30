@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             AcademicSeeder::class,
             OrganizationDemoSeeder::class,
+            SystemWideDemoSeeder::class,
         ]);
     }
 }

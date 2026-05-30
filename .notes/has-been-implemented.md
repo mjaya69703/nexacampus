@@ -1380,7 +1380,7 @@ Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, mater
 *Impact: Admin + Staff/Tendik + Lecturer + Academic Leadership | Module: Organization / Kepegawaian*
 
 ##### 9. Kepegawaian, Position Scope & Operational Structure
-**Status:** IN PROGRESS (Phase 3 completed: Employee Attendance & Leave foundation)  
+**Status:** IN PROGRESS (Phase 4 completed: User Certification / Training Records)  
 **Roles Affected:** Admin/Superuser (manage), Staff/Tendik (operate), Kaprodi/Dekan/Kepala Unit (scoped access), Lecturer (future child module)  
 **Module Category:** Existing Module Enhancement -> `organization`
 
@@ -1445,9 +1445,23 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
    - Completed admin screens for Absensi Pegawai, Jenis Cuti Pegawai, and Cuti Pegawai.
    - Completed employee self-service screens for Absensi Saya and Cuti Saya.
    - Teaching attendance remains an optional source placeholder for later lecturer workload integration.
-4. **Phase 4 - User Certification / Training Records**
-   - User-based development records for certifications, training, workshops, seminars, awards, licenses, and attachments.
-   - Works for lecturers, staff, admins, and students instead of being lecturer-only.
+4. **Phase 4 - User Certification / Training Records** ✅
+   - ✅ User-based development records for certifications, training, workshops, seminars, awards, licenses.
+   - ✅ Works for lecturers, staff, admins, and students globally instead of being lecturer-only.
+   - ✅ Migrations and Data Models properly bind to `user_id`.
+   - ✅ Attachments framework integrated for certificate and document uploads.
+   - ✅ Admin create/edit, private attachment preview, verification action, and user self-service upload with progress state are implemented.
+5. **Phase 4.5 - Massive System-Wide Seeder Overhaul** ✅
+   - ✅ Added `SystemWideDemoSeeder` as an idempotent cross-module demo-data aggregator.
+   - ✅ Ties together Academic, Student Services, Financial, Admission, and Organization modules.
+   - ✅ Generates realistic student histories for invoices, payments, service letters, leave, graduation, complaints, and admission.
+   - ✅ Generates lecturer/staff/admin organization histories with attendance, leave, and verified/unverified user development records.
+6. **Phase 5 - Tridharma Support (Future Child Module)**
+   - Lecturer research, community services, and publications tracking.
+7. **Phase 6 - Lecturer Workload / BKD (Future Child Module)**
+   - Comprehensive dashboard for SKS calculation from teaching, additional duties (positions), and Tridharma activities.
+8. **Phase 7 - Performance Evaluation / EDOM (Future Child Module)**
+   - End-of-semester evaluations merging student feedback and attendance compliance.
 
 **Candidate Tables:**
 - `employee_profiles`

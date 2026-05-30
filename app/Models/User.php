@@ -150,6 +150,11 @@ class User extends Authenticatable
         return $this->workUnits()->wherePivot('is_active', true);
     }
 
+    public function developmentRecords(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Organization\UserDevelopmentRecord::class);
+    }
+
     // Prefix untuk route names berdasarkan active role
     public function getPrefixAttribute(): string
     {
