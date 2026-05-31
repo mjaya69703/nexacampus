@@ -155,6 +155,11 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\Organization\UserDevelopmentRecord::class);
     }
 
+    public function tridharmaRecords(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Organization\TridharmaRecord::class);
+    }
+
     // Prefix untuk route names berdasarkan active role
     public function getPrefixAttribute(): string
     {

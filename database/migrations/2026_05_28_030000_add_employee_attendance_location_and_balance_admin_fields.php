@@ -49,7 +49,7 @@ return new class extends Migration
                 [
                     'name' => 'Kampus Utama',
                     'code' => 'MAIN_CAMPUS',
-                    'address' => 'Lokasi demo kampus utama. Ubah koordinat sesuai lokasi kantor/kampus asli.',
+                    'address' => 'Gedung Rektorat Kampus Utama.',
                     'latitude' => -6.2000000,
                     'longitude' => 106.8166660,
                     'radius_meters' => 150,

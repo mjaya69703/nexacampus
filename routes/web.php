@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
+use App\Http\Controllers\Organization\TridharmaAttachmentController;
 use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
@@ -42,8 +43,13 @@ Route::middleware('is_installed')->group(function () {
         Route::livewire('/profile', 'profile-index')->name('home.profile-index');
         Route::get('/profile/development-attachments/{attachment}/preview', [UserDevelopmentAttachmentController::class, 'profilePreview'])
             ->name('profile.development-attachments.preview');
+        Route::get('/tridharma/attachments/{attachment}/preview', [TridharmaAttachmentController::class, 'selfPreview'])
+            ->name('tridharma.attachments.preview');
         Route::livewire('/employee/attendance', 'employee.attendance.index')->name('employee.attendance.index');
         Route::livewire('/employee/leaves', 'employee.leaves.index')->name('employee.leaves.index');
+        Route::livewire('/employee/tridharma', 'employee.tridharma.index')->name('employee.tridharma.index');
+        Route::livewire('/employee/tridharma/create', 'employee.tridharma.create')->name('employee.tridharma.create');
+        Route::livewire('/employee/tridharma/{id}', 'employee.tridharma.show')->name('employee.tridharma.show');
         Route::get('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('/auth/switch-role', [AuthController::class, 'switchRole'])->name('auth.switch-role');
         // Route::livewire('/', 'admin.dashboard.index')->name('root.home-index');
@@ -77,6 +83,10 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/organization/user-development-attachments/{attachment}/preview', [UserDevelopmentAttachmentController::class, 'adminPreview'])
                 ->middleware('active_permission:user-development-record.view')
                 ->name('organization.user-development-records.attachments.preview');
+
+            Route::get('/organization/tridharma-attachments/{attachment}/preview', [TridharmaAttachmentController::class, 'adminPreview'])
+                ->middleware('active_permission:tridharma-record.view')
+                ->name('organization.tridharma-records.attachments.preview');
 
             Route::get('/admission/applications/{application}/acceptance-letter', [AcceptanceLetterController::class, 'show'])
                 ->middleware('active_permission:admission-application.view')
@@ -196,6 +206,9 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/academic-advising', 'lecturer.academic-advising.index')->name('academic-advising.index');
             Route::livewire('/academic-advising/{assignmentId}', 'lecturer.academic-advising.show')->name('academic-advising.show');
             Route::livewire('/students', 'lecturer.students.index')->name('students.index');
+            Route::livewire('/tridharma', 'employee.tridharma.index')->name('tridharma.index');
+            Route::livewire('/tridharma/create', 'employee.tridharma.create')->name('tridharma.create');
+            Route::livewire('/tridharma/{id}', 'employee.tridharma.show')->name('tridharma.show');
         });
     });
 

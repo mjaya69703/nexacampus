@@ -1380,7 +1380,7 @@ Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, mater
 *Impact: Admin + Staff/Tendik + Lecturer + Academic Leadership | Module: Organization / Kepegawaian*
 
 ##### 9. Kepegawaian, Position Scope & Operational Structure
-**Status:** IN PROGRESS (Phase 4 completed: User Certification / Training Records)  
+**Status:** IN PROGRESS (Phase 5 completed: Tridharma Support)  
 **Roles Affected:** Admin/Superuser (manage), Staff/Tendik (operate), Kaprodi/Dekan/Kepala Unit (scoped access), Lecturer (future child module)  
 **Module Category:** Existing Module Enhancement -> `organization`
 
@@ -1456,8 +1456,13 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
    - ✅ Ties together Academic, Student Services, Financial, Admission, and Organization modules.
    - ✅ Generates realistic student histories for invoices, payments, service letters, leave, graduation, complaints, and admission.
    - ✅ Generates lecturer/staff/admin organization histories with attendance, leave, and verified/unverified user development records.
-6. **Phase 5 - Tridharma Support (Future Child Module)**
-   - Lecturer research, community services, and publications tracking.
+6. **Phase 5 - Tridharma Support** ✅
+   - ✅ User-owned Tridharma records for research, community service, and publication/output tracking.
+   - ✅ Optional lecturer/employee profile context while keeping `user_id` as the owner source of truth.
+   - ✅ Proposal approval uses the existing approval engine with `TRIDHARMA_PROPOSAL` template and model callbacks.
+   - ✅ Admin management covers create/edit/show, verification, completion/archive, members, milestones, budgets, outputs, and private attachments.
+   - ✅ Lecturer/employee self-service can create draft, submit approval, upload evidence with progress, and add milestones/outputs after approval.
+   - ✅ System-wide demo seeder now includes Tridharma approval-ready records with realistic team, budget, milestone, output, and evidence data.
 7. **Phase 6 - Lecturer Workload / BKD (Future Child Module)**
    - Comprehensive dashboard for SKS calculation from teaching, additional duties (positions), and Tridharma activities.
 8. **Phase 7 - Performance Evaluation / EDOM (Future Child Module)**

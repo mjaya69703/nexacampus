@@ -320,6 +320,22 @@ return [
         ],
     ],
     [
+        'resource' => 'tridharma-record',
+        'plural' => 'tridharma-records',
+        'area' => 'organization',
+        'component' => 'admin.organization.tridharma-records',
+        'actions' => ['index', 'create', 'edit', 'show', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view', 'verify', 'approve', 'complete'],
+        'menu' => [
+            'title' => 'Tridharma',
+            'icon' => 'fas fa-flask',
+            'group' => 'Kepegawaian',
+            'group_icon' => 'fas fa-building-user',
+            'group_order' => 35,
+            'order' => 21,
+        ],
+    ],
+    [
         'resource' => 'employee-profile',
         'plural' => 'employee-profiles',
         'area' => 'organization',

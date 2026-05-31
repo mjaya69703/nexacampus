@@ -9,13 +9,16 @@ use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudyProgram;
 use App\Models\Access\Role;
 use App\Models\Organization\EmployeeProfile;
+use App\Models\Organization\TridharmaRecord;
 use App\Models\Organization\UserDevelopmentRecord;
 use App\Models\User;
+use App\Support\Organization\TridharmaRecordService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 
 class SystemWideDemoSeeder extends Seeder
 {
@@ -46,6 +49,7 @@ class SystemWideDemoSeeder extends Seeder
         $students->each(fn (StudentProfile $student) => $this->seedStudentServiceJourney($student));
         $this->seedOrganizationJourney();
         $this->seedDevelopmentRecords($students);
+        $this->seedTridharmaJourney($students);
     }
 
     private function ensureStudent(string $email, string $firstName, string $lastName, string $nim, int $semester): ?StudentProfile
@@ -77,7 +81,7 @@ class SystemWideDemoSeeder extends Seeder
                 'entry_date' => now()->subMonths($semester * 6)->toDateString(),
                 'current_semester' => $semester,
                 'is_active' => true,
-                'desc' => 'Mahasiswa demo Phase 4.5 untuk histori lintas modul.',
+                'desc' => 'Mahasiswa aktif dengan histori akademik lintas layanan.',
                 'created_by' => $this->admin->id,
                 'updated_by' => $this->admin->id,
             ],
@@ -98,7 +102,7 @@ class SystemWideDemoSeeder extends Seeder
             'closes_at' => now()->addMonths(2)->toDateString(),
             'is_active' => true,
             'is_published' => true,
-            'description' => 'Periode demo PMB dengan peserta dan dokumen lengkap.',
+            'description' => 'Periode PMB aktif dengan peserta dan dokumen lengkap.',
             'created_by' => $this->admin->id,
             'updated_by' => $this->admin->id,
         ]);
@@ -121,17 +125,17 @@ class SystemWideDemoSeeder extends Seeder
 
         $applicationId = $this->upsertAndGetId('admission_applications', ['application_number' => 'PMB-2026-0001'], [
             'admission_period_id' => $periodId,
-            'access_token' => 'demo-pmb-2026-0001-token',
+            'access_token' => 'pmb-2026-0001-token',
             'user_id' => null,
-            'full_name' => 'Calon Mahasiswa Demo',
-            'email' => 'calon.demo@example.com',
+            'full_name' => 'Calon Mahasiswa Jalur Reguler',
+            'email' => 'calon.mahasiswa@example.com',
             'phone' => '081234560001',
             'birth_date' => now()->subYears(18)->toDateString(),
             'gender' => 'female',
             'address' => 'Jl. Pendidikan No. 45',
-            'emergency_contact_name' => 'Orang Tua Demo',
+            'emergency_contact_name' => 'Kontak Keluarga',
             'emergency_contact_phone' => '081234560002',
-            'high_school_name' => 'SMA Negeri Demo',
+            'high_school_name' => 'SMA Negeri Nusantara',
             'high_school_major' => 'IPA',
             'high_school_graduation_year' => 2026,
             'faculty_id' => $this->faculty->id,
@@ -154,11 +158,11 @@ class SystemWideDemoSeeder extends Seeder
                 'document_type' => 'report_card',
             ], [
                 'document_requirement_id' => $requirementId,
-                'file_path' => 'demo/admission/report-card-demo.pdf',
-                'file_name' => 'report-card-demo.pdf',
+                'file_path' => 'samples/admission/report-card.pdf',
+                'file_name' => 'report-card.pdf',
                 'file_size' => 245760,
                 'verification_status' => 'verified',
-                'verification_notes' => 'Dokumen demo terverifikasi.',
+                'verification_notes' => 'Dokumen telah diverifikasi.',
                 'verified_by' => $this->admin->id,
                 'verified_at' => now()->subDays(8),
             ]);
@@ -170,7 +174,7 @@ class SystemWideDemoSeeder extends Seeder
                 'to_status' => 'accepted',
             ], [
                 'from_status' => 'under_review',
-                'notes' => 'Diterima sebagai data demo PMB.',
+                'notes' => 'Diterima melalui proses seleksi PMB.',
                 'changed_by' => $this->admin->id,
             ]);
         }
@@ -202,7 +206,7 @@ class SystemWideDemoSeeder extends Seeder
                 'late_penalty_per_day' => 0,
                 'payment_deadline' => now()->addDays(14)->toDateString(),
                 'is_active' => true,
-                'notes' => 'Tarif demo Phase 4.5.',
+                'notes' => 'Tarif aktif untuk periode akademik berjalan.',
                 'created_by' => $this->admin->id,
                 'updated_by' => $this->admin->id,
             ]);
@@ -223,7 +227,7 @@ class SystemWideDemoSeeder extends Seeder
             'paid_at' => $outstanding > 0 ? null : now()->subDays(3),
             'issued_at' => now()->subDays(20),
             'issued_by' => $this->admin->id,
-            'notes' => 'Invoice demo yang terhubung ke histori mahasiswa.',
+            'notes' => 'Invoice terhubung ke histori pembayaran mahasiswa.',
             'created_by' => $this->admin->id,
             'updated_by' => $this->admin->id,
         ]);
@@ -242,8 +246,8 @@ class SystemWideDemoSeeder extends Seeder
         }
 
         if ($scholarshipAmount > 0 && Schema::hasTable('scholarships') && Schema::hasTable('student_scholarships')) {
-            $scholarshipId = $this->upsertAndGetId('scholarships', ['name' => 'Beasiswa Prestasi Demo'], [
-                'description' => 'Beasiswa demo untuk pengujian potongan invoice.',
+            $scholarshipId = $this->upsertAndGetId('scholarships', ['name' => 'Beasiswa Prestasi Akademik'], [
+                'description' => 'Beasiswa prestasi untuk potongan invoice mahasiswa.',
                 'type' => 'partial',
                 'discount_type' => 'fixed',
                 'discount_percentage' => null,
@@ -262,7 +266,7 @@ class SystemWideDemoSeeder extends Seeder
                 'start_date' => now()->subMonth()->toDateString(),
                 'end_date' => now()->addMonths(5)->toDateString(),
                 'status' => 'active',
-                'notes' => 'Assignment beasiswa demo.',
+                'notes' => 'Beasiswa aktif pada semester berjalan.',
                 'created_by' => $this->admin->id,
             ]);
 
@@ -274,7 +278,7 @@ class SystemWideDemoSeeder extends Seeder
                     'amount' => $scholarshipAmount,
                     'source_type' => 'scholarship',
                     'source_id' => $scholarshipId,
-                    'reason' => 'Potongan beasiswa prestasi demo.',
+                    'reason' => 'Potongan beasiswa prestasi akademik.',
                     'created_by' => $this->admin->id,
                 ]);
             }
@@ -288,14 +292,14 @@ class SystemWideDemoSeeder extends Seeder
                 'amount' => $paidAmount,
                 'payment_method' => 'bank_transfer',
                 'transaction_reference' => 'TRX-'.$student->nim.'-DEMO',
-                'proof_file_path' => 'demo/payments/'.$student->nim.'.pdf',
+                'proof_file_path' => 'samples/payments/'.$student->nim.'.pdf',
                 'status' => 'verified',
                 'paid_at' => now()->subDays(4),
                 'submitted_by' => $student->user_id,
                 'verified_by' => $this->admin->id,
                 'verified_at' => now()->subDays(3),
-                'notes' => 'Pembayaran demo lintas modul.',
-                'verification_notes' => 'Bukti pembayaran demo valid.',
+                'notes' => 'Pembayaran terhubung ke invoice mahasiswa.',
+                'verification_notes' => 'Bukti pembayaran valid.',
             ]);
 
             if ($paidAmount > $invoiceTotal && Schema::hasTable('student_credit_balances') && Schema::hasTable('student_credit_transactions')) {
@@ -310,7 +314,7 @@ class SystemWideDemoSeeder extends Seeder
                     'transaction_type' => 'overpayment',
                 ], [
                     'amount' => $creditAmount,
-                    'notes' => 'Kelebihan bayar demo otomatis menjadi saldo kredit.',
+                    'notes' => 'Kelebihan bayar otomatis menjadi saldo kredit.',
                     'created_by' => $this->admin->id,
                 ]);
             }
@@ -326,10 +330,10 @@ class SystemWideDemoSeeder extends Seeder
                     'service_letter_type_id' => $typeId,
                     'student_profile_id' => $student->id,
                     'purpose' => 'Pengajuan beasiswa dan administrasi eksternal.',
-                    'request_data' => json_encode(['recipient' => 'Instansi Demo', 'purpose' => 'Beasiswa']),
+                    'request_data' => json_encode(['recipient' => 'Instansi Pemberi Beasiswa', 'purpose' => 'Beasiswa']),
                     'status' => 'issued',
                     'fulfillment_method' => 'auto_generate',
-                    'student_notes' => 'Permohonan surat aktif kuliah demo.',
+                    'student_notes' => 'Permohonan surat aktif kuliah untuk keperluan beasiswa.',
                     'admin_notes' => 'Surat diterbitkan otomatis.',
                     'reviewed_by' => $this->admin->id,
                     'reviewed_at' => now()->subDays(6),
@@ -348,9 +352,9 @@ class SystemWideDemoSeeder extends Seeder
                 'semester' => $student->current_semester,
                 'duration_semesters' => 1,
                 'reason_category' => 'medical',
-                'reason' => 'Pemulihan kesehatan keluarga, data demo.',
+                'reason' => 'Pemulihan kesehatan keluarga.',
                 'status' => 'approved',
-                'student_notes' => 'Pengajuan cuti demo.',
+                'student_notes' => 'Pengajuan cuti sementara.',
                 'admin_notes' => 'Disetujui untuk simulasi layanan mahasiswa.',
                 'reviewed_by' => $this->admin->id,
                 'reviewed_at' => now()->subDays(10),
@@ -372,8 +376,8 @@ class SystemWideDemoSeeder extends Seeder
                 'status' => 'approved',
                 'eligibility_snapshot' => json_encode(['credits' => 144, 'gpa' => 3.72, 'financial_clearance' => true]),
                 'admin_checklist' => json_encode(['transcript' => true, 'thesis' => true, 'library' => true]),
-                'student_notes' => 'Pengajuan yudisium demo.',
-                'admin_notes' => 'Persyaratan demo terpenuhi.',
+                'student_notes' => 'Pengajuan yudisium setelah menyelesaikan persyaratan akademik.',
+                'admin_notes' => 'Persyaratan administrasi terpenuhi.',
                 'reviewed_by' => $this->admin->id,
                 'reviewed_at' => now()->subDays(8),
                 'approved_by' => $this->admin->id,
@@ -388,7 +392,7 @@ class SystemWideDemoSeeder extends Seeder
                 $categoryId = $this->upsertAndGetId('student_complaint_categories', ['code' => 'ACADEMIC_ADMIN'], [
                     'name' => 'Administrasi Akademik',
                     'default_work_unit_id' => $workUnitId,
-                    'description' => 'Kategori demo untuk pertanyaan administrasi akademik.',
+                    'description' => 'Kategori untuk pertanyaan administrasi akademik.',
                     'default_sla_hours' => 48,
                     'is_active' => true,
                 ]);
@@ -447,7 +451,7 @@ class SystemWideDemoSeeder extends Seeder
                         'check_in_at' => now()->subDays($offset + $index)->setTime(8, $offset === 3 ? 25 : 0),
                         'check_out_at' => now()->subDays($offset + $index)->setTime(16, 30),
                         'work_minutes' => $offset === 3 ? 485 : 510,
-                        'notes' => 'Absensi demo Phase 4.5.',
+                        'notes' => 'Absensi tercatat dari sumber administrasi.',
                         'created_by' => $this->admin->id,
                         'updated_by' => $this->admin->id,
                     ]);
@@ -465,9 +469,9 @@ class SystemWideDemoSeeder extends Seeder
                         'ends_at' => now()->addDays(11)->toDateString(),
                         'total_days' => 2,
                         'status' => 'approved',
-                        'reason' => 'Cuti tahunan demo.',
+                        'reason' => 'Cuti tahunan.',
                         'employee_notes' => 'Rencana keperluan keluarga.',
-                        'admin_notes' => 'Disetujui untuk data demo.',
+                        'admin_notes' => 'Disetujui sesuai kuota cuti.',
                         'reviewed_by' => $this->admin->id,
                         'reviewed_at' => now()->subDays(2),
                         'approved_by' => $this->admin->id,
@@ -504,11 +508,11 @@ class SystemWideDemoSeeder extends Seeder
                 'end_date' => now()->subMonths(2)->addDays(2)->toDateString(),
                 'expires_at' => now()->addYears(2)->toDateString(),
                 'cost' => $index % 2 === 0 ? 750000 : 0,
-                'description' => 'Riwayat pengembangan demo untuk pengujian profil dan verifikasi admin.',
+                'description' => 'Riwayat pengembangan kompetensi untuk profil dan verifikasi admin.',
                 'is_verified' => $index !== 1,
                 'verified_by' => $index !== 1 ? $this->admin->id : null,
                 'verified_at' => $index !== 1 ? now()->subMonth() : null,
-                'verification_notes' => $index !== 1 ? 'Dokumen demo terverifikasi.' : 'Menunggu pemeriksaan dokumen.',
+                'verification_notes' => $index !== 1 ? 'Dokumen telah diverifikasi.' : 'Menunggu pemeriksaan dokumen.',
             ]);
 
             if (Schema::hasTable('user_development_attachments')) {
@@ -516,11 +520,168 @@ class SystemWideDemoSeeder extends Seeder
                     'user_development_record_id' => $record->id,
                     'document_type' => 'certificate',
                 ], [
-                    'file_path' => 'demo/user-developments/'.$record->id.'.pdf',
+                    'file_path' => 'samples/user-developments/'.$record->id.'.pdf',
                     'file_name' => Str::slug($record->title).'.pdf',
                     'file_size' => 182400,
                 ]);
             }
+        }
+    }
+
+    private function seedTridharmaJourney($students): void
+    {
+        if (! Schema::hasTable('tridharma_records')) {
+            return;
+        }
+
+        foreach ([
+            'tridharma-record.viewAny',
+            'tridharma-record.view',
+            'tridharma-record.create',
+            'tridharma-record.update',
+            'tridharma-record.delete',
+            'tridharma-record.verify',
+            'tridharma-record.approve',
+            'tridharma-record.complete',
+        ] as $permissionName) {
+            Permission::findOrCreate($permissionName, 'web');
+        }
+
+        if ($this->admin->hasRole('superuser')) {
+            $this->admin->roles()->where('name', 'superuser')->first()?->givePermissionTo(Permission::where('guard_name', 'web')->get());
+        }
+
+        app(TridharmaRecordService::class)->ensureDefaultApprovalTemplate($this->admin);
+
+        $lecturer = User::query()->where('email', 'lecturer@example.com')->with(['lecturerProfile', 'employeeProfile'])->first();
+        $staff = User::query()->where('email', 'staff@example.com')->with(['lecturerProfile', 'employeeProfile'])->first();
+        $studentUser = $students->first()?->user?->load(['lecturerProfile', 'employeeProfile']);
+
+        if ($studentUser) {
+            TridharmaRecord::withTrashed()
+                ->where('user_id', $studentUser->id)
+                ->where('title', 'Dashboard Layanan Akademik Terpadu untuk Perguruan Tinggi')
+                ->forceDelete();
+        }
+
+        $records = collect([
+            [
+                'user' => $lecturer,
+                'type' => 'research',
+                'title' => 'Model Prediksi Retensi Mahasiswa Berbasis Data Akademik',
+                'scheme' => 'Hibah Internal',
+                'status' => 'approved',
+                'funding_amount' => 18000000,
+                'funding_source' => 'LPPM Kampus',
+            ],
+            [
+                'user' => $staff,
+                'type' => 'community_service',
+                'title' => 'Pelatihan Literasi Digital untuk Administrasi Sekolah',
+                'scheme' => 'Pengabdian Institusi',
+                'status' => 'active',
+                'funding_amount' => 7500000,
+                'funding_source' => 'Unit Kepegawaian',
+            ],
+            [
+                'user' => $this->admin->load(['lecturerProfile', 'employeeProfile']),
+                'type' => 'publication',
+                'title' => 'Dashboard Layanan Akademik Terpadu untuk Perguruan Tinggi',
+                'scheme' => 'Publikasi Institusi',
+                'status' => 'completed',
+                'funding_amount' => 0,
+                'funding_source' => 'Internal Kampus',
+            ],
+        ])->filter(fn ($item) => $item['user']);
+
+        foreach ($records as $index => $item) {
+            $user = $item['user'];
+            $record = TridharmaRecord::updateOrCreate([
+                'user_id' => $user->id,
+                'type' => $item['type'],
+                'title' => $item['title'],
+            ], [
+                'lecturer_profile_id' => $user->lecturerProfile?->id,
+                'employee_profile_id' => $user->employeeProfile?->id,
+                'scheme' => $item['scheme'],
+                'abstract' => 'Kegiatan Tridharma yang melibatkan pengelolaan proposal, tim, anggaran, luaran, dan dokumen pendukung.',
+                'starts_at' => now()->subMonths(3)->toDateString(),
+                'ends_at' => now()->addMonths(3 + $index)->toDateString(),
+                'status' => $item['status'],
+                'funding_amount' => $item['funding_amount'],
+                'funding_source' => $item['funding_source'],
+                'is_verified' => $index !== 1,
+                'verified_by' => $index !== 1 ? $this->admin->id : null,
+                'verified_at' => $index !== 1 ? now()->subMonth() : null,
+                'verification_notes' => $index !== 1 ? 'Record telah diverifikasi.' : 'Menunggu verifikasi lapangan.',
+                'approved_by' => $this->admin->id,
+                'approved_at' => now()->subMonths(2),
+                'completed_by' => $item['status'] === 'completed' ? $this->admin->id : null,
+                'completed_at' => $item['status'] === 'completed' ? now()->subWeek() : null,
+                'created_by' => $user->id,
+                'updated_by' => $this->admin->id,
+            ]);
+
+            $record->members()->updateOrCreate(
+                ['user_id' => $user->id, 'role' => 'leader'],
+                ['is_external' => false, 'sort_order' => 1],
+            );
+            $record->members()->updateOrCreate(
+                ['member_name' => 'Mitra Eksternal', 'role' => 'partner'],
+                ['institution' => 'Institusi Mitra', 'email' => 'mitra@example.com', 'is_external' => true, 'sort_order' => 2],
+            );
+
+            if ($studentUser && $index === 0) {
+                $record->members()->updateOrCreate(
+                    ['user_id' => $studentUser->id, 'role' => 'student_collaborator'],
+                    ['is_external' => false, 'sort_order' => 3],
+                );
+            }
+
+            foreach ([['Proposal', 25, 'completed'], ['Pelaksanaan', 70, $item['status'] === 'completed' ? 'completed' : 'in_progress'], ['Luaran', $item['status'] === 'completed' ? 100 : 30, $item['status'] === 'completed' ? 'completed' : 'in_progress']] as $order => [$title, $progress, $status]) {
+                $record->milestones()->updateOrCreate(
+                    ['title' => $title],
+                    [
+                        'description' => 'Target '.$title,
+                        'due_date' => now()->addWeeks($order + 1)->toDateString(),
+                        'status' => $status,
+                        'progress_percentage' => $progress,
+                        'completed_at' => $status === 'completed' ? now()->subDays($order + 1) : null,
+                        'completed_by' => $status === 'completed' ? $user->id : null,
+                        'sort_order' => $order + 1,
+                    ],
+                );
+            }
+
+            foreach ([['Honorarium', 5000000, 2500000], ['Operasional', 3000000, 1250000]] as [$category, $planned, $realized]) {
+                $record->budgets()->updateOrCreate(
+                    ['category' => $category],
+                    ['description' => 'Anggaran '.$category, 'planned_amount' => $planned, 'realized_amount' => $realized],
+                );
+            }
+
+            $record->outputs()->updateOrCreate(
+                ['output_type' => $item['type'] === 'publication' ? 'article' : 'report', 'title' => 'Luaran '.$item['title']],
+                [
+                    'publisher' => $item['type'] === 'publication' ? 'Jurnal Teknologi Pendidikan' : 'Repository LPPM',
+                    'indexing' => $item['type'] === 'publication' ? 'Sinta' : null,
+                    'doi' => $item['type'] === 'publication' ? '10.0000/nexacampus.'.$record->id : null,
+                    'url' => 'https://example.com/tridharma/'.$record->id,
+                    'published_at' => $item['status'] === 'completed' ? now()->subDays(10)->toDateString() : null,
+                    'status' => $item['status'] === 'completed' ? 'published' : 'draft',
+                ],
+            );
+
+            $record->attachments()->updateOrCreate(
+                ['document_type' => 'proposal'],
+                [
+                    'file_path' => 'samples/tridharma/'.$record->id.'-proposal.pdf',
+                    'file_name' => Str::slug($record->title).'-proposal.pdf',
+                    'mime_type' => 'application/pdf',
+                    'file_size' => 225280,
+                    'uploaded_by' => $user->id,
+                ],
+            );
         }
     }
 

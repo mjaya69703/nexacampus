@@ -130,6 +130,7 @@ class SidebarMenu
             static::makeGroup('employee-self-service', 'Kepegawaian Saya', 'fas fa-id-badge', [
                 static::makeChildLink('employee.attendance.index', 'Absensi Saya'),
                 static::makeChildLink('employee.leaves.index', 'Cuti Saya'),
+                static::makeChildLink('employee.tridharma.index', 'Tridharma Saya'),
             ]),
         ]);
     }
@@ -185,6 +186,9 @@ class SidebarMenu
             ]),
             static::makeGroup('lecturer-publication', 'Publikasi', 'fas fa-bullhorn', [
                 static::makeChildLink('lecturer.announcements.index', 'Pengumuman'),
+            ]),
+            static::makeGroup('lecturer-tridharma', 'Tridharma', 'fas fa-flask', [
+                static::makeChildLink('lecturer.tridharma.index', 'Tridharma Saya'),
             ]),
         ]);
 
