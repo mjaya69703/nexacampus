@@ -1380,8 +1380,8 @@ Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, mater
 *Impact: Admin + Staff/Tendik + Lecturer + Academic Leadership | Module: Organization / Kepegawaian*
 
 ##### 9. Kepegawaian, Position Scope & Operational Structure
-**Status:** IN PROGRESS (Phase 5 completed: Tridharma Support)  
-**Roles Affected:** Admin/Superuser (manage), Staff/Tendik (operate), Kaprodi/Dekan/Kepala Unit (scoped access), Lecturer (future child module)  
+**Status:** IN PROGRESS (Phase 7 completed: BKD & EDOM V1)  
+**Roles Affected:** Admin/Superuser (manage), Staff/Tendik (operate), Kaprodi/Dekan/Kepala Unit via scoped `academic-leader` access, Lecturer, Student  
 **Module Category:** Existing Module Enhancement -> `organization`
 
 **Description:**
@@ -1417,7 +1417,10 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
 - Existing Student Services workflows are not migrated into the approval engine in Phase 1/2/3.
 - Phase 3 integrates employee leave/cuti pegawai into the approval engine without changing student leave workflows.
 - Phase 3 includes employee self-service pages shared across active roles when the user has an active Employee Profile.
-- Lecturer workload, lecturer certification, and lecturer performance review are deferred child modules after the kepegawaian foundation is stable.
+- Lecturer workload and lecturer performance review are now implemented as child modules on top of the kepegawaian foundation.
+- BKD/EDOM V1 means the feature is production-usable for internal campus workflow: data model, admin management, lecturer/student self-service, scoped academic-leader oversight, approval integration, demo seeder, routes, view cache, and focused feature tests are already in place.
+- V1 is intentionally not a full regulatory/export suite. Formal BKD/SKP export, official PDF forms, multi-layer assessor chains beyond the current approval template, richer rubric weighting, semester trend analytics, faculty/program benchmarking, and external attendance/academic data imports remain suitable V2 enhancements.
+- Dekan/Kaprodi are not auth roles. Access stays through coarse `academic-leader` role plus active `employee_position_assignments` scope resolved by `PositionScopeResolver`.
 
 **Estimated Effort:** High (phased)
 
@@ -1463,10 +1466,37 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
    - ✅ Admin management covers create/edit/show, verification, completion/archive, members, milestones, budgets, outputs, and private attachments.
    - ✅ Lecturer/employee self-service can create draft, submit approval, upload evidence with progress, and add milestones/outputs after approval.
    - ✅ System-wide demo seeder now includes Tridharma approval-ready records with realistic team, budget, milestone, output, and evidence data.
-7. **Phase 6 - Lecturer Workload / BKD (Future Child Module)**
-   - Comprehensive dashboard for SKS calculation from teaching, additional duties (positions), and Tridharma activities.
-8. **Phase 7 - Performance Evaluation / EDOM (Future Child Module)**
-   - End-of-semester evaluations merging student feedback and attendance compliance.
+7. **Phase 6 - Lecturer Workload / BKD** ✅
+   - ✅ BKD period and SKS rule management under Organization / Kepegawaian.
+   - ✅ Lecturer self-service can generate BKD draft from teaching assignments, structural positions, and verified Tridharma records.
+   - ✅ BKD submission uses the existing approval engine with `LECTURER_WORKLOAD_REVIEW` template and model callbacks.
+   - ✅ Admin can review BKD submissions, inspect source breakdown, and request revision.
+   - ✅ Academic leader can monitor scoped BKD data through faculty/study-program position scope.
+8. **Phase 7 - Performance Evaluation / EDOM** ✅
+   - ✅ EDOM periods and question bank under Organization / Kepegawaian.
+   - ✅ Student EDOM survey is limited to enrolled course offerings and one response per student/course/lecturer.
+   - ✅ EDOM aggregation keeps student identity hidden from lecturer, admin, and academic-leader result views.
+   - ✅ Lecturer performance review combines EDOM score, teaching attendance compliance, employee attendance compliance, and approved BKD total.
+   - ✅ Academic leader read-only oversight uses scoped `academic-leader` portal instead of Dekan/Kaprodi auth-role proliferation.
+
+**BKD/EDOM V1 Implementation Evidence:**
+- New BKD tables: `lecturer_workload_periods`, `lecturer_workload_rules`, `lecturer_workload_submissions`, and `lecturer_workload_items`.
+- New EDOM/performance tables: `edom_periods`, `edom_questions`, `edom_responses`, `edom_answers`, and `lecturer_performance_reviews`.
+- New role surface: `/academic-leader` prefix with `academic-leader.*` route names, role selector metadata, sidebar menu, and `User::getPrefixAttribute()` mapping.
+- Admin Organization resources follow the Organization/PowerGrid pattern for BKD periods, BKD rules, BKD submissions, EDOM periods, EDOM questions, and lecturer performance reviews.
+- Lecturer self-service uses custom workspace-style BKD pages for generate draft, inspect breakdown, submit, and revision flow.
+- Student EDOM uses card/form survey screens instead of admin tables, with one response per student/course/lecturer and anonymous aggregate output.
+- Academic leader oversight is custom read-only UI under `resources/views/components/academic-leader/**` and is bounded by faculty/program scope.
+- Demo seeding includes role/permission/resource setup, default BKD rules, active BKD/EDOM periods, default EDOM questions, and `LECTURER_WORKLOAD_REVIEW` approval template.
+- Verification completed: migration succeeded, resource/menu sync succeeded, Organization demo seeder ran twice idempotently, route checks passed for `workload`, `edom`, and `academic-leader`, `php artisan view:cache` passed, and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed.
+
+**BKD/EDOM V2 Candidates (Not Part of Current Completion Claim):**
+- Official BKD/SKP export package with signed PDF/Excel forms and institution-specific format mapping.
+- More granular assessor workflow such as Kaprodi -> Dekan -> Kepegawaian/Rektorat when required by campus policy.
+- Configurable scoring rubric for performance review weights, minimum response thresholds, and question categories.
+- Multi-semester lecturer performance trend dashboard, faculty/program benchmarking, and anomaly detection.
+- External data import/sync for attendance, LMS activity, national BKD systems, or other academic sources.
+- Deeper lecturer drilldown pages for academic leaders beyond the current read-only scoped overview.
 
 **Candidate Tables:**
 - `employee_profiles`
@@ -1485,6 +1515,15 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
 - `employee_leave_attachments`
 - `user_development_records`
 - `user_development_attachments`
+- `lecturer_workload_periods`
+- `lecturer_workload_rules`
+- `lecturer_workload_submissions`
+- `lecturer_workload_items`
+- `edom_periods`
+- `edom_questions`
+- `edom_responses`
+- `edom_answers`
+- `lecturer_performance_reviews`
 
 ---
 

@@ -173,6 +173,7 @@ class User extends Authenticatable
             'admin', 'superuser' => 'admin.',
             'student' => 'student.',
             'lecturer' => 'lecturer.',
+            'academic-leader' => 'academic-leader.',
             default => 'admin.',
         };
     }

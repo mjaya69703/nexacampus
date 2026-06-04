@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $roles = ['superuser', 'admin', 'lecturer', 'student'];
+        $roles = ['superuser', 'admin', 'lecturer', 'student', 'academic-leader'];
         $permissions = [
             'user.viewAny',
             'user.create',
@@ -73,7 +73,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('admin123'),
         ]);
 
-        $user->syncRoles(['superuser', 'admin', 'lecturer', 'student']);
+        $user->syncRoles(['superuser', 'admin', 'lecturer', 'student', 'academic-leader']);
 
         // Generate 250 dummy users
         // $this->command->info('Creating 250 dummy users...');
