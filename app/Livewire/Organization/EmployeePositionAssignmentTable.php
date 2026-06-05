@@ -54,8 +54,8 @@ final class EmployeePositionAssignmentTable extends BasePowerGridTable
             ->add('employee_name', fn (EmployeePositionAssignment $model) => $model->employeeProfile?->user?->name ?? '-')
             ->add('position_name', fn (EmployeePositionAssignment $model) => $model->position?->name ?? '-')
             ->add('scope_name', fn (EmployeePositionAssignment $model) => $model->faculty?->name ?? $model->studyProgram?->name ?? $model->workUnit?->name ?? '-')
-            ->add('starts_at', fn (EmployeePositionAssignment $model) => $model->starts_at?->format('Y-m-d') ?? '-')
-            ->add('ends_at', fn (EmployeePositionAssignment $model) => $model->ends_at?->format('Y-m-d') ?? '-')
+            ->add('starts_at_label', fn (EmployeePositionAssignment $model) => $model->starts_at?->format('Y-m-d') ?? '-')
+            ->add('ends_at_label', fn (EmployeePositionAssignment $model) => $model->ends_at?->format('Y-m-d') ?? '-')
             ->add('is_primary')
             ->add('is_active')
             ->add('created_at');
@@ -70,9 +70,9 @@ final class EmployeePositionAssignmentTable extends BasePowerGridTable
                 ->searchable(),
             Column::make('Scope', 'scope_name')
                 ->searchable(),
-            Column::make('Mulai', 'starts_at')
+            Column::make('Mulai', 'starts_at_label', 'starts_at')
                 ->sortable(),
-            Column::make('Selesai', 'ends_at')
+            Column::make('Selesai', 'ends_at_label', 'ends_at')
                 ->sortable(),
             Column::make('Utama', 'is_primary')
                 ->toggleable(ActivePermission::check('employee-position-assignment.update'), 'Ya', 'Tidak')

@@ -27,6 +27,14 @@ class AttendanceSession extends Model
         'topic',
         'notes',
         'status',
+        'attendance_method',
+        'qr_secret',
+        'qr_interval_seconds',
+        'opened_at',
+        'closed_at',
+        'late_after_minutes',
+        'geo_required',
+        'photo_required',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -36,6 +44,10 @@ class AttendanceSession extends Model
         'meeting_date' => 'date',
         'start_time' => 'datetime:H:i',
         'end_time' => 'datetime:H:i',
+        'opened_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'geo_required' => 'boolean',
+        'photo_required' => 'boolean',
     ];
 
     public function getActivitylogOptions(): LogOptions

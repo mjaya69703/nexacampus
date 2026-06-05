@@ -173,11 +173,15 @@ class SidebarMenu
             ]),
             'lecturer' => static::lecturerMenus(),
             'academic-leader' => collect([
-                static::makeGroup('academic-leader-oversight', 'Pemantauan Akademik', 'fas fa-chart-line', [
-                    static::makeChildLink('academic-leader.dashboard.index', 'Dashboard'),
+                static::makeGroup('academic-leader-oversight', 'Operasional Akademik', 'fas fa-chart-line', [
+                    static::makeChildLink('academic-leader.lecturers.index', 'Dosen'),
+                    static::makeChildLink('academic-leader.classes.index', 'Kelas & Kehadiran'),
+                ]),
+                static::makeGroup('academic-leader-performance', 'Evaluasi & Kinerja', 'fas fa-chart-bar', [
                     static::makeChildLink('academic-leader.workloads.index', 'BKD Dosen'),
                     static::makeChildLink('academic-leader.edom.index', 'EDOM & Performa'),
                 ]),
+                static::makeLink('academic-leader-reports', 'Laporan', 'academic-leader.reports.index', 'fas fa-file-export'),
             ]),
             default => collect(),
         };

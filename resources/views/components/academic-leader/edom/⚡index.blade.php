@@ -117,7 +117,7 @@ new class extends Component
                                             <span class="assignment-pill" style="{{ $this->scoreStyle($row->final_score) }}">Akhir {{ $row->final_score ?: '-' }}</span>
                                             <span class="assignment-pill"><i class="fas fa-calendar"></i>{{ $row->edomPeriod?->name ?? '-' }}</span>
                                         </div>
-                                        <div class="fw-bold">{{ $row->owner?->name ?? '-' }}</div>
+                                        <a class="fw-bold text-decoration-none" href="{{ route('academic-leader.lecturers.show', $row->lecturer_profile_id) }}">{{ $row->owner?->name ?? '-' }}</a>
                                         <div class="text-secondary small">{{ $row->lecturerProfile?->studyProgram?->name ?? '-' }}</div>
                                     </div>
                                 </div>

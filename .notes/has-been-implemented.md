@@ -1380,7 +1380,7 @@ Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, mater
 *Impact: Admin + Staff/Tendik + Lecturer + Academic Leadership | Module: Organization / Kepegawaian*
 
 ##### 9. Kepegawaian, Position Scope & Operational Structure
-**Status:** IN PROGRESS (Phase 7 completed: BKD & EDOM V1)  
+**Status:** ✅ COMPLETED (Phase 1-7 plus BKD/EDOM hardening, academic leader completion, attendance modernization, and modular seeders)
 **Roles Affected:** Admin/Superuser (manage), Staff/Tendik (operate), Kaprodi/Dekan/Kepala Unit via scoped `academic-leader` access, Lecturer, Student  
 **Module Category:** Existing Module Enhancement -> `organization`
 
@@ -1498,6 +1498,41 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
 - External data import/sync for attendance, LMS activity, national BKD systems, or other academic sources.
 - Deeper lecturer drilldown pages for academic leaders beyond the current read-only scoped overview.
 
+**BKD/EDOM V2 Hardening Implemented:**
+- Academic leader drilldown page for scoped lecturer detail, including latest BKD, performance trend, program benchmark, and faculty benchmark.
+- BKD export support for admin and academic leader in CSV, XLSX, and PDF formats, with academic leader exports scoped by active faculty/program position assignments.
+- Configurable lecturer performance rubric under Organization / Kepegawaian, covering EDOM weight, teaching compliance weight, employee attendance weight, BKD weight, minimum EDOM responses, and target BKD SKS.
+- EDOM performance calculation now uses the active rubric and stores the applied rubric/components in the performance review snapshot.
+- BKD approval template seeded as a scoped multi-step chain: Kaprodi review, Dekan review, then Kepegawaian Akademik finalization.
+- Approval engine position checks now match approver position scope against the lecturer profile scope when processing BKD approvals.
+- Verification completed: migration status confirmed, permissions/menu sync completed, Organization demo seeder ran twice idempotently, route checks passed for academic-leader, workload export, and rubrics, `php artisan view:cache` passed, and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed with 7 tests.
+
+**Academic Attendance Modernization Implemented:**
+- Dosen dapat membuka absensi QR dari halaman sesi kelas. Saat dibuka, sesi menjadi `Opened`, menyimpan secret QR, dan menampilkan QR dinamis.
+- QR absensi berubah setiap 2 detik berdasarkan secret sesi dan slot waktu, tanpa menulis token baru ke database setiap pergantian.
+- Saat dosen menutup absensi, sesi menjadi `Closed`, `closed_at` terisi, dan semua scan mahasiswa berikutnya ditolak oleh service backend.
+- Mahasiswa melakukan absensi mandiri lewat scan QR. Scan valid otomatis mencatat status `Present` dengan source `student_qr`, timestamp scan, token slot, IP/user agent, dan metadata lokasi bila browser mengirim GPS.
+- Mahasiswa tidak bisa memilih `Izin`, `Sakit`, `Terlambat`, atau `Alpha` dari jalur mandiri. Status non-hadir dan koreksi tetap lewat halaman manual dosen.
+- Halaman jadwal/detail absensi mahasiswa sekarang menampilkan aksi `Scan Absensi` saat sesi dibuka oleh dosen, dan `Menunggu Dosen` saat sesi belum dibuka atau sudah ditutup.
+- Verification completed: QR attendance migration ran successfully, route check passed for attendance routes, `php artisan view:cache` passed, and `tests/Feature/AcademicAttendanceQrServiceTest.php` passed with 4 tests.
+
+**Academic Leader Completion Pack Implemented:**
+- Sidebar academic leader sekarang memuat Dashboard, Dosen, Kelas & Kehadiran, BKD Dosen, EDOM & Performa, dan Laporan.
+- Halaman Dosen Dalam Scope menampilkan daftar dosen sesuai faculty/study-program position scope, ringkasan kelas aktif, status BKD terakhir, skor performa, dan link drilldown dosen.
+- Halaman Kelas & Kehadiran menampilkan monitoring kelas aktif, dosen pengampu, mahasiswa, sesi/pertemuan, sesi yang masih berjalan, sesi lama belum ditutup, persentase kehadiran, dan label risiko.
+- Dashboard academic leader sekarang punya shortcut operasional dan alert akademik untuk kelas tanpa dosen, kelas tanpa jadwal aktif, sesi belum ditutup, pertemuan belum lengkap, kehadiran rendah, BKD yang perlu tindak lanjut, dan performa dosen rendah.
+- Halaman Laporan menyediakan export scoped CSV, XLSX, dan PDF untuk dosen, kelas/kehadiran, dan alert akademik.
+- Service oversight baru memusatkan query scoped academic leader agar dashboard, list, alert, dan export memakai batas akses yang sama.
+- UI status sesi dosen dirapikan ke label operasional `Dijadwalkan`, `Berjalan`, `Ditutup`, dan `Dibatalkan`.
+- Verification completed: route checks passed for `academic-leader`, `academic-leader/classes`, and `academic-leader/reports`; `php artisan view:cache` passed; `AcademicLeaderOversightService` dashboard sanity check passed for `superuser@example.com`; `tests/Feature/AcademicAttendanceQrServiceTest.php` passed with 4 tests; and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed with 7 tests.
+
+**Seeder Modularization Implemented:**
+- Removed ambiguous mixed seeders: `SystemWideDemoSeeder` and `OrganizationDemoSeeder`.
+- Added module-scoped seeders: `OrganizationSeeder`, `AdmissionSeeder`, `FinancialSeeder`, and `StudentServiceSeeder`.
+- `AcademicSeeder` now owns academic data and seeds richer faculty, program, lecturer, student, class, KRS, attendance, grade, material, assignment, and advising data.
+- `DatabaseSeeder` now runs module seeders in dependency order: Settings, User, Menu, Academic, Organization, Admission, Financial, StudentService.
+- Verification completed: all new seeders passed `php -l`, each module seeder ran successfully, and full `php artisan db:seed` ran twice idempotently.
+
 **Candidate Tables:**
 - `employee_profiles`
 - `organizational_positions`
@@ -1509,6 +1544,8 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
 - `approval_actions`
 - `employee_attendance_records`
 - `employee_attendance_sources`
+- `attendance_sessions`
+- `attendance_records`
 - `employee_leave_types`
 - `employee_leave_requests`
 - `employee_leave_balances`
@@ -1524,6 +1561,7 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
 - `edom_responses`
 - `edom_answers`
 - `lecturer_performance_reviews`
+- `lecturer_performance_rubrics`
 
 ---
 

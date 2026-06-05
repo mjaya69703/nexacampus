@@ -25,7 +25,16 @@ new class extends Component
         @endforeach
     </div>
     <div class="card">
-        <div class="card-header"><h3 class="card-title mb-0">Review BKD Dosen</h3></div>
+        <div class="card-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <h3 class="card-title mb-0">Review BKD Dosen</h3>
+            @activecan('lecturer-workload-submission.viewAny')
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ route('admin.organization.lecturer-workload-submissions.export', 'csv') }}" class="btn btn-outline-primary"><i class="fas fa-file-csv me-1"></i>CSV</a>
+                    <a href="{{ route('admin.organization.lecturer-workload-submissions.export', 'xlsx') }}" class="btn btn-outline-success"><i class="fas fa-file-excel me-1"></i>Excel</a>
+                    <a href="{{ route('admin.organization.lecturer-workload-submissions.export', 'pdf') }}" class="btn btn-outline-danger"><i class="fas fa-file-pdf me-1"></i>PDF</a>
+                </div>
+            @endactivecan
+        </div>
         <div class="card-body"><livewire:organization.lecturer-workload-submission-table /></div>
     </div>
 </div>

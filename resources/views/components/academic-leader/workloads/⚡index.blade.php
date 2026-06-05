@@ -111,7 +111,11 @@ new class extends Component
     <div class="card assignment-card">
         <div class="card-header py-3 d-flex justify-content-between align-items-center gap-3 flex-wrap">
             <h3 class="card-title mb-0" style="font-weight:800;"><i class="fas fa-list-check me-2 text-primary"></i>Daftar BKD</h3>
-            <span class="assignment-pill">{{ $rows->total() }} data</span>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <span class="assignment-pill">{{ $rows->total() }} data</span>
+                <a href="{{ route('academic-leader.workloads.export', 'xlsx') }}" class="assignment-action" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;"><i class="fas fa-file-excel"></i>Excel</a>
+                <a href="{{ route('academic-leader.workloads.export', 'pdf') }}" class="assignment-action" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;"><i class="fas fa-file-pdf"></i>PDF</a>
+            </div>
         </div>
         <div class="card-body p-4">
             <div class="assignment-shell">
@@ -126,7 +130,7 @@ new class extends Component
                                             <span class="assignment-pill" style="{{ $this->statusStyle($row->status) }}">{{ $this->statusLabel($row->status) }}</span>
                                             <span class="assignment-pill"><i class="fas fa-calendar"></i>{{ $row->period?->name ?? '-' }}</span>
                                         </div>
-                                        <div class="fw-bold">{{ $row->owner?->name ?? '-' }}</div>
+                                        <a class="fw-bold text-decoration-none" href="{{ route('academic-leader.lecturers.show', $row->lecturer_profile_id) }}">{{ $row->owner?->name ?? '-' }}</a>
                                         <div class="text-secondary small">{{ $row->lecturerProfile?->studyProgram?->name ?? '-' }}</div>
                                     </div>
                                 </div>

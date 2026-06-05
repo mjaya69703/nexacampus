@@ -21,8 +21,10 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             MenuSeeder::class,
             AcademicSeeder::class,
-            OrganizationDemoSeeder::class,
-            SystemWideDemoSeeder::class,
+            OrganizationSeeder::class,
+            AdmissionSeeder::class,
+            FinancialSeeder::class,
+            StudentServiceSeeder::class,
         ]);
     }
 }

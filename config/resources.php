@@ -432,6 +432,22 @@ return [
         ],
     ],
     [
+        'resource' => 'lecturer-performance-rubric',
+        'plural' => 'lecturer-performance-rubrics',
+        'area' => 'organization',
+        'component' => 'admin.organization.lecturer-performance-rubrics',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Rubrik Performa',
+            'icon' => 'fas fa-sliders',
+            'group' => 'Kepegawaian',
+            'group_icon' => 'fas fa-building-user',
+            'group_order' => 35,
+            'order' => 28,
+        ],
+    ],
+    [
         'resource' => 'employee-profile',
         'plural' => 'employee-profiles',
         'area' => 'organization',

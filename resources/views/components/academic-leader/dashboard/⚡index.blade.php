@@ -3,6 +3,7 @@
 use App\Models\Organization\LecturerPerformanceReview;
 use App\Models\Organization\LecturerWorkloadSubmission;
 use App\Support\Organization\AcademicLeaderContext;
+use App\Support\Organization\AcademicLeaderOversightService;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 
@@ -95,19 +96,22 @@ new class extends Component
 
     public function render()
     {
+        $oversight = app(AcademicLeaderOversightService::class);
         $submissions = $this->scopedSubmissions()->latest('updated_at')->limit(8)->get();
         $reviews = $this->scopedReviews()->latest('calculated_at')->limit(8)->get();
+        $oversightStats = $oversight->dashboardStats();
 
         return $this->view([
             'hasScope' => app(AcademicLeaderContext::class)->hasScope(),
             'submissions' => $submissions,
             'reviews' => $reviews,
+            'alerts' => $oversight->alerts()->take(8),
             'stats' => [
                 'bkd' => $this->scopedSubmissions()->count(),
                 'bkd_approval' => $this->scopedSubmissions()->where('status', 'in_approval')->count(),
                 'avg_sks' => $this->scopedSubmissions()->avg('total_sks') ?: 0,
                 'avg_performance' => $this->scopedReviews()->avg('final_score') ?: 0,
-            ],
+            ] + $oversightStats,
         ])->layout('layouts.app', ['menus' => 'Pemantauan Akademik', 'pages' => 'Dashboard Pimpinan Akademik']);
     }
 };
@@ -130,6 +134,8 @@ new class extends Component
                         <div class="d-flex flex-wrap gap-2 mt-3">
                             <span class="assignment-pill assignment-info-pill"><i class="fas fa-file-signature"></i>{{ $stats['bkd'] }} BKD</span>
                             <span class="assignment-pill assignment-info-pill"><i class="fas fa-clock"></i>{{ $stats['bkd_approval'] }} approval</span>
+                            <span class="assignment-pill assignment-info-pill"><i class="fas fa-chalkboard"></i>{{ $stats['classes'] }} kelas</span>
+                            <span class="assignment-pill assignment-info-pill"><i class="fas fa-bell"></i>{{ $stats['alerts'] }} alert</span>
                             <span class="assignment-pill assignment-info-pill"><i class="fas fa-star-half-stroke"></i>{{ number_format($stats['avg_performance'], 2) }} performa</span>
                         </div>
                     </div>
@@ -151,13 +157,65 @@ new class extends Component
     @endunless
 
     <div class="row g-3 mb-4">
-        <div class="col-md-3"><div class="assignment-panel h-100"><div class="text-secondary">BKD Scoped</div><div class="h2 fw-bold mb-0">{{ $stats['bkd'] }}</div></div></div>
-        <div class="col-md-3"><div class="assignment-panel h-100"><div class="text-secondary">Menunggu Approval</div><div class="h2 fw-bold text-warning mb-0">{{ $stats['bkd_approval'] }}</div></div></div>
-        <div class="col-md-3"><div class="assignment-panel h-100"><div class="text-secondary">Rata-rata SKS</div><div class="h2 fw-bold text-primary mb-0">{{ number_format($stats['avg_sks'], 2) }}</div></div></div>
-        <div class="col-md-3"><div class="assignment-panel h-100"><div class="text-secondary">Rata-rata Performa</div><div class="h2 fw-bold text-success mb-0">{{ number_format($stats['avg_performance'], 2) }}</div></div></div>
+        <div class="col-md-3"><div class="assignment-panel h-100"><div class="text-secondary">Dosen</div><div class="h2 fw-bold mb-0">{{ $stats['lecturers'] }}</div></div></div>
+        <div class="col-md-3"><div class="assignment-panel h-100"><div class="text-secondary">Kelas Aktif</div><div class="h2 fw-bold text-primary mb-0">{{ $stats['classes'] }}</div></div></div>
+        <div class="col-md-3"><div class="assignment-panel h-100"><div class="text-secondary">Kelas Perlu Perhatian</div><div class="h2 fw-bold text-warning mb-0">{{ $stats['problem_classes'] }}</div></div></div>
+        <div class="col-md-3"><div class="assignment-panel h-100"><div class="text-secondary">Alert</div><div class="h2 fw-bold text-danger mb-0">{{ $stats['alerts'] }}</div></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        @foreach ([
+            [route('academic-leader.lecturers.index'), 'Dosen Dalam Scope', 'fas fa-user-tie', 'Lihat dosen, BKD, EDOM, dan kelas aktif.'],
+            [route('academic-leader.classes.index'), 'Kelas & Kehadiran', 'fas fa-chalkboard', 'Pantau sesi, jadwal, dan kehadiran mahasiswa.'],
+            [route('academic-leader.workloads.index'), 'BKD Dosen', 'fas fa-scale-balanced', 'Review dan export beban kerja dosen.'],
+            [route('academic-leader.reports.index'), 'Laporan', 'fas fa-file-export', 'Export laporan scoped untuk pimpinan akademik.'],
+        ] as [$url, $title, $icon, $description])
+            <div class="col-md-6 col-xl-3">
+                <a href="{{ $url }}" class="assignment-panel h-100 d-block text-decoration-none" style="color:inherit;">
+                    <div class="d-flex gap-3">
+                        <span class="assignment-icon" style="background:#eef2ff;color:#4f46e5;"><i class="{{ $icon }}"></i></span>
+                        <div>
+                            <div class="fw-bold">{{ $title }}</div>
+                            <div class="text-secondary small">{{ $description }}</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        @endforeach
     </div>
 
     <div class="row g-3">
+        <div class="col-lg-12">
+            <div class="card assignment-card">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                    <h3 class="card-title mb-0" style="font-weight:800;"><i class="fas fa-bell me-2 text-primary"></i>Alert Akademik</h3>
+                    <a href="{{ route('academic-leader.reports.index') }}" class="assignment-action" style="background:#eef2ff;color:#4f46e5;"><i class="fas fa-arrow-right"></i>Laporan</a>
+                </div>
+                <div class="card-body p-4">
+                    <div class="assignment-shell">
+                        @forelse ($alerts as $alert)
+                            <div class="assignment-list-item">
+                                <div class="d-flex justify-content-between gap-3">
+                                    <div>
+                                        <span class="assignment-pill mb-2" style="{{ match($alert['level']) {
+                                            'danger' => 'background:#fee2e2;color:#dc2626;',
+                                            'warning' => 'background:#fef3c7;color:#b45309;',
+                                            default => 'background:#e0f2fe;color:#0369a1;',
+                                        } }}">{{ ucfirst($alert['level']) }}</span>
+                                        <div class="fw-bold">{{ $alert['title'] }}</div>
+                                        <div class="text-secondary small">{{ $alert['description'] }}</div>
+                                    </div>
+                                    <span class="assignment-pill">{{ $alert['target'] }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center text-secondary py-4"><i class="fas fa-circle-check fa-2x mb-2"></i><div>Tidak ada alert aktif.</div></div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-lg-6">
             <div class="card assignment-card h-100">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center gap-3 flex-wrap">
@@ -175,7 +233,7 @@ new class extends Component
                                             <span class="assignment-pill" style="{{ $this->statusStyle($submission->status) }}">{{ $this->statusLabel($submission->status) }}</span>
                                             <span class="assignment-pill">{{ $submission->total_sks }} SKS</span>
                                         </div>
-                                        <div class="fw-bold">{{ $submission->owner?->name }}</div>
+                                        <a class="fw-bold text-decoration-none" href="{{ route('academic-leader.lecturers.show', $submission->lecturer_profile_id) }}">{{ $submission->owner?->name }}</a>
                                         <div class="text-secondary small">{{ $submission->period?->name }} / {{ $submission->lecturerProfile?->studyProgram?->name ?? '-' }}</div>
                                     </div>
                                 </div>
@@ -208,7 +266,7 @@ new class extends Component
                                             <span class="assignment-pill">EDOM {{ $review->edom_score ?: '-' }}</span>
                                             <span class="assignment-pill">{{ $review->edom_response_count }} respon</span>
                                         </div>
-                                        <div class="fw-bold">{{ $review->owner?->name }}</div>
+                                        <a class="fw-bold text-decoration-none" href="{{ route('academic-leader.lecturers.show', $review->lecturer_profile_id) }}">{{ $review->owner?->name }}</a>
                                         <div class="text-secondary small">{{ $review->edomPeriod?->name }} / {{ $review->lecturerProfile?->studyProgram?->name ?? '-' }}</div>
                                     </div>
                                 </div>

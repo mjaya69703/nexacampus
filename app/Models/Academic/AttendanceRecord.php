@@ -19,8 +19,19 @@ class AttendanceRecord extends Model
         'attendance_session_id',
         'student_profile_id',
         'status',
+        'source',
+        'verification_status',
         'recorded_at',
         'recorded_by',
+        'scanned_at',
+        'latitude',
+        'longitude',
+        'location_accuracy',
+        'photo_path',
+        'device_fingerprint',
+        'token_slot',
+        'ip_address',
+        'user_agent',
         'notes',
         'created_by',
         'updated_by',
@@ -29,6 +40,10 @@ class AttendanceRecord extends Model
 
     protected $casts = [
         'recorded_at' => 'datetime',
+        'scanned_at' => 'datetime',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'location_accuracy' => 'decimal:2',
     ];
 
     public function getActivitylogOptions(): LogOptions

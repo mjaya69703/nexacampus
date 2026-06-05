@@ -8,6 +8,7 @@ use App\Models\Academic\StudyPlanDetail;
 use App\Models\Organization\EdomPeriod;
 use App\Models\Organization\EdomQuestion;
 use App\Models\Organization\EdomResponse;
+use App\Models\Organization\LecturerPerformanceRubric;
 use App\Models\Organization\LecturerPerformanceReview;
 use App\Models\Organization\LecturerWorkloadPeriod;
 use App\Models\Organization\LecturerWorkloadSubmission;
@@ -184,6 +185,7 @@ class EdomService
         $aggregate = $this->lecturerAggregate($lecturerUser->lecturerProfile->id, $edomPeriod);
         $teaching = $this->teachingCompliance($lecturerUser, $edomPeriod);
         $attendance = $this->employeeAttendanceCompliance($lecturerUser, $edomPeriod);
+        $rubric = LecturerPerformanceRubric::active();
         $workload = $workloadPeriod
             ? LecturerWorkloadSubmission::query()
                 ->where('lecturer_workload_period_id', $workloadPeriod->id)
@@ -192,13 +194,25 @@ class EdomService
                 ->first()
             : null;
 
-        $components = collect([
-            $aggregate['average'] ? ($aggregate['average'] / 5) * 100 : null,
-            $teaching,
-            $attendance,
-        ])->filter(fn ($value) => $value !== null);
+        $minimumResponses = max((int) $edomPeriod->minimum_responses, (int) $rubric->minimum_responses);
+        $edomComponent = $aggregate['responses'] >= $minimumResponses && $aggregate['average']
+            ? ($aggregate['average'] / 5) * 100
+            : null;
+        $workloadComponent = $workload && (float) $rubric->target_workload_sks > 0
+            ? min(100, ((float) $workload->total_sks / (float) $rubric->target_workload_sks) * 100)
+            : null;
 
-        $finalScore = $components->isNotEmpty() ? round((float) $components->avg(), 2) : null;
+        $weighted = collect([
+            ['score' => $edomComponent, 'weight' => (float) $rubric->edom_weight],
+            ['score' => $teaching, 'weight' => (float) $rubric->teaching_weight],
+            ['score' => $attendance, 'weight' => (float) $rubric->attendance_weight],
+            ['score' => $workloadComponent, 'weight' => (float) $rubric->workload_weight],
+        ])->filter(fn (array $component) => $component['score'] !== null && $component['weight'] > 0);
+
+        $weightTotal = (float) $weighted->sum('weight');
+        $finalScore = $weightTotal > 0
+            ? round((float) $weighted->sum(fn (array $component) => $component['score'] * $component['weight']) / $weightTotal, 2)
+            : null;
 
         return LecturerPerformanceReview::query()->updateOrCreate([
             'edom_period_id' => $edomPeriod->id,
@@ -216,7 +230,19 @@ class EdomService
             'status' => 'calculated',
             'snapshot' => [
                 'edom_available' => $aggregate['available'],
+                'edom_minimum_responses' => $minimumResponses,
+                'edom_component_score' => $edomComponent ? round($edomComponent, 2) : null,
+                'workload_component_score' => $workloadComponent ? round($workloadComponent, 2) : null,
                 'workload_status' => $workload?->status,
+                'rubric' => [
+                    'code' => $rubric->code,
+                    'name' => $rubric->name,
+                    'edom_weight' => (float) $rubric->edom_weight,
+                    'teaching_weight' => (float) $rubric->teaching_weight,
+                    'attendance_weight' => (float) $rubric->attendance_weight,
+                    'workload_weight' => (float) $rubric->workload_weight,
+                    'target_workload_sks' => (float) $rubric->target_workload_sks,
+                ],
             ],
             'calculated_at' => now(),
             'updated_by' => auth()->id(),

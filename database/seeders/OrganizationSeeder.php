@@ -6,6 +6,7 @@ use App\Models\Access\Role;
 use App\Models\Access\Permission;
 use App\Models\Academic\AcademicYear;
 use App\Models\Academic\Faculty;
+use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudyProgram;
 use App\Models\Organization\ApprovalTemplate;
 use App\Models\Organization\EdomPeriod;
@@ -14,18 +15,26 @@ use App\Models\Organization\EmployeeAttendanceLocation;
 use App\Models\Organization\EmployeeLeaveBalance;
 use App\Models\Organization\EmployeeLeaveType;
 use App\Models\Organization\EmployeeProfile;
+use App\Models\Organization\LecturerPerformanceRubric;
 use App\Models\Organization\LecturerWorkloadPeriod;
 use App\Models\Organization\LecturerWorkloadRule;
 use App\Models\Organization\OrganizationalPosition;
+use App\Models\Organization\TridharmaRecord;
+use App\Models\Organization\UserDevelopmentRecord;
 use App\Models\Organization\WorkUnit;
 use App\Models\User;
 use App\Support\Organization\EmployeePositionAssignmentService;
+use App\Support\Organization\TridharmaRecordService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class OrganizationDemoSeeder extends Seeder
+class OrganizationSeeder extends Seeder
 {
+    private ?User $admin = null;
+
     public function run(): void
     {
         $admin = User::query()->where('email', 'superuser@example.com')->first();
@@ -33,6 +42,8 @@ class OrganizationDemoSeeder extends Seeder
         if (! $admin) {
             return;
         }
+
+        $this->admin = $admin;
 
         $kepegawaian = WorkUnit::updateOrCreate(
             ['code' => 'HRD'],
@@ -341,6 +352,11 @@ class OrganizationDemoSeeder extends Seeder
         }
 
         $this->seedWorkloadAndEdomFoundation($admin);
+
+        $students = StudentProfile::query()->with('user')->where('is_active', true)->get();
+        $this->seedOrganizationJourney();
+        $this->seedDevelopmentRecords($students);
+        $this->seedTridharmaJourney($students);
     }
 
     private function seedWorkloadAndEdomFoundation(User $admin): void
@@ -372,6 +388,11 @@ class OrganizationDemoSeeder extends Seeder
             'lecturer-performance-review.viewAny',
             'lecturer-performance-review.view',
             'lecturer-performance-review.update',
+            'lecturer-performance-rubric.viewAny',
+            'lecturer-performance-rubric.view',
+            'lecturer-performance-rubric.create',
+            'lecturer-performance-rubric.update',
+            'lecturer-performance-rubric.delete',
         ] as $permissionName) {
             Permission::findOrCreate($permissionName, 'web');
         }
@@ -385,22 +406,50 @@ class OrganizationDemoSeeder extends Seeder
             [
                 'name' => 'Review BKD Dosen',
                 'module' => 'organization',
-                'description' => 'Approval internal untuk pengajuan BKD dosen.',
+                'description' => 'Approval berlapis untuk pengajuan BKD dosen.',
                 'is_active' => true,
                 'created_by' => $admin->id,
             ],
         );
 
-        $template->steps()->updateOrCreate(
-            ['step_order' => 1],
+        $kaprodiPosition = OrganizationalPosition::query()->where('code', 'KAPRODI')->first();
+        $dekanPosition = OrganizationalPosition::query()->where('code', 'DEKAN')->first();
+
+        foreach ([
+            [1, 'Review Kaprodi', 'position', null, $kaprodiPosition?->id, 48],
+            [2, 'Review Dekan', 'position', null, $dekanPosition?->id, 48],
+            [3, 'Finalisasi Kepegawaian Akademik', 'permission', 'lecturer-workload-submission.update', null, 48],
+        ] as [$order, $name, $type, $permission, $positionId, $sla]) {
+            $template->steps()->updateOrCreate(
+                ['step_order' => $order],
+                [
+                    'name' => $name,
+                    'approver_type' => $type,
+                    'approver_permission' => $permission,
+                    'organizational_position_id' => $positionId,
+                    'is_required' => true,
+                    'can_reject' => true,
+                    'sla_hours' => $sla,
+                    'created_by' => $admin->id,
+                    'updated_by' => $admin->id,
+                ],
+            );
+        }
+
+        LecturerPerformanceRubric::updateOrCreate(
+            ['code' => 'DEFAULT'],
             [
-                'name' => 'Review Kepegawaian Akademik',
-                'approver_type' => 'permission',
-                'approver_permission' => 'lecturer-workload-submission.update',
-                'is_required' => true,
-                'can_reject' => true,
-                'sla_hours' => 48,
+                'name' => 'Rubrik Performa Standar',
+                'edom_weight' => 40,
+                'teaching_weight' => 30,
+                'attendance_weight' => 20,
+                'workload_weight' => 10,
+                'minimum_responses' => 3,
+                'target_workload_sks' => 12,
+                'is_active' => true,
+                'notes' => 'Rubrik aktif bawaan untuk review performa dosen.',
                 'created_by' => $admin->id,
+                'updated_by' => $admin->id,
             ],
         );
 
@@ -480,5 +529,280 @@ class OrganizationDemoSeeder extends Seeder
                 ],
             );
         }
+    }
+
+    private function seedOrganizationJourney(): void
+    {
+        if (! Schema::hasTable('employee_profiles')) {
+            return;
+        }
+
+        $profiles = EmployeeProfile::query()->with('user')->where('is_active', true)->get();
+        $sourceId = Schema::hasTable('employee_attendance_sources')
+            ? DB::table('employee_attendance_sources')->where('code', 'MANUAL_ADMIN')->value('id')
+            : null;
+
+        foreach ($profiles as $index => $profile) {
+            if (Schema::hasTable('employee_attendance_records') && $sourceId) {
+                foreach ([1, 2, 3] as $offset) {
+                    $date = now()->subDays($offset + $index)->toDateString();
+                    $this->upsertAndGetId('employee_attendance_records', [
+                        'employee_profile_id' => $profile->id,
+                        'attendance_date' => $date,
+                        'employee_attendance_source_id' => $sourceId,
+                    ], [
+                        'work_unit_id' => $profile->primary_work_unit_id,
+                        'sourceable_type' => null,
+                        'sourceable_id' => null,
+                        'status' => $offset === 3 ? 'late' : 'present',
+                        'check_in_at' => now()->subDays($offset + $index)->setTime(8, $offset === 3 ? 25 : 0),
+                        'check_out_at' => now()->subDays($offset + $index)->setTime(16, 30),
+                        'work_minutes' => $offset === 3 ? 485 : 510,
+                        'notes' => 'Absensi tercatat dari sumber administrasi.',
+                        'created_by' => $this->admin->id,
+                        'updated_by' => $this->admin->id,
+                    ]);
+                }
+            }
+
+            if (Schema::hasTable('employee_leave_requests')) {
+                $leaveTypeId = DB::table('employee_leave_types')->where('code', 'ANNUAL_LEAVE')->value('id');
+                if ($leaveTypeId) {
+                    $this->upsertAndGetId('employee_leave_requests', ['request_number' => 'ELV-'.$profile->employee_number.'-001'], [
+                        'employee_profile_id' => $profile->id,
+                        'employee_leave_type_id' => $leaveTypeId,
+                        'approval_request_id' => null,
+                        'starts_at' => now()->addDays(10)->toDateString(),
+                        'ends_at' => now()->addDays(11)->toDateString(),
+                        'total_days' => 2,
+                        'status' => 'approved',
+                        'reason' => 'Cuti tahunan.',
+                        'employee_notes' => 'Rencana keperluan keluarga.',
+                        'admin_notes' => 'Disetujui sesuai kuota cuti.',
+                        'reviewed_by' => $this->admin->id,
+                        'reviewed_at' => now()->subDays(2),
+                        'approved_by' => $this->admin->id,
+                        'approved_at' => now()->subDay(),
+                        'created_by' => $profile->user_id,
+                        'updated_by' => $this->admin->id,
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function seedDevelopmentRecords($students): void
+    {
+        if (! Schema::hasTable('user_development_records')) {
+            return;
+        }
+
+        $users = collect([
+            User::query()->where('email', 'lecturer@example.com')->first(),
+            User::query()->where('email', 'staff@example.com')->first(),
+            $this->admin,
+        ])->merge($students->map(fn (StudentProfile $student) => $student->user))->filter();
+
+        foreach ($users as $index => $user) {
+            $record = UserDevelopmentRecord::updateOrCreate([
+                'user_id' => $user->id,
+                'type' => $index % 2 === 0 ? 'certification' : 'training',
+                'title' => $index % 2 === 0 ? 'Sertifikasi Transformasi Digital Kampus' : 'Pelatihan Layanan Akademik Terpadu',
+            ], [
+                'organizer' => 'NexaCampus Academy',
+                'credential_number' => 'NC-DEV-'.str_pad((string) $user->id, 5, '0', STR_PAD_LEFT),
+                'start_date' => now()->subMonths(2)->toDateString(),
+                'end_date' => now()->subMonths(2)->addDays(2)->toDateString(),
+                'expires_at' => now()->addYears(2)->toDateString(),
+                'cost' => $index % 2 === 0 ? 750000 : 0,
+                'description' => 'Riwayat pengembangan kompetensi untuk profil dan verifikasi admin.',
+                'is_verified' => $index !== 1,
+                'verified_by' => $index !== 1 ? $this->admin->id : null,
+                'verified_at' => $index !== 1 ? now()->subMonth() : null,
+                'verification_notes' => $index !== 1 ? 'Dokumen telah diverifikasi.' : 'Menunggu pemeriksaan dokumen.',
+            ]);
+
+            if (Schema::hasTable('user_development_attachments')) {
+                $this->upsertAndGetId('user_development_attachments', [
+                    'user_development_record_id' => $record->id,
+                    'document_type' => 'certificate',
+                ], [
+                    'file_path' => 'samples/user-developments/'.$record->id.'.pdf',
+                    'file_name' => Str::slug($record->title).'.pdf',
+                    'file_size' => 182400,
+                ]);
+            }
+        }
+    }
+
+    private function seedTridharmaJourney($students): void
+    {
+        if (! Schema::hasTable('tridharma_records')) {
+            return;
+        }
+
+        foreach ([
+            'tridharma-record.viewAny',
+            'tridharma-record.view',
+            'tridharma-record.create',
+            'tridharma-record.update',
+            'tridharma-record.delete',
+            'tridharma-record.verify',
+            'tridharma-record.approve',
+            'tridharma-record.complete',
+        ] as $permissionName) {
+            Permission::findOrCreate($permissionName, 'web');
+        }
+
+        if ($this->admin->hasRole('superuser')) {
+            $this->admin->roles()->where('name', 'superuser')->first()?->givePermissionTo(Permission::where('guard_name', 'web')->get());
+        }
+
+        app(TridharmaRecordService::class)->ensureDefaultApprovalTemplate($this->admin);
+
+        $lecturer = User::query()->where('email', 'lecturer@example.com')->with(['lecturerProfile', 'employeeProfile'])->first();
+        $staff = User::query()->where('email', 'staff@example.com')->with(['lecturerProfile', 'employeeProfile'])->first();
+        $studentUser = $students->first()?->user?->load(['lecturerProfile', 'employeeProfile']);
+
+        if ($studentUser) {
+            TridharmaRecord::withTrashed()
+                ->where('user_id', $studentUser->id)
+                ->where('title', 'Dashboard Layanan Akademik Terpadu untuk Perguruan Tinggi')
+                ->forceDelete();
+        }
+
+        $records = collect([
+            [
+                'user' => $lecturer,
+                'type' => 'research',
+                'title' => 'Model Prediksi Retensi Mahasiswa Berbasis Data Akademik',
+                'scheme' => 'Hibah Internal',
+                'status' => 'approved',
+                'funding_amount' => 18000000,
+                'funding_source' => 'LPPM Kampus',
+            ],
+            [
+                'user' => $staff,
+                'type' => 'community_service',
+                'title' => 'Pelatihan Literasi Digital untuk Administrasi Sekolah',
+                'scheme' => 'Pengabdian Institusi',
+                'status' => 'active',
+                'funding_amount' => 7500000,
+                'funding_source' => 'Unit Kepegawaian',
+            ],
+            [
+                'user' => $this->admin->load(['lecturerProfile', 'employeeProfile']),
+                'type' => 'publication',
+                'title' => 'Dashboard Layanan Akademik Terpadu untuk Perguruan Tinggi',
+                'scheme' => 'Publikasi Institusi',
+                'status' => 'completed',
+                'funding_amount' => 0,
+                'funding_source' => 'Internal Kampus',
+            ],
+        ])->filter(fn ($item) => $item['user']);
+
+        foreach ($records as $index => $item) {
+            $user = $item['user'];
+            $record = TridharmaRecord::updateOrCreate([
+                'user_id' => $user->id,
+                'type' => $item['type'],
+                'title' => $item['title'],
+            ], [
+                'lecturer_profile_id' => $user->lecturerProfile?->id,
+                'employee_profile_id' => $user->employeeProfile?->id,
+                'scheme' => $item['scheme'],
+                'abstract' => 'Kegiatan Tridharma yang melibatkan pengelolaan proposal, tim, anggaran, luaran, dan dokumen pendukung.',
+                'starts_at' => now()->subMonths(3)->toDateString(),
+                'ends_at' => now()->addMonths(3 + $index)->toDateString(),
+                'status' => $item['status'],
+                'funding_amount' => $item['funding_amount'],
+                'funding_source' => $item['funding_source'],
+                'is_verified' => $index !== 1,
+                'verified_by' => $index !== 1 ? $this->admin->id : null,
+                'verified_at' => $index !== 1 ? now()->subMonth() : null,
+                'verification_notes' => $index !== 1 ? 'Record telah diverifikasi.' : 'Menunggu verifikasi lapangan.',
+                'approved_by' => $this->admin->id,
+                'approved_at' => now()->subMonths(2),
+                'completed_by' => $item['status'] === 'completed' ? $this->admin->id : null,
+                'completed_at' => $item['status'] === 'completed' ? now()->subWeek() : null,
+                'created_by' => $user->id,
+                'updated_by' => $this->admin->id,
+            ]);
+
+            $record->members()->updateOrCreate(
+                ['user_id' => $user->id, 'role' => 'leader'],
+                ['is_external' => false, 'sort_order' => 1],
+            );
+            $record->members()->updateOrCreate(
+                ['member_name' => 'Mitra Eksternal', 'role' => 'partner'],
+                ['institution' => 'Institusi Mitra', 'email' => 'mitra@example.com', 'is_external' => true, 'sort_order' => 2],
+            );
+
+            if ($studentUser && $index === 0) {
+                $record->members()->updateOrCreate(
+                    ['user_id' => $studentUser->id, 'role' => 'student_collaborator'],
+                    ['is_external' => false, 'sort_order' => 3],
+                );
+            }
+
+            foreach ([['Proposal', 25, 'completed'], ['Pelaksanaan', 70, $item['status'] === 'completed' ? 'completed' : 'in_progress'], ['Luaran', $item['status'] === 'completed' ? 100 : 30, $item['status'] === 'completed' ? 'completed' : 'in_progress']] as $order => [$title, $progress, $status]) {
+                $record->milestones()->updateOrCreate(
+                    ['title' => $title],
+                    [
+                        'description' => 'Target '.$title,
+                        'due_date' => now()->addWeeks($order + 1)->toDateString(),
+                        'status' => $status,
+                        'progress_percentage' => $progress,
+                        'completed_at' => $status === 'completed' ? now()->subDays($order + 1) : null,
+                        'completed_by' => $status === 'completed' ? $user->id : null,
+                        'sort_order' => $order + 1,
+                    ],
+                );
+            }
+
+            foreach ([['Honorarium', 5000000, 2500000], ['Operasional', 3000000, 1250000]] as [$category, $planned, $realized]) {
+                $record->budgets()->updateOrCreate(
+                    ['category' => $category],
+                    ['description' => 'Anggaran '.$category, 'planned_amount' => $planned, 'realized_amount' => $realized],
+                );
+            }
+
+            $record->outputs()->updateOrCreate(
+                ['output_type' => $item['type'] === 'publication' ? 'article' : 'report', 'title' => 'Luaran '.$item['title']],
+                [
+                    'publisher' => $item['type'] === 'publication' ? 'Jurnal Teknologi Pendidikan' : 'Repository LPPM',
+                    'indexing' => $item['type'] === 'publication' ? 'Sinta' : null,
+                    'doi' => $item['type'] === 'publication' ? '10.0000/nexacampus.'.$record->id : null,
+                    'url' => 'https://example.com/tridharma/'.$record->id,
+                    'published_at' => $item['status'] === 'completed' ? now()->subDays(10)->toDateString() : null,
+                    'status' => $item['status'] === 'completed' ? 'published' : 'draft',
+                ],
+            );
+
+            $record->attachments()->updateOrCreate(
+                ['document_type' => 'proposal'],
+                [
+                    'file_path' => 'samples/tridharma/'.$record->id.'-proposal.pdf',
+                    'file_name' => Str::slug($record->title).'-proposal.pdf',
+                    'mime_type' => 'application/pdf',
+                    'file_size' => 225280,
+                    'uploaded_by' => $user->id,
+                ],
+            );
+        }
+    }
+
+    private function upsertAndGetId(string $table, array $keys, array $values): int
+    {
+        $now = now();
+        $payload = array_merge($values, ['updated_at' => $now]);
+
+        if (Schema::hasColumn($table, 'created_at')) {
+            $payload['created_at'] = $now;
+        }
+
+        DB::table($table)->updateOrInsert($keys, $payload);
+
+        return (int) DB::table($table)->where($keys)->value('id');
     }
 }

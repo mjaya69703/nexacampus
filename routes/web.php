@@ -8,6 +8,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
+use App\Http\Controllers\Organization\LecturerWorkloadExportController;
+use App\Http\Controllers\Organization\AcademicLeaderReportExportController;
 use App\Http\Controllers\Organization\TridharmaAttachmentController;
 use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
@@ -87,6 +89,9 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/organization/tridharma-attachments/{attachment}/preview', [TridharmaAttachmentController::class, 'adminPreview'])
                 ->middleware('active_permission:tridharma-record.view')
                 ->name('organization.tridharma-records.attachments.preview');
+            Route::get('/organization/lecturer-workload-submissions/export/{format}', [LecturerWorkloadExportController::class, 'admin'])
+                ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+                ->name('organization.lecturer-workload-submissions.export');
 
             Route::get('/admission/applications/{application}/acceptance-letter', [AcceptanceLetterController::class, 'show'])
                 ->middleware('active_permission:admission-application.view')
@@ -218,8 +223,19 @@ Route::middleware('is_installed')->group(function () {
         // Academic Leader Routes
         Route::middleware('active_role:academic-leader')->prefix('academic-leader')->as('academic-leader.')->group(function () {
             Route::livewire('/dashboard', 'academic-leader.dashboard.index')->name('dashboard.index');
+            Route::livewire('/lecturers', 'academic-leader.lecturers.index')->name('lecturers.index');
             Route::livewire('/workloads', 'academic-leader.workloads.index')->name('workloads.index');
+            Route::get('/workloads/export/{format}', [LecturerWorkloadExportController::class, 'academicLeader'])
+                ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+                ->name('workloads.export');
+            Route::livewire('/classes', 'academic-leader.classes.index')->name('classes.index');
             Route::livewire('/edom', 'academic-leader.edom.index')->name('edom.index');
+            Route::livewire('/reports', 'academic-leader.reports.index')->name('reports.index');
+            Route::get('/reports/export/{type}/{format}', AcademicLeaderReportExportController::class)
+                ->whereIn('type', ['lecturers', 'classes', 'alerts'])
+                ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+                ->name('reports.export');
+            Route::livewire('/lecturers/{lecturerProfileId}', 'academic-leader.lecturers.show')->name('lecturers.show');
         });
     });
 

@@ -226,11 +226,32 @@ class ApprovalEngine
             return false;
         }
 
-        return $user->employeeProfile
+        $query = $user->employeeProfile
             ->activePositionAssignments()
             ->where('organizational_position_id', $step->organizational_position_id)
-            ->when($step->work_unit_id, fn ($query) => $query->where('work_unit_id', $step->work_unit_id))
-            ->exists();
+            ->when($step->work_unit_id, fn ($query) => $query->where('work_unit_id', $step->work_unit_id));
+
+        $approvable = $step->request?->approvable;
+        $profile = $approvable?->lecturerProfile;
+
+        if ($profile) {
+            $query->where(function ($nested) use ($profile) {
+                $nested
+                    ->where(function ($scope) use ($profile) {
+                        $scope->whereNotNull('study_program_id')
+                            ->where('study_program_id', $profile->study_program_id);
+                    })
+                    ->orWhere(function ($scope) use ($profile) {
+                        $scope->whereNotNull('faculty_id')
+                            ->where('faculty_id', $profile->faculty_id);
+                    })
+                    ->orWhere(function ($scope) {
+                        $scope->whereNull('study_program_id')->whereNull('faculty_id');
+                    });
+            });
+        }
+
+        return $query->exists();
     }
 
     private function recordAction(
