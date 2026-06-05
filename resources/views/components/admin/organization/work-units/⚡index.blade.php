@@ -18,7 +18,7 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Organisasi',
+            'menus' => 'Kepegawaian',
             'pages' => 'Unit Kerja',
         ]);
     }

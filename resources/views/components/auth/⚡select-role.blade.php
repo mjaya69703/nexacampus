@@ -57,6 +57,10 @@ new class extends Component {
                 'desc' => 'Akses dosen & pengajaran',
                 'icon' => '<i class="fas fa-chalkboard-teacher"></i>',
             ],
+            'academic-leader' => [
+                'desc' => 'Akses pemantauan akademik sesuai jabatan',
+                'icon' => '<i class="fas fa-user-tie"></i>',
+            ],
             // 'tendik' => [
             //     'desc' => 'Tenaga kependidikan (staff)',
             //     'icon' => '<i class="fas fa-user-tie"></i>',

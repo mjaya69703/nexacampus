@@ -63,7 +63,7 @@ new class extends Component
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>
                 <h3 class="card-title mb-0">Invoice Summary By Type</h3>
-                <small class="text-muted">Early Phase 4 reporting over invoice, payment, adjustment, and credit data.</small>
+                <small class="text-muted">Ringkasan invoice, pembayaran, penyesuaian, dan saldo kredit mahasiswa.</small>
             </div>
             <div class="d-flex gap-2">
                 <a href="{{ route('admin.financial.reports.export.csv') }}" class="btn btn-outline-primary btn-sm">

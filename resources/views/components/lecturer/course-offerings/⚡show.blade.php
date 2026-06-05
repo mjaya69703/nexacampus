@@ -9,7 +9,6 @@ use Livewire\Component;
 new class extends Component
 {
     public int $offeringId;
-    public string $activeTab = 'students';
     public array $classInfo = [];
     public array $stats = [];
     public array $students = [];
@@ -79,15 +78,6 @@ new class extends Component
         $this->buildStats();
     }
 
-    public function setTab(string $tab): void
-    {
-        if (! in_array($tab, ['students', 'attendance', 'grades', 'materials'], true)) {
-            return;
-        }
-
-        $this->activeTab = $tab;
-    }
-
     public function render()
     {
         return $this->view()->layout('layouts.app', [
@@ -153,6 +143,7 @@ new class extends Component
                 $absentCount = $records->where('status', 'Absent')->count();
 
                 return [
+                    'id' => $session->id,
                     'meeting_no' => $session->meeting_no,
                     'meeting_date' => $session->meeting_date?->format('d M Y') ?? '-',
                     'start_time' => $this->formatTime($session->start_time),
@@ -208,6 +199,7 @@ new class extends Component
         $this->stats = [
             'total_students' => count($this->students),
             'total_sessions' => count($this->attendance),
+            'opened_sessions' => collect($this->attendance)->where('status', 'Opened')->count(),
             'graded_students' => count($this->grades),
             'published_students' => $publishedGrades->count(),
             'average_grade_point' => $averagePoint ? number_format((float) $averagePoint, 2) : '-',
@@ -298,15 +290,101 @@ new class extends Component
             font-weight: 500;
         }
 
-        .tab-button {
-            border-radius: 10px;
-            padding: 10px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+        .hero-action {
+            border-radius: 12px;
+            padding: 0.85rem 1.1rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
         }
 
-        .tab-button:hover {
-            transform: translateY(-2px);
+        .quick-action-card {
+            display: block;
+            height: 100%;
+            border-radius: 18px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 1.35rem;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+            transition: all 0.2s ease;
+        }
+
+        .quick-action-card:hover {
+            transform: translateY(-3px);
+            border-color: #667eea;
+            box-shadow: 0 12px 28px rgba(102, 126, 234, 0.14);
+            color: inherit;
+        }
+
+        .quick-action-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .quick-action-title {
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 0.2rem;
+        }
+
+        .quick-action-meta {
+            color: #64748b;
+            font-size: 0.84rem;
+            line-height: 1.35;
+        }
+
+        .overview-panel {
+            border-radius: 18px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        .overview-panel-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .preview-row {
+            padding: 0.95rem 1.25rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .preview-row:last-child {
+            border-bottom: none;
+        }
+
+        .soft-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 8px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.78rem;
+            font-weight: 700;
         }
     </style>
 @endpush
@@ -350,10 +428,26 @@ new class extends Component
                     </div>
                 </div>
 
-                <div class="col-lg-4 text-lg-end">
-                    <a href="{{ route('lecturer.course-offerings.index') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
-                        <i class="fas fa-arrow-left me-2"></i>Kembali ke Daftar Kelas
-                    </a>
+                <div class="col-lg-4">
+                    <div class="d-flex flex-column gap-2 align-items-lg-end">
+                        <a href="{{ route('lecturer.course-offerings.attendance', ['offeringId' => $offeringId]) }}" class="hero-action bg-white text-primary">
+                            <i class="fas fa-qrcode"></i>Buka Absensi
+                        </a>
+                        <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                            <a href="{{ route('lecturer.course-offerings.grades', ['offeringId' => $offeringId]) }}" class="hero-action" style="background: rgba(255,255,255,0.18); color: white;">
+                                <i class="fas fa-chart-line"></i>Nilai
+                            </a>
+                            <a href="{{ route('lecturer.course-materials.index', ['offeringId' => $offeringId]) }}" class="hero-action" style="background: rgba(255,255,255,0.18); color: white;">
+                                <i class="fas fa-book"></i>Materi
+                            </a>
+                            <a href="{{ route('lecturer.course-offerings.students', ['offeringId' => $offeringId]) }}" class="hero-action" style="background: rgba(255,255,255,0.18); color: white;">
+                                <i class="fas fa-users"></i>Mahasiswa
+                            </a>
+                        </div>
+                        <a href="{{ route('lecturer.course-offerings.index') }}" class="text-white text-decoration-none mt-2" style="font-weight: 700; opacity: 0.9;">
+                            <i class="fas fa-arrow-left me-2"></i>Kembali ke daftar kelas
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -431,150 +525,169 @@ new class extends Component
         </div>
     </div>
 
-    {{-- Tabs Section --}}
-    <div class="card modern-card">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3 py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 2px solid #e2e8f0;">
-            <div class="btn-list">
-                <button type="button" class="btn tab-button {{ $activeTab === 'students' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('students')">
-                    <i class="fas fa-users me-2"></i>Mahasiswa
-                </button>
-                <button type="button" class="btn tab-button {{ $activeTab === 'attendance' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('attendance')">
-                    <i class="fas fa-calendar-check me-2"></i>Absensi
-                </button>
-                <button type="button" class="btn tab-button {{ $activeTab === 'grades' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('grades')">
-                    <i class="fas fa-chart-line me-2"></i>Nilai
-                </button>
-                <button type="button" class="btn tab-button {{ $activeTab === 'materials' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('materials')">
-                    <i class="fas fa-book me-2"></i>Materi
-                </button>
-            </div>
+    @php
+        $openedSession = collect($attendance)->firstWhere('status', 'Opened');
+        $latestSession = collect($attendance)->reverse()->first();
+        $recentStudents = collect($students)->take(4);
+        $recentGrades = collect($grades)->take(4);
+    @endphp
 
-            <div class="btn-list">
-                <a href="{{ route('lecturer.course-offerings.students', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
-                    <i class="fas fa-external-link-alt me-1"></i>Halaman Mahasiswa
-                </a>
-                <a href="{{ route('lecturer.course-offerings.attendance', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
-                    <i class="fas fa-external-link-alt me-1"></i>Halaman Absensi
-                </a>
-                <a href="{{ route('lecturer.course-offerings.grades', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
-                    <i class="fas fa-external-link-alt me-1"></i>Halaman Nilai
-                </a>
-                <a href="{{ route('lecturer.course-materials.index', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary">
-                    <i class="fas fa-external-link-alt me-1"></i>Halaman Materi
-                </a>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ route('lecturer.course-offerings.attendance', ['offeringId' => $offeringId]) }}" class="quick-action-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="quick-action-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div>
+                        <div class="quick-action-title">Absensi</div>
+                        <div class="quick-action-meta">{{ $stats['opened_sessions'] }} sesi sedang dibuka, {{ $stats['total_sessions'] }} total sesi</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ route('lecturer.course-offerings.students', ['offeringId' => $offeringId]) }}" class="quick-action-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="quick-action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <div class="quick-action-title">Mahasiswa</div>
+                        <div class="quick-action-meta">{{ $stats['total_students'] }} mahasiswa terdaftar di kelas ini</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ route('lecturer.course-offerings.grades', ['offeringId' => $offeringId]) }}" class="quick-action-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="quick-action-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <div class="quick-action-title">Nilai</div>
+                        <div class="quick-action-meta">{{ $stats['graded_students'] }} nilai masuk, {{ $stats['published_students'] }} sudah terbit</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ route('lecturer.course-materials.index', ['offeringId' => $offeringId]) }}" class="quick-action-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="quick-action-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div>
+                        <div class="quick-action-title">Materi</div>
+                        <div class="quick-action-meta">Kelola bahan ajar dan referensi kelas</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="overview-panel">
+                <div class="overview-panel-header">
+                    <div>
+                        <div style="font-weight: 800; color: #111827;">Sesi Absensi</div>
+                        <div style="font-size: 0.82rem; color: #64748b;">Akses cepat ke sesi yang paling relevan</div>
+                    </div>
+                    <a href="{{ route('lecturer.course-offerings.attendance', ['offeringId' => $offeringId]) }}" class="btn btn-primary">
+                        <i class="fas fa-qrcode me-2"></i>Buka Absensi
+                    </a>
+                </div>
+
+                @if($openedSession)
+                    <div class="preview-row" style="background: #ecfdf5;">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-green-lt text-green">Sedang Dibuka</span>
+                                <strong style="color: #111827;">Pertemuan {{ $openedSession['meeting_no'] }}</strong>
+                            </div>
+                            <div style="color: #64748b;">{{ $openedSession['topic'] }} · {{ $openedSession['meeting_date'] }} · {{ $openedSession['start_time'] }} - {{ $openedSession['end_time'] }}</div>
+                        </div>
+                        <span class="soft-chip"><i class="fas fa-check-circle"></i>H {{ $openedSession['present_count'] }}</span>
+                    </div>
+                @elseif($latestSession)
+                    <div class="preview-row">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge {{ $this->statusBadgeClass($latestSession['status']) }}">{{ $latestSession['status'] }}</span>
+                                <strong style="color: #111827;">Pertemuan {{ $latestSession['meeting_no'] }}</strong>
+                            </div>
+                            <div style="color: #64748b;">{{ $latestSession['topic'] }} · {{ $latestSession['meeting_date'] }} · {{ $latestSession['start_time'] }} - {{ $latestSession['end_time'] }}</div>
+                        </div>
+                        <span class="soft-chip"><i class="fas fa-users"></i>{{ $latestSession['total_records'] }} record</span>
+                    </div>
+                @else
+                    <div class="preview-row">
+                        <div style="color: #64748b;">Belum ada sesi absensi untuk kelas ini.</div>
+                    </div>
+                @endif
+
+                @foreach(collect($attendance)->reverse()->take(3) as $session)
+                    <div class="preview-row">
+                        <div>
+                            <strong style="color: #111827;">Pertemuan {{ $session['meeting_no'] }}</strong>
+                            <div style="font-size: 0.82rem; color: #64748b;">{{ $session['meeting_date'] }} · {{ $session['topic'] }}</div>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="soft-chip">H {{ $session['present_count'] }}</span>
+                            <span class="soft-chip">A {{ $session['absent_count'] }}</span>
+                        </div>
+                    </div>
+                @endforeach
             </div>
         </div>
 
-        @if ($activeTab === 'students')
-            <div class="table-responsive">
-                <table class="table table-vcenter card-table">
-                    <thead>
-                        <tr>
-                            <th>NIM</th>
-                            <th>Nama</th>
-                            <th>Status KRS</th>
-                            <th>Nilai Huruf</th>
-                            <th>Status Nilai</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($students as $student)
-                            <tr>
-                                <td>{{ $student['nim'] }}</td>
-                                <td>{{ $student['name'] }}</td>
-                                <td>{{ $student['study_plan_status'] }}</td>
-                                <td>{{ $student['grade_letter'] }}</td>
-                                <td><span class="badge {{ $this->statusBadgeClass($student['grade_status']) }}">{{ $student['grade_status'] }}</span></td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="text-center text-secondary py-4">Belum ada data mahasiswa pada kelas ini.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        <div class="col-lg-5">
+            <div class="overview-panel mb-4">
+                <div class="overview-panel-header">
+                    <div>
+                        <div style="font-weight: 800; color: #111827;">Mahasiswa</div>
+                        <div style="font-size: 0.82rem; color: #64748b;">Ringkasan peserta kelas</div>
+                    </div>
+                    <a href="{{ route('lecturer.course-offerings.students', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary btn-sm">Lihat semua</a>
+                </div>
+                @forelse($recentStudents as $student)
+                    <div class="preview-row">
+                        <div>
+                            <strong style="color: #111827;">{{ $student['name'] }}</strong>
+                            <div style="font-size: 0.82rem; color: #64748b;">{{ $student['nim'] }}</div>
+                        </div>
+                        <span class="badge {{ $this->statusBadgeClass($student['grade_status']) }}">{{ $student['grade_letter'] }}</span>
+                    </div>
+                @empty
+                    <div class="preview-row"><span style="color: #64748b;">Belum ada mahasiswa terdaftar.</span></div>
+                @endforelse
             </div>
-        @elseif ($activeTab === 'attendance')
-            <div class="table-responsive">
-                <table class="table table-vcenter card-table">
-                    <thead>
-                        <tr>
-                            <th>Pertemuan</th>
-                            <th>Tanggal</th>
-                            <th>Waktu</th>
-                            <th>Dosen</th>
-                            <th>Topik</th>
-                            <th>Status</th>
-                            <th>Rekap</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($attendance as $session)
-                            <tr>
-                                <td>#{{ $session['meeting_no'] }}</td>
-                                <td>{{ $session['meeting_date'] }}</td>
-                                <td>{{ $session['start_time'] }} - {{ $session['end_time'] }}</td>
-                                <td>{{ $session['lecturer_name'] }}</td>
-                                <td>{{ $session['topic'] }}</td>
-                                <td><span class="badge {{ $this->statusBadgeClass($session['status']) }}">{{ $session['status'] }}</span></td>
-                                <td>
-                                    <span class="text-success">H: {{ $session['present_count'] }}</span>
-                                    <span class="text-danger ms-2">A: {{ $session['absent_count'] }}</span>
-                                    <span class="text-secondary ms-2">T: {{ $session['total_records'] }}</span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center text-secondary py-4">Belum ada sesi absensi untuk kelas ini.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+
+            <div class="overview-panel">
+                <div class="overview-panel-header">
+                    <div>
+                        <div style="font-weight: 800; color: #111827;">Nilai</div>
+                        <div style="font-size: 0.82rem; color: #64748b;">Status input nilai kelas</div>
+                    </div>
+                    <a href="{{ route('lecturer.course-offerings.grades', ['offeringId' => $offeringId]) }}" class="btn btn-outline-primary btn-sm">Kelola</a>
+                </div>
+                @forelse($recentGrades as $grade)
+                    <div class="preview-row">
+                        <div>
+                            <strong style="color: #111827;">{{ $grade['name'] }}</strong>
+                            <div style="font-size: 0.82rem; color: #64748b;">Nilai akhir {{ $grade['final_score'] }}</div>
+                        </div>
+                        <span class="badge {{ $this->statusBadgeClass($grade['grade_status']) }}">{{ $grade['letter_grade'] }}</span>
+                    </div>
+                @empty
+                    <div class="preview-row"><span style="color: #64748b;">Belum ada nilai yang diinput.</span></div>
+                @endforelse
             </div>
-        @elseif ($activeTab === 'grades')
-            <div class="table-responsive">
-                <table class="table table-vcenter card-table">
-                    <thead>
-                        <tr>
-                            <th>NIM</th>
-                            <th>Nama</th>
-                            <th>Nilai Akhir</th>
-                            <th>Huruf</th>
-                            <th>Point</th>
-                            <th>Hasil</th>
-                            <th>Status</th>
-                            <th>Dinilai Pada</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($grades as $grade)
-                            <tr>
-                                <td>{{ $grade['nim'] }}</td>
-                                <td>{{ $grade['name'] }}</td>
-                                <td>{{ $grade['final_score'] }}</td>
-                                <td>{{ $grade['letter_grade'] }}</td>
-                                <td>{{ $grade['grade_point'] }}</td>
-                                <td>{{ $grade['result_status'] }}</td>
-                                <td><span class="badge {{ $this->statusBadgeClass($grade['grade_status']) }}">{{ $grade['grade_status'] }}</span></td>
-                                <td>{{ $grade['graded_at'] }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="text-center text-secondary py-4">Belum ada data nilai untuk kelas ini.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        @elseif ($activeTab === 'materials')
-            <div class="p-4 text-center">
-                <i class="fas fa-book fa-3x text-muted mb-3"></i>
-                <h5>Kelola Materi Perkuliahan</h5>
-                <p class="text-muted">Upload dan kelola materi perkuliahan untuk kelas ini.</p>
-                <a href="{{ route('lecturer.course-materials.index', ['offeringId' => $offeringId]) }}" class="btn btn-primary mt-2">
-                    <i class="fas fa-arrow-right me-2"></i>Buka Halaman Materi
-                </a>
-            </div>
-        @endif
+        </div>
     </div>
 </div>

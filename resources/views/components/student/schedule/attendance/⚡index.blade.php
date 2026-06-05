@@ -4,7 +4,6 @@ use App\Models\Academic\AcademicYear;
 use App\Models\Academic\AttendanceSession;
 use App\Models\Academic\StudentRegistration;
 use App\Models\Academic\StudyPlanDetail;
-use Carbon\Carbon;
 use Livewire\Component;
 
 new class extends Component
@@ -175,15 +174,7 @@ new class extends Component
 
     private function isSessionWindowOpen(AttendanceSession $session): bool
     {
-        if ($session->status !== 'Opened' || ! $session->meeting_date || ! $session->start_time || ! $session->end_time) {
-            return false;
-        }
-
-        $now = now();
-        $startAt = Carbon::parse($session->meeting_date->format('Y-m-d') . ' ' . $this->formatTime($session->start_time));
-        $endAt = Carbon::parse($session->meeting_date->format('Y-m-d') . ' ' . $this->formatTime($session->end_time));
-
-        return $now->betweenIncluded($startAt, $endAt);
+        return $session->status === 'Opened' && $session->closed_at === null;
     }
 };
 ?>
@@ -431,11 +422,11 @@ new class extends Component
                                             <a href="{{ route('student.schedule.attendance.record', ['sessionId' => $item['session_id']]) }}" 
                                                class="action-btn" 
                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                                <i class="fas fa-edit"></i> Isi / Update
+                                                <i class="fas fa-qrcode"></i> Scan Absensi
                                             </a>
                                         @else
                                             <button type="button" class="action-btn" disabled style="background: #e5e7eb; color: #6b7280;">
-                                                <i class="fas fa-lock"></i> Belum Bisa
+                                                <i class="fas fa-lock"></i> Menunggu Dosen
                                             </button>
                                         @endif
                                     </td>

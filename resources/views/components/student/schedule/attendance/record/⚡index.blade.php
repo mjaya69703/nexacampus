@@ -5,8 +5,8 @@ use App\Models\Academic\AttendanceRecord;
 use App\Models\Academic\AttendanceSession;
 use App\Models\Academic\StudentRegistration;
 use App\Models\Academic\StudyPlanDetail;
-use Carbon\Carbon;
-use Illuminate\Validation\Rule;
+use App\Support\Academic\AcademicAttendanceQrService;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 new class extends Component
@@ -29,7 +29,9 @@ new class extends Component
     public ?string $sessionStatus = null;
     public bool $canSubmitAttendance = false;
     public ?string $attendanceWindowMessage = null;
-    public string $status = 'Present';
+    public ?string $scanResultMessage = null;
+    public ?string $scanResultStatus = null;
+    public ?string $currentAttendanceStatus = null;
     public ?string $notes = null;
 
     public function mount(int $sessionId): void
@@ -117,7 +119,7 @@ new class extends Component
         $this->canSubmitAttendance = $this->isSessionWindowOpen($session);
         $this->attendanceWindowMessage = $this->canSubmitAttendance
             ? null
-            : 'Absensi hanya bisa diisi saat status sesi Opened dan waktu saat ini berada dalam rentang jadwal sesi.';
+            : 'Absensi hanya bisa diisi saat dosen membuka sesi QR.';
 
         $existingRecord = AttendanceRecord::query()
             ->where('attendance_session_id', $this->sessionId)
@@ -125,12 +127,51 @@ new class extends Component
             ->first();
 
         if ($existingRecord) {
-            $this->status = $existingRecord->status;
+            $this->currentAttendanceStatus = $existingRecord->status;
             $this->notes = $existingRecord->notes;
+        }
+
+        if (request()->filled('token') && request()->filled('slot')) {
+            $this->submitQrToken((string) request('token'), (int) request('slot'));
         }
     }
 
-    public function saveRecord(): void
+    public function submitScannedPayload(string $payload, ?float $latitude = null, ?float $longitude = null, ?float $accuracy = null): void
+    {
+        $payload = trim($payload);
+
+        if ($payload === '') {
+            $this->scanResultStatus = 'error';
+            $this->scanResultMessage = 'Kode QR belum terbaca.';
+
+            return;
+        }
+
+        $parsed = parse_url($payload);
+        $query = [];
+
+        if (isset($parsed['query'])) {
+            parse_str($parsed['query'], $query);
+        }
+
+        $token = (string) ($query['token'] ?? '');
+        $slot = isset($query['slot']) ? (int) $query['slot'] : null;
+
+        if ($token === '' || $slot === null) {
+            $this->scanResultStatus = 'error';
+            $this->scanResultMessage = 'QR tidak dikenali sebagai kode absensi.';
+
+            return;
+        }
+
+        $this->submitQrToken($token, $slot, [
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'accuracy' => $accuracy,
+        ]);
+    }
+
+    private function submitQrToken(string $token, int $slot, array $metadata = []): void
     {
         if (! $this->hasAccess || ! $this->studentProfileId || ! $this->sessionId) {
             session()->flash('error', 'Akses tidak valid untuk mengisi absensi.');
@@ -150,9 +191,9 @@ new class extends Component
         }
 
         if (! $this->isSessionWindowOpen($session)) {
-            session()->flash('error', 'Absensi tidak dapat diisi. Sesi harus Opened dan berada dalam rentang waktu jadwal.');
+            session()->flash('error', 'Absensi tidak dapat diisi. Sesi harus dibuka oleh dosen.');
             $this->canSubmitAttendance = false;
-            $this->attendanceWindowMessage = 'Absensi hanya bisa diisi saat status sesi Opened dan waktu saat ini berada dalam rentang jadwal sesi.';
+            $this->attendanceWindowMessage = 'Absensi hanya bisa diisi saat dosen membuka sesi QR.';
 
             return;
         }
@@ -160,28 +201,28 @@ new class extends Component
         $this->canSubmitAttendance = true;
         $this->attendanceWindowMessage = null;
 
-        $this->validate([
-            'status' => ['required', Rule::in(['Present', 'Absent', 'Excused', 'Sick', 'Late'])],
-            'notes' => ['nullable', 'string', 'max:1000'],
-        ]);
+        try {
+            $record = app(AcademicAttendanceQrService::class)->recordScan(
+                $session,
+                auth()->user()->studentProfile()->first(),
+                $token,
+                $slot,
+                auth()->id(),
+                $metadata
+            );
+        } catch (ValidationException $exception) {
+            $message = collect($exception->errors())->flatten()->first() ?: 'Kode absensi tidak valid.';
+            $this->scanResultStatus = 'error';
+            $this->scanResultMessage = $message;
+            session()->flash('error', $message);
 
-        $record = AttendanceRecord::query()->firstOrNew([
-            'attendance_session_id' => $this->sessionId,
-            'student_profile_id' => $this->studentProfileId,
-        ]);
-
-        if (! $record->exists) {
-            $record->created_by = auth()->id();
+            return;
         }
 
-        $record->status = $this->status;
-        $record->notes = $this->notes;
-        $record->recorded_at = now();
-        $record->recorded_by = auth()->id();
-        $record->updated_by = auth()->id();
-        $record->save();
-
-        session()->flash('success', 'Absensi berhasil disimpan.');
+        $this->currentAttendanceStatus = $record->status;
+        $this->scanResultStatus = 'success';
+        $this->scanResultMessage = 'Absensi berhasil. Status Anda tercatat Hadir.';
+        session()->flash('success', 'Absensi berhasil. Status Anda tercatat Hadir.');
     }
 
     public function render()
@@ -207,15 +248,7 @@ new class extends Component
 
     private function isSessionWindowOpen(AttendanceSession $session): bool
     {
-        if ($session->status !== 'Opened' || ! $session->meeting_date || ! $session->start_time || ! $session->end_time) {
-            return false;
-        }
-
-        $now = now();
-        $startAt = Carbon::parse($session->meeting_date->format('Y-m-d') . ' ' . $this->formatTime($session->start_time));
-        $endAt = Carbon::parse($session->meeting_date->format('Y-m-d') . ' ' . $this->formatTime($session->end_time));
-
-        return $now->betweenIncluded($startAt, $endAt);
+        return $session->status === 'Opened' && $session->closed_at === null;
     }
 };
 ?>
@@ -339,6 +372,44 @@ new class extends Component
             font-weight: 600;
             display: inline-block;
         }
+
+        .scanner-shell {
+            position: relative;
+            overflow: hidden;
+            min-height: 320px;
+            border-radius: 18px;
+            background: #111827;
+            border: 2px solid #e5e7eb;
+        }
+
+        .scanner-shell video {
+            width: 100%;
+            min-height: 320px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .scanner-frame {
+            position: absolute;
+            inset: 20%;
+            border: 3px solid rgba(255, 255, 255, 0.9);
+            border-radius: 18px;
+            box-shadow: 0 0 0 999px rgba(17, 24, 39, 0.35);
+            pointer-events: none;
+        }
+
+        .scanner-status {
+            position: absolute;
+            left: 16px;
+            right: 16px;
+            bottom: 16px;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.92);
+            color: #111827;
+            font-weight: 700;
+            text-align: center;
+        }
     </style>
 @endpush
 
@@ -431,50 +502,35 @@ new class extends Component
                             </div>
                         </div>
 
-                        {{-- Attendance Form --}}
-                        <form wire:submit="saveRecord">
-                            <div class="mb-4">
-                                <label class="form-label" style="font-weight: 600; color: #1f2937; margin-bottom: 1rem;">
-                                    <i class="fas fa-user-check me-2" style="color: #667eea;"></i>Status Kehadiran
-                                </label>
-                                <select class="form-select form-control-custom" wire:model="status">
-                                    <option value="Present">✓ Hadir</option>
-                                    <option value="Late">⏰ Terlambat</option>
-                                    <option value="Excused">📝 Izin</option>
-                                    <option value="Sick">🤒 Sakit</option>
-                                    <option value="Absent">❌ Alpha</option>
-                                </select>
-                                @error('status')
-                                    <div class="text-danger small mt-2">
-                                        <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
-                                    </div>
-                                @enderror
+                        <div class="mb-4">
+                            <label class="form-label" style="font-weight: 700; color: #1f2937; margin-bottom: 1rem;">
+                                <i class="fas fa-qrcode me-2" style="color: #667eea;"></i>Scan QR Absensi
+                            </label>
+                            <div class="scanner-shell">
+                                <video id="attendanceScannerVideo" playsinline muted></video>
+                                <div class="scanner-frame"></div>
+                                <div class="scanner-status" id="attendanceScannerStatus">Kamera belum dinyalakan.</div>
                             </div>
-
-                            <div class="mb-4">
-                                <label class="form-label" style="font-weight: 600; color: #1f2937; margin-bottom: 1rem;">
-                                    <i class="fas fa-sticky-note me-2" style="color: #667eea;"></i>Catatan
-                                </label>
-                                <textarea
-                                    class="form-control form-control-custom"
-                                    rows="5"
-                                    wire:model="notes"
-                                    placeholder="Tambahkan catatan absensi jika diperlukan..."
-                                ></textarea>
-                                @error('notes')
-                                    <div class="text-danger small mt-2">
-                                        <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-
-                            <div class="d-flex justify-content-end">
-                                <button type="submit" class="submit-btn" @disabled(! $canSubmitAttendance) 
-                                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                    <i class="fas fa-save"></i> Simpan Absensi
+                            <div class="d-flex gap-2 flex-wrap mt-3">
+                                <button type="button" id="startAttendanceScanner" class="submit-btn" @disabled(! $canSubmitAttendance) style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                    <i class="fas fa-camera"></i> Mulai Scan
+                                </button>
+                                <button type="button" id="stopAttendanceScanner" class="submit-btn" style="background: #e5e7eb; color: #374151;">
+                                    <i class="fas fa-stop"></i> Matikan Kamera
                                 </button>
                             </div>
-                        </form>
+                        </div>
+
+                        @if($scanResultMessage)
+                            <div class="alert {{ $scanResultStatus === 'success' ? 'alert-success' : 'alert-danger' }}" style="border-radius: 12px;">
+                                <i class="fas {{ $scanResultStatus === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation' }} me-2"></i>{{ $scanResultMessage }}
+                            </div>
+                        @endif
+
+                        <div class="alert alert-info mb-0" style="border-radius: 12px;">
+                            <i class="fas fa-circle-info me-2"></i>
+                            Jalur mandiri hanya mencatat status Hadir. Izin, sakit, terlambat, dan koreksi absensi diinput oleh dosen.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -518,9 +574,134 @@ new class extends Component
                                 {{ $sessionStatus ?? '-' }}
                             </span>
                         </div>
+
+                        <div class="mt-4">
+                            <div class="meta-label mb-2">
+                                <i class="fas fa-user-check me-2" style="color: #10b981;"></i>Status Absensi Anda
+                            </div>
+                            <span class="info-badge" style="background: {{ match($currentAttendanceStatus) {
+                                'Present' => '#d1fae5; color: #065f46;',
+                                'Late', 'Excused', 'Sick' => '#fef3c7; color: #92400e;',
+                                'Absent' => '#fee2e2; color: #991b1b;',
+                                default => '#f1f5f9; color: #64748b;',
+                            } }}; width: 100%; text-align: center;">
+                                {{ match($currentAttendanceStatus) {
+                                    'Present' => 'Hadir',
+                                    'Late' => 'Terlambat',
+                                    'Excused' => 'Izin',
+                                    'Sick' => 'Sakit',
+                                    'Absent' => 'Alpha',
+                                    default => 'Belum Absen',
+                                } }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     @endif
 </div>
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let stream = null;
+            let scanTimer = null;
+            const video = document.getElementById('attendanceScannerVideo');
+            const startButton = document.getElementById('startAttendanceScanner');
+            const stopButton = document.getElementById('stopAttendanceScanner');
+            const statusBox = document.getElementById('attendanceScannerStatus');
+
+            function setStatus(message) {
+                if (statusBox) {
+                    statusBox.textContent = message;
+                }
+            }
+
+            function stopScanner() {
+                if (scanTimer) {
+                    clearInterval(scanTimer);
+                    scanTimer = null;
+                }
+
+                if (stream) {
+                    stream.getTracks().forEach((track) => track.stop());
+                    stream = null;
+                }
+
+                if (video) {
+                    video.srcObject = null;
+                }
+
+                setStatus('Kamera dimatikan.');
+            }
+
+            async function submitDecodedValue(value) {
+                stopScanner();
+                setStatus('QR terbaca, memproses absensi...');
+
+                let latitude = null;
+                let longitude = null;
+                let accuracy = null;
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        latitude = position.coords.latitude;
+                        longitude = position.coords.longitude;
+                        accuracy = position.coords.accuracy;
+                        @this.call('submitScannedPayload', value, latitude, longitude, accuracy);
+                    }, () => {
+                        @this.call('submitScannedPayload', value);
+                    }, { enableHighAccuracy: true, timeout: 2500, maximumAge: 10000 });
+
+                    return;
+                }
+
+                @this.call('submitScannedPayload', value);
+            }
+
+            async function startScanner() {
+                if (!('BarcodeDetector' in window)) {
+                    setStatus('Scanner browser belum tersedia. Buka QR dengan kamera bawaan HP atau browser yang mendukung scan QR.');
+                    return;
+                }
+
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' },
+                        audio: false
+                    });
+
+                    video.srcObject = stream;
+                    await video.play();
+
+                    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+                    setStatus('Arahkan kamera ke QR absensi.');
+
+                    scanTimer = setInterval(async () => {
+                        if (!video || video.readyState < 2) {
+                            return;
+                        }
+
+                        try {
+                            const codes = await detector.detect(video);
+                            const value = codes?.[0]?.rawValue;
+
+                            if (value) {
+                                await submitDecodedValue(value);
+                            }
+                        } catch (error) {
+                            setStatus('Scanner belum siap membaca QR.');
+                        }
+                    }, 450);
+                } catch (error) {
+                    setStatus('Kamera tidak bisa diakses. Periksa izin kamera browser.');
+                }
+            }
+
+            startButton?.addEventListener('click', startScanner);
+            stopButton?.addEventListener('click', stopScanner);
+            document.addEventListener('livewire:navigating', stopScanner);
+        });
+    </script>
+@endpush

@@ -250,15 +250,7 @@ new class extends Component
 
     private function isSessionWindowOpen(AttendanceSession $session): bool
     {
-        if ($session->status !== 'Opened' || ! $session->meeting_date || ! $session->start_time || ! $session->end_time) {
-            return false;
-        }
-
-        $now = now();
-        $startAt = Carbon::parse($session->meeting_date->format('Y-m-d') . ' ' . $this->formatTime($session->start_time));
-        $endAt = Carbon::parse($session->meeting_date->format('Y-m-d') . ' ' . $this->formatTime($session->end_time));
-
-        return $now->betweenIncluded($startAt, $endAt);
+        return $session->status === 'Opened' && $session->closed_at === null;
     }
 };
 ?>
@@ -561,12 +553,12 @@ new class extends Component
                                                 <a href="{{ route('student.schedule.attendance.record', ['sessionId' => $item['session_id']]) }}"
                                                    class="action-btn"
                                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; flex: 1; justify-content: center;">
-                                                    <i class="fas fa-user-check"></i> Isi Absen
+                                                    <i class="fas fa-qrcode"></i> Scan Absensi
                                                 </a>
                                             @else
                                                 <button type="button" class="action-btn" disabled
                                                         style="background: #e5e7eb; color: #9ca3af; flex: 1; justify-content: center; cursor: not-allowed;">
-                                                    <i class="fas fa-lock"></i> Belum Bisa Absen
+                                                    <i class="fas fa-lock"></i> Menunggu Dosen
                                                 </button>
                                             @endif
                                         </div>

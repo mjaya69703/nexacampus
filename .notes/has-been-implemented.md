@@ -1316,7 +1316,7 @@ Sistem pengumpulan tugas online yang terhubung dengan course offering, materi pe
 *Impact: Lecturer + Students + Academic Advisors | Module: Academic Enhancement*
 
 ##### 8. Progress Analytics & Advisor Dashboard 📈
-**Status:** 🚧 IN PROGRESS (Phase 1-3 implemented: Advisor Foundation, Student Progress, Advisor Follow-up)  
+**Status:** ✅ IMPLEMENTED (Phase 1-3 implemented: Advisor Foundation, Student Progress, Advisor Follow-up)  
 **Roles Affected:** Lecturer/Academic Advisor (monitor), Students (view progress), Admin (oversight)  
 **Module Category:** Academic → New Submodule: `academic-analytics`
 
@@ -1376,59 +1376,192 @@ Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, mater
 
 ---
 
-#### **Priority 9: Lecturer HR & Administration**
-*Impact: Admin + Lecturers | Module: New / Academic Support*
+#### **Priority 9: Kepegawaian, Struktur Organisasi & Scope Jabatan**
+*Impact: Admin + Staff/Tendik + Lecturer + Academic Leadership | Module: Organization / Kepegawaian*
 
-##### 9. Lecturer HR, Workload & Certification 👨‍🏫
-**Status:** 📝 DRAFT / NOT STARTED  
-**Roles Affected:** Admin/HR (manage), Lecturer (view/update profile), Academic (workload planning)  
-**Module Category:** New Module → `lecturer-hr`
+##### 9. Kepegawaian, Position Scope & Operational Structure
+**Status:** ✅ COMPLETED (Phase 1-7 plus BKD/EDOM hardening, academic leader completion, attendance modernization, and modular seeders)
+**Roles Affected:** Admin/Superuser (manage), Staff/Tendik (operate), Kaprodi/Dekan/Kepala Unit via scoped `academic-leader` access, Lecturer, Student  
+**Module Category:** Existing Module Enhancement -> `organization`
 
 **Description:**
-Modul administrasi dosen untuk biodata lengkap, riwayat pendidikan, workload mengajar, sertifikasi, pelatihan, evaluasi, dan cuti dosen.
+Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan operasional, dan scope data seperti fakultas, program studi, atau unit kerja. Kaprodi, Dekan, Tendik, Kepala Unit, dan Staff Unit tidak menjadi `active_role` baru; mereka bekerja melalui admin/staff portal dengan role/permission + position scope.
 
 **Why Next:**
-- Course offering dan lecturer assignment sudah ada, sehingga workload bisa dihitung dari data real.
-- Berguna untuk akreditasi dan manajemen SDM akademik.
-- Menambah sisi operasional kampus selain mahasiswa.
+- `work_units` dan `work_unit_user` sudah ada sebagai dasar assignment tiket, approval routing, notifikasi, dan pembatasan data staff.
+- Student Services complaints sudah memakai work unit untuk assignment, SLA, dan scoped access.
+- Modul berikutnya seperti approval engine, cuti pegawai, absensi pegawai, dan Kaprodi/Dekan dashboard butuh fondasi siapa mengelola area apa.
+- Menghindari modul `lecturer-hr` yang terlalu sempit dan janggal karena HR/Kepegawaian seharusnya mencakup pegawai lintas role.
 
 **Core Features:**
-- Lecturer profile enhancement: education, employment status, join date, signature/photo.
-- Teaching load calculation by semester/SKS/course offering.
-- Workload cap and overload warning.
-- Certification and training records.
-- Expiry reminder for certification/training.
-- Lecturer leave request and substitute lecturer assignment.
-- Performance evaluation summary from teaching, student evaluation, research/community service placeholders.
+- Employee profile foundation untuk dosen, tendik, staff, admin, kontrak, dan tamu.
+- Organizational position master data: Rektor, Wakil Rektor, Dekan, Wakil Dekan, Kaprodi, Sekprodi, Kepala Unit, Staff Unit, Tendik, Dosen.
+- Position assignment dengan scope `faculty_id`, `study_program_id`, atau `work_unit_id`.
+- Position scope resolver untuk membaca fakultas/prodi/unit yang dikelola user.
+- Work-unit-scoped assignment tetap mensinkronkan membership ke `work_unit_user` agar complaint access existing tetap jalan.
+- Approval template foundation untuk alur approval berurutan.
+- Approval request engine dengan step `pending/current/approved/rejected/skipped`.
+- Approver routing berbasis role, permission, jabatan organisasi, atau unit kerja.
+- Approval action history untuk audit approve/reject/cancel.
+- Admin UI untuk Template Approval dan Approval queue/detail.
+- Employee attendance sources and records for manual/admin attendance input.
+- Employee attendance office locations with GPS radius validation.
+- Employee attendance self-service camera/upload evidence with client-side WebP conversion.
+- Employee leave types, balances, requests, and approval-engine-backed approval status sync.
+- Admin UI untuk Absensi Pegawai, Lokasi Absensi, Saldo Cuti Pegawai, Jenis Cuti Pegawai, dan Cuti Pegawai.
+- Employee self-service UI untuk Absensi Saya dan Cuti Saya, visible untuk user yang punya Employee Profile aktif.
 
 **Integration Notes:**
-- Enhance existing lecturer profile instead of duplicating user identity.
-- Use course offering lecturer assignments for workload calculation.
-- Future integration with Lecture Evaluation and Research modules.
+- Reuse existing `Organization` namespace and `work_units` module instead of creating a parallel HR namespace.
+- Keep roles/permissions as feature access; use position assignments for data scope.
+- Existing Student Services workflows are not migrated into the approval engine in Phase 1/2/3.
+- Phase 3 integrates employee leave/cuti pegawai into the approval engine without changing student leave workflows.
+- Phase 3 includes employee self-service pages shared across active roles when the user has an active Employee Profile.
+- Lecturer workload and lecturer performance review are now implemented as child modules on top of the kepegawaian foundation.
+- BKD/EDOM V1 means the feature is production-usable for internal campus workflow: data model, admin management, lecturer/student self-service, scoped academic-leader oversight, approval integration, demo seeder, routes, view cache, and focused feature tests are already in place.
+- V1 is intentionally not a full regulatory/export suite. Formal BKD/SKP export, official PDF forms, multi-layer assessor chains beyond the current approval template, richer rubric weighting, semester trend analytics, faculty/program benchmarking, and external attendance/academic data imports remain suitable V2 enhancements.
+- Dekan/Kaprodi are not auth roles. Access stays through coarse `academic-leader` role plus active `employee_position_assignments` scope resolved by `PositionScopeResolver`.
 
-**Estimated Effort:** Medium-High (4-5 days)
+**Estimated Effort:** High (phased)
 
 **Recommended Phases:**
-1. **Phase 1 - Lecturer Profile & Documents**
-   - Extended biodata.
-   - Education/certification/training records.
-   - Signature/photo upload.
-2. **Phase 2 - Teaching Workload**
-   - Workload dashboard.
-   - Semester filters.
-   - Overload/underload indicators.
-3. **Phase 3 - Leave & Evaluation**
-   - Lecturer leave request.
-   - Substitute assignment.
-   - Performance summary foundation.
+1. **Phase 1 - Organization, Employee & Position Scope**
+   - Employee profiles.
+   - Organizational positions.
+   - Employee position assignments with faculty/program/unit scope.
+   - Position scope resolver.
+   - Work unit membership sync for active work-unit assignments.
+2. **Phase 2 - Approval Engine**
+   - Completed reusable lightweight approval templates and sequential approval requests.
+   - Completed admin Template Approval and Approval request screens.
+   - Completed approver resolution for role, permission, organizational position, and work unit.
+   - Employee leave integration is deferred to Phase 3 to keep Phase 2 focused on the engine foundation.
+   - Keep existing Student Services request workflows unchanged until a dedicated migration/refactor phase.
+3. **Phase 3 - Employee Attendance & Leave**
+   - Completed employee attendance sources and attendance records.
+   - Completed manual admin attendance input with check-in/check-out and work-minute calculation.
+   - Completed office attendance locations with configurable GPS radius.
+   - Completed self-service attendance camera/upload evidence, upload progress, WebP client-side conversion, GPS capture, and radius validation.
+   - Completed employee leave types, balances, leave requests, and approval engine integration.
+   - Completed admin leave balance grant/adjustment screen.
+   - Completed approval callback sync from approval request final status into employee leave request status and balance usage.
+   - Completed admin screens for Absensi Pegawai, Jenis Cuti Pegawai, and Cuti Pegawai.
+   - Completed employee self-service screens for Absensi Saya and Cuti Saya.
+   - Teaching attendance remains an optional source placeholder for later lecturer workload integration.
+4. **Phase 4 - User Certification / Training Records** ✅
+   - ✅ User-based development records for certifications, training, workshops, seminars, awards, licenses.
+   - ✅ Works for lecturers, staff, admins, and students globally instead of being lecturer-only.
+   - ✅ Migrations and Data Models properly bind to `user_id`.
+   - ✅ Attachments framework integrated for certificate and document uploads.
+   - ✅ Admin create/edit, private attachment preview, verification action, and user self-service upload with progress state are implemented.
+5. **Phase 4.5 - Massive System-Wide Seeder Overhaul** ✅
+   - ✅ Added `SystemWideDemoSeeder` as an idempotent cross-module demo-data aggregator.
+   - ✅ Ties together Academic, Student Services, Financial, Admission, and Organization modules.
+   - ✅ Generates realistic student histories for invoices, payments, service letters, leave, graduation, complaints, and admission.
+   - ✅ Generates lecturer/staff/admin organization histories with attendance, leave, and verified/unverified user development records.
+6. **Phase 5 - Tridharma Support** ✅
+   - ✅ User-owned Tridharma records for research, community service, and publication/output tracking.
+   - ✅ Optional lecturer/employee profile context while keeping `user_id` as the owner source of truth.
+   - ✅ Proposal approval uses the existing approval engine with `TRIDHARMA_PROPOSAL` template and model callbacks.
+   - ✅ Admin management covers create/edit/show, verification, completion/archive, members, milestones, budgets, outputs, and private attachments.
+   - ✅ Lecturer/employee self-service can create draft, submit approval, upload evidence with progress, and add milestones/outputs after approval.
+   - ✅ System-wide demo seeder now includes Tridharma approval-ready records with realistic team, budget, milestone, output, and evidence data.
+7. **Phase 6 - Lecturer Workload / BKD** ✅
+   - ✅ BKD period and SKS rule management under Organization / Kepegawaian.
+   - ✅ Lecturer self-service can generate BKD draft from teaching assignments, structural positions, and verified Tridharma records.
+   - ✅ BKD submission uses the existing approval engine with `LECTURER_WORKLOAD_REVIEW` template and model callbacks.
+   - ✅ Admin can review BKD submissions, inspect source breakdown, and request revision.
+   - ✅ Academic leader can monitor scoped BKD data through faculty/study-program position scope.
+8. **Phase 7 - Performance Evaluation / EDOM** ✅
+   - ✅ EDOM periods and question bank under Organization / Kepegawaian.
+   - ✅ Student EDOM survey is limited to enrolled course offerings and one response per student/course/lecturer.
+   - ✅ EDOM aggregation keeps student identity hidden from lecturer, admin, and academic-leader result views.
+   - ✅ Lecturer performance review combines EDOM score, teaching attendance compliance, employee attendance compliance, and approved BKD total.
+   - ✅ Academic leader read-only oversight uses scoped `academic-leader` portal instead of Dekan/Kaprodi auth-role proliferation.
+
+**BKD/EDOM V1 Implementation Evidence:**
+- New BKD tables: `lecturer_workload_periods`, `lecturer_workload_rules`, `lecturer_workload_submissions`, and `lecturer_workload_items`.
+- New EDOM/performance tables: `edom_periods`, `edom_questions`, `edom_responses`, `edom_answers`, and `lecturer_performance_reviews`.
+- New role surface: `/academic-leader` prefix with `academic-leader.*` route names, role selector metadata, sidebar menu, and `User::getPrefixAttribute()` mapping.
+- Admin Organization resources follow the Organization/PowerGrid pattern for BKD periods, BKD rules, BKD submissions, EDOM periods, EDOM questions, and lecturer performance reviews.
+- Lecturer self-service uses custom workspace-style BKD pages for generate draft, inspect breakdown, submit, and revision flow.
+- Student EDOM uses card/form survey screens instead of admin tables, with one response per student/course/lecturer and anonymous aggregate output.
+- Academic leader oversight is custom read-only UI under `resources/views/components/academic-leader/**` and is bounded by faculty/program scope.
+- Demo seeding includes role/permission/resource setup, default BKD rules, active BKD/EDOM periods, default EDOM questions, and `LECTURER_WORKLOAD_REVIEW` approval template.
+- Verification completed: migration succeeded, resource/menu sync succeeded, Organization demo seeder ran twice idempotently, route checks passed for `workload`, `edom`, and `academic-leader`, `php artisan view:cache` passed, and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed.
+
+**BKD/EDOM V2 Candidates (Not Part of Current Completion Claim):**
+- Official BKD/SKP export package with signed PDF/Excel forms and institution-specific format mapping.
+- More granular assessor workflow such as Kaprodi -> Dekan -> Kepegawaian/Rektorat when required by campus policy.
+- Configurable scoring rubric for performance review weights, minimum response thresholds, and question categories.
+- Multi-semester lecturer performance trend dashboard, faculty/program benchmarking, and anomaly detection.
+- External data import/sync for attendance, LMS activity, national BKD systems, or other academic sources.
+- Deeper lecturer drilldown pages for academic leaders beyond the current read-only scoped overview.
+
+**BKD/EDOM V2 Hardening Implemented:**
+- Academic leader drilldown page for scoped lecturer detail, including latest BKD, performance trend, program benchmark, and faculty benchmark.
+- BKD export support for admin and academic leader in CSV, XLSX, and PDF formats, with academic leader exports scoped by active faculty/program position assignments.
+- Configurable lecturer performance rubric under Organization / Kepegawaian, covering EDOM weight, teaching compliance weight, employee attendance weight, BKD weight, minimum EDOM responses, and target BKD SKS.
+- EDOM performance calculation now uses the active rubric and stores the applied rubric/components in the performance review snapshot.
+- BKD approval template seeded as a scoped multi-step chain: Kaprodi review, Dekan review, then Kepegawaian Akademik finalization.
+- Approval engine position checks now match approver position scope against the lecturer profile scope when processing BKD approvals.
+- Verification completed: migration status confirmed, permissions/menu sync completed, Organization demo seeder ran twice idempotently, route checks passed for academic-leader, workload export, and rubrics, `php artisan view:cache` passed, and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed with 7 tests.
+
+**Academic Attendance Modernization Implemented:**
+- Dosen dapat membuka absensi QR dari halaman sesi kelas. Saat dibuka, sesi menjadi `Opened`, menyimpan secret QR, dan menampilkan QR dinamis.
+- QR absensi berubah setiap 2 detik berdasarkan secret sesi dan slot waktu, tanpa menulis token baru ke database setiap pergantian.
+- Saat dosen menutup absensi, sesi menjadi `Closed`, `closed_at` terisi, dan semua scan mahasiswa berikutnya ditolak oleh service backend.
+- Mahasiswa melakukan absensi mandiri lewat scan QR. Scan valid otomatis mencatat status `Present` dengan source `student_qr`, timestamp scan, token slot, IP/user agent, dan metadata lokasi bila browser mengirim GPS.
+- Mahasiswa tidak bisa memilih `Izin`, `Sakit`, `Terlambat`, atau `Alpha` dari jalur mandiri. Status non-hadir dan koreksi tetap lewat halaman manual dosen.
+- Halaman jadwal/detail absensi mahasiswa sekarang menampilkan aksi `Scan Absensi` saat sesi dibuka oleh dosen, dan `Menunggu Dosen` saat sesi belum dibuka atau sudah ditutup.
+- Verification completed: QR attendance migration ran successfully, route check passed for attendance routes, `php artisan view:cache` passed, and `tests/Feature/AcademicAttendanceQrServiceTest.php` passed with 4 tests.
+
+**Academic Leader Completion Pack Implemented:**
+- Sidebar academic leader sekarang memuat Dashboard, Dosen, Kelas & Kehadiran, BKD Dosen, EDOM & Performa, dan Laporan.
+- Halaman Dosen Dalam Scope menampilkan daftar dosen sesuai faculty/study-program position scope, ringkasan kelas aktif, status BKD terakhir, skor performa, dan link drilldown dosen.
+- Halaman Kelas & Kehadiran menampilkan monitoring kelas aktif, dosen pengampu, mahasiswa, sesi/pertemuan, sesi yang masih berjalan, sesi lama belum ditutup, persentase kehadiran, dan label risiko.
+- Dashboard academic leader sekarang punya shortcut operasional dan alert akademik untuk kelas tanpa dosen, kelas tanpa jadwal aktif, sesi belum ditutup, pertemuan belum lengkap, kehadiran rendah, BKD yang perlu tindak lanjut, dan performa dosen rendah.
+- Halaman Laporan menyediakan export scoped CSV, XLSX, dan PDF untuk dosen, kelas/kehadiran, dan alert akademik.
+- Service oversight baru memusatkan query scoped academic leader agar dashboard, list, alert, dan export memakai batas akses yang sama.
+- UI status sesi dosen dirapikan ke label operasional `Dijadwalkan`, `Berjalan`, `Ditutup`, dan `Dibatalkan`.
+- Verification completed: route checks passed for `academic-leader`, `academic-leader/classes`, and `academic-leader/reports`; `php artisan view:cache` passed; `AcademicLeaderOversightService` dashboard sanity check passed for `superuser@example.com`; `tests/Feature/AcademicAttendanceQrServiceTest.php` passed with 4 tests; and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed with 7 tests.
+
+**Seeder Modularization Implemented:**
+- Removed ambiguous mixed seeders: `SystemWideDemoSeeder` and `OrganizationDemoSeeder`.
+- Added module-scoped seeders: `OrganizationSeeder`, `AdmissionSeeder`, `FinancialSeeder`, and `StudentServiceSeeder`.
+- `AcademicSeeder` now owns academic data and seeds richer faculty, program, lecturer, student, class, KRS, attendance, grade, material, assignment, and advising data.
+- `DatabaseSeeder` now runs module seeders in dependency order: Settings, User, Menu, Academic, Organization, Admission, Financial, StudentService.
+- Verification completed: all new seeders passed `php -l`, each module seeder ran successfully, and full `php artisan db:seed` ran twice idempotently.
 
 **Candidate Tables:**
-- `lecturer_educations`
-- `lecturer_certifications`
-- `lecturer_trainings`
-- `lecturer_workload_snapshots`
-- `lecturer_leaves`
+- `employee_profiles`
+- `organizational_positions`
+- `employee_position_assignments`
+- `approval_templates`
+- `approval_template_steps`
+- `approval_requests`
+- `approval_steps`
+- `approval_actions`
+- `employee_attendance_records`
+- `employee_attendance_sources`
+- `attendance_sessions`
+- `attendance_records`
+- `employee_leave_types`
+- `employee_leave_requests`
+- `employee_leave_balances`
+- `employee_leave_attachments`
+- `user_development_records`
+- `user_development_attachments`
+- `lecturer_workload_periods`
+- `lecturer_workload_rules`
+- `lecturer_workload_submissions`
+- `lecturer_workload_items`
+- `edom_periods`
+- `edom_questions`
+- `edom_responses`
+- `edom_answers`
 - `lecturer_performance_reviews`
+- `lecturer_performance_rubrics`
 
 ---
 
