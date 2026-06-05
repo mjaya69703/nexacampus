@@ -1106,6 +1106,522 @@ Schema::create('student_scholarships', function (Blueprint $table) {
 
 ---
 
+## 🧭 Draft Next Priorities (Priority 6-10)
+
+Draft berikut adalah kandidat lanjutan setelah Priority 1-5 sudah dianggap clear. Sumbernya digabung dari `will-be-implemented.md`, status implementasi aktual di dokumen ini, dan dependency yang sudah tersedia dari Academic, Admission, dan Financial.
+
+---
+
+#### **Priority 6: Student Services & Administration**
+*Impact: Admin + Students | Module: New*
+
+##### 6. Student Services - Letters, Leave, Transfer & Graduation 📋
+**Status:** 🚧 IN PROGRESS (Phase 3A implemented: Letter Request Center, Leave, Transfer, and Yudisium Workflow)  
+**Roles Affected:** Admin/Student Affairs (manage), Students (request/track), Academic/Finance (clearance checks)  
+**Module Category:** New Module → `student-services`
+
+**Description:**
+One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pindah program, pengajuan kelulusan, dan complaint/feedback. Modul ini jadi jembatan antara kebutuhan administrasi mahasiswa dan approval internal kampus.
+
+**Why Next:**
+- Paling nyambung setelah Financial karena banyak layanan administrasi butuh financial clearance.
+- Memberikan workflow nyata untuk mahasiswa selain akademik dan pembayaran.
+- Cocok untuk kampus karena surat, cuti, transkrip, dan kelulusan adalah proses operasional harian.
+
+**Core Features:**
+- ✅ Letter/certificate request: active student letter, transcript request, internship recommendation, and custom/manual letter types.
+- ✅ Online approval workflow with status tracking.
+- ✅ PDF letter generation using existing Dompdf pattern.
+- ✅ Manual upload fulfillment for custom/final letter files.
+- ✅ Hybrid fulfillment mode so admin can choose generate PDF or upload final file.
+- ✅ Correction workflow: admin can request correction and student can revise/resubmit without creating a new request.
+- ✅ Optional digital signature/signatory placeholder through signer name and position.
+- ✅ Leave of absence application with attachments and multi-step approval.
+- ✅ Student transfer request with curriculum/credit mapping notes.
+- ✅ Graduation/yudisium application with eligibility checklist.
+- Complaint/feedback submission with department assignment and SLA tracking.
+
+**Integration Notes:**
+- ✅ Use `student_profile_id` as student identity.
+- ✅ Integrate `FinancialClearanceService` for transcript/graduation/letter restrictions.
+- ✅ Use existing admin resource registry + PowerGrid pattern.
+- ✅ Student side follows existing modern student page pattern.
+
+**Estimated Effort:** High (6-7 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Letter Request Center**
+   - ✅ Letter type master data.
+   - ✅ Fulfillment modes: auto_generate, manual_upload, hybrid.
+   - ✅ Student request form with dynamic fields and optional attachment.
+   - ✅ Admin review/approve/reject/correction workflow.
+   - ✅ Student correction/resubmit flow for requests marked `revision_requested`.
+   - ✅ Status history/audit trail.
+   - ✅ PDF generation.
+   - ✅ Admin final file upload for manual fulfillment.
+   - ✅ Student download for issued letters.
+   - ✅ Financial clearance check for selected letter types.
+2. **Phase 2A - Leave Application Workflow**
+   - ✅ Leave application with academic year, semester, duration, reason, and attachment.
+   - ✅ Admin review/approve/reject/correction workflow.
+   - ✅ Student correction/resubmit flow.
+   - ✅ Approval history/status audit trail.
+   - ✅ Admin action to activate leave after approval.
+   - ✅ Return from leave action to restore active student status.
+   - ✅ Student semester registration no longer acts as the leave request entry point; students are routed to Student Services leave workflow.
+   - ✅ Leave activation creates/updates semester registration snapshot with `academic_status = Cuti` without increasing `student_profiles.current_semester`.
+   - ✅ Admin registration approval does not increase `current_semester` for `academic_status = Cuti`.
+   - ✅ KRS, schedule, and attendance student pages require approved registration with `academic_status = Aktif`, so approved leave snapshots do not unlock academic activity.
+   - ✅ Optional leave fee during approval; if fee is set, system issues a `leave` invoice and activation is blocked until paid.
+3. **Phase 2B - Internal Transfer Workflow**
+   - ✅ Internal transfer request and evaluation notes.
+   - ✅ From/to study program tracking.
+   - ✅ Transfer type rules: pindah prodi only lists programs in the same faculty, pindah fakultas requires choosing a program in a different faculty, and pindah kelas only changes `student_profiles.class_type` while keeping the same study program.
+   - ✅ Admin review/approve/reject/correction workflow.
+   - ✅ Student correction/resubmit flow.
+   - ✅ Optional transfer fee during approval; if fee is set, system issues a `transfer` invoice and apply transfer is blocked until paid.
+   - ✅ Manual apply transfer action after approval.
+   - ✅ Curriculum/credit mapping notes as MVP, full mapping engine later.
+   - Transfer application/conversion updates `student_profiles.study_program_id` for prodi/faculty transfer, updates `student_profiles.class_type` for class transfer, and can update `current_semester` from admin recommended semester.
+   - Future: full curriculum/credit conversion engine to map old curriculum, accepted credits/SKS, equivalent courses, remaining courses, transcript treatment, GPA/IPK impact, and recommended semester automatically.
+   - Future: post-transfer academic cleanup hooks for advisor reassignment, study plan reset/revalidation, course offering eligibility, scholarship/tuition reassessment, and transfer decision PDF/SK generation.
+   - Future: multi-step approval after department head/dean/finance roles are formalized.
+4. **Phase 3A - Graduation / Yudisium Workflow**
+   - ✅ Student yudisium application with graduation batch, thesis/final project title, notes, and attachment.
+   - ✅ Yudisium application window is selected from admin-managed `academic_periods` with type `Yudisium`, but official yudisium metadata is stored in Student Services graduation batches.
+   - ✅ Admin-managed graduation/yudisium batch stores official yudisium date, optional SK number/date, status, scope, and links to the academic period window.
+   - ✅ Student chooses an open yudisium batch; batch visibility respects academic period date window and optional study-program scope.
+   - ✅ Admin-managed graduation/yudisium policy dashboard, with global fallback and optional study-program-specific policy.
+   - ✅ Eligibility gate uses only supported system data: active status, current semester, passed SKS, latest GPA, incomplete transcript entries, graduation financial hold, and open yudisium period.
+   - ✅ Unsupported operational requirements such as final project completion, library/lab clearance, and document completeness remain manual admin checklist until their supporting modules exist.
+   - ✅ Financial clearance block for `graduation` hold before submit.
+   - ✅ Eligibility snapshot from student profile, study program, passed credits, latest GPA, and financial hold state.
+   - ✅ Admin review/under review/approve/reject/correction workflow.
+   - ✅ Student correction/resubmit flow before finalization.
+   - ✅ Autosaved admin checklist for transcript, final project, library/lab clearance, and document completeness, including checked by, checked at, and notes per item.
+   - ✅ Admin-managed yudisium document requirements with global or study-program-specific scope.
+   - ✅ Student yudisium document upload per requirement with file type/size validation.
+   - ✅ Admin document preview and per-document verification/rejection notes.
+   - ✅ Yudisium approval requires required documents to be verified.
+   - ✅ Student detail page shows document verification status and auto-refreshes review progress.
+   - ✅ Workflow guidance on admin and student yudisium detail pages so staff/student can see the next required action clearly.
+   - ✅ Finalize graduation action uses the official yudisium date from the selected batch, changes `student_profiles.academic_status` to `Lulus`, sets `graduation_date`, and deactivates the student profile.
+   - ✅ Bulk finalize approved applications from a graduation batch so many students can share the same official yudisium date without manual per-student date entry.
+   - ✅ Finalized applications are treated as final and cannot be revised by normal workflow.
+5. **Phase 3B - Complaints**
+   - ✅ Supporting Organization module foundation: work unit master data and work unit members.
+   - ✅ Work unit membership stores lightweight position (`member`, `coordinator`, `head`) without replacing the existing role/permission system.
+   - ✅ Work units are designed as cross-module operational scope for complaint assignment, approval routing, notifications, and staff dashboards.
+   - ✅ Complaint category master data with default work unit routing and default SLA hours.
+   - ✅ Student complaint/ticket creation with priority, Jodit rich-text description, upload progress, and multiple attachments.
+   - ✅ Admin complaint queue with work-unit/user assignment, status actions, response thread, multi-attachment support, status history, auto refresh, and practical PowerGrid filters.
+   - ✅ Student and admin complaint detail pages use lightweight Livewire polling on the opened ticket only, so admin/student replies appear without manual refresh.
+   - ✅ Admin complaint access is scoped for non-admin staff to tickets assigned to their user or active work units.
+   - ✅ Complaint SLA/status guidance, overdue/sisa SLA labels, and quick claim action for staff.
+   - ✅ Complaint attachments are served through secure role/student scoped download routes instead of raw public URLs.
+6. **Phase 4 - Student Services Operations Dashboard & Notifications**
+   - ✅ Admin queue dashboard for pending letters, leave, transfer, yudisium, complaints, correction-needed, ready-to-approve, and ready-to-finalize items.
+   - ✅ Email/status notifications for request submitted, approved, rejected, correction requested, leave activated, transfer applied, graduation finalized, and complaint replies/status changes.
+   - ✅ Cross-feature operational overview for staff so daily work can start from one Student Services dashboard instead of separate resource menus.
+
+**Candidate Tables:**
+- ✅ `service_letter_types`
+- ✅ `service_letter_requests`
+- ✅ `student_leave_applications`
+- ✅ `student_leave_status_histories`
+- ✅ `student_transfer_requests`
+- ✅ `student_transfer_status_histories`
+- ✅ `graduation_batches`
+- ✅ `graduation_applications`
+- ✅ `graduation_document_requirements`
+- ✅ `graduation_documents`
+- ✅ `graduation_status_histories`
+- ✅ `graduation_policies`
+- ✅ `work_units`
+- ✅ `work_unit_user`
+- ✅ `student_complaint_categories`
+- ✅ `student_complaints`
+- ✅ `student_complaint_messages`
+- ✅ `student_complaint_attachments`
+- ✅ `student_complaint_status_histories`
+- ✅ `service_request_status_histories`
+
+---
+
+#### **Priority 7: Assignment Management**
+*Impact: Lecturer + Students | Module: Academic Enhancement*
+
+##### 7. Assignment Submission & Grading 📝
+**Status:** ✅ IMPLEMENTED (Phase 1-3: Assignment Core, Submission, Review, Grade Book Sync, Reports)  
+**Roles Affected:** Lecturer (create/grade), Students (submit/track), Admin (monitor)  
+**Module Category:** Academic → New Submodule: `assignments`
+
+**Description:**
+Sistem pengumpulan tugas online yang terhubung dengan course offering, materi perkuliahan, dan grade book. Dosen membuat tugas, mahasiswa submit file/text, dosen memberi nilai dan feedback.
+
+**Why Next:**
+- Melengkapi e-learning yang sudah punya materi, diskusi, bookmark, dan download tracking.
+- Nyambung langsung ke grade book/export yang sudah ada.
+- Memberikan workflow akademik harian yang sangat sering dipakai.
+
+**Core Features:**
+- ✅ Assignment per course offering/session.
+- ✅ Assignment detail: title, rich description/rubric, deadline, max score, allowed file types, max file size, and lecturer instruction attachments.
+- ✅ File submission and optional text submission.
+- ✅ Multiple file support.
+- ✅ Resubmission before deadline and for returned revisions.
+- ✅ Late submission policy with configurable late acceptance.
+- ✅ Submission status: not submitted, submitted, late, graded, returned/missing.
+- ✅ Lecturer grading with score and feedback.
+- ✅ Student view for grade, feedback, returned status, and revision notes.
+- ✅ Assignment analytics/export for lecturer review.
+- ✅ Reminder email before deadline for students who have not submitted yet.
+
+**Integration Notes:**
+- Link to `course_offerings`, student enrollments/KRS, and existing grade book.
+- Assignment score can be synced into existing grade book components.
+- Reuse secure file preview/download patterns from Admission and Course Materials.
+- Student UI should mirror Course Materials page style.
+
+**Estimated Effort:** High (5-6 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Assignment Core**
+   - ✅ Lecturer create/edit/list assignments per course offering.
+   - ✅ Assignment instruction attachments with secure preview for lecturer/student.
+   - ✅ Student list/detail assignments from enrolled course offerings.
+   - ✅ Submission upload, text answer, multiple files, and deadline validation.
+2. **Phase 2 - Grading & Feedback**
+   - ✅ Lecturer submission review dashboard per assignment.
+   - ✅ Score/feedback.
+   - ✅ Return-for-revision workflow.
+   - ✅ Student graded result and feedback view.
+3. **Phase 3 - Grade Book Integration**
+   - ✅ Assignment score sync to grade book components with configurable component weight.
+   - ✅ Assignment analytics summary on lecturer review page.
+   - ✅ CSV/XLSX/PDF assignment report export.
+   - ✅ Email reminder before deadline.
+
+**Candidate Tables:**
+- ✅ `assignments`
+- ✅ `assignment_files`
+- ✅ `assignment_submissions`
+- ✅ `assignment_submission_files`
+- ✅ `assignment_grades`
+- ✅ `assignment_status_histories`
+
+---
+
+#### **Priority 8: Student Progress Analytics & Academic Advising**
+*Impact: Lecturer + Students + Academic Advisors | Module: Academic Enhancement*
+
+##### 8. Progress Analytics & Advisor Dashboard 📈
+**Status:** ✅ IMPLEMENTED (Phase 1-3 implemented: Advisor Foundation, Student Progress, Advisor Follow-up)  
+**Roles Affected:** Lecturer/Academic Advisor (monitor), Students (view progress), Admin (oversight)  
+**Module Category:** Academic → New Submodule: `academic-analytics`
+
+**Description:**
+Dashboard monitoring performa mahasiswa berbasis nilai, SKS, KRS, absensi, materi, dan status finansial. Modul ini juga menjadi fondasi paling sehat untuk fitur AI academic assistant di masa depan.
+
+**Why Next:**
+- Data akademik, nilai, materi, admission, dan financial sudah cukup kaya untuk dianalisis.
+- Membantu dosen PA mendeteksi mahasiswa berisiko lebih awal.
+- AI akan lebih berguna jika analytics dan action workflow-nya sudah rapi.
+
+**Core Features:**
+- Student progress tracker: SKS completed, remaining credits, IPS/IPK trend.
+- Semester-by-semester academic performance.
+- Failed/repeated course detection.
+- Attendance risk indicator.
+- Financial risk indicator from overdue/hold state.
+- Advisor dashboard per assigned students.
+- Recommendation list: meet advisor, retake course, resolve KRS/payment issue, improve attendance.
+- Student-facing progress page with charts.
+- Export progress summary to PDF.
+
+**Integration Notes:**
+- Read from transcript/grade snapshots, study plans, attendance, course offerings, and financial holds.
+- Do not duplicate source-of-truth grades; calculate from existing academic records.
+- Use ApexCharts already used in financial dashboard.
+- Future AI should consume this analytics layer, not raw scattered queries.
+
+**Estimated Effort:** Medium-High (4-5 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Advisor Assignment Foundation**
+   - ✅ Harden existing Dosen Wali assignment workflow.
+   - ✅ Searchable student/lecturer picker and bulk assignment flow.
+   - ✅ Active assignment conflict validation, including open-ended/general assignments.
+   - ✅ Advisor resolver service for active advisor, assigned students, and conditional lecturer menu.
+2. **Phase 2 - Student Progress Tracker**
+   - ✅ Student academic progress page.
+   - ✅ GPA/SKS trend charts.
+   - ✅ Remaining requirement summary.
+   - ✅ Student-facing active advisor information.
+   - ✅ Attendance, financial, KRS, and academic risk indicators.
+   - ✅ Student-facing recommendations based on current risk reasons.
+3. **Phase 3 - Advisor Dashboard & Recommendations**
+   - ✅ Lecturer advisor dashboard for assigned students only.
+   - ✅ Risk indicators and student list.
+   - ✅ Advisor notes/recommendations and follow-up history.
+   - ✅ Dedicated lecturer advising detail page per student, replacing modal-style note entry.
+   - ✅ Student-visible advisor notes when marked visible by lecturer.
+   - ✅ Consolidated student analytics service with explainable risk reasons.
+
+**Candidate Tables:**
+- `academic_advisor_assignments`
+- `student_progress_snapshots`
+- `student_advisor_notes`
+- `student_recommendations`
+
+---
+
+#### **Priority 9: Kepegawaian, Struktur Organisasi & Scope Jabatan**
+*Impact: Admin + Staff/Tendik + Lecturer + Academic Leadership | Module: Organization / Kepegawaian*
+
+##### 9. Kepegawaian, Position Scope & Operational Structure
+**Status:** ✅ COMPLETED (Phase 1-7 plus BKD/EDOM hardening, academic leader completion, attendance modernization, and modular seeders)
+**Roles Affected:** Admin/Superuser (manage), Staff/Tendik (operate), Kaprodi/Dekan/Kepala Unit via scoped `academic-leader` access, Lecturer, Student  
+**Module Category:** Existing Module Enhancement -> `organization`
+
+**Description:**
+Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan operasional, dan scope data seperti fakultas, program studi, atau unit kerja. Kaprodi, Dekan, Tendik, Kepala Unit, dan Staff Unit tidak menjadi `active_role` baru; mereka bekerja melalui admin/staff portal dengan role/permission + position scope.
+
+**Why Next:**
+- `work_units` dan `work_unit_user` sudah ada sebagai dasar assignment tiket, approval routing, notifikasi, dan pembatasan data staff.
+- Student Services complaints sudah memakai work unit untuk assignment, SLA, dan scoped access.
+- Modul berikutnya seperti approval engine, cuti pegawai, absensi pegawai, dan Kaprodi/Dekan dashboard butuh fondasi siapa mengelola area apa.
+- Menghindari modul `lecturer-hr` yang terlalu sempit dan janggal karena HR/Kepegawaian seharusnya mencakup pegawai lintas role.
+
+**Core Features:**
+- Employee profile foundation untuk dosen, tendik, staff, admin, kontrak, dan tamu.
+- Organizational position master data: Rektor, Wakil Rektor, Dekan, Wakil Dekan, Kaprodi, Sekprodi, Kepala Unit, Staff Unit, Tendik, Dosen.
+- Position assignment dengan scope `faculty_id`, `study_program_id`, atau `work_unit_id`.
+- Position scope resolver untuk membaca fakultas/prodi/unit yang dikelola user.
+- Work-unit-scoped assignment tetap mensinkronkan membership ke `work_unit_user` agar complaint access existing tetap jalan.
+- Approval template foundation untuk alur approval berurutan.
+- Approval request engine dengan step `pending/current/approved/rejected/skipped`.
+- Approver routing berbasis role, permission, jabatan organisasi, atau unit kerja.
+- Approval action history untuk audit approve/reject/cancel.
+- Admin UI untuk Template Approval dan Approval queue/detail.
+- Employee attendance sources and records for manual/admin attendance input.
+- Employee attendance office locations with GPS radius validation.
+- Employee attendance self-service camera/upload evidence with client-side WebP conversion.
+- Employee leave types, balances, requests, and approval-engine-backed approval status sync.
+- Admin UI untuk Absensi Pegawai, Lokasi Absensi, Saldo Cuti Pegawai, Jenis Cuti Pegawai, dan Cuti Pegawai.
+- Employee self-service UI untuk Absensi Saya dan Cuti Saya, visible untuk user yang punya Employee Profile aktif.
+
+**Integration Notes:**
+- Reuse existing `Organization` namespace and `work_units` module instead of creating a parallel HR namespace.
+- Keep roles/permissions as feature access; use position assignments for data scope.
+- Existing Student Services workflows are not migrated into the approval engine in Phase 1/2/3.
+- Phase 3 integrates employee leave/cuti pegawai into the approval engine without changing student leave workflows.
+- Phase 3 includes employee self-service pages shared across active roles when the user has an active Employee Profile.
+- Lecturer workload and lecturer performance review are now implemented as child modules on top of the kepegawaian foundation.
+- BKD/EDOM V1 means the feature is production-usable for internal campus workflow: data model, admin management, lecturer/student self-service, scoped academic-leader oversight, approval integration, demo seeder, routes, view cache, and focused feature tests are already in place.
+- V1 is intentionally not a full regulatory/export suite. Formal BKD/SKP export, official PDF forms, multi-layer assessor chains beyond the current approval template, richer rubric weighting, semester trend analytics, faculty/program benchmarking, and external attendance/academic data imports remain suitable V2 enhancements.
+- Dekan/Kaprodi are not auth roles. Access stays through coarse `academic-leader` role plus active `employee_position_assignments` scope resolved by `PositionScopeResolver`.
+
+**Estimated Effort:** High (phased)
+
+**Recommended Phases:**
+1. **Phase 1 - Organization, Employee & Position Scope**
+   - Employee profiles.
+   - Organizational positions.
+   - Employee position assignments with faculty/program/unit scope.
+   - Position scope resolver.
+   - Work unit membership sync for active work-unit assignments.
+2. **Phase 2 - Approval Engine**
+   - Completed reusable lightweight approval templates and sequential approval requests.
+   - Completed admin Template Approval and Approval request screens.
+   - Completed approver resolution for role, permission, organizational position, and work unit.
+   - Employee leave integration is deferred to Phase 3 to keep Phase 2 focused on the engine foundation.
+   - Keep existing Student Services request workflows unchanged until a dedicated migration/refactor phase.
+3. **Phase 3 - Employee Attendance & Leave**
+   - Completed employee attendance sources and attendance records.
+   - Completed manual admin attendance input with check-in/check-out and work-minute calculation.
+   - Completed office attendance locations with configurable GPS radius.
+   - Completed self-service attendance camera/upload evidence, upload progress, WebP client-side conversion, GPS capture, and radius validation.
+   - Completed employee leave types, balances, leave requests, and approval engine integration.
+   - Completed admin leave balance grant/adjustment screen.
+   - Completed approval callback sync from approval request final status into employee leave request status and balance usage.
+   - Completed admin screens for Absensi Pegawai, Jenis Cuti Pegawai, and Cuti Pegawai.
+   - Completed employee self-service screens for Absensi Saya and Cuti Saya.
+   - Teaching attendance remains an optional source placeholder for later lecturer workload integration.
+4. **Phase 4 - User Certification / Training Records** ✅
+   - ✅ User-based development records for certifications, training, workshops, seminars, awards, licenses.
+   - ✅ Works for lecturers, staff, admins, and students globally instead of being lecturer-only.
+   - ✅ Migrations and Data Models properly bind to `user_id`.
+   - ✅ Attachments framework integrated for certificate and document uploads.
+   - ✅ Admin create/edit, private attachment preview, verification action, and user self-service upload with progress state are implemented.
+5. **Phase 4.5 - Massive System-Wide Seeder Overhaul** ✅
+   - ✅ Added `SystemWideDemoSeeder` as an idempotent cross-module demo-data aggregator.
+   - ✅ Ties together Academic, Student Services, Financial, Admission, and Organization modules.
+   - ✅ Generates realistic student histories for invoices, payments, service letters, leave, graduation, complaints, and admission.
+   - ✅ Generates lecturer/staff/admin organization histories with attendance, leave, and verified/unverified user development records.
+6. **Phase 5 - Tridharma Support** ✅
+   - ✅ User-owned Tridharma records for research, community service, and publication/output tracking.
+   - ✅ Optional lecturer/employee profile context while keeping `user_id` as the owner source of truth.
+   - ✅ Proposal approval uses the existing approval engine with `TRIDHARMA_PROPOSAL` template and model callbacks.
+   - ✅ Admin management covers create/edit/show, verification, completion/archive, members, milestones, budgets, outputs, and private attachments.
+   - ✅ Lecturer/employee self-service can create draft, submit approval, upload evidence with progress, and add milestones/outputs after approval.
+   - ✅ System-wide demo seeder now includes Tridharma approval-ready records with realistic team, budget, milestone, output, and evidence data.
+7. **Phase 6 - Lecturer Workload / BKD** ✅
+   - ✅ BKD period and SKS rule management under Organization / Kepegawaian.
+   - ✅ Lecturer self-service can generate BKD draft from teaching assignments, structural positions, and verified Tridharma records.
+   - ✅ BKD submission uses the existing approval engine with `LECTURER_WORKLOAD_REVIEW` template and model callbacks.
+   - ✅ Admin can review BKD submissions, inspect source breakdown, and request revision.
+   - ✅ Academic leader can monitor scoped BKD data through faculty/study-program position scope.
+8. **Phase 7 - Performance Evaluation / EDOM** ✅
+   - ✅ EDOM periods and question bank under Organization / Kepegawaian.
+   - ✅ Student EDOM survey is limited to enrolled course offerings and one response per student/course/lecturer.
+   - ✅ EDOM aggregation keeps student identity hidden from lecturer, admin, and academic-leader result views.
+   - ✅ Lecturer performance review combines EDOM score, teaching attendance compliance, employee attendance compliance, and approved BKD total.
+   - ✅ Academic leader read-only oversight uses scoped `academic-leader` portal instead of Dekan/Kaprodi auth-role proliferation.
+
+**BKD/EDOM V1 Implementation Evidence:**
+- New BKD tables: `lecturer_workload_periods`, `lecturer_workload_rules`, `lecturer_workload_submissions`, and `lecturer_workload_items`.
+- New EDOM/performance tables: `edom_periods`, `edom_questions`, `edom_responses`, `edom_answers`, and `lecturer_performance_reviews`.
+- New role surface: `/academic-leader` prefix with `academic-leader.*` route names, role selector metadata, sidebar menu, and `User::getPrefixAttribute()` mapping.
+- Admin Organization resources follow the Organization/PowerGrid pattern for BKD periods, BKD rules, BKD submissions, EDOM periods, EDOM questions, and lecturer performance reviews.
+- Lecturer self-service uses custom workspace-style BKD pages for generate draft, inspect breakdown, submit, and revision flow.
+- Student EDOM uses card/form survey screens instead of admin tables, with one response per student/course/lecturer and anonymous aggregate output.
+- Academic leader oversight is custom read-only UI under `resources/views/components/academic-leader/**` and is bounded by faculty/program scope.
+- Demo seeding includes role/permission/resource setup, default BKD rules, active BKD/EDOM periods, default EDOM questions, and `LECTURER_WORKLOAD_REVIEW` approval template.
+- Verification completed: migration succeeded, resource/menu sync succeeded, Organization demo seeder ran twice idempotently, route checks passed for `workload`, `edom`, and `academic-leader`, `php artisan view:cache` passed, and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed.
+
+**BKD/EDOM V2 Candidates (Not Part of Current Completion Claim):**
+- Official BKD/SKP export package with signed PDF/Excel forms and institution-specific format mapping.
+- More granular assessor workflow such as Kaprodi -> Dekan -> Kepegawaian/Rektorat when required by campus policy.
+- Configurable scoring rubric for performance review weights, minimum response thresholds, and question categories.
+- Multi-semester lecturer performance trend dashboard, faculty/program benchmarking, and anomaly detection.
+- External data import/sync for attendance, LMS activity, national BKD systems, or other academic sources.
+- Deeper lecturer drilldown pages for academic leaders beyond the current read-only scoped overview.
+
+**BKD/EDOM V2 Hardening Implemented:**
+- Academic leader drilldown page for scoped lecturer detail, including latest BKD, performance trend, program benchmark, and faculty benchmark.
+- BKD export support for admin and academic leader in CSV, XLSX, and PDF formats, with academic leader exports scoped by active faculty/program position assignments.
+- Configurable lecturer performance rubric under Organization / Kepegawaian, covering EDOM weight, teaching compliance weight, employee attendance weight, BKD weight, minimum EDOM responses, and target BKD SKS.
+- EDOM performance calculation now uses the active rubric and stores the applied rubric/components in the performance review snapshot.
+- BKD approval template seeded as a scoped multi-step chain: Kaprodi review, Dekan review, then Kepegawaian Akademik finalization.
+- Approval engine position checks now match approver position scope against the lecturer profile scope when processing BKD approvals.
+- Verification completed: migration status confirmed, permissions/menu sync completed, Organization demo seeder ran twice idempotently, route checks passed for academic-leader, workload export, and rubrics, `php artisan view:cache` passed, and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed with 7 tests.
+
+**Academic Attendance Modernization Implemented:**
+- Dosen dapat membuka absensi QR dari halaman sesi kelas. Saat dibuka, sesi menjadi `Opened`, menyimpan secret QR, dan menampilkan QR dinamis.
+- QR absensi berubah setiap 2 detik berdasarkan secret sesi dan slot waktu, tanpa menulis token baru ke database setiap pergantian.
+- Saat dosen menutup absensi, sesi menjadi `Closed`, `closed_at` terisi, dan semua scan mahasiswa berikutnya ditolak oleh service backend.
+- Mahasiswa melakukan absensi mandiri lewat scan QR. Scan valid otomatis mencatat status `Present` dengan source `student_qr`, timestamp scan, token slot, IP/user agent, dan metadata lokasi bila browser mengirim GPS.
+- Mahasiswa tidak bisa memilih `Izin`, `Sakit`, `Terlambat`, atau `Alpha` dari jalur mandiri. Status non-hadir dan koreksi tetap lewat halaman manual dosen.
+- Halaman jadwal/detail absensi mahasiswa sekarang menampilkan aksi `Scan Absensi` saat sesi dibuka oleh dosen, dan `Menunggu Dosen` saat sesi belum dibuka atau sudah ditutup.
+- Verification completed: QR attendance migration ran successfully, route check passed for attendance routes, `php artisan view:cache` passed, and `tests/Feature/AcademicAttendanceQrServiceTest.php` passed with 4 tests.
+
+**Academic Leader Completion Pack Implemented:**
+- Sidebar academic leader sekarang memuat Dashboard, Dosen, Kelas & Kehadiran, BKD Dosen, EDOM & Performa, dan Laporan.
+- Halaman Dosen Dalam Scope menampilkan daftar dosen sesuai faculty/study-program position scope, ringkasan kelas aktif, status BKD terakhir, skor performa, dan link drilldown dosen.
+- Halaman Kelas & Kehadiran menampilkan monitoring kelas aktif, dosen pengampu, mahasiswa, sesi/pertemuan, sesi yang masih berjalan, sesi lama belum ditutup, persentase kehadiran, dan label risiko.
+- Dashboard academic leader sekarang punya shortcut operasional dan alert akademik untuk kelas tanpa dosen, kelas tanpa jadwal aktif, sesi belum ditutup, pertemuan belum lengkap, kehadiran rendah, BKD yang perlu tindak lanjut, dan performa dosen rendah.
+- Halaman Laporan menyediakan export scoped CSV, XLSX, dan PDF untuk dosen, kelas/kehadiran, dan alert akademik.
+- Service oversight baru memusatkan query scoped academic leader agar dashboard, list, alert, dan export memakai batas akses yang sama.
+- UI status sesi dosen dirapikan ke label operasional `Dijadwalkan`, `Berjalan`, `Ditutup`, dan `Dibatalkan`.
+- Verification completed: route checks passed for `academic-leader`, `academic-leader/classes`, and `academic-leader/reports`; `php artisan view:cache` passed; `AcademicLeaderOversightService` dashboard sanity check passed for `superuser@example.com`; `tests/Feature/AcademicAttendanceQrServiceTest.php` passed with 4 tests; and `tests/Feature/WorkloadEdomPhaseSixSevenTest.php` passed with 7 tests.
+
+**Seeder Modularization Implemented:**
+- Removed ambiguous mixed seeders: `SystemWideDemoSeeder` and `OrganizationDemoSeeder`.
+- Added module-scoped seeders: `OrganizationSeeder`, `AdmissionSeeder`, `FinancialSeeder`, and `StudentServiceSeeder`.
+- `AcademicSeeder` now owns academic data and seeds richer faculty, program, lecturer, student, class, KRS, attendance, grade, material, assignment, and advising data.
+- `DatabaseSeeder` now runs module seeders in dependency order: Settings, User, Menu, Academic, Organization, Admission, Financial, StudentService.
+- Verification completed: all new seeders passed `php -l`, each module seeder ran successfully, and full `php artisan db:seed` ran twice idempotently.
+
+**Candidate Tables:**
+- `employee_profiles`
+- `organizational_positions`
+- `employee_position_assignments`
+- `approval_templates`
+- `approval_template_steps`
+- `approval_requests`
+- `approval_steps`
+- `approval_actions`
+- `employee_attendance_records`
+- `employee_attendance_sources`
+- `attendance_sessions`
+- `attendance_records`
+- `employee_leave_types`
+- `employee_leave_requests`
+- `employee_leave_balances`
+- `employee_leave_attachments`
+- `user_development_records`
+- `user_development_attachments`
+- `lecturer_workload_periods`
+- `lecturer_workload_rules`
+- `lecturer_workload_submissions`
+- `lecturer_workload_items`
+- `edom_periods`
+- `edom_questions`
+- `edom_responses`
+- `edom_answers`
+- `lecturer_performance_reviews`
+- `lecturer_performance_rubrics`
+
+---
+
+#### **Priority 10: Alumni & Career Services**
+*Impact: Admin + Alumni + Students | Module: New*
+
+##### 10. Alumni Management, Tracer Study & Career Services 🎓
+**Status:** 📝 DRAFT / NOT STARTED  
+**Roles Affected:** Admin/Career Center (manage), Alumni (update/survey), Students (career access)  
+**Module Category:** New Module → `alumni`
+
+**Description:**
+Modul alumni untuk database lulusan, tracer study, engagement alumni, career services, job board, dan laporan outcome lulusan untuk kebutuhan akreditasi.
+
+**Why Next:**
+- Natural follow-up setelah graduation workflow di Student Services.
+- Tracer study dan outcome lulusan penting untuk akreditasi kampus.
+- Bisa menjadi modul publik/engagement yang memperkuat value NexaCampus.
+
+**Core Features:**
+- Alumni profile database: graduation year, program, GPA, contact, location.
+- Employment status tracking: working, entrepreneur, studying, unemployed.
+- Tracer study survey distribution and response tracking.
+- Job relevance, time to employment, salary range, employer feedback.
+- Alumni events and engagement.
+- Job posting board and internship/career opportunities.
+- Reports by batch, study program, employment status, industry, and location.
+
+**Integration Notes:**
+- Alumni can be created from graduated student profiles.
+- Keep privacy controls for alumni directory visibility.
+- Email survey delivery can reuse mail patterns from Admission/Financial.
+- Career/job board can later connect to Student Services and Internship module.
+
+**Estimated Effort:** Medium (3-4 days)
+
+**Recommended Phases:**
+1. **Phase 1 - Alumni Database**
+   - Alumni profile.
+   - Conversion from graduated student.
+   - Admin list/detail.
+2. **Phase 2 - Tracer Study**
+   - Survey campaign.
+   - Alumni response form.
+   - Analytics dashboard.
+3. **Phase 3 - Career Services**
+   - Job posting board.
+   - Career events.
+   - Employer/partner records.
+
+**Candidate Tables:**
+- `alumni_profiles`
+- `tracer_study_campaigns`
+- `tracer_study_responses`
+- `alumni_events`
+- `job_postings`
+- `employer_partners`
+
+---
+
 ## 📋 Planning Queue (Not Started Yet)
 
 Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi aktif.

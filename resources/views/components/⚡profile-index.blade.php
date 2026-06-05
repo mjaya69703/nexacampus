@@ -20,9 +20,23 @@ new class extends Component {
     public array $availableStudyPrograms = [];
     public array $availableAcademicYears = [];
 
+    // State untuk Sertifikasi
+    public $showCertificateForm = false;
+    public $certificateForm = [
+        'type' => 'certification',
+        'title' => '',
+        'organizer' => '',
+        'credential_number' => '',
+        'start_date' => '',
+        'end_date' => '',
+        'expires_at' => '',
+        'description' => '',
+    ];
+    public $certificateFile = null;
+
     public function mount()
     {
-        $user = auth()->user()->load(['studentProfile', 'lecturerProfile']);
+        $user = auth()->user()->load(['studentProfile', 'lecturerProfile', 'developmentRecords.attachments']);
         $this->userForm = $user->toArray();
         $this->studentForm = $user->studentProfile?->toArray() ?? [];
         $this->lecturerForm = $user->lecturerProfile?->toArray() ?? [];
@@ -147,6 +161,84 @@ new class extends Component {
         session()->flash('success', 'Profil berhasil diperbarui!');
     }
 
+    public function toggleCertificateForm()
+    {
+        $this->showCertificateForm = !$this->showCertificateForm;
+        $this->resetErrorBag();
+    }
+
+    public function submitCertificate()
+    {
+        $this->validate([
+            'certificateForm.type' => 'required|string|in:certification,training,workshop,seminar,award,license',
+            'certificateForm.title' => 'required|string|max:255',
+            'certificateForm.organizer' => 'required|string|max:255',
+            'certificateForm.credential_number' => 'nullable|string|max:255',
+            'certificateForm.start_date' => 'required|date',
+            'certificateForm.end_date' => 'nullable|date|after_or_equal:certificateForm.start_date',
+            'certificateForm.expires_at' => 'nullable|date|after:certificateForm.start_date',
+            'certificateForm.description' => 'nullable|string',
+            'certificateFile' => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $record = auth()->user()->developmentRecords()->create([
+                'type' => $this->certificateForm['type'],
+                'title' => $this->certificateForm['title'],
+                'organizer' => $this->certificateForm['organizer'],
+                'credential_number' => empty($this->certificateForm['credential_number']) ? null : $this->certificateForm['credential_number'],
+                'start_date' => $this->certificateForm['start_date'],
+                'end_date' => empty($this->certificateForm['end_date']) ? null : $this->certificateForm['end_date'],
+                'expires_at' => empty($this->certificateForm['expires_at']) ? null : $this->certificateForm['expires_at'],
+                'description' => empty($this->certificateForm['description']) ? null : $this->certificateForm['description'],
+                'is_verified' => false,
+            ]);
+
+            if ($this->certificateFile) {
+                // Simpan secara private (tidak bisa diakses langsung via URL /public) karena mengamankan data pengguna
+                $originalName = $this->certificateFile->getClientOriginalName();
+                $fileSize = $this->certificateFile->getSize();
+                $filename = 'cert_' . auth()->id() . '_' . time() . '.' . $this->certificateFile->getClientOriginalExtension();
+                $path = $this->certificateFile->storeAs('private/user-developments', $filename);
+                
+                $record->attachments()->create([
+                    'document_type' => 'certificate',
+                    'file_path' => $path,
+                    'file_name' => $originalName,
+                    'file_size' => $fileSize,
+                ]);
+            }
+
+            DB::commit();
+            
+            $this->resetCertificateForm();
+            auth()->user()->load('developmentRecords.attachments');
+            
+            session()->flash('success', 'Sertifikasi/Pelatihan berhasil diajukan dan sedang menunggu verifikasi.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            session()->flash('error', 'Gagal mengunggah sertifikat: ' . $e->getMessage());
+        }
+    }
+
+    private function resetCertificateForm()
+    {
+        $this->certificateForm = [
+            'type' => 'certification',
+            'title' => '',
+            'organizer' => '',
+            'credential_number' => '',
+            'start_date' => '',
+            'end_date' => '',
+            'expires_at' => '',
+            'description' => '',
+        ];
+        $this->certificateFile = null;
+        $this->showCertificateForm = false;
+    }
+
     public function render()
     {
         $data = [
@@ -248,6 +340,12 @@ new class extends Component {
                             </a>
                         </li>
                         @endif
+
+                        <li class="nav-item">
+                            <a class="nav-link {{ $tab === 'training' ? 'active' : '' }}" wire:click="$set('tab', 'training')" href="#training" role="tab">
+                                <i class="fas fa-certificate me-2"></i> Sertifikasi & Pelatihan
+                            </a>
+                        </li>
 
                     </ul>
 
@@ -576,6 +674,155 @@ new class extends Component {
                             </div>
                         </div>
                         @endif
+
+                        <!-- Tab Sertifikasi & Pelatihan -->
+                        <div class="tab-pane {{ $tab === 'training' ? 'active show' : '' }}" id="training" role="tabpanel">
+                            <div class="form-section">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Riwayat Pengembangan Diri</h5>
+                                    <button wire:click.prevent="toggleCertificateForm" class="btn btn-primary">
+                                        <i class="fas fa-{{ $showCertificateForm ? 'times' : 'plus' }} me-1"></i> 
+                                        {{ $showCertificateForm ? 'Batal' : 'Tambah Baru' }}
+                                    </button>
+                                </div>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> Tab ini menampilkan riwayat sertifikasi, pelatihan, dan pengembangan yang Anda miliki. Pengajuan baru akan diverifikasi terlebih dahulu oleh bagian kepegawaian.
+                                </div>
+
+                                @if($showCertificateForm)
+                                    <div class="card bg-light mb-4" x-data="{ certificateUploading: false, certificateProgress: 0 }">
+                                        <div class="card-body">
+                                            <h6 class="mb-3">Formulir Pengajuan Sertifikasi / Pelatihan</h6>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Tipe Kegiatan <span class="text-danger">*</span></label>
+                                                    <select class="form-select" wire:model="certificateForm.type">
+                                                        <option value="certification">Sertifikasi</option>
+                                                        <option value="training">Pelatihan</option>
+                                                        <option value="workshop">Workshop</option>
+                                                        <option value="seminar">Seminar</option>
+                                                        <option value="award">Penghargaan</option>
+                                                        <option value="license">Lisensi / SIP</option>
+                                                    </select>
+                                                    @error('certificateForm.type') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Judul / Nama Sertifikasi <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" wire:model="certificateForm.title" placeholder="Cth: AWS Certified Developer">
+                                                    @error('certificateForm.title') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Institusi Penyelenggara <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" wire:model="certificateForm.organizer" placeholder="Cth: Amazon Web Services">
+                                                    @error('certificateForm.organizer') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Nomor Kredensial</label>
+                                                    <input type="text" class="form-control" wire:model="certificateForm.credential_number" placeholder="Nomor sertifikat atau lisensi">
+                                                    @error('certificateForm.credential_number') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div class="col-md-6 mb-3"
+                                                    x-on:livewire-upload-start="certificateUploading = true; certificateProgress = 1"
+                                                    x-on:livewire-upload-finish="certificateUploading = false; certificateProgress = 100"
+                                                    x-on:livewire-upload-cancel="certificateUploading = false; certificateProgress = 0"
+                                                    x-on:livewire-upload-error="certificateUploading = false; certificateProgress = 0"
+                                                    x-on:livewire-upload-progress="certificateProgress = $event.detail.progress">
+                                                    <label class="form-label">Unggah Dokumen Sertifikat <span class="text-danger">*</span></label>
+                                                    <input type="file" class="form-control" wire:model="certificateFile" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                                                    <div class="form-text">Format: PDF, JPG, PNG, WEBP (Maks: 5MB)</div>
+                                                    <div class="mt-2" x-show="certificateUploading || certificateProgress === 100" x-transition>
+                                                        <div class="progress progress-sm">
+                                                            <div class="progress-bar" role="progressbar" x-bind:style="`width: ${certificateProgress}%`"></div>
+                                                        </div>
+                                                        <div class="small text-secondary mt-1" x-text="certificateProgress === 100 ? 'File siap diajukan.' : `Mengunggah ${certificateProgress}%`"></div>
+                                                    </div>
+                                                    <div wire:loading wire:target="certificateFile" class="text-secondary small mt-1">
+                                                        <i class="fas fa-spinner fa-spin me-1"></i> Mengunggah file...
+                                                    </div>
+                                                    @error('certificateFile') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <label class="form-label">Tanggal Pelaksanaan / Terbit <span class="text-danger">*</span></label>
+                                                    <input type="date" class="form-control" wire:model="certificateForm.start_date">
+                                                    @error('certificateForm.start_date') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <label class="form-label">Tanggal Selesai (Opsional)</label>
+                                                    <input type="date" class="form-control" wire:model="certificateForm.end_date">
+                                                    <div class="form-text">Kosongkan jika hanya 1 hari</div>
+                                                    @error('certificateForm.end_date') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <label class="form-label">Masa Berlaku s.d. (Opsional)</label>
+                                                    <input type="date" class="form-control" wire:model="certificateForm.expires_at">
+                                                    <div class="form-text">Kosongkan jika seumur hidup</div>
+                                                    @error('certificateForm.expires_at') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div class="col-12 mb-3">
+                                                    <label class="form-label">Deskripsi</label>
+                                                    <textarea class="form-control" rows="2" wire:model="certificateForm.description" placeholder="Catatan kompetensi atau keterangan tambahan"></textarea>
+                                                    @error('certificateForm.description') <span class="text-danger small">{{ $message }}</span> @enderror
+                                                </div>
+                                                
+                                                <div class="col-12 mt-2 text-end">
+                                                    <button type="button" wire:click="submitCertificate" class="btn btn-primary" wire:loading.attr="disabled" wire:target="submitCertificate,certificateFile" x-bind:disabled="certificateUploading">
+                                                        <span wire:loading.remove wire:target="submitCertificate"><i class="fas fa-upload me-1"></i> Unggah Pengajuan</span>
+                                                        <span wire:loading wire:target="submitCertificate"><i class="fas fa-spinner fa-spin me-1"></i> Mengunggah...</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Tipe</th>
+                                                <th>Judul</th>
+                                                <th>Penyelenggara</th>
+                                                <th>Tanggal</th>
+                                                <th>Status</th>
+                                                <th>Masa Berlaku</th>
+                                                <th>Dokumen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse(auth()->user()->developmentRecords as $record)
+                                                <tr>
+                                                    <td>{{ Str::title($record->type) }}</td>
+                                                    <td>{{ $record->title }}</td>
+                                                    <td>{{ $record->organizer ?? '-' }}</td>
+                                                    <td>{{ $record->start_date ? $record->start_date->format('d M Y') : '-' }}</td>
+                                                    <td>
+                                                        @if($record->is_verified)
+                                                            <span class="badge bg-success">Terverifikasi</span>
+                                                        @else
+                                                            <span class="badge bg-warning">Menunggu</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $record->expires_at ? $record->expires_at->format('d M Y') : 'Seumur Hidup' }}</td>
+                                                    <td>
+                                                        @forelse($record->attachments as $attachment)
+                                                            <a href="{{ route('profile.development-attachments.preview', $attachment) }}" target="_blank" class="btn btn-outline-primary mb-1">
+                                                                <i class="fas fa-paperclip me-1"></i> Lihat
+                                                            </a>
+                                                        @empty
+                                                            <span class="text-muted">-</span>
+                                                        @endforelse
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="7" class="text-center">Belum ada riwayat sertifikasi atau pelatihan.</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Submit Button -->

@@ -1,7 +1,19 @@
 import './bootstrap';
 import flatpickr from "flatpickr"; 
 import 'flatpickr/dist/flatpickr.min.css';
+import L from 'leaflet';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import './../../vendor/power-components/livewire-powergrid/dist/powergrid'
+
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: markerIcon2x,
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+});
+
+window.L = L;
 
 window.previewImage = function (input, previewId) {
     if (input.files && input.files[0]) {

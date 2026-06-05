@@ -1,5 +1,6 @@
 /* @import 'tailwindcss'; */
 @import "flatpickr/dist/flatpickr.min.css";
+@import "leaflet/dist/leaflet.css";
 @import './../../vendor/power-components/livewire-powergrid/dist/bootstrap5.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';

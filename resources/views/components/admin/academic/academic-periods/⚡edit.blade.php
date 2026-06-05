@@ -114,7 +114,7 @@ new class extends Component
 
             <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
                 <label for="type">Tipe Periode</label>
-                <select id="type" class="form-control" wire:model.defer="academicPeriodForm.type">
+                <select id="type" class="form-control" wire:model.live="academicPeriodForm.type">
                     <option value="Student Registration">Student Registration</option>
                     <option value="Study Plan">Study Plan</option>
                     <option value="Study Plan Revision">Study Plan Revision</option>

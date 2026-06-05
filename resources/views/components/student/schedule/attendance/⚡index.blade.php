@@ -4,18 +4,19 @@ use App\Models\Academic\AcademicYear;
 use App\Models\Academic\AttendanceSession;
 use App\Models\Academic\StudentRegistration;
 use App\Models\Academic\StudyPlanDetail;
-use Carbon\Carbon;
 use Livewire\Component;
 
 new class extends Component
 {
     public bool $hasProfile = false;
     public bool $hasApprovedRegistration = false;
+    public bool $isAcademicallyActive = false;
     public bool $hasStudyPlanAccess = false;
     public ?int $studentProfileId = null;
     public ?int $activeAcademicYearId = null;
     public ?string $activeAcademicYearName = null;
     public ?string $registrationStatus = null;
+    public ?string $academicStatus = null;
     public ?string $courseName = null;
     public ?int $offeringId = null;
     public array $attendanceItems = [];
@@ -65,12 +66,19 @@ new class extends Component
             ->first();
 
         $this->registrationStatus = $registration?->registration_status;
+        $this->academicStatus = $registration?->academic_status;
 
         if (! $registration || $registration->registration_status !== 'Approved') {
             return;
         }
 
         $this->hasApprovedRegistration = true;
+
+        if ($registration->academic_status !== 'Aktif') {
+            return;
+        }
+
+        $this->isAcademicallyActive = true;
 
         $studyPlanDetail = StudyPlanDetail::query()
             ->with('courseOffering.course')
@@ -166,15 +174,7 @@ new class extends Component
 
     private function isSessionWindowOpen(AttendanceSession $session): bool
     {
-        if ($session->status !== 'Opened' || ! $session->meeting_date || ! $session->start_time || ! $session->end_time) {
-            return false;
-        }
-
-        $now = now();
-        $startAt = Carbon::parse($session->meeting_date->format('Y-m-d') . ' ' . $this->formatTime($session->start_time));
-        $endAt = Carbon::parse($session->meeting_date->format('Y-m-d') . ' ' . $this->formatTime($session->end_time));
-
-        return $now->betweenIncluded($startAt, $endAt);
+        return $session->status === 'Opened' && $session->closed_at === null;
     }
 };
 ?>
@@ -296,6 +296,8 @@ new class extends Component
         <div class="alert alert-warning">Profil mahasiswa belum tersedia.</div>
     @elseif (! $hasApprovedRegistration)
         <div class="alert alert-warning">Registrasi semester belum disetujui, data kehadiran belum bisa diakses.</div>
+    @elseif (! $isAcademicallyActive)
+        <div class="alert alert-warning">Status akademik semester ini adalah {{ $academicStatus ?? '-' }}, data kehadiran belum bisa diakses.</div>
     @elseif (! $hasStudyPlanAccess)
         <div class="alert alert-danger">Data kelas tidak ditemukan atau Anda tidak memiliki akses.</div>
     @else
@@ -420,11 +422,11 @@ new class extends Component
                                             <a href="{{ route('student.schedule.attendance.record', ['sessionId' => $item['session_id']]) }}" 
                                                class="action-btn" 
                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                                <i class="fas fa-edit"></i> Isi / Update
+                                                <i class="fas fa-qrcode"></i> Scan Absensi
                                             </a>
                                         @else
                                             <button type="button" class="action-btn" disabled style="background: #e5e7eb; color: #6b7280;">
-                                                <i class="fas fa-lock"></i> Belum Bisa
+                                                <i class="fas fa-lock"></i> Menunggu Dosen
                                             </button>
                                         @endif
                                     </td>

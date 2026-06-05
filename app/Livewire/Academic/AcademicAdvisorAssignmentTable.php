@@ -4,8 +4,10 @@ namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
 use App\Models\Academic\AcademicAdvisorAssignment;
+use App\Support\AcademicAdvisorService;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
@@ -99,6 +101,23 @@ final class AcademicAdvisorAssignmentTable extends BasePowerGridTable
             $this->dispatch('pg:eventRefresh-academicAdvisorAssignmentTable');
 
             return;
+        }
+
+        if ((bool) $value) {
+            try {
+                app(AcademicAdvisorService::class)->ensureNoActiveConflict(
+                    studentProfileId: $assignment->student_profile_id,
+                    academicYearId: $assignment->academic_year_id,
+                    startDate: $assignment->start_date,
+                    endDate: $assignment->end_date,
+                    ignoreId: $assignment->id,
+                );
+            } catch (ValidationException $exception) {
+                session()->flash('error', $exception->validator->errors()->first() ?: 'Assignment aktif bentrok dengan assignment lain.');
+                $this->dispatch('pg:eventRefresh-academicAdvisorAssignmentTable');
+
+                return;
+            }
         }
 
         $assignment->update([

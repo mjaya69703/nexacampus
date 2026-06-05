@@ -119,6 +119,8 @@ new class extends Component
                 }
 
                 $record->status = $status;
+                $record->source = 'manual_lecturer';
+                $record->verification_status = 'verified';
                 $record->recorded_at = now();
                 $record->recorded_by = auth()->id();
                 $record->updated_by = auth()->id();

@@ -5,6 +5,7 @@ namespace App\Models\Academic;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -66,6 +67,11 @@ class AcademicAdvisorAssignment extends Model
     public function academicYear(): BelongsTo
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(StudentAdvisorNote::class, 'academic_advisor_assignment_id');
     }
 
     public function createdBy(): BelongsTo

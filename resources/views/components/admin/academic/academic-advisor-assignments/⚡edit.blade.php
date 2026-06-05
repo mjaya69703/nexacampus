@@ -4,19 +4,23 @@ use App\Models\Academic\AcademicAdvisorAssignment;
 use App\Models\Academic\AcademicYear;
 use App\Models\Academic\LecturerProfile;
 use App\Models\Academic\StudentProfile;
-use Illuminate\Validation\Rule;
+use App\Support\AcademicAdvisorService;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public AcademicAdvisorAssignment $assignment;
     public array $assignmentForm = [];
-    public array $students = [];
-    public array $lecturers = [];
     public array $academicYears = [];
+    public string $studentSearch = '';
+    public string $lecturerSearch = '';
 
     public function mount($id): void
     {
-        $this->assignment = AcademicAdvisorAssignment::query()->findOrFail($id);
+        $this->assignment = AcademicAdvisorAssignment::query()
+            ->with(['studentProfile.user', 'lecturerProfile.user'])
+            ->findOrFail($id);
 
         $this->assignmentForm = [
             'student_profile_id' => $this->assignment->student_profile_id,
@@ -28,64 +32,38 @@ new class extends Component {
             'notes' => $this->assignment->notes,
         ];
 
-        $this->students = StudentProfile::query()
-            ->with('user')
-            ->orderBy('nim')
-            ->get()
-            ->map(fn (StudentProfile $student) => [
-                'id' => $student->id,
-                'label' => ($student->nim ?? '-') . ' - ' . ($student->user?->name ?? '-'),
-            ])
-            ->toArray();
-
-        $this->lecturers = LecturerProfile::query()
-            ->with('user')
-            ->orderBy('nidn')
-            ->get()
-            ->map(fn (LecturerProfile $lecturer) => [
-                'id' => $lecturer->id,
-                'label' => ($lecturer->nidn ?? $lecturer->nip ?? '-') . ' - ' . ($lecturer->user?->name ?? '-'),
-            ])
-            ->toArray();
-
         $this->academicYears = AcademicYear::query()
             ->orderByDesc('start_date')
             ->get(['id', 'name'])
-            ->map(fn (AcademicYear $year) => [
-                'id' => $year->id,
-                'label' => $year->name,
-            ])
-            ->toArray();
+            ->map(fn (AcademicYear $year) => ['id' => $year->id, 'label' => $year->name])
+            ->all();
     }
 
-    public function cancel(): void
+    public function selectStudent(int $studentId): void
     {
-        $this->redirectRoute('admin.academic.academic-advisor-assignments.index');
+        $this->assignmentForm['student_profile_id'] = $studentId;
     }
 
-    public function updateAssignment(): void
+    public function selectLecturer(int $lecturerId): void
+    {
+        $this->assignmentForm['lecturer_profile_id'] = $lecturerId;
+    }
+
+    public function updateAssignment(AcademicAdvisorService $advisorService): void
     {
         $validated = $this->validate([
-            'assignmentForm.student_profile_id' => 'required|integer|exists:student_profiles,id',
-            'assignmentForm.lecturer_profile_id' => 'required|integer|exists:lecturer_profiles,id',
-            'assignmentForm.academic_year_id' => [
-                'nullable',
-                'integer',
-                'exists:academic_years,id',
-                Rule::unique('academic_advisor_assignments', 'academic_year_id')
-                    ->ignore($this->assignment->id)
-                    ->whereNull('deleted_at')
-                    ->where('student_profile_id', $this->assignmentForm['student_profile_id']),
-            ],
-            'assignmentForm.start_date' => 'nullable|date',
-            'assignmentForm.end_date' => 'nullable|date|after_or_equal:assignmentForm.start_date',
-            'assignmentForm.is_active' => 'boolean',
-            'assignmentForm.notes' => 'nullable|string',
+            'assignmentForm.student_profile_id' => ['required', 'integer', 'exists:student_profiles,id'],
+            'assignmentForm.lecturer_profile_id' => ['required', 'integer', 'exists:lecturer_profiles,id'],
+            'assignmentForm.academic_year_id' => ['nullable', 'integer', 'exists:academic_years,id'],
+            'assignmentForm.start_date' => ['nullable', 'date'],
+            'assignmentForm.end_date' => ['nullable', 'date', 'after_or_equal:assignmentForm.start_date'],
+            'assignmentForm.is_active' => ['boolean'],
+            'assignmentForm.notes' => ['nullable', 'string'],
         ]);
 
-        $this->assignment->update([
-            'student_profile_id' => $validated['assignmentForm']['student_profile_id'],
-            'lecturer_profile_id' => $validated['assignmentForm']['lecturer_profile_id'],
+        $advisorService->updateAssignment($this->assignment, [
+            'student_profile_id' => (int) $validated['assignmentForm']['student_profile_id'],
+            'lecturer_profile_id' => (int) $validated['assignmentForm']['lecturer_profile_id'],
             'academic_year_id' => $validated['assignmentForm']['academic_year_id'] ?: null,
             'start_date' => $validated['assignmentForm']['start_date'] ?: null,
             'end_date' => $validated['assignmentForm']['end_date'] ?: null,
@@ -95,6 +73,83 @@ new class extends Component {
         ]);
 
         session()->flash('success', 'Assignment dosen PA berhasil diperbarui.');
+        $this->redirectRoute('admin.academic.academic-advisor-assignments.index');
+    }
+
+    public function studentResults(): array
+    {
+        return StudentProfile::query()
+            ->with(['user', 'studyProgram'])
+            ->when(trim($this->studentSearch) !== '', function (Builder $query) {
+                $search = '%'.trim($this->studentSearch).'%';
+
+                $query->where(function (Builder $nested) use ($search) {
+                    $nested->where('nim', 'like', $search)
+                        ->orWhere('entry_year', 'like', $search)
+                        ->orWhereHas('user', fn (Builder $user) => $user
+                            ->where('first_name', 'like', $search)
+                            ->orWhere('last_name', 'like', $search)
+                            ->orWhere('email', 'like', $search));
+                });
+            })
+            ->orderBy('nim')
+            ->limit(8)
+            ->get()
+            ->map(fn (StudentProfile $student) => [
+                'id' => $student->id,
+                'label' => trim(($student->nim ?? '-').' - '.($student->user?->name ?? '-')),
+                'meta' => trim(($student->studyProgram?->name ?? '-').' / Angkatan '.($student->entry_year ?? '-')),
+            ])
+            ->all();
+    }
+
+    public function lecturerResults(): array
+    {
+        return LecturerProfile::query()
+            ->with('user')
+            ->when(trim($this->lecturerSearch) !== '', function (Builder $query) {
+                $search = '%'.trim($this->lecturerSearch).'%';
+
+                $query->where(function (Builder $nested) use ($search) {
+                    $nested->where('nidn', 'like', $search)
+                        ->orWhere('nidk', 'like', $search)
+                        ->orWhere('nip', 'like', $search)
+                        ->orWhereHas('user', fn (Builder $user) => $user
+                            ->where('first_name', 'like', $search)
+                            ->orWhere('last_name', 'like', $search)
+                            ->orWhere('email', 'like', $search));
+                });
+            })
+            ->orderBy('nidn')
+            ->limit(8)
+            ->get()
+            ->map(fn (LecturerProfile $lecturer) => [
+                'id' => $lecturer->id,
+                'label' => app(AcademicAdvisorService::class)->lecturerLabel($lecturer),
+            ])
+            ->all();
+    }
+
+    public function selectedStudentLabel(): ?string
+    {
+        $student = StudentProfile::query()
+            ->with(['user', 'studyProgram'])
+            ->find($this->assignmentForm['student_profile_id'] ?? null);
+
+        return $student ? trim(($student->nim ?? '-').' - '.($student->user?->name ?? '-')) : null;
+    }
+
+    public function selectedLecturerLabel(): ?string
+    {
+        $lecturer = LecturerProfile::query()
+            ->with('user')
+            ->find($this->assignmentForm['lecturer_profile_id'] ?? null);
+
+        return $lecturer ? app(AcademicAdvisorService::class)->lecturerLabel($lecturer) : null;
+    }
+
+    public function cancel(): void
+    {
         $this->redirectRoute('admin.academic.academic-advisor-assignments.index');
     }
 
@@ -108,89 +163,96 @@ new class extends Component {
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
+<div>
+    <x-alert />
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Edit Assignment Dosen PA</h5>
-                <button type="button" class="btn btn-secondary " wire:click="cancel">
-                    <i class="fas fa-arrow-left me-1"></i> Kembali
+    <form wire:submit.prevent="updateAssignment">
+        <div class="card" style="border:0;border-radius:18px;box-shadow:0 12px 30px rgba(15,23,42,.08);">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                <div>
+                    <h3 class="card-title mb-1" style="font-weight:800;">Edit Assignment Dosen PA</h3>
+                    <div class="text-secondary">Ubah mahasiswa, dosen PA, atau periode assignment aktif.</div>
+                </div>
+                <button type="button" class="btn btn-light" wire:click="cancel">
+                    <i class="fas fa-arrow-left me-1"></i>Kembali
                 </button>
             </div>
-            <div class="card-body">
-                <form wire:submit.prevent="updateAssignment">
-                    <div class="row">
-                        <div class="form-group col-lg-6 col-md-6 col-sm-12 mb-3">
-                            <label>Mahasiswa <span class="text-danger">*</span></label>
-                            <select class="form-control" wire:model.defer="assignmentForm.student_profile_id">
-                                <option value="">Pilih Mahasiswa</option>
-                                @foreach ($students as $student)
-                                    <option value="{{ $student['id'] }}">{{ $student['label'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('assignmentForm.student_profile_id') <span class="text-danger">{{ $message }}</span> @enderror
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-xl-6">
+                        <label class="form-label required">Mahasiswa</label>
+                        <input type="text" class="form-control" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari nama, NIM, email, atau angkatan...">
+                        @if ($this->selectedStudentLabel())
+                            <div class="alert alert-info mt-2 mb-0">Terpilih: <strong>{{ $this->selectedStudentLabel() }}</strong></div>
+                        @endif
+                        <div class="list-group mt-2">
+                            @foreach ($this->studentResults() as $student)
+                                <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start" wire:click="selectStudent({{ $student['id'] }})">
+                                    <span>
+                                        <strong>{{ $student['label'] }}</strong>
+                                        <span class="d-block text-secondary small">{{ $student['meta'] }}</span>
+                                    </span>
+                                    <i class="fas fa-check text-primary"></i>
+                                </button>
+                            @endforeach
                         </div>
-
-                        <div class="form-group col-lg-6 col-md-6 col-sm-12 mb-3">
-                            <label>Dosen PA <span class="text-danger">*</span></label>
-                            <select class="form-control" wire:model.defer="assignmentForm.lecturer_profile_id">
-                                <option value="">Pilih Dosen</option>
-                                @foreach ($lecturers as $lecturer)
-                                    <option value="{{ $lecturer['id'] }}">{{ $lecturer['label'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('assignmentForm.lecturer_profile_id') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="form-group col-lg-4 col-md-6 col-sm-12 mb-3">
-                            <label>Tahun Akademik</label>
-                            <select class="form-control" wire:model.defer="assignmentForm.academic_year_id">
-                                <option value="">Umum (Semua Tahun)</option>
-                                @foreach ($academicYears as $year)
-                                    <option value="{{ $year['id'] }}">{{ $year['label'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('assignmentForm.academic_year_id') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="form-group col-lg-4 col-md-6 col-sm-12 mb-3">
-                            <label>Tanggal Mulai</label>
-                            <input type="date" class="form-control" wire:model.defer="assignmentForm.start_date">
-                            @error('assignmentForm.start_date') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="form-group col-lg-4 col-md-6 col-sm-12 mb-3">
-                            <label>Tanggal Selesai</label>
-                            <input type="date" class="form-control" wire:model.defer="assignmentForm.end_date">
-                            @error('assignmentForm.end_date') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="form-group col-12 mb-3">
-                            <label>Catatan</label>
-                            <textarea rows="2" class="form-control" wire:model.defer="assignmentForm.notes"></textarea>
-                            @error('assignmentForm.notes') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="form-group col-12 mb-3">
-                            <label class="form-check">
-                                <input class="form-check-input" type="checkbox" wire:model.defer="assignmentForm.is_active">
-                                <span class="form-check-label">Aktif</span>
-                            </label>
-                        </div>
-
-                        <div class="form-group col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i> Simpan
-                            </button>
-                            <button type="button" class="btn btn-secondary" wire:click="cancel">
-                                <i class="fas fa-times me-1"></i> Batal
-                            </button>
-                        </div>
+                        @error('assignmentForm.student_profile_id') <small class="text-danger">{{ $message }}</small> @enderror
                     </div>
-                </form>
+
+                    <div class="col-xl-6">
+                        <label class="form-label required">Dosen PA</label>
+                        <input type="text" class="form-control" wire:model.live.debounce.300ms="lecturerSearch" placeholder="Cari nama, NIDN, NIP, atau email...">
+                        @if ($this->selectedLecturerLabel())
+                            <div class="alert alert-info mt-2 mb-0">Terpilih: <strong>{{ $this->selectedLecturerLabel() }}</strong></div>
+                        @endif
+                        <div class="list-group mt-2">
+                            @foreach ($this->lecturerResults() as $lecturer)
+                                <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between" wire:click="selectLecturer({{ $lecturer['id'] }})">
+                                    <strong>{{ $lecturer['label'] }}</strong>
+                                    <i class="fas fa-check text-primary"></i>
+                                </button>
+                            @endforeach
+                        </div>
+                        @error('assignmentForm.lecturer_profile_id') <small class="text-danger">{{ $message }}</small> @enderror
+                    </div>
+
+                    <div class="col-lg-4">
+                        <label class="form-label">Tahun Akademik</label>
+                        <select class="form-control" wire:model.defer="assignmentForm.academic_year_id">
+                            <option value="">Umum (Semua Tahun)</option>
+                            @foreach ($academicYears as $year)
+                                <option value="{{ $year['id'] }}">{{ $year['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-lg-4">
+                        <label class="form-label">Tanggal Mulai</label>
+                        <input type="date" class="form-control" wire:model.defer="assignmentForm.start_date">
+                    </div>
+                    <div class="col-lg-4">
+                        <label class="form-label">Tanggal Selesai</label>
+                        <input type="date" class="form-control" wire:model.defer="assignmentForm.end_date">
+                        @error('assignmentForm.end_date') <small class="text-danger">{{ $message }}</small> @enderror
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Catatan</label>
+                        <textarea rows="3" class="form-control" wire:model.defer="assignmentForm.notes"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" wire:model.defer="assignmentForm.is_active">
+                            <span class="form-check-label">Aktif</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-light" wire:click="cancel">Batal</button>
+                <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
+                    <span wire:loading.remove><i class="fas fa-save me-1"></i>Simpan Perubahan</span>
+                    <span wire:loading><i class="fas fa-spinner fa-spin me-1"></i>Menyimpan...</span>
+                </button>
             </div>
         </div>
-    </div>
+    </form>
 </div>

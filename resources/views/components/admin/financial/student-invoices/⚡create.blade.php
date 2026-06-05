@@ -178,7 +178,7 @@ new class extends Component
             'form.academic_year_id' => $academicYearRule,
             'form.semester' => 'required_if:form.invoice_kind,tuition|nullable|integer|min:1|max:14',
             'form.due_date' => 'required_if:form.invoice_kind,custom|nullable|date',
-            'form.invoice_type' => 'required|in:tuition,custom,admission,registration,graduation,exam,library_fine,certificate,other',
+            'form.invoice_type' => 'required|in:tuition,custom,admission,registration,leave,transfer,graduation,exam,library_fine,certificate,other',
             'form.notes' => 'nullable|string|max:1000',
             'form.issue_immediately' => 'required|boolean',
         ];
@@ -333,6 +333,8 @@ new class extends Component
                                 <option value="custom">Custom</option>
                                 <option value="admission">Admission</option>
                                 <option value="registration">Registration</option>
+                                <option value="leave">Leave</option>
+                                <option value="transfer">Transfer</option>
                                 <option value="graduation">Graduation</option>
                                 <option value="exam">Exam</option>
                                 <option value="library_fine">Library Fine</option>

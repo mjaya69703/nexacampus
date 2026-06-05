@@ -5,8 +5,11 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Academic\LecturerProfile;
 use App\Models\Academic\StudentProfile;
+use App\Models\Organization\EmployeeProfile;
+use App\Models\Organization\WorkUnit;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -130,6 +133,33 @@ class User extends Authenticatable
         return $this->hasOne(LecturerProfile::class);
     }
 
+    public function employeeProfile(): HasOne
+    {
+        return $this->hasOne(EmployeeProfile::class);
+    }
+
+    public function workUnits(): BelongsToMany
+    {
+        return $this->belongsToMany(WorkUnit::class, 'work_unit_user')
+            ->withPivot(['position', 'is_active'])
+            ->withTimestamps();
+    }
+
+    public function activeWorkUnits(): BelongsToMany
+    {
+        return $this->workUnits()->wherePivot('is_active', true);
+    }
+
+    public function developmentRecords(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Organization\UserDevelopmentRecord::class);
+    }
+
+    public function tridharmaRecords(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Organization\TridharmaRecord::class);
+    }
+
     // Prefix untuk route names berdasarkan active role
     public function getPrefixAttribute(): string
     {
@@ -143,6 +173,7 @@ class User extends Authenticatable
             'admin', 'superuser' => 'admin.',
             'student' => 'student.',
             'lecturer' => 'lecturer.',
+            'academic-leader' => 'academic-leader.',
             default => 'admin.',
         };
     }
