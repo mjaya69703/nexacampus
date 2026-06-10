@@ -13,7 +13,15 @@ new class extends Component
         $studentProfile = auth()->user()?->studentProfile;
         abort_unless($studentProfile, 404);
 
-        $this->request = StudentTransferRequest::with(['fromStudyProgram', 'toStudyProgram', 'histories.changedBy', 'transferFeeInvoice'])
+        $this->request = StudentTransferRequest::with([
+            'fromStudyProgram',
+            'toStudyProgram',
+            'histories.changedBy',
+            'transferFeeInvoice',
+            'approvalRequest.steps.approverUser',
+            'approvalRequest.steps.organizationalPosition',
+            'approvalRequest.steps.workUnit',
+        ])
             ->where('student_profile_id', $studentProfile->id)
             ->findOrFail($id);
     }
@@ -31,7 +39,7 @@ new class extends Component
         return match ($status) {
             'applied' => 'bg-green-lt text-green',
             'approved' => 'bg-blue-lt text-blue',
-            'approved_pending_payment', 'revision_requested' => 'bg-yellow-lt text-yellow',
+            'approved_pending_payment', 'revision_requested', 'in_approval' => 'bg-yellow-lt text-yellow',
             'under_review' => 'bg-indigo-lt text-indigo',
             'rejected', 'cancelled' => 'bg-red-lt text-red',
             default => 'bg-secondary-lt text-secondary',
@@ -42,9 +50,19 @@ new class extends Component
     {
         return match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Persetujuan',
             'approved_pending_payment' => 'Menunggu Pembayaran',
             default => str($status)->replace('_', ' ')->title()->toString(),
         };
+    }
+
+    public function historyNotes($history): string
+    {
+        if ($history->to_status === 'in_approval' && $this->request->status === 'in_approval') {
+            return $this->request->approvalRequest?->waitingMessage() ?? ($history->notes ?: '-');
+        }
+
+        return $history->notes ?: '-';
     }
 
     public function fileUrl(?string $path): ?string
@@ -173,7 +191,7 @@ new class extends Component
                                 <strong>{{ $this->statusLabel($history->to_status) }}</strong>
                                 <span class="text-muted">{{ $history->created_at?->format('d M Y H:i') }}</span>
                             </div>
-                            <div class="small text-muted">{{ $history->notes ?: '-' }}</div>
+                            <div class="small text-muted">{{ $this->historyNotes($history) }}</div>
                         </div>
                     </div>
                 </div>

@@ -11,7 +11,7 @@ new class extends Component
     {
         $this->summary = [
             'total' => GraduationApplication::count(),
-            'pending' => GraduationApplication::whereIn('status', ['submitted', 'under_review', 'revision_requested'])->count(),
+            'pending' => GraduationApplication::whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested'])->count(),
             'approved' => GraduationApplication::where('status', 'approved')->count(),
             'finalized' => GraduationApplication::where('status', 'finalized')->count(),
         ];

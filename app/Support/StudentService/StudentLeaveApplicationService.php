@@ -5,9 +5,11 @@ namespace App\Support\StudentService;
 use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudentRegistration;
 use App\Models\Financial\StudentInvoice;
+use App\Models\Organization\ApprovalTemplate;
 use App\Models\StudentService\StudentLeaveApplication;
 use App\Support\Financial\InvoiceGenerationService;
 use App\Support\Financial\InvoiceStatusService;
+use App\Support\Organization\ApprovalEngine;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +39,7 @@ class StudentLeaveApplicationService
             $this->recordHistory($application, null, 'submitted', 'Leave application submitted by student.', auth()->id());
             app(StudentServiceNotificationService::class)->leave($application, 'submitted', 'Pengajuan cuti berhasil dikirim.');
 
-            return $application;
+            return $this->submitForApproval($application, auth()->id());
         });
     }
 
@@ -75,7 +77,7 @@ class StudentLeaveApplicationService
             $this->recordHistory($application, $from, 'submitted', 'Leave application corrected and resubmitted by student.', auth()->id());
             app(StudentServiceNotificationService::class)->leave($application, 'submitted', 'Perbaikan pengajuan cuti berhasil dikirim ulang.');
 
-            return $application->refresh();
+            return $this->submitForApproval($application->refresh(), auth()->id());
         });
     }
 
@@ -83,6 +85,12 @@ class StudentLeaveApplicationService
     {
         return DB::transaction(function () use ($application, $status, $notes, $userId): StudentLeaveApplication {
             $from = $application->status;
+
+            if ($status === 'revision_requested' && $application->approvalRequest && $application->approvalRequest->status === 'in_progress') {
+                app(ApprovalEngine::class)->cancel($application->approvalRequest, $userId ? \App\Models\User::find($userId) : null, $notes);
+                $application->refresh();
+            }
+
             $updates = [
                 'status' => $status,
                 'admin_notes' => $notes,
@@ -110,26 +118,70 @@ class StudentLeaveApplicationService
         float $feeAmount = 0,
         ?string $feeDueDate = null,
     ): StudentLeaveApplication {
-        if (! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true)) {
+        if (! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true)) {
             throw new \RuntimeException('Status pengajuan cuti saat ini tidak bisa diapprove.');
         }
 
         return DB::transaction(function () use ($application, $notes, $userId, $feeAmount, $feeDueDate): StudentLeaveApplication {
-            $from = $application->status;
-            $invoice = null;
             $feeAmount = max(0, $feeAmount);
             $feeDueDate = $feeDueDate ?: now()->addDays(7)->toDateString();
+
+            $application->update([
+                'admin_notes' => $notes,
+                'leave_fee_amount' => $feeAmount,
+                'leave_fee_due_date' => $feeAmount > 0 ? $feeDueDate : null,
+                'reviewed_by' => $userId,
+                'reviewed_at' => now(),
+            ]);
+
+            if (! $application->approvalRequest || $application->approvalRequest->status !== 'in_progress') {
+                $this->submitForApproval($application->refresh(), $application->studentProfile?->user_id);
+                $application->refresh();
+            }
+
+            app(ApprovalEngine::class)->approve($application->approvalRequest, \App\Models\User::findOrFail($userId), $notes);
+
+            return $application->refresh();
+        });
+    }
+
+    public function reject(StudentLeaveApplication $application, ?string $notes, ?int $userId): StudentLeaveApplication
+    {
+        if (! $application->approvalRequest || $application->approvalRequest->status !== 'in_progress') {
+            throw new \RuntimeException('Approval pengajuan cuti tidak sedang berjalan.');
+        }
+
+        app(ApprovalEngine::class)->reject($application->approvalRequest, \App\Models\User::findOrFail($userId), $notes);
+
+        return $application->refresh();
+    }
+
+    public function approveFromApproval(StudentLeaveApplication $application, ?int $userId, ?string $notes = null): StudentLeaveApplication
+    {
+        return DB::transaction(function () use ($application, $notes, $userId): StudentLeaveApplication {
+            $from = $application->status;
+            $application = $application->fresh(['studentProfile', 'academicYear', 'leaveFeeInvoice']);
+
+            if (in_array($application->status, ['approved', 'approved_pending_payment', 'activated', 'returned'], true)) {
+                return $application;
+            }
+
+            $invoice = null;
+            $feeAmount = max(0, (float) $application->leave_fee_amount);
             $status = $feeAmount > 0 ? 'approved_pending_payment' : 'approved';
 
             if ($feeAmount > 0) {
-                $invoice = $this->createLeaveFeeInvoice($application, $feeAmount, $feeDueDate, $userId);
+                $invoice = $this->createLeaveFeeInvoice(
+                    $application,
+                    $feeAmount,
+                    $application->leave_fee_due_date?->toDateString() ?: now()->addDays(7)->toDateString(),
+                    $userId,
+                );
             }
 
             $application->update([
                 'status' => $status,
-                'admin_notes' => $notes,
-                'leave_fee_amount' => $feeAmount,
-                'leave_fee_due_date' => $feeAmount > 0 ? $feeDueDate : null,
+                'admin_notes' => $notes ?: $application->admin_notes,
                 'leave_fee_invoice_id' => $invoice?->id,
                 'reviewed_by' => $userId,
                 'reviewed_at' => now(),
@@ -143,6 +195,38 @@ class StudentLeaveApplicationService
 
             $this->recordHistory($application, $from, $status, $historyNotes, $userId);
             app(StudentServiceNotificationService::class)->leave($application, $status, $historyNotes);
+
+            return $application->refresh();
+        });
+    }
+
+    public function rejectFromApproval(StudentLeaveApplication $application, ?int $userId, ?string $notes = null): StudentLeaveApplication
+    {
+        return $this->setStatus($application, 'rejected', $notes, $userId);
+    }
+
+    public function requestRevisionFromApproval(StudentLeaveApplication $application, ?int $userId, ?string $notes = null): StudentLeaveApplication
+    {
+        return $this->setStatus($application, 'revision_requested', $notes, $userId);
+    }
+
+    public function markFeePaid(StudentLeaveApplication $application, ?int $userId = null): StudentLeaveApplication
+    {
+        if ($application->status !== 'approved_pending_payment') {
+            return $application;
+        }
+
+        return DB::transaction(function () use ($application, $userId): StudentLeaveApplication {
+            $application = StudentLeaveApplication::query()->lockForUpdate()->findOrFail($application->id);
+
+            if ($application->status !== 'approved_pending_payment') {
+                return $application;
+            }
+
+            $application->update(['status' => 'approved']);
+            $notes = 'Pembayaran biaya cuti telah lunas. Pengajuan siap diaktifkan.';
+            $this->recordHistory($application, 'approved_pending_payment', 'approved', $notes, $userId);
+            app(StudentServiceNotificationService::class)->leave($application, 'approved', $notes);
 
             return $application->refresh();
         });
@@ -225,6 +309,41 @@ class StudentLeaveApplicationService
             'notes' => $notes,
             'changed_by' => $userId,
         ]);
+    }
+
+    private function submitForApproval(StudentLeaveApplication $application, ?int $userId = null): StudentLeaveApplication
+    {
+        $application->loadMissing(['studentProfile.user', 'academicYear']);
+
+        $template = ApprovalTemplate::query()
+            ->where('code', 'STUDENT_LEAVE_REVIEW')
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $approval = app(ApprovalEngine::class)->submitFromTemplate(
+            template: $template,
+            subject: 'Pengajuan cuti '.$application->studentProfile?->user?->name.' '.$application->application_number,
+            requester: $application->studentProfile?->user,
+            approvable: $application,
+            payload: [
+                'student_profile_id' => $application->student_profile_id,
+                'academic_year_id' => $application->academic_year_id,
+                'semester' => $application->semester,
+                'duration_semesters' => $application->duration_semesters,
+            ],
+            reference: $application->application_number,
+            notes: $application->student_notes ?: $application->reason,
+            createdBy: $userId,
+        );
+
+        $from = $application->status;
+        $application->update([
+            'approval_request_id' => $approval->id,
+            'status' => 'in_approval',
+        ]);
+        $this->recordHistory($application, $from, 'in_approval', $approval->waitingMessage(), $userId);
+
+        return $application->refresh();
     }
 
     private function storeAttachment(?UploadedFile $attachment): array

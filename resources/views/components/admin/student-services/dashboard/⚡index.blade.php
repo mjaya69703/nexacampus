@@ -17,10 +17,10 @@ new class extends Component
     public function stats(): array
     {
         return [
-            'pending_letters' => ServiceLetterRequest::whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved'])->count(),
-            'pending_leaves' => StudentLeaveApplication::whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved_pending_payment', 'approved'])->count(),
-            'pending_transfers' => StudentTransferRequest::whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved_pending_payment', 'approved'])->count(),
-            'pending_graduations' => GraduationApplication::whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved'])->count(),
+            'pending_letters' => ServiceLetterRequest::whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved'])->count(),
+            'pending_leaves' => StudentLeaveApplication::whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved_pending_payment', 'approved'])->count(),
+            'pending_transfers' => StudentTransferRequest::whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved_pending_payment', 'approved'])->count(),
+            'pending_graduations' => GraduationApplication::whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved'])->count(),
             'open_complaints' => StudentComplaint::whereNotIn('status', ['resolved', 'closed', 'rejected'])->count(),
             'overdue_complaints' => StudentComplaint::whereNotIn('status', ['resolved', 'closed', 'rejected'])
                 ->whereNotNull('due_at')
@@ -33,22 +33,22 @@ new class extends Component
     {
         return [
             'letters' => ServiceLetterRequest::with(['letterType', 'studentProfile.user'])
-                ->whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved'])
+                ->whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved'])
                 ->latest()
                 ->limit(5)
                 ->get(),
             'leaves' => StudentLeaveApplication::with(['studentProfile.user', 'academicYear'])
-                ->whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved_pending_payment', 'approved'])
+                ->whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved_pending_payment', 'approved'])
                 ->latest()
                 ->limit(5)
                 ->get(),
             'transfers' => StudentTransferRequest::with(['studentProfile.user', 'fromStudyProgram', 'toStudyProgram'])
-                ->whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved_pending_payment', 'approved'])
+                ->whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved_pending_payment', 'approved'])
                 ->latest()
                 ->limit(5)
                 ->get(),
             'graduations' => GraduationApplication::with(['studentProfile.user', 'graduationBatch'])
-                ->whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved'])
+                ->whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved'])
                 ->latest()
                 ->limit(5)
                 ->get(),
@@ -65,6 +65,7 @@ new class extends Component
     {
         return match ($status) {
             'submitted' => 'Masuk',
+            'in_approval' => 'Menunggu Approval',
             'under_review', 'in_review' => 'Direview',
             'revision_requested' => 'Perlu Perbaikan',
             'approved' => 'Approved',
@@ -84,7 +85,7 @@ new class extends Component
     {
         return match ($status) {
             'approved', 'issued', 'activated', 'applied', 'finalized' => 'bg-green-lt text-green',
-            'revision_requested', 'waiting_student', 'approved_pending_payment' => 'bg-yellow-lt text-yellow',
+            'revision_requested', 'waiting_student', 'approved_pending_payment', 'in_approval' => 'bg-yellow-lt text-yellow',
             'rejected', 'cancelled' => 'bg-red-lt text-red',
             'under_review', 'in_review', 'responded', 'reopened' => 'bg-blue-lt text-blue',
             default => 'bg-secondary-lt text-secondary',

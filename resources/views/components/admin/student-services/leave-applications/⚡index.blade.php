@@ -17,7 +17,7 @@ new class extends Component
     {
         return [
             'total' => StudentLeaveApplication::count(),
-            'pending' => StudentLeaveApplication::whereIn('status', ['submitted', 'under_review'])->count(),
+            'pending' => StudentLeaveApplication::whereIn('status', ['submitted', 'in_approval', 'under_review'])->count(),
             'approved' => StudentLeaveApplication::where('status', 'approved')->count(),
             'active' => StudentLeaveApplication::where('status', 'activated')->count(),
         ];

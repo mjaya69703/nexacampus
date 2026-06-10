@@ -5,9 +5,12 @@ namespace App\Support\StudentService;
 use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudyProgram;
 use App\Models\Financial\StudentInvoice;
+use App\Models\Organization\ApprovalTemplate;
 use App\Models\StudentService\StudentTransferRequest;
 use App\Support\Financial\InvoiceGenerationService;
 use App\Support\Financial\InvoiceStatusService;
+use App\Support\Organization\ApprovalEngine;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -40,7 +43,7 @@ class StudentTransferRequestService
             $this->recordHistory($request, null, 'submitted', 'Transfer request submitted by student.', auth()->id());
             app(StudentServiceNotificationService::class)->transfer($request, 'submitted', 'Pengajuan pindah berhasil dikirim.');
 
-            return $request;
+            return $this->submitForApproval($request, auth()->id());
         });
     }
 
@@ -82,7 +85,7 @@ class StudentTransferRequestService
             $this->recordHistory($request, $from, 'submitted', 'Transfer request corrected and resubmitted by student.', auth()->id());
             app(StudentServiceNotificationService::class)->transfer($request, 'submitted', 'Perbaikan pengajuan pindah berhasil dikirim ulang.');
 
-            return $request->refresh();
+            return $this->submitForApproval($request->refresh(), auth()->id());
         });
     }
 
@@ -90,6 +93,12 @@ class StudentTransferRequestService
     {
         return DB::transaction(function () use ($request, $status, $notes, $userId): StudentTransferRequest {
             $from = $request->status;
+
+            if ($status === 'revision_requested' && $request->approvalRequest && $request->approvalRequest->status === 'in_progress') {
+                app(ApprovalEngine::class)->cancel($request->approvalRequest, $userId ? User::find($userId) : null, $notes);
+                $request->refresh();
+            }
+
             $request->update([
                 'status' => $status,
                 'admin_notes' => $notes,
@@ -111,23 +120,15 @@ class StudentTransferRequestService
         float $feeAmount = 0,
         ?string $feeDueDate = null,
     ): StudentTransferRequest {
-        if (! in_array($request->status, ['submitted', 'under_review', 'revision_requested'], true)) {
+        if (! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true)) {
             throw new \RuntimeException('Status pengajuan transfer saat ini tidak bisa diapprove.');
         }
 
         return DB::transaction(function () use ($request, $evaluation, $userId, $feeAmount, $feeDueDate): StudentTransferRequest {
-            $from = $request->status;
-            $invoice = null;
             $feeAmount = max(0, $feeAmount);
             $feeDueDate = $feeDueDate ?: now()->addDays(7)->toDateString();
-            $status = $feeAmount > 0 ? 'approved_pending_payment' : 'approved';
-
-            if ($feeAmount > 0) {
-                $invoice = $this->createTransferFeeInvoice($request, $feeAmount, $feeDueDate, $userId);
-            }
 
             $request->update([
-                'status' => $status,
                 'admin_notes' => $evaluation['admin_notes'] ?? null,
                 'academic_evaluation_notes' => $evaluation['academic_evaluation_notes'] ?? null,
                 'credit_mapping_notes' => $evaluation['credit_mapping_notes'] ?? null,
@@ -135,6 +136,58 @@ class StudentTransferRequestService
                 'recommended_semester' => $evaluation['recommended_semester'] ?? $request->recommended_semester,
                 'transfer_fee_amount' => $feeAmount,
                 'transfer_fee_due_date' => $feeAmount > 0 ? $feeDueDate : null,
+                'reviewed_by' => $userId,
+                'reviewed_at' => now(),
+            ]);
+
+            if (! $request->approvalRequest || $request->approvalRequest->status !== 'in_progress') {
+                $this->submitForApproval($request->refresh(), $request->studentProfile?->user_id);
+                $request->refresh();
+            }
+
+            app(ApprovalEngine::class)->approve($request->approvalRequest, User::findOrFail($userId), $evaluation['admin_notes'] ?? null);
+
+            return $request->refresh();
+        });
+    }
+
+    public function reject(StudentTransferRequest $request, ?string $notes, ?int $userId): StudentTransferRequest
+    {
+        if (! $request->approvalRequest || $request->approvalRequest->status !== 'in_progress') {
+            throw new \RuntimeException('Approval pengajuan transfer tidak sedang berjalan.');
+        }
+
+        app(ApprovalEngine::class)->reject($request->approvalRequest, User::findOrFail($userId), $notes);
+
+        return $request->refresh();
+    }
+
+    public function approveFromApproval(StudentTransferRequest $request, ?int $userId, ?string $notes = null): StudentTransferRequest
+    {
+        return DB::transaction(function () use ($request, $userId, $notes): StudentTransferRequest {
+            $from = $request->status;
+            $request = $request->fresh(['studentProfile', 'transferFeeInvoice']);
+
+            if (in_array($request->status, ['approved', 'approved_pending_payment', 'applied'], true)) {
+                return $request;
+            }
+
+            $invoice = null;
+            $feeAmount = max(0, (float) $request->transfer_fee_amount);
+            $status = $feeAmount > 0 ? 'approved_pending_payment' : 'approved';
+
+            if ($feeAmount > 0) {
+                $invoice = $this->createTransferFeeInvoice(
+                    $request,
+                    $feeAmount,
+                    $request->transfer_fee_due_date?->toDateString() ?: now()->addDays(7)->toDateString(),
+                    $userId,
+                );
+            }
+
+            $request->update([
+                'status' => $status,
+                'admin_notes' => $notes ?: $request->admin_notes,
                 'transfer_fee_invoice_id' => $invoice?->id,
                 'reviewed_by' => $userId,
                 'reviewed_at' => now(),
@@ -143,11 +196,43 @@ class StudentTransferRequestService
             ]);
 
             $historyNotes = $feeAmount > 0
-                ? trim((($evaluation['admin_notes'] ?? null) ? $evaluation['admin_notes'].' ' : '').'Biaya transfer dibuat sebagai invoice '.$invoice?->invoice_number.'.')
-                : ($evaluation['admin_notes'] ?? null);
+                ? trim(($notes ? $notes.' ' : '').'Biaya transfer dibuat sebagai invoice '.$invoice?->invoice_number.'.')
+                : $notes;
 
             $this->recordHistory($request, $from, $status, $historyNotes, $userId);
             app(StudentServiceNotificationService::class)->transfer($request, $status, $historyNotes);
+
+            return $request->refresh();
+        });
+    }
+
+    public function rejectFromApproval(StudentTransferRequest $request, ?int $userId, ?string $notes = null): StudentTransferRequest
+    {
+        return $this->setStatus($request, 'rejected', $notes, $userId);
+    }
+
+    public function requestRevisionFromApproval(StudentTransferRequest $request, ?int $userId, ?string $notes = null): StudentTransferRequest
+    {
+        return $this->setStatus($request, 'revision_requested', $notes, $userId);
+    }
+
+    public function markFeePaid(StudentTransferRequest $request, ?int $userId = null): StudentTransferRequest
+    {
+        if ($request->status !== 'approved_pending_payment') {
+            return $request;
+        }
+
+        return DB::transaction(function () use ($request, $userId): StudentTransferRequest {
+            $request = StudentTransferRequest::query()->lockForUpdate()->findOrFail($request->id);
+
+            if ($request->status !== 'approved_pending_payment') {
+                return $request;
+            }
+
+            $request->update(['status' => 'approved']);
+            $notes = 'Pembayaran biaya pindah telah lunas. Pengajuan siap diterapkan.';
+            $this->recordHistory($request, 'approved_pending_payment', 'approved', $notes, $userId);
+            app(StudentServiceNotificationService::class)->transfer($request, 'approved', $notes);
 
             return $request->refresh();
         });
@@ -210,6 +295,41 @@ class StudentTransferRequestService
             'notes' => $notes,
             'changed_by' => $userId,
         ]);
+    }
+
+    private function submitForApproval(StudentTransferRequest $request, ?int $userId = null): StudentTransferRequest
+    {
+        $request->loadMissing(['studentProfile.user', 'fromStudyProgram', 'toStudyProgram']);
+
+        $template = ApprovalTemplate::query()
+            ->where('code', 'STUDENT_TRANSFER_REVIEW')
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $approval = app(ApprovalEngine::class)->submitFromTemplate(
+            template: $template,
+            subject: 'Pengajuan pindah '.$request->studentProfile?->user?->name.' '.$request->request_number,
+            requester: $request->studentProfile?->user,
+            approvable: $request,
+            payload: [
+                'student_profile_id' => $request->student_profile_id,
+                'from_study_program_id' => $request->from_study_program_id,
+                'to_study_program_id' => $request->to_study_program_id,
+                'transfer_type' => $request->transfer_type,
+            ],
+            reference: $request->request_number,
+            notes: $request->student_notes ?: $request->reason,
+            createdBy: $userId,
+        );
+
+        $from = $request->status;
+        $request->update([
+            'approval_request_id' => $approval->id,
+            'status' => 'in_approval',
+        ]);
+        $this->recordHistory($request, $from, 'in_approval', $approval->waitingMessage(), $userId);
+
+        return $request->refresh();
     }
 
     private function createTransferFeeInvoice(

@@ -78,6 +78,7 @@ final class ServiceLetterRequestTable extends BasePowerGridTable
             Filter::select('status', 'status')
                 ->dataSource(collect([
                     ['id' => 'submitted', 'name' => 'Submitted'],
+                    ['id' => 'in_approval', 'name' => 'Menunggu Approval'],
                     ['id' => 'under_review', 'name' => 'Under Review'],
                     ['id' => 'revision_requested', 'name' => 'Revision Requested'],
                     ['id' => 'approved', 'name' => 'Approved'],
@@ -116,13 +117,14 @@ final class ServiceLetterRequestTable extends BasePowerGridTable
             'issued' => 'bg-success',
             'approved' => 'bg-info',
             'under_review' => 'bg-primary',
-            'revision_requested' => 'bg-warning text-dark',
+            'revision_requested', 'in_approval' => 'bg-warning text-dark',
             'rejected', 'cancelled' => 'bg-danger',
             default => 'bg-secondary',
         };
 
         $label = match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Approval',
             default => str($status)->replace('_', ' ')->title(),
         };
 

@@ -17,7 +17,16 @@ new class extends Component
         $studentProfile = auth()->user()?->studentProfile;
         abort_unless($studentProfile, 404);
 
-        $this->application = GraduationApplication::with(['histories.changedBy', 'academicPeriod', 'graduationBatch', 'documents.requirement', 'documents.verifiedBy'])
+        $this->application = GraduationApplication::with([
+            'histories.changedBy',
+            'academicPeriod',
+            'graduationBatch',
+            'documents.requirement',
+            'documents.verifiedBy',
+            'approvalRequest.steps.approverUser',
+            'approvalRequest.steps.organizationalPosition',
+            'approvalRequest.steps.workUnit',
+        ])
             ->where('student_profile_id', $studentProfile->id)
             ->findOrFail($id);
         $this->loadChecklistUsers();
@@ -33,7 +42,16 @@ new class extends Component
 
     public function refreshApplication(): void
     {
-        $this->application->refresh()->load(['histories.changedBy', 'academicPeriod', 'graduationBatch', 'documents.requirement', 'documents.verifiedBy']);
+        $this->application->refresh()->load([
+            'histories.changedBy',
+            'academicPeriod',
+            'graduationBatch',
+            'documents.requirement',
+            'documents.verifiedBy',
+            'approvalRequest.steps.approverUser',
+            'approvalRequest.steps.organizationalPosition',
+            'approvalRequest.steps.workUnit',
+        ]);
         $this->loadChecklistUsers();
     }
 
@@ -42,7 +60,7 @@ new class extends Component
         return match ($status) {
             'finalized' => 'bg-green-lt text-green',
             'approved' => 'bg-blue-lt text-blue',
-            'revision_requested' => 'bg-yellow-lt text-yellow',
+            'revision_requested', 'in_approval' => 'bg-yellow-lt text-yellow',
             'under_review' => 'bg-indigo-lt text-indigo',
             'rejected', 'cancelled' => 'bg-red-lt text-red',
             default => 'bg-secondary-lt text-secondary',
@@ -53,9 +71,19 @@ new class extends Component
     {
         return match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Persetujuan',
             'finalized' => 'Final',
             default => str($status)->replace('_', ' ')->title()->toString(),
         };
+    }
+
+    public function historyNotes($history): string
+    {
+        if ($history->to_status === 'in_approval' && $this->application->status === 'in_approval') {
+            return $this->application->approvalRequest?->waitingMessage() ?? ($history->notes ?: '-');
+        }
+
+        return $history->notes ?: '-';
     }
 
     public function documentStatusClass(string $status): string
@@ -426,7 +454,7 @@ new class extends Component
                                 <strong>{{ $this->statusLabel($history->to_status) }}</strong>
                                 <span class="text-muted">{{ $history->created_at?->format('d M Y H:i') }}</span>
                             </div>
-                            <div class="small text-muted">{{ $history->notes ?: '-' }}</div>
+                            <div class="small text-muted">{{ $this->historyNotes($history) }}</div>
                         </div>
                     </div>
                 </div>

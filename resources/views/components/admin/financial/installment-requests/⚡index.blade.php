@@ -10,7 +10,7 @@ new class extends Component
     public function mount(): void
     {
         $this->stats = [
-            'submitted' => InvoiceInstallmentRequest::where('status', 'submitted')->count(),
+            'submitted' => InvoiceInstallmentRequest::whereIn('status', ['submitted', 'in_approval'])->count(),
             'approved' => InvoiceInstallmentRequest::where('status', 'approved')->count(),
             'rejected' => InvoiceInstallmentRequest::where('status', 'rejected')->count(),
             'average_tenor' => round((float) InvoiceInstallmentRequest::avg('requested_tenor'), 1),

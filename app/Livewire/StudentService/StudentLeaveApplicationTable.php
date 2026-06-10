@@ -82,6 +82,7 @@ final class StudentLeaveApplicationTable extends BasePowerGridTable
             Filter::select('status', 'status')
                 ->dataSource(collect([
                     ['id' => 'submitted', 'name' => 'Submitted'],
+                    ['id' => 'in_approval', 'name' => 'Menunggu Approval'],
                     ['id' => 'under_review', 'name' => 'Under Review'],
                     ['id' => 'revision_requested', 'name' => 'Perlu Perbaikan'],
                     ['id' => 'approved', 'name' => 'Approved'],
@@ -120,7 +121,7 @@ final class StudentLeaveApplicationTable extends BasePowerGridTable
         $class = match ($status) {
             'returned', 'activated' => 'bg-success',
             'approved' => 'bg-info',
-            'approved_pending_payment' => 'bg-warning text-dark',
+            'approved_pending_payment', 'in_approval' => 'bg-warning text-dark',
             'under_review' => 'bg-primary',
             'revision_requested' => 'bg-warning text-dark',
             'rejected', 'cancelled' => 'bg-danger',
@@ -129,6 +130,7 @@ final class StudentLeaveApplicationTable extends BasePowerGridTable
 
         $label = match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Approval',
             'approved_pending_payment' => 'Menunggu Pembayaran',
             'activated' => 'Cuti Aktif',
             default => str($status)->replace('_', ' ')->title(),

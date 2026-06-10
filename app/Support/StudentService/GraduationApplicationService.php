@@ -9,6 +9,9 @@ use App\Models\StudentService\GraduationDocument;
 use App\Models\StudentService\GraduationDocumentRequirement;
 use App\Models\StudentService\GraduationPolicy;
 use App\Support\Financial\FinancialClearanceService;
+use App\Models\Organization\ApprovalTemplate;
+use App\Support\Organization\ApprovalEngine;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -44,7 +47,7 @@ class GraduationApplicationService
             $this->recordHistory($application, null, 'submitted', 'Graduation application submitted by student.', auth()->id());
             app(StudentServiceNotificationService::class)->graduation($application, 'submitted', 'Pengajuan yudisium berhasil dikirim.');
 
-            return $application;
+            return $this->submitForApproval($application, auth()->id());
         });
     }
 
@@ -87,7 +90,7 @@ class GraduationApplicationService
             $this->recordHistory($application, $from, 'submitted', 'Graduation application corrected and resubmitted by student.', auth()->id());
             app(StudentServiceNotificationService::class)->graduation($application, 'submitted', 'Perbaikan pengajuan yudisium berhasil dikirim ulang.');
 
-            return $application->refresh();
+            return $this->submitForApproval($application->refresh(), auth()->id());
         });
     }
 
@@ -99,6 +102,12 @@ class GraduationApplicationService
 
         return DB::transaction(function () use ($application, $status, $notes, $userId): GraduationApplication {
             $from = $application->status;
+
+            if ($status === 'revision_requested' && $application->approvalRequest && $application->approvalRequest->status === 'in_progress') {
+                app(ApprovalEngine::class)->cancel($application->approvalRequest, $userId ? User::find($userId) : null, $notes);
+                $application->refresh();
+            }
+
             $updates = [
                 'status' => $status,
                 'admin_notes' => $notes,
@@ -121,7 +130,7 @@ class GraduationApplicationService
 
     public function approve(GraduationApplication $application, array $checklist, ?string $notes, ?int $userId): GraduationApplication
     {
-        if (! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true)) {
+        if (! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true)) {
             throw new \RuntimeException('Status pengajuan yudisium saat ini tidak bisa diapprove.');
         }
 
@@ -132,15 +141,59 @@ class GraduationApplicationService
         }
 
         return DB::transaction(function () use ($application, $normalizedChecklist, $notes, $userId): GraduationApplication {
-            $from = $application->status;
             $application->loadMissing('studentProfile');
             $this->ensureRequiredDocumentsVerified($application);
 
             $application->update([
-                'status' => 'approved',
                 'eligibility_snapshot' => $this->eligibilityReport($application->studentProfile, $application->id)['snapshot'],
                 'admin_checklist' => $normalizedChecklist,
                 'admin_notes' => $notes,
+                'reviewed_by' => $userId,
+                'reviewed_at' => now(),
+            ]);
+
+            if (! $application->approvalRequest || $application->approvalRequest->status !== 'in_progress') {
+                $this->submitForApproval($application->refresh(), $application->studentProfile?->user_id);
+                $application->refresh();
+            }
+
+            app(ApprovalEngine::class)->approve($application->approvalRequest, User::findOrFail($userId), $notes);
+
+            return $application->refresh();
+        });
+    }
+
+    public function reject(GraduationApplication $application, ?string $notes, ?int $userId): GraduationApplication
+    {
+        if (! $application->approvalRequest || $application->approvalRequest->status !== 'in_progress') {
+            throw new \RuntimeException('Approval pengajuan yudisium tidak sedang berjalan.');
+        }
+
+        app(ApprovalEngine::class)->reject($application->approvalRequest, User::findOrFail($userId), $notes);
+
+        return $application->refresh();
+    }
+
+    public function approveFromApproval(GraduationApplication $application, ?int $userId, ?string $notes = null): GraduationApplication
+    {
+        return DB::transaction(function () use ($application, $userId, $notes): GraduationApplication {
+            $from = $application->status;
+            $application = $application->fresh(['studentProfile', 'documents']);
+
+            if (in_array($application->status, ['approved', 'finalized'], true)) {
+                return $application;
+            }
+
+            $this->ensureRequiredDocumentsVerified($application);
+
+            if (! collect($application->admin_checklist ?: [])->every(fn (array $item) => (bool) ($item['checked'] ?? false))) {
+                throw new \RuntimeException('Semua checklist review harus lengkap sebelum pengajuan yudisium bisa diapprove.');
+            }
+
+            $application->update([
+                'status' => 'approved',
+                'eligibility_snapshot' => $this->eligibilityReport($application->studentProfile, $application->id)['snapshot'],
+                'admin_notes' => $notes ?: $application->admin_notes,
                 'reviewed_by' => $userId,
                 'reviewed_at' => now(),
                 'approved_by' => $userId,
@@ -154,9 +207,19 @@ class GraduationApplicationService
         });
     }
 
+    public function rejectFromApproval(GraduationApplication $application, ?int $userId, ?string $notes = null): GraduationApplication
+    {
+        return $this->setStatus($application, 'rejected', $notes, $userId);
+    }
+
+    public function requestRevisionFromApproval(GraduationApplication $application, ?int $userId, ?string $notes = null): GraduationApplication
+    {
+        return $this->setStatus($application, 'revision_requested', $notes, $userId);
+    }
+
     public function saveChecklist(GraduationApplication $application, array $checklist, ?string $notes, ?int $userId): GraduationApplication
     {
-        if (! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true)) {
+        if (! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true)) {
             throw new \RuntimeException('Checklist hanya bisa diubah selama pengajuan masih dalam proses review.');
         }
 
@@ -485,6 +548,40 @@ class GraduationApplicationService
             'notes' => $notes,
             'changed_by' => $userId,
         ]);
+    }
+
+    private function submitForApproval(GraduationApplication $application, ?int $userId = null): GraduationApplication
+    {
+        $application->loadMissing(['studentProfile.user', 'academicPeriod', 'graduationBatch']);
+
+        $template = ApprovalTemplate::query()
+            ->where('code', 'GRADUATION_REVIEW')
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $approval = app(ApprovalEngine::class)->submitFromTemplate(
+            template: $template,
+            subject: 'Pengajuan yudisium '.$application->studentProfile?->user?->name.' '.$application->application_number,
+            requester: $application->studentProfile?->user,
+            approvable: $application,
+            payload: [
+                'student_profile_id' => $application->student_profile_id,
+                'academic_period_id' => $application->academic_period_id,
+                'graduation_batch_id' => $application->graduation_batch_id,
+            ],
+            reference: $application->application_number,
+            notes: $application->student_notes ?: $application->reason,
+            createdBy: $userId,
+        );
+
+        $from = $application->status;
+        $application->update([
+            'approval_request_id' => $approval->id,
+            'status' => 'in_approval',
+        ]);
+        $this->recordHistory($application, $from, 'in_approval', $approval->waitingMessage(), $userId);
+
+        return $application->refresh();
     }
 
     private function normalizeChecklist(array $checklist, ?int $userId = null, array $existing = []): array

@@ -34,6 +34,7 @@ new class extends Component
             'approvedBy',
             'appliedBy',
             'transferFeeInvoice',
+            'approvalRequest.steps.actedBy',
         ])->findOrFail($id);
 
         $this->evaluation = [
@@ -108,8 +109,12 @@ new class extends Component
     public function reject(StudentTransferRequestService $service): void
     {
         abort_unless(ActivePermission::check('transfer-request.update'), 403);
-        $this->request = $service->setStatus($this->request, 'rejected', $this->evaluation['admin_notes'] ?: null, auth()->id());
-        session()->flash('success', 'Pengajuan transfer ditolak.');
+        try {
+            $this->request = $service->reject($this->request, $this->evaluation['admin_notes'] ?: null, auth()->id());
+            session()->flash('success', 'Pengajuan transfer ditolak.');
+        } catch (\Throwable $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
         $this->reload();
     }
 
@@ -140,7 +145,7 @@ new class extends Component
         return match ($status) {
             'applied' => 'bg-success',
             'approved' => 'bg-info',
-            'approved_pending_payment', 'revision_requested' => 'bg-warning text-dark',
+            'approved_pending_payment', 'revision_requested', 'in_approval' => 'bg-warning text-dark',
             'under_review' => 'bg-primary',
             'rejected', 'cancelled' => 'bg-danger',
             default => 'bg-secondary',
@@ -151,6 +156,7 @@ new class extends Component
     {
         return match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Approval',
             'approved_pending_payment' => 'Menunggu Pembayaran',
             default => str($status)->replace('_', ' ')->title()->toString(),
         };
@@ -173,6 +179,7 @@ new class extends Component
             'approvedBy',
             'appliedBy',
             'transferFeeInvoice',
+            'approvalRequest.steps.actedBy',
         ]);
     }
 };
@@ -274,11 +281,11 @@ new class extends Component
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Transfer Fee</label>
-                        <input type="number" min="0" step="0.01" class="form-control" wire:model="transferFeeAmount" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                        <input type="number" min="0" step="0.01" class="form-control" wire:model="transferFeeAmount" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Fee Due Date</label>
-                        <input type="date" class="form-control" wire:model="transferFeeDueDate" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                        <input type="date" class="form-control" wire:model="transferFeeDueDate" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Admin Notes</label>
@@ -330,13 +337,13 @@ new class extends Component
                 <button wire:click="markUnderReview" class="btn btn-outline-primary" @disabled(! in_array($request->status, ['submitted', 'revision_requested'], true))>
                     <i class="fas fa-search me-1"></i> Mark Under Review
                 </button>
-                <button wire:click="approve" class="btn btn-success" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                <button wire:click="approve" class="btn btn-success" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                     <i class="fas fa-check me-1"></i> Approve
                 </button>
-                <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                     <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan
                 </button>
-                <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                     <i class="fas fa-times me-1"></i> Reject
                 </button>
             </div>

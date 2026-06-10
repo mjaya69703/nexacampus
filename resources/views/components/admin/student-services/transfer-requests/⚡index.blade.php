@@ -11,7 +11,7 @@ new class extends Component
     {
         $this->summary = [
             'total' => StudentTransferRequest::count(),
-            'pending' => StudentTransferRequest::whereIn('status', ['submitted', 'under_review', 'revision_requested', 'approved_pending_payment'])->count(),
+            'pending' => StudentTransferRequest::whereIn('status', ['submitted', 'in_approval', 'under_review', 'revision_requested', 'approved_pending_payment'])->count(),
             'approved' => StudentTransferRequest::where('status', 'approved')->count(),
             'applied' => StudentTransferRequest::where('status', 'applied')->count(),
         ];
