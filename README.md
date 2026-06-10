@@ -221,6 +221,16 @@ php artisan menus:sync
 php artisan resources:sync
 ```
 
+## Lisensi
+
+NexaCampus dilisensikan di bawah **GNU Affero General Public License v3.0 only** (`AGPL-3.0-only`).
+
+Anda dapat menggunakan, mempelajari, memodifikasi, dan mendistribusikan proyek ini sesuai ketentuan AGPL v3. Jika Anda memodifikasi NexaCampus dan menyediakan akses kepada pengguna melalui jaringan, Anda wajib menawarkan source code yang sesuai kepada pengguna tersebut sebagaimana diatur oleh lisensi.
+
+Copyright (C) 2026 NexaCampus contributors. Dependensi pihak ketiga tetap mengikuti lisensinya masing-masing.
+
+Teks lisensi lengkap tersedia di [LICENSE](LICENSE).
+
 ## Catatan
 
 - Setup wizard tersedia di `/welcome`.

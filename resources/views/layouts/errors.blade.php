@@ -562,7 +562,7 @@
                                         <a href="https://github.com/tabler/tabler" target="_blank" class="link-secondary" rel="noopener">Build with Tabler</a>
                                     </li>
                                     <li class="list-inline-item">
-                                        <a href="https://github.com/tabler/tabler" target="_blank" class="link-secondary" rel="noopener">Source Code NexaCampus</a>
+                                        <a href="{{ config('app.source_url') }}" target="_blank" class="link-secondary" rel="noopener">Source Code NexaCampus</a>
                                     </li>
                                 </ul>
                             </nav>
@@ -571,7 +571,7 @@
                             <ul class="list-inline list-inline-dots mb-0">
                                 <li class="list-inline-item">
                                     Copyright &copy; {{ date('Y F') }} -
-                                    <a href="." class="link-secondary">{{ $system->app_name ?? 'Your App Name' }}</a>. All rights reserved.
+                                    <a href="." class="link-secondary">{{ $system->app_name ?? 'Your App Name' }}</a>.
                                 </li>
                                 <li class="list-inline-item">
                                     <a href="./changelog.html" class="link-secondary" rel="noopener"> {{ $system->app_version ?? 'v1.0.0' }} </a>

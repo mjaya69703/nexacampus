@@ -430,7 +430,8 @@
                 <div class="row align-items-center">
                     <div class="col-lg-9 text-lg-start text-center">
                         <ul class="list-inline list-inline-dots mb-0">
-                            <li class="list-inline-item">Copyright © {{ \Carbon\Carbon::now()->translatedFormat('F Y') }} <a href="{{ $system->app_url }}" class="link-secondary">{{ $system->app_name }} - {{ $academy->name }} </a>. All rights reserved.</li>
+                            <li class="list-inline-item">Copyright © {{ \Carbon\Carbon::now()->translatedFormat('F Y') }} <a href="{{ $system->app_url }}" class="link-secondary">{{ $system->app_name }} - {{ $academy->name }}</a>.</li>
+                            <li class="list-inline-item"><a href="{{ config('app.source_url') }}" target="_blank" class="link-secondary" rel="noopener">Source Code</a></li>
                             <li class="list-inline-item"><a href="#" class="link-secondary">Kebijakan Privasi</a></li>
                             <li class="list-inline-item"><a href="#" class="link-secondary">Syarat & Ketentuan</a></li>
                         </ul>
