@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Academic\LecturerProfile;
 use App\Models\Academic\StudentProfile;
+use App\Models\Alumni\AlumniProfile;
 use App\Models\Organization\EmployeeProfile;
 use App\Models\Organization\WorkUnit;
 use Database\Factories\UserFactory;
@@ -138,6 +139,11 @@ class User extends Authenticatable
         return $this->hasOne(EmployeeProfile::class);
     }
 
+    public function alumniProfile(): HasOne
+    {
+        return $this->hasOne(AlumniProfile::class);
+    }
+
     public function workUnits(): BelongsToMany
     {
         return $this->belongsToMany(WorkUnit::class, 'work_unit_user')
@@ -174,6 +180,7 @@ class User extends Authenticatable
             'student' => 'student.',
             'lecturer' => 'lecturer.',
             'academic-leader' => 'academic-leader.',
+            'alumni' => 'alumni.',
             default => 'admin.',
         };
     }

@@ -16,6 +16,8 @@ use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
+use App\Http\Controllers\Alumni\AlumniConversionController;
+use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -122,6 +124,82 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/student-services/complaint-attachments/{attachment}/download', [ComplaintAttachmentController::class, 'admin'])
                 ->middleware('active_permission:student-complaint.view')
                 ->name('student-services.complaint-attachments.download');
+
+            // Alumni Admin Routes
+            Route::livewire('/alumni/profiles', 'admin.alumni.alumni-profiles.index')
+                ->middleware('active_permission:alumni-profile.viewAny')
+                ->name('alumni.profiles.index');
+            Route::livewire('/alumni/profiles/create', 'admin.alumni.alumni-profiles.create')
+                ->middleware('active_permission:alumni-profile.create')
+                ->name('alumni.profiles.create');
+            Route::livewire('/alumni/profiles/{id}/edit', 'admin.alumni.alumni-profiles.edit')
+                ->middleware('active_permission:alumni-profile.update')
+                ->name('alumni.profiles.edit');
+            Route::livewire('/alumni/profiles/{id}', 'admin.alumni.alumni-profiles.show')
+                ->middleware('active_permission:alumni-profile.view')
+                ->name('alumni.profiles.show');
+            Route::post('/alumni/profiles/batch-convert', [AlumniConversionController::class, 'batchConvert'])
+                ->middleware('active_permission:alumni-profile.create')
+                ->name('alumni.profiles.batch-convert');
+
+            Route::livewire('/alumni/employer-partners', 'admin.alumni.employer-partners.index')
+                ->middleware('active_permission:employer-partner.viewAny')
+                ->name('alumni.employer-partners.index');
+            Route::livewire('/alumni/employer-partners/create', 'admin.alumni.employer-partners.create')
+                ->middleware('active_permission:employer-partner.create')
+                ->name('alumni.employer-partners.create');
+            Route::livewire('/alumni/employer-partners/{id}/edit', 'admin.alumni.employer-partners.edit')
+                ->middleware('active_permission:employer-partner.update')
+                ->name('alumni.employer-partners.edit');
+
+            Route::livewire('/alumni/job-postings', 'admin.alumni.job-postings.index')
+                ->middleware('active_permission:job-posting.viewAny')
+                ->name('alumni.job-postings.index');
+            Route::livewire('/alumni/job-postings/create', 'admin.alumni.job-postings.create')
+                ->middleware('active_permission:job-posting.create')
+                ->name('alumni.job-postings.create');
+            Route::livewire('/alumni/job-postings/{id}/edit', 'admin.alumni.job-postings.edit')
+                ->middleware('active_permission:job-posting.update')
+                ->name('alumni.job-postings.edit');
+            Route::livewire('/alumni/job-postings/{id}', 'admin.alumni.job-postings.show')
+                ->middleware('active_permission:job-posting.view')
+                ->name('alumni.job-postings.show');
+
+            Route::livewire('/alumni/events', 'admin.alumni.alumni-events.index')
+                ->middleware('active_permission:alumni-event.viewAny')
+                ->name('alumni.events.index');
+            Route::livewire('/alumni/events/create', 'admin.alumni.alumni-events.create')
+                ->middleware('active_permission:alumni-event.create')
+                ->name('alumni.events.create');
+            Route::livewire('/alumni/events/{id}/edit', 'admin.alumni.alumni-events.edit')
+                ->middleware('active_permission:alumni-event.update')
+                ->name('alumni.events.edit');
+            Route::livewire('/alumni/events/{id}', 'admin.alumni.alumni-events.show')
+                ->middleware('active_permission:alumni-event.view')
+                ->name('alumni.events.show');
+
+            Route::livewire('/alumni/tracer-study', 'admin.alumni.tracer-study-campaigns.index')
+                ->middleware('active_permission:tracer-study-campaign.viewAny')
+                ->name('alumni.tracer-study.index');
+            Route::livewire('/alumni/tracer-study/create', 'admin.alumni.tracer-study-campaigns.create')
+                ->middleware('active_permission:tracer-study-campaign.create')
+                ->name('alumni.tracer-study.create');
+            Route::livewire('/alumni/tracer-study/{id}/edit', 'admin.alumni.tracer-study-campaigns.edit')
+                ->middleware('active_permission:tracer-study-campaign.update')
+                ->name('alumni.tracer-study.edit');
+            Route::livewire('/alumni/tracer-study/{id}', 'admin.alumni.tracer-study-campaigns.show')
+                ->middleware('active_permission:tracer-study-campaign.view')
+                ->name('alumni.tracer-study.show');
+            Route::livewire('/alumni/tracer-study/{id}/responses', 'admin.alumni.tracer-study-responses.index')
+                ->middleware('active_permission:tracer-study-response.viewAny')
+                ->name('alumni.tracer-study.responses');
+            Route::get('/alumni/tracer-study/{id}/analytics', [TracerStudyAnalyticsController::class, 'show'])
+                ->middleware('active_permission:tracer-study-campaign.view')
+                ->name('alumni.tracer-study.analytics');
+            Route::get('/alumni/tracer-study/{id}/export/{format}', [TracerStudyAnalyticsController::class, 'export'])
+                ->middleware('active_permission:tracer-study-campaign.view')
+                ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+                ->name('alumni.tracer-study.export');
         });
 
         // Student Routes
@@ -236,6 +314,21 @@ Route::middleware('is_installed')->group(function () {
                 ->whereIn('format', ['csv', 'xlsx', 'pdf'])
                 ->name('reports.export');
             Route::livewire('/lecturers/{lecturerProfileId}', 'academic-leader.lecturers.show')->name('lecturers.show');
+        });
+
+        // Alumni Role Routes
+        Route::middleware('active_role:alumni')->prefix('alumni')->as('alumni.')->group(function () {
+            Route::livewire('/dashboard', 'alumni.dashboard.index')->name('dashboard.index');
+            Route::livewire('/profile', 'alumni.profile.index')->name('profile.index');
+            Route::livewire('/profile/edit', 'alumni.profile.edit')->name('profile.edit');
+            Route::livewire('/jobs', 'alumni.jobs.index')->name('jobs.index');
+            Route::livewire('/jobs/{id}', 'alumni.jobs.show')->name('jobs.show');
+            Route::livewire('/events', 'alumni.events.index')->name('events.index');
+            Route::livewire('/events/{id}', 'alumni.events.show')->name('events.show');
+            Route::livewire('/events/{id}/register', 'alumni.events.register')->name('events.register');
+            Route::livewire('/tracer-study', 'alumni.tracer-study.index')->name('tracer-study.index');
+            Route::livewire('/tracer-study/{id}', 'alumni.tracer-study.show')->name('tracer-study.show');
+            Route::livewire('/tracer-study/{id}/fill', 'alumni.tracer-study.fill')->name('tracer-study.fill');
         });
     });
 
