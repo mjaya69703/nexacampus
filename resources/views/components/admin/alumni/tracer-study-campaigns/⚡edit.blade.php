@@ -9,6 +9,7 @@ new class extends Component
     public int $campaignId;
     public array $form = [];
     public array $questions = [];
+    public $academicYears = [];
 
     public function cancel(): void
     {
@@ -19,6 +20,7 @@ new class extends Component
     {
         $campaign = TracerStudyCampaign::findOrFail($id);
         $this->campaignId = (int) $id;
+        $this->academicYears = AcademicYear::orderByDesc('start_date')->get();
 
         $this->form = [
             'title' => $campaign->title,
@@ -97,12 +99,9 @@ new class extends Component
 
     public function render()
     {
-        $academicYears = AcademicYear::orderByDesc('start_date')->get();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Edit Kampanye Tracer Study',
-            'academicYears' => $academicYears,
         ]);
     }
 };

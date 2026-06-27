@@ -8,12 +8,16 @@ use Livewire\Component;
 new class extends Component
 {
     public TracerStudyResponse $response;
+    public array $employmentStatuses = [];
+    public array $jobRelevances = [];
 
     public function mount($id): void
     {
         $this->response = TracerStudyResponse::query()
             ->with(['alumniProfile.studyProgram', 'campaign'])
             ->findOrFail($id);
+        $this->employmentStatuses = EmploymentStatus::options();
+        $this->jobRelevances = JobRelevance::options();
     }
 
     public function goBack(): void
@@ -23,14 +27,9 @@ new class extends Component
 
     public function render()
     {
-        $employmentStatuses = EmploymentStatus::options();
-        $jobRelevances = JobRelevance::options();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Detail Respon Tracer Study',
-            'employmentStatuses' => $employmentStatuses,
-            'jobRelevances' => $jobRelevances,
         ]);
     }
 };

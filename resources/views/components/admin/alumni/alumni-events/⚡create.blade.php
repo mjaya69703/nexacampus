@@ -11,6 +11,7 @@ new class extends Component
 
     public array $form = [];
     public $poster;
+    public array $eventTypes = [];
 
     public function cancel(): void
     {
@@ -19,6 +20,7 @@ new class extends Component
 
     public function mount(): void
     {
+        $this->eventTypes = EventType::options();
         $this->form = [
             'title' => '',
             'description' => '',
@@ -70,12 +72,9 @@ new class extends Component
 
     public function render()
     {
-        $eventTypes = EventType::options();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Tambah Event Alumni',
-            'eventTypes' => $eventTypes,
         ]);
     }
 };

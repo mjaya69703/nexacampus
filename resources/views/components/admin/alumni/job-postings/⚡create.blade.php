@@ -8,6 +8,8 @@ use Livewire\Component;
 new class extends Component
 {
     public array $form = [];
+    public $partners = [];
+    public array $jobTypes = [];
 
     public function cancel(): void
     {
@@ -16,6 +18,8 @@ new class extends Component
 
     public function mount(): void
     {
+        $this->partners = EmployerPartner::where('is_active', true)->orderBy('name')->get();
+        $this->jobTypes = JobType::options();
         $this->form = [
             'employer_partner_id' => '',
             'title' => '',
@@ -67,14 +71,9 @@ new class extends Component
 
     public function render()
     {
-        $partners = EmployerPartner::where('is_active', true)->orderBy('name')->get();
-        $jobTypes = JobType::options();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Tambah Lowongan Kerja',
-            'partners' => $partners,
-            'jobTypes' => $jobTypes,
         ]);
     }
 };

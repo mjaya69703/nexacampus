@@ -7,12 +7,14 @@ use Livewire\Component;
 new class extends Component
 {
     public JobPosting $posting;
+    public array $jobTypes = [];
 
     public function mount($id): void
     {
         $this->posting = JobPosting::query()
             ->with(['employerPartner'])
             ->findOrFail($id);
+        $this->jobTypes = JobType::options();
     }
 
     public function goBack(): void
@@ -22,12 +24,9 @@ new class extends Component
 
     public function render()
     {
-        $jobTypes = JobType::options();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Detail Lowongan Kerja',
-            'jobTypes' => $jobTypes,
         ]);
     }
 };

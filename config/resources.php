@@ -1210,14 +1210,6 @@ return [
         'component' => 'admin.alumni.tracer-study-responses',
         'actions' => ['index', 'show'],
         'permissions' => ['viewAny', 'view'],
-        'menu' => [
-            'title' => 'Respon Tracer',
-            'icon' => 'fas fa-file-lines',
-            'group' => 'Alumni',
-            'group_icon' => 'fas fa-graduation-cap',
-            'group_order' => 45,
-            'order' => 6,
-        ],
     ],
 
 ];

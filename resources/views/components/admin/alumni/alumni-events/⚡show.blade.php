@@ -8,6 +8,7 @@ new class extends Component
 {
     public AlumniEvent $event;
     public $participants;
+    public array $eventTypes = [];
 
     public function mount($id): void
     {
@@ -16,6 +17,7 @@ new class extends Component
             ->with(['alumniProfile.studyProgram'])
             ->orderBy('registered_at', 'desc')
             ->get();
+        $this->eventTypes = EventType::options();
     }
 
     public function goBack(): void
@@ -25,12 +27,9 @@ new class extends Component
 
     public function render()
     {
-        $eventTypes = EventType::options();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Detail Event Alumni',
-            'eventTypes' => $eventTypes,
         ]);
     }
 };

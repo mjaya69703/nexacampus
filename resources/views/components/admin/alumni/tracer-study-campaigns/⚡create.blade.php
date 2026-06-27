@@ -8,6 +8,7 @@ new class extends Component
 {
     public array $form = [];
     public array $questions = [];
+    public $academicYears = [];
 
     public function cancel(): void
     {
@@ -16,6 +17,7 @@ new class extends Component
 
     public function mount(): void
     {
+        $this->academicYears = AcademicYear::orderByDesc('start_date')->get();
         $this->form = [
             'title' => '',
             'description' => '',
@@ -82,12 +84,9 @@ new class extends Component
 
     public function render()
     {
-        $academicYears = AcademicYear::orderByDesc('start_date')->get();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Tambah Kampanye Tracer Study',
-            'academicYears' => $academicYears,
         ]);
     }
 };

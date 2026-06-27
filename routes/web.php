@@ -193,6 +193,9 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/alumni/tracer-study/{id}/responses', 'admin.alumni.tracer-study-responses.index')
                 ->middleware('active_permission:tracer-study-response.viewAny')
                 ->name('alumni.tracer-study.responses');
+            Route::livewire('/alumni/tracer-study-responses/{id}', 'admin.alumni.tracer-study-responses.show')
+                ->middleware('active_permission:tracer-study-response.view')
+                ->name('alumni.tracer-study-responses.show');
             Route::get('/alumni/tracer-study/{id}/analytics', [TracerStudyAnalyticsController::class, 'show'])
                 ->middleware('active_permission:tracer-study-campaign.view')
                 ->name('alumni.tracer-study.analytics');

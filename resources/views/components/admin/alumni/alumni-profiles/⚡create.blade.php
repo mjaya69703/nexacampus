@@ -14,6 +14,9 @@ new class extends Component
 
     public array $form = [];
     public $photo;
+    public $faculties = [];
+    public $studyPrograms = [];
+    public array $employmentStatuses = [];
 
     public function cancel(): void
     {
@@ -22,6 +25,9 @@ new class extends Component
 
     public function mount(): void
     {
+        $this->faculties = Faculty::where('is_active', true)->orderBy('name')->get();
+        $this->studyPrograms = StudyProgram::where('is_active', true)->orderBy('name')->get();
+        $this->employmentStatuses = EmploymentStatus::options();
         $this->form = [
             'nim' => '',
             'full_name' => '',
@@ -93,19 +99,10 @@ new class extends Component
 
     public function render()
     {
-        $faculties = Faculty::where('is_active', true)->orderBy('name')->get();
-        $studyPrograms = StudyProgram::where('is_active', true)->orderBy('name')->get();
-        $employmentStatuses = EmploymentStatus::options();
-
-        $data = [
+        return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Tambah Data Alumni',
-            'faculties' => $faculties,
-            'studyPrograms' => $studyPrograms,
-            'employmentStatuses' => $employmentStatuses,
-        ];
-
-        return $this->view()->layout('layouts.app', $data);
+        ]);
     }
 };
 ?>

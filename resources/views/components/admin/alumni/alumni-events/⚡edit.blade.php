@@ -13,6 +13,7 @@ new class extends Component
     public array $form = [];
     public $poster;
     public ?string $existingPoster = null;
+    public array $eventTypes = [];
 
     public function cancel(): void
     {
@@ -24,6 +25,7 @@ new class extends Component
         $event = AlumniEvent::findOrFail($id);
         $this->eventId = (int) $id;
         $this->existingPoster = $event->poster_path;
+        $this->eventTypes = EventType::options();
 
         $this->form = [
             'title' => $event->title,
@@ -78,12 +80,9 @@ new class extends Component
 
     public function render()
     {
-        $eventTypes = EventType::options();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Edit Event Alumni',
-            'eventTypes' => $eventTypes,
         ]);
     }
 };

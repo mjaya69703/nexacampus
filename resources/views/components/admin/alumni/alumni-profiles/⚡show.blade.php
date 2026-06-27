@@ -7,12 +7,14 @@ use Livewire\Component;
 new class extends Component
 {
     public AlumniProfile $profile;
+    public array $employmentStatuses = [];
 
     public function mount($id): void
     {
         $this->profile = AlumniProfile::query()
             ->with(['studyProgram', 'faculty', 'user'])
             ->findOrFail($id);
+        $this->employmentStatuses = EmploymentStatus::options();
     }
 
     public function goBack(): void
@@ -22,13 +24,10 @@ new class extends Component
 
     public function render()
     {
-        $data = [
+        return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Detail Profil Alumni',
-            'employmentStatuses' => EmploymentStatus::options(),
-        ];
-
-        return $this->view()->layout('layouts.app', $data);
+        ]);
     }
 };
 ?>

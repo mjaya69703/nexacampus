@@ -171,6 +171,17 @@ class SidebarMenu
                     static::makeChildLink('student.announcements.index', 'Pengumuman'),
                 ]),
             ]),
+            'alumni' => collect([
+                static::makeGroup('alumni-career', 'Karir & Lowongan', 'fas fa-briefcase', [
+                    static::makeChildLink('alumni.jobs.index', 'Job Board'),
+                ]),
+                static::makeGroup('alumni-events', 'Event & Networking', 'fas fa-calendar-star', [
+                    static::makeChildLink('alumni.events.index', 'Event Alumni'),
+                ]),
+                static::makeGroup('alumni-tracer', 'Tracer Study', 'fas fa-chart-bar', [
+                    static::makeChildLink('alumni.tracer-study.index', 'Survei Tracer'),
+                ]),
+            ]),
             'lecturer' => static::lecturerMenus(),
             'academic-leader' => collect([
                 static::makeGroup('academic-leader-oversight', 'Operasional Akademik', 'fas fa-chart-line', [

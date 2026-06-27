@@ -208,7 +208,7 @@ it('requires dedicated leave review before approval and issues the configured in
         notes: 'Disetujui dengan biaya administrasi.',
         userId: $approver->id,
         feeAmount: 150000,
-        feeDueDate: '2026-06-20',
+        feeDueDate: now()->addDays(7)->toDateString(),
     );
 
     expect($approval->refresh()->status)->toBe('approved')

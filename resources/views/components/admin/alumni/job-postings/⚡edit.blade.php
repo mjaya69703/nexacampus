@@ -9,6 +9,8 @@ new class extends Component
 {
     public int $postingId;
     public array $form = [];
+    public $partners = [];
+    public array $jobTypes = [];
 
     public function cancel(): void
     {
@@ -19,6 +21,8 @@ new class extends Component
     {
         $posting = JobPosting::findOrFail($id);
         $this->postingId = (int) $id;
+        $this->partners = EmployerPartner::where('is_active', true)->orderBy('name')->get();
+        $this->jobTypes = JobType::options();
 
         $this->form = [
             'employer_partner_id' => $posting->employer_partner_id ?? '',
@@ -73,14 +77,9 @@ new class extends Component
 
     public function render()
     {
-        $partners = EmployerPartner::where('is_active', true)->orderBy('name')->get();
-        $jobTypes = JobType::options();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Edit Lowongan Kerja',
-            'partners' => $partners,
-            'jobTypes' => $jobTypes,
         ]);
     }
 };

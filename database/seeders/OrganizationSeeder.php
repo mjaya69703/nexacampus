@@ -408,7 +408,7 @@ class OrganizationSeeder extends Seeder
         ];
 
         foreach ($templates as $code => $config) {
-            foreach ($config['steps'] as [, , $permission]) {
+            foreach (collect($config['steps'])->pluck(2)->unique() as $permission) {
                 Permission::findOrCreate($permission, 'web');
             }
 

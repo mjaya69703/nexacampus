@@ -7,6 +7,7 @@ use Livewire\Component;
 new class extends Component
 {
     public TracerStudyCampaign $campaign;
+    public array $statuses = [];
 
     public function mount($id): void
     {
@@ -14,6 +15,7 @@ new class extends Component
             ->with(['academicYear'])
             ->withCount('responses')
             ->findOrFail($id);
+        $this->statuses = CampaignStatus::options();
     }
 
     public function goBack(): void
@@ -23,12 +25,9 @@ new class extends Component
 
     public function render()
     {
-        $statuses = CampaignStatus::options();
-
         return $this->view()->layout('layouts.app', [
             'menus' => 'Alumni',
             'pages' => 'Detail Tracer Study',
-            'statuses' => $statuses,
         ]);
     }
 };
