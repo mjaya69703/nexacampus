@@ -270,6 +270,7 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/announcements/{id}', 'lecturer.publication.announcements.show')->name('announcements.show');
             Route::livewire('/dashboard', 'lecturer.dashboard.index')->name('dashboard.index');
             Route::livewire('/course-offerings', 'lecturer.course-offerings.index')->name('course-offerings.index');
+            Route::livewire('/calendar', 'lecturer.calendar.index')->name('calendar.index');
             Route::livewire('/course-offerings/{id}', 'lecturer.course-offerings.show')->name('course-offerings.show');
             Route::livewire('/course-offerings/{offeringId}/students', 'lecturer.course-offerings.students')->name('course-offerings.students');
             Route::livewire('/course-offerings/{offeringId}/attendance', 'lecturer.course-offerings.attendance')->name('course-offerings.attendance');

@@ -205,6 +205,7 @@ class SidebarMenu
         $menus = collect([
             static::makeGroup('lecturer-teaching', 'Mengajar', 'fas fa-chalkboard-teacher', [
                 static::makeChildLink('lecturer.course-offerings.index', 'Kelas Saya'),
+                static::makeChildLink('lecturer.calendar.index', 'Kalender Mengajar'),
             ]),
             static::makeGroup('lecturer-learning', 'Pembelajaran', 'fas fa-book-open', [
                 static::makeChildLink('lecturer.course-materials.list', 'Materi'),

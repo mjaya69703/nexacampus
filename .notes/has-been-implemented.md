@@ -1629,7 +1629,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 
 ### Academic Module Enhancements
 
-- [ ] **Teaching Schedule Calendar** (Lecturer) - FullCalendar integration
+- [x] **Teaching Schedule Calendar** (Lecturer) - weekly teaching calendar
 - [ ] **Assignment Management** (Lecturer + Student) - Online submission & grading
 - [ ] **Student Progress Analytics** (Lecturer) - Performance dashboard
 - [ ] **Academic Advising Dashboard** (Lecturer) - PA features
