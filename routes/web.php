@@ -214,6 +214,7 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/registration', 'student.registration.index')->name('registration.index');
             Route::livewire('/digital-id', 'student.digital-id.index')->name('digital-id.index');
             Route::livewire('/study-plan', 'student.study-plan.index')->name('study-plan.index');
+            Route::livewire('/study-plan/comparison', 'student.study-plan.comparison')->name('study-plan.comparison');
             Route::livewire('/progress', 'student.progress.index')->name('progress.index');
             Route::livewire('/grades', 'student.grades.index')->name('grades.index');
             Route::livewire('/financial/invoices', 'student.financial.invoices')->name('financial.invoices');

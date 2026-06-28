@@ -147,6 +147,7 @@ class SidebarMenu
                 static::makeGroup('student-academic', 'Akademik', 'fas fa-graduation-cap', [
                     static::makeChildLink('student.registration.index', 'Registrasi'),
                     static::makeChildLink('student.study-plan.index', 'KRS'),
+                    static::makeChildLink('student.study-plan.comparison', 'Banding KRS'),
                     static::makeChildLink('student.schedule.index', 'Jadwal'),
                     static::makeChildLink('student.progress.index', 'Progress'),
                 ]),

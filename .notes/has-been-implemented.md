@@ -1638,7 +1638,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 - [ ] **Rubric Builder** (Lecturer) - Custom grading rubrics
 - [ ] **Academic Progress Tracker** (Student) - Visual GPA/SKS tracking
 - [ ] **Grade Appeal** (Student) - Formal appeal process
-- [ ] **Study Plan Comparison** (Student) - KRS comparison tool
+- [x] **Study Plan Comparison** (Student) - KRS comparison tool
 - [ ] **Lecture Evaluation** (Student) - Evaluate lecturers
 - [ ] **Personalized Notifications** (Student) - Smart alerts
 - [ ] **Document Request Center** (Student) - Online surat requests
