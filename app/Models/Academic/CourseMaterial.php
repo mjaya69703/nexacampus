@@ -82,19 +82,25 @@ class CourseMaterial extends Model
     {
         return $this->hasMany(CourseMaterialFile::class);
     }
-    
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(CourseMaterialVersion::class)
+            ->orderByDesc('version_number');
+    }
+
     public function comments(): HasMany
     {
         return $this->hasMany(CourseMaterialComment::class)
             ->whereNull('parent_id') // Only top-level comments
             ->orderBy('created_at', 'desc');
     }
-    
+
     public function allComments(): HasMany
     {
         return $this->hasMany(CourseMaterialComment::class);
     }
-    
+
     public function materialLikes(): HasMany
     {
         return $this->hasMany(MaterialLike::class);

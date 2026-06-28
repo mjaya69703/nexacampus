@@ -71,9 +71,9 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)*
 - Categorize materials (Syllabus, Lecture Notes, Assignments, References, etc.)
 - Share resources with enrolled students
 - Download statistics tracking
-- Version control for updated materials
+- Version control for updated materials *(completed with automatic material version history)*
 - File size & type validation
-- Drag & drop upload interface
+- Drag & drop upload interface *(completed for lecturer material upload/add-attachment surfaces)*
 
 **Kenapa Penting:**
 - Central repository untuk semua materi ajar

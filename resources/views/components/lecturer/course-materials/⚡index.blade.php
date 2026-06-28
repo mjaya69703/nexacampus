@@ -2,6 +2,7 @@
 
 use App\Models\Academic\CourseMaterial;
 use App\Models\Academic\CourseOffering;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -10,20 +11,34 @@ new class extends Component
     use WithFileUploads;
 
     public ?int $courseOfferingId = null;
+
     public array $offeringInfo = [];
+
     public array $materials = [];
-    
+
+    public array $versions = [];
+
     // Upload/Edit form properties
     public string $title = '';
+
     public string $description = '';
+
     public string $category = 'lecture_notes';
+
     public ?int $meetingNumber = null;
+
     public $files = []; // Changed from single file to array
+
     public string $videoUrl = '';
+
     public string $videoTitle = '';
+
     public bool $isPublished = true;
+
     public ?int $editingMaterialId = null;
+
     public bool $showUploadForm = false;
+
     public bool $showEditForm = false;
 
     public function mount($id = null): void
@@ -47,7 +62,7 @@ new class extends Component
 
         if ($offering) {
             $activeSchedule = $offering->courseSchedules->where('is_active', true)->first();
-            
+
             $this->offeringInfo = [
                 'id' => $offering->id,
                 'course_code' => $offering->course?->code ?? '-',
@@ -102,6 +117,34 @@ new class extends Component
             ->all();
     }
 
+    private function recordMaterialVersion(CourseMaterial $material, string $changeType, ?string $summary = null): void
+    {
+        $material->loadMissing('files');
+
+        $latestVersion = (int) $material->versions()->max('version_number');
+
+        $material->versions()->create([
+            'version_number' => $latestVersion + 1,
+            'change_type' => $changeType,
+            'title' => $material->title,
+            'description' => $material->description,
+            'category' => $material->category,
+            'meeting_number' => $material->meeting_number,
+            'is_published' => $material->is_published,
+            'files_snapshot' => $material->files
+                ->map(fn ($file) => [
+                    'file_name' => $file->file_name,
+                    'file_type' => $file->file_type,
+                    'file_size' => $file->file_size,
+                    'download_count' => $file->download_count,
+                ])
+                ->values()
+                ->all(),
+            'change_summary' => $summary,
+            'created_by' => auth()->id(),
+        ]);
+    }
+
     public function render()
     {
         return $this->view()->layout('layouts.app', [
@@ -130,8 +173,8 @@ new class extends Component
     public function openEditForm(int $id): void
     {
         $material = CourseMaterial::find($id);
-        
-        if (!$material) {
+
+        if (! $material) {
             return;
         }
 
@@ -145,13 +188,13 @@ new class extends Component
         $this->videoTitle = '';
         $this->showEditForm = true;
     }
-    
+
     public function closeEditForm(): void
     {
         $this->showEditForm = false;
         $this->reset(['title', 'description', 'category', 'meetingNumber', 'files', 'isPublished', 'editingMaterialId', 'videoUrl', 'videoTitle']);
     }
-    
+
     public function uploadMaterial(): void
     {
         $validated = $this->validate([
@@ -163,7 +206,7 @@ new class extends Component
             'videoUrl' => 'nullable|url|max:255',
             'videoTitle' => 'nullable|string|max:255',
         ]);
-        
+
         $createData = [
             'course_offering_id' => $this->courseOfferingId,
             'uploaded_by' => auth()->id(),
@@ -173,35 +216,33 @@ new class extends Component
             'meeting_number' => $this->meetingNumber,
             'is_published' => $this->isPublished,
         ];
-        
+
         $material = CourseMaterial::create($createData);
-        
+
         // Handle multiple file uploads
-        if (!empty($this->files)) {
+        if (! empty($this->files)) {
             foreach ($this->files as $file) {
                 if ($file) {
                     try {
+                        $originalName = $file->getClientOriginalName();
+                        $fileType = $file->getClientOriginalExtension();
+                        $fileSize = $file->getSize();
                         $filePath = $file->store('course-materials', 'public');
-                        
-                        // Get file size dengan fallback
-                        $fileSize = null;
-                        try {
-                            $fileSize = $file->getSize();
-                        } catch (\Exception $sizeError) {
-                            $fullPath = storage_path('app/public/' . $filePath);
-                            if (file_exists($fullPath)) {
-                                $fileSize = filesize($fullPath);
-                            }
+
+                        if ($fileSize === false || $fileSize === null) {
+                            $fullPath = storage_path('app/public/'.$filePath);
+                            $fileSize = file_exists($fullPath) ? filesize($fullPath) : null;
                         }
-                        
+
                         $material->files()->create([
                             'file_path' => $filePath,
-                            'file_name' => $file->getClientOriginalName(),
-                            'file_type' => $file->getClientOriginalExtension(),
+                            'file_name' => $originalName,
+                            'file_type' => $fileType,
                             'file_size' => $fileSize,
                         ]);
-                    } catch (\Exception $e) {
-                        session()->flash('error', 'Gagal mengupload file: ' . $e->getMessage());
+                    } catch (Exception $e) {
+                        session()->flash('error', 'Gagal mengupload file: '.$e->getMessage());
+
                         return;
                     }
                 }
@@ -216,26 +257,29 @@ new class extends Component
                 'file_size' => null,
             ]);
         }
-        
+
+        $this->recordMaterialVersion($material->fresh('files'), 'created', 'Materi dibuat.');
+
         session()->flash('success', 'Materi berhasil diupload!');
         $this->closeUploadForm();
         $this->loadMaterials();
     }
-    
+
     public function updateMaterial(): void
     {
-        if (!$this->editingMaterialId) {
+        if (! $this->editingMaterialId) {
             return;
         }
-        
+
         $material = CourseMaterial::with('files')->find($this->editingMaterialId);
-        
-        if (!$material) {
+
+        if (! $material) {
             session()->flash('error', 'Materi tidak ditemukan.');
             $this->closeEditForm();
+
             return;
         }
-        
+
         $validated = $this->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -245,7 +289,7 @@ new class extends Component
             'videoUrl' => 'nullable|url|max:255',
             'videoTitle' => 'nullable|string|max:255',
         ]);
-        
+
         $updateData = [
             'title' => $this->title,
             'description' => $this->description,
@@ -253,35 +297,33 @@ new class extends Component
             'meeting_number' => $this->meetingNumber,
             'is_published' => $this->isPublished,
         ];
-        
+
         $material->update($updateData);
-        
+
         // Handle new file uploads (append to existing files)
-        if (!empty($this->files)) {
+        if (! empty($this->files)) {
             foreach ($this->files as $file) {
                 if ($file) {
                     try {
+                        $originalName = $file->getClientOriginalName();
+                        $fileType = $file->getClientOriginalExtension();
+                        $fileSize = $file->getSize();
                         $filePath = $file->store('course-materials', 'public');
-                        
-                        // Get file size dengan fallback
-                        $fileSize = null;
-                        try {
-                            $fileSize = $file->getSize();
-                        } catch (\Exception $sizeError) {
-                            $fullPath = storage_path('app/public/' . $filePath);
-                            if (file_exists($fullPath)) {
-                                $fileSize = filesize($fullPath);
-                            }
+
+                        if ($fileSize === false || $fileSize === null) {
+                            $fullPath = storage_path('app/public/'.$filePath);
+                            $fileSize = file_exists($fullPath) ? filesize($fullPath) : null;
                         }
-                        
+
                         $material->files()->create([
                             'file_path' => $filePath,
-                            'file_name' => $file->getClientOriginalName(),
-                            'file_type' => $file->getClientOriginalExtension(),
+                            'file_name' => $originalName,
+                            'file_type' => $fileType,
                             'file_size' => $fileSize,
                         ]);
-                    } catch (\Exception $e) {
-                        session()->flash('error', 'Gagal mengupload file: ' . $e->getMessage());
+                    } catch (Exception $e) {
+                        session()->flash('error', 'Gagal mengupload file: '.$e->getMessage());
+
                         return;
                     }
                 }
@@ -296,30 +338,33 @@ new class extends Component
                 'file_size' => null,
             ]);
         }
-        
+
+        $this->recordMaterialVersion($material->fresh('files'), 'updated', 'Materi diperbarui.');
+
         session()->flash('success', 'Materi berhasil diupdate!');
         $this->closeEditForm();
         $this->loadMaterials();
     }
-    
+
     public function deleteMaterial(int $id): void
     {
         $material = CourseMaterial::with('files')->find($id);
-        
-        if (!$material) {
+
+        if (! $material) {
             session()->flash('error', 'Materi tidak ditemukan.');
+
             return;
         }
-        
+
         // Hapus semua files terkait
         foreach ($material->files as $file) {
             if ($file->file_path) {
-                \Storage::disk('public')->delete($file->file_path);
+                Storage::disk('public')->delete($file->file_path);
             }
         }
-        
+
         $material->delete();
-        
+
         session()->flash('success', 'Materi berhasil dihapus!');
         $this->loadMaterials();
     }
@@ -344,7 +389,7 @@ new class extends Component
         ');
     }
 
-    #[\Livewire\Attributes\On('deleteMaterialConfirmed')]
+    #[On('deleteMaterialConfirmed')]
     public function deleteMaterialConfirmed($id = null): void
     {
         if (! $id) {
@@ -353,19 +398,25 @@ new class extends Component
 
         $this->deleteMaterial((int) $id);
     }
-    
+
     public function togglePublish(int $id): void
     {
         $material = CourseMaterial::find($id);
-        
-        if (!$material) {
+
+        if (! $material) {
             return;
         }
-        
+
         $material->update([
-            'is_published' => !$material->is_published,
+            'is_published' => ! $material->is_published,
         ]);
-        
+
+        $this->recordMaterialVersion(
+            $material->fresh('files'),
+            'status_changed',
+            $material->is_published ? 'Materi dipublikasikan.' : 'Materi disimpan sebagai draft.'
+        );
+
         $this->loadMaterials();
     }
 }
@@ -578,7 +629,44 @@ new class extends Component
             border: 2px dashed #c7d2fe;
             border-radius: 14px;
             background: #eef2ff;
-            padding: 1rem;
+            cursor: pointer;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .upload-dropzone:hover,
+        .upload-dropzone.is-dragging {
+            background: #e0e7ff;
+            border-color: #667eea;
+            box-shadow: 0 8px 22px rgba(102, 126, 234, 0.16);
+            transform: translateY(-2px);
+        }
+
+        .upload-dropzone-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.45rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .upload-progress-track {
+            height: 0.7rem;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.2s ease;
         }
 
         .publish-box {
@@ -759,16 +847,44 @@ new class extends Component
                                     <span>Lampiran</span>
                                 </div>
 
-                                <div class="upload-dropzone">
-                                    <label class="form-label mb-2" style="font-weight: 700; color: #3730a3;">File Materi</label>
+                                <div
+                                    class="upload-dropzone"
+                                    x-data="{ uploading: false, progress: 0, dragging: false }"
+                                    x-on:dragover.prevent="dragging = true"
+                                    x-on:dragleave.prevent="dragging = false"
+                                    x-on:drop.prevent="dragging = false; $refs.filesInput.files = $event.dataTransfer.files; $refs.filesInput.dispatchEvent(new Event('change', { bubbles: true }))"
+                                    x-on:livewire-upload-start="uploading = true; progress = 0"
+                                    x-on:livewire-upload-finish="uploading = false; progress = 100"
+                                    x-on:livewire-upload-error="uploading = false"
+                                    x-on:livewire-upload-progress="progress = $event.detail.progress"
+                                    x-bind:class="{ 'is-dragging': dragging }"
+                                    x-on:click="$refs.filesInput.click()"
+                                >
+                                    <div class="upload-dropzone-icon">
+                                        <i class="fas fa-cloud-arrow-up"></i>
+                                    </div>
+                                    <label class="form-label mb-1" style="font-weight: 800; color: #3730a3;">File Materi</label>
+                                    <div class="upload-help mb-3">Tarik file ke area ini atau klik untuk memilih file.</div>
                                     <input
                                         type="file"
-                                        class="form-control upload-field"
+                                        class="d-none"
                                         wire:model="files"
                                         multiple
                                         accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.jpg,.jpeg,.png"
+                                        x-ref="filesInput"
+                                        x-on:click.stop
                                     >
                                     <div class="upload-help mt-2">PDF, PPT, DOC, MP4, JPG, PNG. Maksimal 50MB per file.</div>
+
+                                    <div class="mt-3" x-show="uploading" x-cloak>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="upload-help fw-bold">Mengupload file...</span>
+                                            <span class="upload-help fw-bold" x-text="progress + '%'"></span>
+                                        </div>
+                                        <div class="upload-progress-track">
+                                            <div class="upload-progress-bar" x-bind:style="`width: ${progress}%`"></div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 @if($files)
@@ -787,10 +903,6 @@ new class extends Component
                                                 </div>
                                             @endforeach
                                         </div>
-                                    </div>
-                                    <div class="mt-2 upload-help" wire:loading wire:target="files">
-                                        <span class="spinner-border spinner-border-sm text-primary me-2" role="status"></span>
-                                        Mengupload files...
                                     </div>
                                 @endif
                             </div>
@@ -839,8 +951,9 @@ new class extends Component
                     <button type="button" class="btn btn-lg" wire:click="closeUploadForm" style="background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600;">
                         Batal
                     </button>
-                    <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: 700; padding: 0.75rem 2rem;">
-                        <i class="fas fa-cloud-upload-alt me-2"></i>Upload Materi
+                    <button type="submit" class="btn btn-lg" wire:loading.attr="disabled" wire:target="files,uploadMaterial" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: 700; padding: 0.75rem 2rem;">
+                        <span wire:loading.remove wire:target="uploadMaterial"><i class="fas fa-cloud-upload-alt me-2"></i>Upload Materi</span>
+                        <span wire:loading wire:target="uploadMaterial"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Menyimpan...</span>
                     </button>
                 </div>
             </form>
@@ -1107,17 +1220,44 @@ new class extends Component
                         </div>
                     @endif
                     
-                    <input 
-                        type="file" 
-                        class="form-control form-control-lg"
-                        wire:model="files"
-                        multiple
-                        accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.jpg,.jpeg,.png"
-                        style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 12px 16px;"
+                    <div
+                        class="upload-dropzone"
+                        x-data="{ uploading: false, progress: 0, dragging: false }"
+                        x-on:dragover.prevent="dragging = true"
+                        x-on:dragleave.prevent="dragging = false"
+                        x-on:drop.prevent="dragging = false; $refs.editFilesInput.files = $event.dataTransfer.files; $refs.editFilesInput.dispatchEvent(new Event('change', { bubbles: true }))"
+                        x-on:livewire-upload-start="uploading = true; progress = 0"
+                        x-on:livewire-upload-finish="uploading = false; progress = 100"
+                        x-on:livewire-upload-error="uploading = false"
+                        x-on:livewire-upload-progress="progress = $event.detail.progress"
+                        x-bind:class="{ 'is-dragging': dragging }"
+                        x-on:click="$refs.editFilesInput.click()"
                     >
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle me-1"></i>Pilih file baru untuk ditambahkan ke materi ini. File yang sudah ada tidak akan dihapus.
-                    </small>
+                        <div class="upload-dropzone-icon">
+                            <i class="fas fa-file-circle-plus"></i>
+                        </div>
+                        <div style="font-weight: 800; color: #3730a3;">Tambah file baru</div>
+                        <div class="upload-help mt-1">Tarik file ke area ini atau klik untuk memilih file. File yang sudah ada tidak akan dihapus.</div>
+                        <input
+                            type="file"
+                            class="d-none"
+                            wire:model="files"
+                            multiple
+                            accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.jpg,.jpeg,.png"
+                            x-ref="editFilesInput"
+                            x-on:click.stop
+                        >
+
+                        <div class="mt-3" x-show="uploading" x-cloak>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="upload-help fw-bold">Mengupload file...</span>
+                                <span class="upload-help fw-bold" x-text="progress + '%'"></span>
+                            </div>
+                            <div class="upload-progress-track">
+                                <div class="upload-progress-bar" x-bind:style="`width: ${progress}%`"></div>
+                            </div>
+                        </div>
+                    </div>
                         
                     @if($files)
                         <div class="mt-3">
@@ -1136,12 +1276,6 @@ new class extends Component
                                     </div>
                                 @endforeach
                             </div>
-                        </div>
-                        <div class="mt-2" wire:loading wire:target="files">
-                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                            <span>Mengupload files...</span>
                         </div>
                     @endif
                 </div>
@@ -1188,8 +1322,9 @@ new class extends Component
                 </div>
                     
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: 600; padding: 0.75rem 2rem;">
-                        <i class="fas fa-save me-2"></i>Simpan Perubahan
+                    <button type="submit" class="btn btn-lg" wire:loading.attr="disabled" wire:target="files,updateMaterial" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: 600; padding: 0.75rem 2rem;">
+                        <span wire:loading.remove wire:target="updateMaterial"><i class="fas fa-save me-2"></i>Simpan Perubahan</span>
+                        <span wire:loading wire:target="updateMaterial"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Menyimpan...</span>
                     </button>
                     <button type="button" class="btn btn-lg" wire:click="closeEditForm" style="background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600;">
                         Batal
