@@ -1672,7 +1672,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 
 ### Student Experience Features
 
-- [ ] **Digital Student ID** - QR code card
+- [x] **Digital Student ID** - QR code card with signed verification page
 - [ ] **Peer Study Group** - Collaboration platform
 - [x] **Career Services Portal** - Job board (delivered as part of Alumni module)
 - [ ] **Campus Map & Navigation** - Interactive map

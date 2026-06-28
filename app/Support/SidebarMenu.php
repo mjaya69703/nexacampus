@@ -161,6 +161,7 @@ class SidebarMenu
                     static::makeChildLink('student.financial.invoices', 'Tagihan'),
                 ]),
                 static::makeGroup('student-services', 'Layanan', 'fas fa-hands-helping', [
+                    static::makeChildLink('student.digital-id.index', 'Kartu Mahasiswa'),
                     static::makeChildLink('student.student-services.letters', 'Surat'),
                     static::makeChildLink('student.student-services.leaves', 'Cuti Akademik'),
                     static::makeChildLink('student.student-services.transfers', 'Pindah Program'),

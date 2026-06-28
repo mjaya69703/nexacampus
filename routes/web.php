@@ -18,6 +18,7 @@ use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
 use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
+use App\Http\Controllers\Student\DigitalStudentIdVerificationController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,8 @@ Route::middleware('is_installed')->group(function () {
     Route::livewire('/admission/applications/{applicationNumber}/{token}', 'admission.portal')->name('admission.portal');
     Route::get('/admission/applications/{applicationNumber}/{token}/documents/{document}/preview', [AdmissionDocumentController::class, 'portalPreview'])
         ->name('admission.documents.preview');
+    Route::get('/student-id/verify/{studentProfile}/{token}', DigitalStudentIdVerificationController::class)
+        ->name('student.digital-id.verify');
 
     Route::middleware('guest')->group(function () {
         Route::livewire('/auth/login', 'auth.signin-index')->name('auth.signin-index');
@@ -209,6 +212,7 @@ Route::middleware('is_installed')->group(function () {
         Route::middleware(['active_role:student', 'financial_clearance'])->prefix('student')->as('student.')->group(function () {
             Route::livewire('/dashboard', 'student.dashboard.index')->name('dashboard.index');
             Route::livewire('/registration', 'student.registration.index')->name('registration.index');
+            Route::livewire('/digital-id', 'student.digital-id.index')->name('digital-id.index');
             Route::livewire('/study-plan', 'student.study-plan.index')->name('study-plan.index');
             Route::livewire('/progress', 'student.progress.index')->name('progress.index');
             Route::livewire('/grades', 'student.grades.index')->name('grades.index');
