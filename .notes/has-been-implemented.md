@@ -1633,7 +1633,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 - [ ] **Assignment Management** (Lecturer + Student) - Online submission & grading
 - [ ] **Student Progress Analytics** (Lecturer) - Performance dashboard
 - [ ] **Academic Advising Dashboard** (Lecturer) - PA features
-- [ ] **Course Evaluation Results** (Lecturer) - View student feedback
+- [x] **Course Evaluation Results** (Lecturer) - View anonymous EDOM feedback
 - [ ] **Office Hours Management** (Lecturer) - Appointment booking
 - [ ] **Rubric Builder** (Lecturer) - Custom grading rubrics
 - [ ] **Academic Progress Tracker** (Student) - Visual GPA/SKS tracking

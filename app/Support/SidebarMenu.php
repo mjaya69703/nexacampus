@@ -214,6 +214,7 @@ class SidebarMenu
             static::makeGroup('lecturer-assessment', 'Evaluasi', 'fas fa-chart-bar', [
                 static::makeChildLink('lecturer.student-grades.index', 'Nilai'),
                 static::makeChildLink('lecturer.student-grades.grade-book', 'Grade Book'),
+                static::makeChildLink('lecturer.edom.index', 'Hasil EDOM'),
                 static::makeChildLink('lecturer.workloads.index', 'BKD Saya'),
             ]),
             static::makeGroup('lecturer-publication', 'Publikasi', 'fas fa-bullhorn', [

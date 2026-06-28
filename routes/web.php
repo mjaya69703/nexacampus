@@ -296,6 +296,7 @@ Route::middleware('is_installed')->group(function () {
             Route::get('/student-grades/grade-book/export/csv', [GradeBookExportController::class, 'csv'])->name('student-grades.grade-book.export.csv');
             Route::get('/student-grades/grade-book/export/xlsx', [GradeBookExportController::class, 'xlsx'])->name('student-grades.grade-book.export.xlsx');
             Route::get('/student-grades/grade-book/export/pdf', [GradeBookExportController::class, 'pdf'])->name('student-grades.grade-book.export.pdf');
+            Route::livewire('/edom', 'lecturer.edom.index')->name('edom.index');
             Route::livewire('/workloads', 'lecturer.workloads.index')->name('workloads.index');
             Route::livewire('/workloads/{id}', 'lecturer.workloads.show')->name('workloads.show');
             Route::livewire('/student-grades/{id}/edit', 'lecturer.student-grades.edit')->name('student-grades.edit');
