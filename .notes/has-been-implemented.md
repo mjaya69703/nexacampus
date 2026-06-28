@@ -1637,7 +1637,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 - [ ] **Office Hours Management** (Lecturer) - Appointment booking
 - [ ] **Rubric Builder** (Lecturer) - Custom grading rubrics
 - [ ] **Academic Progress Tracker** (Student) - Visual GPA/SKS tracking
-- [ ] **Grade Appeal** (Student) - Formal appeal process
+- [x] **Grade Appeal** (Student/Lecturer) - Formal appeal submission with evidence attachments, lecturer review, decision comments, and approved score correction
 - [x] **Study Plan Comparison** (Student) - KRS comparison tool
 - [ ] **Lecture Evaluation** (Student) - Evaluate lecturers
 - [ ] **Personalized Notifications** (Student) - Smart alerts

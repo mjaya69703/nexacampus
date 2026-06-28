@@ -237,7 +237,7 @@ class TranscriptSyncService
     protected function finalizedGradesQuery(int $studentProfileId, ?int $academicYearId = null)
     {
         return StudentGrade::query()
-            ->where('grade_status', 'Finalized')
+            ->whereIn('grade_status', ['Finalized', 'Published'])
             ->whereHas('studyPlanDetail.studyPlan', function ($query) use ($studentProfileId, $academicYearId) {
                 $query->where('student_profile_id', $studentProfileId);
 

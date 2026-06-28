@@ -467,7 +467,7 @@ Publication module designed untuk easy extension:
 
 ---
 
-##### 14. Grade Appeals Management ⚖️
+##### 14. COMPLETED - Grade Appeals Management
 **Deskripsi:** Sistem handling komplain nilai
 
 **Fitur Detail:**
@@ -480,6 +480,8 @@ Publication module designed untuk easy extension:
 - Statistics on appeals
 
 **Estimated Effort:** Medium (2-3 days)
+
+**Implementation Status:** Core workflow completed (student submission, optional evidence attachments, lecturer review, decision comments, history, basic statistics, approved score correction). Department escalation remains a future extension.
 
 ---
 
@@ -1874,7 +1876,7 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Student (Mahasisw
 
 ---
 
-##### 5. Grade Appeal / Pengajuan Keberatan Nilai ⚖️
+##### 5. COMPLETED - Grade Appeal / Pengajuan Keberatan Nilai
 **Deskripsi:** Sistem untuk mengajukan keberatan nilai ke dosen
 
 **Fitur Detail:**
@@ -1902,6 +1904,8 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Student (Mahasisw
 - Transparency dalam grading
 - Accountability untuk dosen
 - Documentation of appeals
+
+**Implementation Status:** Core student/lecturer workflow completed with optional evidence attachments. Notifications, deadline enforcement, and escalation can be added later if policy requires it.
 
 **Estimated Effort:** Medium (2-3 days)
 

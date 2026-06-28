@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Academic\AssignmentFileController;
 use App\Http\Controllers\Academic\AssignmentReportExportController;
+use App\Http\Controllers\Academic\GradeAppealAttachmentController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\AuthController;
@@ -217,6 +218,8 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/study-plan/comparison', 'student.study-plan.comparison')->name('study-plan.comparison');
             Route::livewire('/progress', 'student.progress.index')->name('progress.index');
             Route::livewire('/grades', 'student.grades.index')->name('grades.index');
+            Route::livewire('/grade-appeals', 'student.grade-appeals.index')->name('grade-appeals.index');
+            Route::get('/grade-appeal-attachments/{attachment}/preview', [GradeAppealAttachmentController::class, 'studentPreview'])->name('grade-appeal-attachments.preview');
             Route::livewire('/financial/invoices', 'student.financial.invoices')->name('financial.invoices');
             Route::livewire('/financial/invoices/{id}', 'student.financial.invoice-detail')->name('financial.invoices.show');
             Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'student'])->name('financial.payments.receipt');
@@ -293,6 +296,8 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/attendance-sessions/{sessionId}/edit', 'lecturer.attendance-sessions.edit')->name('attendance-sessions.edit');
             Route::livewire('/student-grades', 'lecturer.student-grades.index')->name('student-grades.index');
             Route::livewire('/student-grades/grade-book', 'lecturer.student-grades.grade-book')->name('student-grades.grade-book');
+            Route::livewire('/grade-appeals', 'lecturer.grade-appeals.index')->name('grade-appeals.index');
+            Route::get('/grade-appeal-attachments/{attachment}/preview', [GradeAppealAttachmentController::class, 'lecturerPreview'])->name('grade-appeal-attachments.preview');
             Route::get('/student-grades/grade-book/export/csv', [GradeBookExportController::class, 'csv'])->name('student-grades.grade-book.export.csv');
             Route::get('/student-grades/grade-book/export/xlsx', [GradeBookExportController::class, 'xlsx'])->name('student-grades.grade-book.export.xlsx');
             Route::get('/student-grades/grade-book/export/pdf', [GradeBookExportController::class, 'pdf'])->name('student-grades.grade-book.export.pdf');

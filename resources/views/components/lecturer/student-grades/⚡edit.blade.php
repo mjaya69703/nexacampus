@@ -12,10 +12,15 @@ use Livewire\Component;
 new class extends Component
 {
     public int $studyPlanDetailId;
+
     public StudyPlanDetail $detail;
+
     public StudentGrade $studentGrade;
+
     public array $gradeForm = [];
+
     public array $components = [];
+
     public array $allowedGradeStatuses = [];
 
     public function mount(int $id): void
@@ -75,13 +80,19 @@ new class extends Component
             ->map(fn (StudentGradeComponent $component) => $this->mapComponent($component))
             ->all();
 
-        if (count($this->components) === 0) {
+        if (count($this->components) === 0 && ! $this->isPublished) {
             $this->components = $this->defaultComponents();
         }
     }
 
     public function addComponentRow(): void
     {
+        if ($this->isPublished) {
+            $this->addError('locked', 'Nilai yang sudah Published tidak bisa diubah dari halaman input dosen.');
+
+            return;
+        }
+
         $this->components[] = [
             'id' => null,
             'name' => '',
@@ -94,6 +105,12 @@ new class extends Component
 
     public function removeComponentRow(int $index): void
     {
+        if ($this->isPublished) {
+            $this->addError('locked', 'Nilai yang sudah Published tidak bisa diubah dari halaman input dosen.');
+
+            return;
+        }
+
         if (! isset($this->components[$index])) {
             return;
         }
@@ -104,6 +121,12 @@ new class extends Component
 
     public function saveGrade(): void
     {
+        if ($this->isPublished) {
+            $this->addError('locked', 'Nilai yang sudah Published hanya bisa dikoreksi lewat workflow keberatan nilai.');
+
+            return;
+        }
+
         $this->allowedGradeStatuses = $this->resolveAllowedGradeStatuses($this->studentGrade->grade_status);
 
         $this->validate([
@@ -179,7 +202,7 @@ new class extends Component
 
             $this->studentGrade->load('components');
 
-            $calculator = new StudentGradeCalculator();
+            $calculator = new StudentGradeCalculator;
             $snapshot = $calculator->buildSnapshot($this->studentGrade);
 
             $this->studentGrade->update(array_merge($snapshot, [
@@ -204,6 +227,11 @@ new class extends Component
     public function getTotalWeightProperty(): float
     {
         return round(collect($this->components)->sum(fn (array $component) => (float) ($component['weight_percentage'] ?? 0)), 2);
+    }
+
+    public function getIsPublishedProperty(): bool
+    {
+        return $this->studentGrade->grade_status === 'Published';
     }
 
     public function render()
@@ -351,7 +379,7 @@ new class extends Component
         <div class="card-body">
             @if ($studentGrade->grade_status === 'Published')
                 <div class="alert alert-warning mb-4">
-                    Nilai ini sudah berstatus <strong>Published</strong>. Dosen hanya dapat melihat hasil akhir dan tidak dianjurkan mengubah lifecycle publikasinya dari halaman ini.
+                    Nilai ini sudah berstatus <strong>Published</strong>. Dosen hanya dapat melihat hasil akhir dari halaman ini. Koreksi nilai yang sudah terbit harus melalui workflow keberatan nilai.
                 </div>
             @else
                 <div class="alert alert-info mb-4">
@@ -362,7 +390,7 @@ new class extends Component
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Status Nilai</label>
-                    <select class="form-select" wire:model="gradeForm.grade_status">
+                    <select class="form-select" wire:model="gradeForm.grade_status" @disabled($this->isPublished)>
                         @foreach ($allowedGradeStatuses as $status)
                             <option value="{{ $status }}">{{ $status }}</option>
                         @endforeach
@@ -374,7 +402,7 @@ new class extends Component
 
                 <div class="col-md-8">
                     <label class="form-label">Catatan</label>
-                    <input type="text" class="form-control" wire:model="gradeForm.notes" placeholder="Tambahkan catatan bila diperlukan">
+                    <input type="text" class="form-control" wire:model="gradeForm.notes" placeholder="Tambahkan catatan bila diperlukan" @disabled($this->isPublished)>
                     @error('gradeForm.notes')
                         <div class="text-danger small mt-1">{{ $message }}</div>
                     @enderror
@@ -386,7 +414,11 @@ new class extends Component
     <div class="card lecturer-grade-card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Komponen Nilai</h3>
-            <button type="button" class="btn btn-outline-primary btn-sm" wire:click="addComponentRow">Tambah Komponen</button>
+            @if (! $this->isPublished)
+                <button type="button" class="btn btn-outline-primary btn-sm" wire:click="addComponentRow">Tambah Komponen</button>
+            @else
+                <span class="badge bg-blue-lt text-blue"><i class="fas fa-lock me-1"></i>Published</span>
+            @endif
         </div>
 
         <div class="table-responsive">
@@ -405,37 +437,41 @@ new class extends Component
                     @foreach ($components as $index => $component)
                         <tr>
                             <td>
-                                <input type="text" class="form-control" wire:model="components.{{ $index }}.name" placeholder="Tugas / Kuis / UTS / UAS">
+                                <input type="text" class="form-control" wire:model="components.{{ $index }}.name" placeholder="Tugas / Kuis / UTS / UAS" @disabled($this->isPublished)>
                                 @error('components.' . $index . '.name')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </td>
                             <td>
-                                <input type="number" min="0" max="100" step="0.01" class="form-control" wire:model="components.{{ $index }}.weight_percentage">
+                                <input type="number" min="0" max="100" step="0.01" class="form-control" wire:model="components.{{ $index }}.weight_percentage" @disabled($this->isPublished)>
                                 @error('components.' . $index . '.weight_percentage')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </td>
                             <td>
-                                <input type="number" min="0" max="100" step="0.01" class="form-control" wire:model="components.{{ $index }}.score">
+                                <input type="number" min="0" max="100" step="0.01" class="form-control" wire:model="components.{{ $index }}.score" @disabled($this->isPublished)>
                                 @error('components.' . $index . '.score')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </td>
                             <td>
-                                <input type="number" min="0" class="form-control" wire:model="components.{{ $index }}.sort_order">
+                                <input type="number" min="0" class="form-control" wire:model="components.{{ $index }}.sort_order" @disabled($this->isPublished)>
                                 @error('components.' . $index . '.sort_order')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </td>
                             <td>
-                                <input type="text" class="form-control" wire:model="components.{{ $index }}.notes" placeholder="Opsional">
+                                <input type="text" class="form-control" wire:model="components.{{ $index }}.notes" placeholder="Opsional" @disabled($this->isPublished)>
                                 @error('components.' . $index . '.notes')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </td>
                             <td class="text-end">
-                                <button type="button" class="btn btn-outline-danger btn-sm" wire:click="removeComponentRow({{ $index }})">Hapus</button>
+                                @if (! $this->isPublished)
+                                    <button type="button" class="btn btn-outline-danger btn-sm" wire:click="removeComponentRow({{ $index }})">Hapus</button>
+                                @else
+                                    <span class="text-secondary small">Terkunci</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -449,9 +485,18 @@ new class extends Component
 
         <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="text-secondary small">
-                Pastikan total bobot tidak lebih dari 100%. Untuk menyimpan sebagai <strong>Finalized</strong>, total bobot harus tepat 100%.
+                @if ($this->isPublished)
+                    Nilai sudah terbit dan terkunci untuk edit manual dosen.
+                @else
+                    Pastikan total bobot tidak lebih dari 100%. Untuk menyimpan sebagai <strong>Finalized</strong>, total bobot harus tepat 100%.
+                @endif
             </div>
-            <button type="button" class="btn btn-primary" wire:click="saveGrade">Simpan Nilai</button>
+            @error('locked')
+                <div class="text-danger small">{{ $message }}</div>
+            @enderror
+            @if (! $this->isPublished)
+                <button type="button" class="btn btn-primary" wire:click="saveGrade">Simpan Nilai</button>
+            @endif
         </div>
     </div>
 </div>
