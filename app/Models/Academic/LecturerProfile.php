@@ -74,4 +74,14 @@ class LecturerProfile extends Model
     {
         return $this->hasMany(GradeAppeal::class);
     }
+
+    public function consultationSlots(): HasMany
+    {
+        return $this->hasMany(ConsultationSlot::class);
+    }
+
+    public function consultationAppointments(): HasMany
+    {
+        return $this->hasMany(ConsultationAppointment::class);
+    }
 }

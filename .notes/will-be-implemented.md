@@ -349,12 +349,14 @@ Publication module designed untuk easy extension:
 
 ---
 
-##### 9. Office Hours Management 🕐
+##### 9. Consultation Management 🕐
+**Status:** ✅ Core implemented 2026-06-28. Remaining enhancements: calendar sync, email/in-app notifications, holiday/break exceptions.
+
 **Deskripsi:** Manajemen jam konsultasi dosen
 
 **Fitur Detail:**
-- Set weekly office hours schedule
-- Specify location (office/virtual)
+- Set weekly consultation schedule
+- Specify location (onsite/online)
 - Allow students to book appointments
 - Calendar integration
 - Appointment confirmation/cancellation
@@ -373,7 +375,7 @@ Publication module designed untuk easy extension:
 **Estimated Effort:** Medium (2-3 days)
 
 **Technical Notes:**
-- New table: office_hours, office_hour_appointments
+- New table: consultation_slots, consultation_appointments
 - Integration with calendar system
 - Email notifications for bookings
 - Conflict detection logic
@@ -514,7 +516,7 @@ Publication module designed untuk easy extension:
 | Student Analytics | Medium | Medium | **MEDIUM** | Week 3-4 |
 | Academic Advising | Medium | Medium | **MEDIUM** | Week 3-4 |
 | Course Evaluations | Medium | Low | **MEDIUM** | Week 3-4 |
-| Office Hours | Low | Medium | **LOW** | Future |
+| Consultations | Low | Medium | **LOW** | Future |
 | Rubric Builder | Medium | High | **LOW** | Future |
 | Messaging | Low | High | **LOW** | Future |
 | Research Profile | Low | Medium | **LOW** | Future |
@@ -543,7 +545,7 @@ Publication module designed untuk easy extension:
 **Goal:** Enhance assessment capabilities and data-driven insights.
 
 #### **Phase 3: Advanced Features (Month 2+)**
-- Office Hours Management
+- Consultation Management
 - Rubric Builder
 - Messaging System
 - Other low-priority features
@@ -2324,8 +2326,8 @@ Setelah implementasi fitur-fitur di atas, success metrics yang diharapkan:
 - `assignments` table
 - `assignment_submissions` table
 - `assignment_grades` table
-- `office_hours` table
-- `office_hour_appointments` table
+- `consultation_slots` table
+- `consultation_appointments` table
 - `rubrics` table
 - `meeting_notes` table (for PA)
 

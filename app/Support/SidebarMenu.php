@@ -154,6 +154,7 @@ class SidebarMenu
                 static::makeGroup('student-learning', 'Pembelajaran', 'fas fa-book-open', [
                     static::makeChildLink('student.course-materials.index', 'Materi'),
                     static::makeChildLink('student.assignments.index', 'Tugas'),
+                    static::makeChildLink('student.consultations.index', 'Konsultasi'),
                     static::makeChildLink('student.grades.index', 'Nilai'),
                     static::makeChildLink('student.grade-appeals.index', 'Keberatan Nilai'),
                     static::makeChildLink('student.transcript.index', 'Transkrip'),
@@ -227,14 +228,16 @@ class SidebarMenu
             ]),
         ]);
 
-        if (! static::lecturerHasAdvisorAssignments()) {
-            return $menus;
+        $advisingChildren = [
+            static::makeChildLink('lecturer.consultations.index', 'Konsultasi'),
+        ];
+
+        if (static::lecturerHasAdvisorAssignments()) {
+            array_unshift($advisingChildren, static::makeChildLink('lecturer.academic-advising.index', 'Mahasiswa Bimbingan'));
         }
 
         $menus->splice(1, 0, [
-            static::makeGroup('lecturer-advising', 'Bimbingan Akademik', 'fas fa-user-graduate', [
-                static::makeChildLink('lecturer.academic-advising.index', 'Mahasiswa Bimbingan'),
-            ]),
+            static::makeGroup('lecturer-advising', 'Bimbingan Akademik', 'fas fa-user-graduate', $advisingChildren),
         ]);
 
         return $menus;

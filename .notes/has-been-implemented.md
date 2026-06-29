@@ -1634,7 +1634,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 - [ ] **Student Progress Analytics** (Lecturer) - Performance dashboard
 - [ ] **Academic Advising Dashboard** (Lecturer) - PA features
 - [x] **Course Evaluation Results** (Lecturer) - View anonymous EDOM feedback
-- [ ] **Office Hours Management** (Lecturer) - Appointment booking
+- [x] **Consultation Management** (Lecturer/Student) - Weekly slots, appointment booking, waitlist, status workflow
 - [ ] **Rubric Builder** (Lecturer) - Custom grading rubrics
 - [ ] **Academic Progress Tracker** (Student) - Visual GPA/SKS tracking
 - [x] **Grade Appeal** (Student/Lecturer) - Formal appeal submission with evidence attachments, lecturer review, decision comments, and approved score correction
@@ -1892,6 +1892,18 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
   - Included detailed technical specifications for each feature
   - Added module categorization (Academic, PMB, Financial)
   - Created planning queue for future features
+- **2026-06-28 (Consultation Management Core):**
+  - ✅ **COMPLETED: Consultation Management Core** (Priority 9 core slice)
+    - Lecturer weekly consultation schedules with day, time window, slot duration, capacity, consultation mode, location/meeting link, active period, and active toggle.
+    - Student booking surface for relevant lecturers from enrolled course offerings and active academic advisor assignments.
+    - Appointment lifecycle: requested, confirmed, waitlisted, completed, cancelled, rejected, and no-show.
+    - Lecturer appointment queue with status actions and consultation notes.
+    - Student request history with cancellation and lecturer note visibility.
+    - Database: `consultation_slots`, `consultation_appointments`.
+    - UI: Lecturer `lecturer.consultations.index`, Student `student.consultations.index`.
+    - Navigation integrated into lecturer and student sidebars.
+    - Remaining enhancement candidates: calendar sync, email/in-app notification integration, holiday/break exceptions.
+
 - Last updated by: AI Assistant (based on actual git commit history)
 
 ---
