@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Models\Settings;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
+
+class NotificationSetting extends Model
+{
+    use LogsActivity;
+    use SoftDeletes;
+
+    public const PROVIDER_OFFICIAL = 'official_cloud_api';
+    public const PROVIDER_UNOFFICIAL = 'unofficial_web_session';
+
+    protected $fillable = [
+        'whatsapp_enabled',
+        'whatsapp_provider',
+        'official_config',
+        'unofficial_config',
+        'fallback_channel',
+        'retry_attempts',
+        'timeout_seconds',
+        'last_health_status',
+        'last_health_message',
+        'last_health_checked_at',
+    ];
+
+    protected $hidden = [
+        'official_config',
+        'unofficial_config',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'whatsapp_enabled' => 'boolean',
+            'official_config' => 'encrypted:array',
+            'unofficial_config' => 'encrypted:array',
+            'retry_attempts' => 'integer',
+            'timeout_seconds' => 'integer',
+            'last_health_checked_at' => 'datetime',
+        ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('notification-setting')
+            ->logOnly([
+                'whatsapp_enabled',
+                'whatsapp_provider',
+                'fallback_channel',
+                'retry_attempts',
+                'timeout_seconds',
+                'last_health_status',
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
+    public static function current(): self
+    {
+        return static::query()->firstOrCreate([], [
+            'whatsapp_enabled' => false,
+            'whatsapp_provider' => self::PROVIDER_OFFICIAL,
+            'fallback_channel' => 'in_app',
+            'retry_attempts' => 3,
+            'timeout_seconds' => 15,
+        ]);
+    }
+}

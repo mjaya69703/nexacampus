@@ -3,7 +3,9 @@
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Settings\Campus;
+use App\Models\Settings\NotificationSetting;
 use App\Models\Settings\System;
+use App\Support\Notifications\WhatsAppProviderManager;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -20,15 +22,21 @@ new class extends Component
     public $tab = 'aplikasi';
     public $campus;
     public $system;
+    public $notificationSetting;
+    public $notificationForm = [];
+    public $notificationHealth = [];
     
     public function mount()
     {
 
         $this->campus = Campus::first() ?? new Campus();
         $this->system = System::first() ?? new System();
+        $this->notificationSetting = NotificationSetting::current();
 
         $this->campusForm = $this->campus->toArray();
         $this->systemForm = $this->system->toArray();
+        $this->notificationForm = $this->notificationSettingToForm($this->notificationSetting);
+        $this->notificationHealth = app(WhatsAppProviderManager::class)->health($this->notificationSetting);
     }
 
     public function update()
@@ -67,6 +75,20 @@ new class extends Component
             'campusForm.linkedin' => 'nullable|string|max:255',
             'campusForm.xtwitter' => 'nullable|string|max:255',
             'campusForm.tiktok' => 'nullable|string|max:255',
+            // Validasi untuk notifikasi WhatsApp
+            'notificationForm.whatsapp_enabled' => 'boolean',
+            'notificationForm.whatsapp_provider' => 'required|in:official_cloud_api,unofficial_web_session',
+            'notificationForm.fallback_channel' => 'required|in:in_app,email,none',
+            'notificationForm.retry_attempts' => 'required|integer|min:0|max:5',
+            'notificationForm.timeout_seconds' => 'required|integer|min:5|max:120',
+            'notificationForm.official_config.access_token' => 'nullable|string|max:2000',
+            'notificationForm.official_config.phone_number_id' => 'nullable|string|max:255',
+            'notificationForm.official_config.business_account_id' => 'nullable|string|max:255',
+            'notificationForm.official_config.app_secret' => 'nullable|string|max:2000',
+            'notificationForm.official_config.verify_token' => 'nullable|string|max:255',
+            'notificationForm.unofficial_config.sidecar_url' => 'nullable|url|max:255',
+            'notificationForm.unofficial_config.session_name' => 'nullable|string|max:100',
+            'notificationForm.unofficial_config.shared_token' => 'nullable|string|max:2000',
         ]);
 
         DB::transaction(function () use ($validatedData) {
@@ -103,6 +125,20 @@ new class extends Component
             $campus->fill($validatedData['campusForm']);
             $campus->save();
 
+            $notification = $this->notificationSetting;
+            $notification->fill([
+                'whatsapp_enabled' => $validatedData['notificationForm']['whatsapp_enabled'] ?? false,
+                'whatsapp_provider' => $validatedData['notificationForm']['whatsapp_provider'],
+                'fallback_channel' => $validatedData['notificationForm']['fallback_channel'],
+                'retry_attempts' => $validatedData['notificationForm']['retry_attempts'],
+                'timeout_seconds' => $validatedData['notificationForm']['timeout_seconds'],
+                'official_config' => $validatedData['notificationForm']['official_config'] ?? [],
+                'unofficial_config' => $validatedData['notificationForm']['unofficial_config'] ?? [],
+            ]);
+            $notification->save();
+            $this->notificationSetting = $notification->fresh();
+            $this->notificationHealth = app(WhatsAppProviderManager::class)->health($this->notificationSetting);
+
             $this->reset([
                 'appFavicon',
                 'appLogoVertikal',
@@ -113,6 +149,39 @@ new class extends Component
         Cache::forget('global_system');
 
         session()->flash('success', 'Pengaturan kampus berhasil disimpan.');
+    }
+
+    public function checkWhatsappConfiguration()
+    {
+        $this->notificationHealth = app(WhatsAppProviderManager::class)->persistHealth($this->notificationSetting->fresh());
+
+        session()->flash(
+            $this->notificationHealth['status'] === 'ready' ? 'success' : 'warning',
+            $this->notificationHealth['message']
+        );
+    }
+
+    private function notificationSettingToForm(NotificationSetting $setting): array
+    {
+        return [
+            'whatsapp_enabled' => $setting->whatsapp_enabled,
+            'whatsapp_provider' => $setting->whatsapp_provider ?: NotificationSetting::PROVIDER_OFFICIAL,
+            'fallback_channel' => $setting->fallback_channel ?: 'in_app',
+            'retry_attempts' => $setting->retry_attempts ?: 3,
+            'timeout_seconds' => $setting->timeout_seconds ?: 15,
+            'official_config' => array_merge([
+                'access_token' => '',
+                'phone_number_id' => '',
+                'business_account_id' => '',
+                'app_secret' => '',
+                'verify_token' => '',
+            ], $setting->official_config ?? []),
+            'unofficial_config' => array_merge([
+                'sidecar_url' => '',
+                'session_name' => 'main',
+                'shared_token' => '',
+            ], $setting->unofficial_config ?? []),
+        ];
     }
 
     public function render()
@@ -215,6 +284,11 @@ new class extends Component
                         <li class="nav-item">
                             <a class="nav-link {{ $tab === 'keamanan' ? 'active' : '' }}" wire:click="$set('tab', 'keamanan')" href="#keamanan" >
                                 <i class="fas fa-lock me-2"></i> Keamanan
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ $tab === 'notifikasi' ? 'active' : '' }}" wire:click="$set('tab', 'notifikasi')" href="#notifikasi" >
+                                <i class="fab fa-whatsapp me-2"></i> Notifikasi
                             </a>
                         </li>
                     </ul>
@@ -440,6 +514,121 @@ new class extends Component
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Tab Notifikasi -->
+                        <div class="tab-pane {{ $tab === 'notifikasi' ? 'active show' : '' }}" id="notifikasi" role="tabpanel">
+                            <div class="form-section">
+                                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                                    <div>
+                                        <h5 class="mb-1">Pengaturan WhatsApp</h5>
+                                        <small class="text-muted">Atur provider WhatsApp tanpa mengikat modul lain ke implementasi provider tertentu.</small>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary" wire:click="checkWhatsappConfiguration">
+                                        <i class="fas fa-plug me-2"></i> Cek Konfigurasi
+                                    </button>
+                                </div>
+
+                                <div class="alert alert-{{ ($notificationHealth['status'] ?? null) === 'ready' ? 'success' : (($notificationHealth['status'] ?? null) === 'disabled' ? 'secondary' : 'warning') }} mb-4">
+                                    <div class="d-flex">
+                                        <div class="me-3">
+                                            <i class="fas fa-circle-info"></i>
+                                        </div>
+                                        <div>
+                                            <strong>Status: {{ str_replace('_', ' ', $notificationHealth['status'] ?? 'unknown') }}</strong>
+                                            <div>{{ $notificationHealth['message'] ?? 'Status konfigurasi belum tersedia.' }}</div>
+                                            @if (! empty($notificationHealth['issues']))
+                                                <ul class="mb-0 mt-2">
+                                                    @foreach ($notificationHealth['issues'] as $issue)
+                                                        <li>{{ $issue }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" wire:model.live="notificationForm.whatsapp_enabled">
+                                            <label class="form-check-label">Aktifkan WhatsApp</label>
+                                        </div>
+                                        <small class="text-muted">Jika nonaktif, modul tetap bisa memakai kanal fallback yang dipilih.</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Provider Aktif</label>
+                                        <select class="form-select" wire:model.live="notificationForm.whatsapp_provider">
+                                            <option value="official_cloud_api">Official - Meta Cloud API</option>
+                                            <option value="unofficial_web_session">Unofficial - Web Session Sidecar</option>
+                                        </select>
+                                        <small class="text-muted">Official direkomendasikan untuk production; unofficial cocok untuk kebutuhan internal atau uji coba terbatas.</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Fallback</label>
+                                        <select class="form-select" wire:model="notificationForm.fallback_channel">
+                                            <option value="in_app">Notifikasi aplikasi</option>
+                                            <option value="email">Email</option>
+                                            <option value="none">Tanpa fallback</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Retry</label>
+                                        <input type="number" class="form-control" wire:model="notificationForm.retry_attempts" min="0" max="5">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Timeout (detik)</label>
+                                        <input type="number" class="form-control" wire:model="notificationForm.timeout_seconds" min="5" max="120">
+                                    </div>
+                                </div>
+
+                                @if (($notificationForm['whatsapp_provider'] ?? 'official_cloud_api') === 'official_cloud_api')
+                                    <hr>
+                                    <h6 class="mb-3">Meta Cloud API</h6>
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Access Token</label>
+                                            <input type="password" class="form-control" wire:model="notificationForm.official_config.access_token" autocomplete="new-password">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Phone Number ID</label>
+                                            <input type="text" class="form-control" wire:model="notificationForm.official_config.phone_number_id">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Business Account ID</label>
+                                            <input type="text" class="form-control" wire:model="notificationForm.official_config.business_account_id">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Verify Token</label>
+                                            <input type="password" class="form-control" wire:model="notificationForm.official_config.verify_token" autocomplete="new-password">
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">App Secret</label>
+                                            <input type="password" class="form-control" wire:model="notificationForm.official_config.app_secret" autocomplete="new-password">
+                                        </div>
+                                    </div>
+                                @else
+                                    <hr>
+                                    <h6 class="mb-3">Web Session Sidecar</h6>
+                                    <div class="alert alert-warning">
+                                        Provider unofficial memakai sesi browser dan perlu runtime sidecar terpisah. Pakai untuk kebutuhan yang memang tidak tersedia di Cloud API.
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Sidecar URL</label>
+                                            <input type="url" class="form-control" wire:model="notificationForm.unofficial_config.sidecar_url" placeholder="http://127.0.0.1:3000">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Session Name</label>
+                                            <input type="text" class="form-control" wire:model="notificationForm.unofficial_config.session_name" placeholder="main">
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Shared Token</label>
+                                            <input type="password" class="form-control" wire:model="notificationForm.unofficial_config.shared_token" autocomplete="new-password">
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-flex justify-content-end mt-3">
@@ -452,4 +641,3 @@ new class extends Component
         </div>
     </div>
 </div>
-

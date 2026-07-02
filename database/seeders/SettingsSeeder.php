@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Settings\Campus;
+use App\Models\Settings\NotificationSetting;
 use App\Models\Settings\System;
 use Illuminate\Database\Seeder;
 
@@ -36,5 +37,13 @@ class SettingsSeeder extends Seeder
         ];
 
         Campus::create($campusSettings);
+
+        NotificationSetting::query()->firstOrCreate([], [
+            'whatsapp_enabled' => false,
+            'whatsapp_provider' => NotificationSetting::PROVIDER_OFFICIAL,
+            'fallback_channel' => 'in_app',
+            'retry_attempts' => 3,
+            'timeout_seconds' => 15,
+        ]);
     }
 }
