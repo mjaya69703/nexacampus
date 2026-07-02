@@ -4,17 +4,22 @@ namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
 use App\Models\Academic\StudentProfile;
+use App\Models\Academic\StudyProgram;
 use App\Support\ActivePermission;
 use App\Support\TranscriptSyncService;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class TranscriptTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'transcriptTable';
 
     protected bool $bulkActionEnabled = true;
@@ -23,7 +28,7 @@ final class TranscriptTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -78,6 +83,19 @@ final class TranscriptTable extends BasePowerGridTable
             Column::make('IPK Snapshot', 'latest_cumulative_gpa')
                 ->sortable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('study_program', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
+            Filter::number('study_results_count', 'study_results_count'),
+            Filter::number('transcript_entries_count', 'transcript_entries_count'),
         ];
     }
 

@@ -10,11 +10,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class FacultyTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'facultyTable';
 
     protected ?string $bulkActionModel = Faculty::class;
@@ -25,7 +29,7 @@ final class FacultyTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -82,6 +86,13 @@ final class FacultyTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::boolean('is_active', 'is_active'),
         ];
     }
 

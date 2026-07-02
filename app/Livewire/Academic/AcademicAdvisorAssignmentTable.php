@@ -4,6 +4,9 @@ namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
 use App\Models\Academic\AcademicAdvisorAssignment;
+use App\Models\Academic\AcademicYear;
+use App\Models\Academic\LecturerProfile;
+use App\Models\Academic\StudyProgram;
 use App\Support\AcademicAdvisorService;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,11 +14,15 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class AcademicAdvisorAssignmentTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'academicAdvisorAssignmentTable';
 
     protected ?string $bulkActionModel = AcademicAdvisorAssignment::class;
@@ -26,7 +33,7 @@ final class AcademicAdvisorAssignmentTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -78,6 +85,31 @@ final class AcademicAdvisorAssignmentTable extends BasePowerGridTable
                 )
                 ->sortable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('academic_year', 'academic_year_id')
+                ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('academic_year_id', $value)),
+            Filter::select('study_program', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studentProfile', fn (Builder $student) => $student->where('study_program_id', $value))),
+            Filter::select('advisor_name', 'lecturer_profile_id')
+                ->dataSource(LecturerProfile::query()->with('user')->get()->sortBy(fn (LecturerProfile $profile) => $profile->user?->name)->map(fn (LecturerProfile $profile) => [
+                    'id' => $profile->id,
+                    'name' => $profile->user?->name ?? $profile->nidn ?? 'Dosen',
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('lecturer_profile_id', $value)),
+            Filter::boolean('is_active', 'is_active'),
         ];
     }
 

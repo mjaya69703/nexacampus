@@ -3,17 +3,22 @@
 namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\Faculty;
 use App\Models\Academic\StudyProgram;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class StudyProgramTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'studyProgramTable';
 
     protected ?string $bulkActionModel = StudyProgram::class;
@@ -24,7 +29,7 @@ final class StudyProgramTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -95,6 +100,22 @@ final class StudyProgramTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('faculty_name', 'faculty_id')
+                ->dataSource(Faculty::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('faculty_id', $value)),
+            Filter::select('degree', 'degree')
+                ->dataSource(StudyProgram::query()->select('degree')->distinct()->orderBy('degree')->pluck('degree')->filter()->map(fn (string $degree) => ['id' => $degree, 'name' => $degree]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::boolean('is_active', 'is_active'),
         ];
     }
 

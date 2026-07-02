@@ -3,17 +3,23 @@
 namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\AcademicYear;
 use App\Models\Academic\StudyPlan;
+use App\Models\Academic\StudyProgram;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class StudyPlanTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'studyPlanTable';
 
     protected ?string $bulkActionModel = StudyPlan::class;
@@ -24,7 +30,7 @@ final class StudyPlanTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -86,6 +92,30 @@ final class StudyPlanTable extends BasePowerGridTable
             Column::make('Total SKS', 'total_credits')
                 ->sortable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('academic_year_name', 'academic_year_id')
+                ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('academic_year_id', $value)),
+            Filter::select('study_program_name', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studentProfile', fn (Builder $student) => $student->where('study_program_id', $value))),
+            Filter::select('semester_no', 'semester_no')
+                ->dataSource(collect(range(1, 14))->map(fn (int $semester) => ['id' => $semester, 'name' => 'Semester '.$semester]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('status', 'status')
+                ->dataSource(StudyPlan::query()->select('status')->distinct()->orderBy('status')->pluck('status')->filter()->map(fn (string $status) => ['id' => $status, 'name' => $status]))
+                ->optionValue('id')
+                ->optionLabel('name'),
         ];
     }
 

@@ -3,17 +3,23 @@
 namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\CourseOffering;
 use App\Models\Academic\CourseSchedule;
+use App\Models\Campus\Room;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class CourseScheduleTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'courseScheduleTable';
 
     protected ?string $bulkActionModel = CourseSchedule::class;
@@ -24,7 +30,7 @@ final class CourseScheduleTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -91,6 +97,38 @@ final class CourseScheduleTable extends BasePowerGridTable
             Column::make('Dibuat', 'created_at')
                 ->sortable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('course_name', 'course_offering_id')
+                ->dataSource(CourseOffering::query()->with('course')->orderByDesc('created_at')->get()->map(fn (CourseOffering $offering) => [
+                    'id' => $offering->id,
+                    'name' => ($offering->course?->code ?? '-').' - '.($offering->course?->name ?? '-').' / '.$offering->label,
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('course_offering_id', $value)),
+            Filter::select('day_of_week', 'day_of_week')
+                ->dataSource(collect(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])->map(fn (string $day) => ['id' => $day, 'name' => $day]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('room_name', 'room_id')
+                ->dataSource(Room::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('room_id', $value)),
+            Filter::select('session_type', 'session_type')
+                ->dataSource(CourseSchedule::query()->select('session_type')->distinct()->orderBy('session_type')->pluck('session_type')->filter()->map(fn (string $type) => ['id' => $type, 'name' => $type]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('delivery_mode', 'delivery_mode')
+                ->dataSource(CourseSchedule::query()->select('delivery_mode')->distinct()->orderBy('delivery_mode')->pluck('delivery_mode')->filter()->map(fn (string $mode) => ['id' => $mode, 'name' => $mode]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::boolean('is_active', 'is_active'),
         ];
     }
 

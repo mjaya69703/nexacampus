@@ -5,6 +5,7 @@ use App\Http\Controllers\Academic\AssignmentReportExportController;
 use App\Http\Controllers\Academic\GradeAppealAttachmentController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
+use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
 use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
 use App\Http\Controllers\AuthController;
@@ -83,6 +84,11 @@ Route::middleware('is_installed')->group(function () {
             Route::livewire('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', 'admin.academic.attendance-sessions.show')
                 ->middleware('active_permission:course-offering.view')
                 ->name('academic.attendance-sessions.show');
+
+            Route::get('/academic/{resource}/export/pdf', [AdminAcademicExportController::class, 'pdf'])
+                ->name('academic.exports.pdf');
+            Route::get('/academic/{resource}/imports/template', [AdminAcademicExportController::class, 'importTemplate'])
+                ->name('academic.import-template');
 
             Route::get('/admission/documents/{document}/preview', [AdmissionDocumentController::class, 'adminPreview'])
                 ->middleware('active_permission:admission-application.view')

@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use PowerComponents\LivewirePowerGrid\Components\SetUp\Exportable;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 
@@ -24,6 +25,8 @@ abstract class BasePowerGridTable extends PowerGridComponent
         bool $showSearchInput = true,
         bool $showToggleColumns = false,
         bool $withoutLoading = false,
+        bool $showExport = false,
+        ?string $exportFileName = null,
     ): array {
         if ($this->bulkActionEnabled) {
             $this->showCheckBox();
@@ -51,12 +54,20 @@ abstract class BasePowerGridTable extends PowerGridComponent
             $header->includeViewOnBottom('components.powergrid.bulk-actions');
         }
 
-        return [
+        $setup = [
             $header,
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
         ];
+
+        if ($showExport) {
+            $setup[] = PowerGrid::exportable($exportFileName ?: str($this->tableName)->kebab()->toString())
+                ->type(Exportable::TYPE_XLS, Exportable::TYPE_CSV)
+                ->stripTags(true);
+        }
+
+        return $setup;
     }
 
     public function selectedCount(): int
