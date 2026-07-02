@@ -8,9 +8,11 @@ use App\Models\Settings\System;
 use App\Models\User;
 use App\Support\Notifications\NotificationDispatchService;
 use App\Support\Notifications\WhatsAppProviderManager;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 
 new class extends Component
 {
@@ -28,6 +30,8 @@ new class extends Component
     public $notificationForm = [];
     public $notificationHealth = [];
     public ?string $testWhatsappRecipient = null;
+    public ?string $sidecarStatusMessage = null;
+    public bool $sidecarReachable = false;
     
     public function mount()
     {
@@ -40,6 +44,7 @@ new class extends Component
         $this->systemForm = $this->system->toArray();
         $this->notificationForm = $this->notificationSettingToForm($this->notificationSetting);
         $this->notificationHealth = app(WhatsAppProviderManager::class)->health($this->notificationSetting);
+        $this->refreshSidecarStatus();
     }
 
     public function update()
@@ -186,6 +191,32 @@ new class extends Component
             $log->status === 'sent' ? 'success' : 'warning',
             'Test WhatsApp status: '.$log->status.($log->error_message ? ' - '.$log->error_message : '')
         );
+    }
+
+    public function startBundledWhatsappSidecar()
+    {
+        $exitCode = Artisan::call('nexacampus:whatsapp-sidecar-start');
+        $output = trim(Artisan::output());
+
+        $this->refreshSidecarStatus();
+
+        session()->flash(
+            $exitCode === 0 ? 'success' : 'warning',
+            $output ?: ($exitCode === 0 ? 'WhatsApp sidecar siap digunakan.' : 'WhatsApp sidecar belum siap.')
+        );
+    }
+
+    public function refreshSidecarStatus()
+    {
+        try {
+            $this->sidecarReachable = app(WebClient::class)->ping();
+            $this->sidecarStatusMessage = $this->sidecarReachable
+                ? 'Sidecar bawaan aktif di http://'.config('laravel-whatsapp.web.host').':'.config('laravel-whatsapp.web.port')
+                : 'Sidecar bawaan belum aktif.';
+        } catch (\Throwable $exception) {
+            $this->sidecarReachable = false;
+            $this->sidecarStatusMessage = 'Sidecar bawaan belum aktif.';
+        }
     }
 
     private function notificationSettingToForm(NotificationSetting $setting): array
@@ -637,12 +668,28 @@ new class extends Component
                                     <hr>
                                     <h6 class="mb-3">Web Session Sidecar</h6>
                                     <div class="alert alert-warning">
-                                        Provider unofficial memakai sesi browser dan perlu runtime sidecar terpisah. Pakai untuk kebutuhan yang memang tidak tersedia di Cloud API.
+                                        Provider unofficial memakai sidecar bawaan package. Buka <a href="{{ url('/whatsapp/sessions') }}" target="_blank" class="alert-link">/whatsapp/sessions</a> untuk start session dan scan QR. Sidecar URL hanya diisi kalau memakai service eksternal.
+                                    </div>
+                                    <div class="alert alert-{{ $sidecarReachable ? 'success' : 'secondary' }}">
+                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                            <div>
+                                                <strong>Status Sidecar:</strong> {{ $sidecarStatusMessage }}
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" wire:click="refreshSidecarStatus">
+                                                    <i class="fas fa-rotate me-1"></i> Refresh
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-success" wire:click="startBundledWhatsappSidecar">
+                                                    <i class="fas fa-play me-1"></i> Start Sidecar
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Sidecar URL</label>
-                                            <input type="url" class="form-control" wire:model="notificationForm.unofficial_config.sidecar_url" placeholder="http://127.0.0.1:3000">
+                                            <label class="form-label">Sidecar URL Override</label>
+                                            <input type="url" class="form-control" wire:model="notificationForm.unofficial_config.sidecar_url" placeholder="Kosongkan untuk sidecar bawaan package">
+                                            <small class="text-muted">Default bawaan package: http://127.0.0.1:3000.</small>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">Session Name</label>
@@ -651,6 +698,17 @@ new class extends Component
                                         <div class="col-md-12 mb-3">
                                             <label class="form-label">Shared Token</label>
                                             <input type="password" class="form-control" wire:model="notificationForm.unofficial_config.shared_token" autocomplete="new-password">
+                                            <small class="text-muted">Opsional untuk lokal. Isi kalau sidecar memakai token.</small>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <a href="{{ url('/whatsapp/sessions') }}" target="_blank" class="btn btn-outline-success">
+                                                    <i class="fab fa-whatsapp me-2"></i> Buka QR Session
+                                                </a>
+                                                <a href="{{ url('/whatsapp') }}" target="_blank" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-gauge me-2"></i> Dashboard WhatsApp
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 @endif

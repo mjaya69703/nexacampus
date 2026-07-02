@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cf649af388a7b2183df03357c782b439",
+    "content-hash": "eaabd0e2383d3355da0d187e4ff0942a",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1468,6 +1468,90 @@
             "time": "2025-08-22T14:27:06+00:00"
         },
         {
+            "name": "kstmostofa/laravel-whatsapp",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kstmostofa/laravel-whatsapp.git",
+                "reference": "c32ab9bb9f23c2479f5490cbfb003b91b32f2697"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kstmostofa/laravel-whatsapp/zipball/c32ab9bb9f23c2479f5490cbfb003b91b32f2697",
+                "reference": "c32ab9bb9f23c2479f5490cbfb003b91b32f2697",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.5",
+                "illuminate/console": "^11.0|^12.0|^13.0",
+                "illuminate/contracts": "^11.0|^12.0|^13.0",
+                "illuminate/http": "^11.0|^12.0|^13.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
+                "php": "^8.2",
+                "symfony/process": "^7.0|^8.0"
+            },
+            "require-dev": {
+                "livewire/flux": "^2.0",
+                "livewire/livewire": "^3.4|^4.0",
+                "orchestra/testbench": "^9.0|^10.0|^11.0",
+                "phpunit/phpunit": "^10.5|^11.0|^12.0"
+            },
+            "suggest": {
+                "laravel/reverb": "^1.0 — enables live UI updates (incoming messages, QR codes, ack changes) via Laravel broadcasting.",
+                "livewire/flux": "^2.0 — the Flux UI component library the bundled UI is built on.",
+                "livewire/livewire": "^3.4 — enables the bundled admin UI."
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "WhatsApp": "Kstmostofa\\LaravelWhatsApp\\Facades\\WhatsApp"
+                    },
+                    "providers": [
+                        "Kstmostofa\\LaravelWhatsApp\\LaravelWhatsAppServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Kstmostofa\\LaravelWhatsApp\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Md Mostafijur Rahman",
+                    "email": "mostofa122@gmail.com",
+                    "homepage": "https://github.com/kstmostofa"
+                }
+            ],
+            "description": "Dual-backend Laravel package for WhatsApp: Meta Cloud API + bundled whatsapp-web.js sidecar. Ships a Livewire/Flux admin UI, queued jobs, webhooks with HMAC, Eloquent models, broadcasting, and CLI lifecycle commands.",
+            "homepage": "https://kstmostofa.github.io/laravel-whatsapp/",
+            "keywords": [
+                "chatbot",
+                "flux",
+                "laravel",
+                "livewire",
+                "messaging",
+                "meta",
+                "webhooks",
+                "whatsapp",
+                "whatsapp-business",
+                "whatsapp-cloud-api",
+                "whatsapp-web",
+                "whatsapp-web-js"
+            ],
+            "support": {
+                "docs": "https://kstmostofa.github.io/laravel-whatsapp/",
+                "issues": "https://github.com/kstmostofa/laravel-whatsapp/issues",
+                "source": "https://github.com/kstmostofa/laravel-whatsapp"
+            },
+            "time": "2026-05-22T19:24:04+00:00"
+        },
+        {
             "name": "laravel/framework",
             "version": "v12.55.1",
             "source": {
@@ -2501,6 +2585,72 @@
                 }
             ],
             "time": "2026-03-08T20:05:35+00:00"
+        },
+        {
+            "name": "livewire/flux",
+            "version": "v2.15.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/livewire/flux.git",
+                "reference": "c570fb836278e9be881d08b7e386a1a62ab9faf7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/livewire/flux/zipball/c570fb836278e9be881d08b7e386a1a62ab9faf7",
+                "reference": "c570fb836278e9be881d08b7e386a1a62ab9faf7",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/view": "^10.0|^11.0|^12.0|^13.0",
+                "laravel/prompts": "^0.1|^0.2|^0.3",
+                "livewire/livewire": "^3.7.4|^4.0",
+                "php": "^8.1",
+                "symfony/console": "^6.0|^7.0|^8.0"
+            },
+            "conflict": {
+                "livewire/blaze": "<1.0.0-beta.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Flux": "Flux\\Flux"
+                    },
+                    "providers": [
+                        "Flux\\FluxServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Flux\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "Caleb Porzio",
+                    "email": "calebporzio@gmail.com"
+                }
+            ],
+            "description": "The official UI component library for Livewire.",
+            "keywords": [
+                "components",
+                "flux",
+                "laravel",
+                "livewire",
+                "ui"
+            ],
+            "support": {
+                "issues": "https://github.com/livewire/flux/issues",
+                "source": "https://github.com/livewire/flux/tree/v2.15.0"
+            },
+            "time": "2026-06-19T02:25:18+00:00"
         },
         {
             "name": "livewire/livewire",

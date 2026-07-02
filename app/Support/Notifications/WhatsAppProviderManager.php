@@ -45,7 +45,7 @@ class WhatsAppProviderManager
             : ($setting->official_config ?? []);
 
         $required = $provider === NotificationSetting::PROVIDER_UNOFFICIAL
-            ? ['sidecar_url', 'session_name', 'shared_token']
+            ? ['session_name']
             : ['access_token', 'phone_number_id', 'business_account_id', 'app_secret', 'verify_token'];
 
         $labels = [
