@@ -86,6 +86,20 @@ return [
         ],
     ],
     [
+        'resource' => 'notification-log',
+        'plural' => 'notification-logs',
+        'area' => 'system',
+        'component' => 'admin.system.notification-logs',
+        'actions' => ['index'],
+        'menu' => [
+            'title' => 'Log Notifikasi',
+            'icon' => 'fas fa-bell',
+            'group' => 'Sistem',
+            'group_order' => 90,
+            'order' => 4,
+        ],
+    ],
+    [
         'resource' => 'academic-year',
         'plural' => 'academic-years',
         'area' => 'academic',

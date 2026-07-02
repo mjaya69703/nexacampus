@@ -4,6 +4,7 @@ namespace App\Support\Admission;
 
 use App\Mail\AdmissionStatusUpdated;
 use App\Models\Admission\AdmissionApplication;
+use App\Support\Notifications\NotificationDispatchService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -52,5 +53,7 @@ class AdmissionStatusService
                 'message' => $exception->getMessage(),
             ]);
         }
+
+        app(NotificationDispatchService::class)->admissionStatusUpdated($application->refresh(), $status);
     }
 }

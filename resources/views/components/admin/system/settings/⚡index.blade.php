@@ -5,6 +5,8 @@ use Livewire\WithFileUploads;
 use App\Models\Settings\Campus;
 use App\Models\Settings\NotificationSetting;
 use App\Models\Settings\System;
+use App\Models\User;
+use App\Support\Notifications\NotificationDispatchService;
 use App\Support\Notifications\WhatsAppProviderManager;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +27,7 @@ new class extends Component
     public $notificationSetting;
     public $notificationForm = [];
     public $notificationHealth = [];
+    public ?string $testWhatsappRecipient = null;
     
     public function mount()
     {
@@ -158,6 +161,30 @@ new class extends Component
         session()->flash(
             $this->notificationHealth['status'] === 'ready' ? 'success' : 'warning',
             $this->notificationHealth['message']
+        );
+    }
+
+    public function sendTestWhatsapp()
+    {
+        $validated = $this->validate([
+            'testWhatsappRecipient' => 'required|string|max:30',
+        ]);
+
+        $recipient = new User([
+            'first_name' => auth()->user()?->first_name ?: 'Admin',
+            'last_name' => auth()->user()?->last_name ?: '',
+            'email' => auth()->user()?->email ?: 'admin@example.test',
+            'phone' => $validated['testWhatsappRecipient'],
+        ]);
+
+        $log = app(NotificationDispatchService::class)->whatsapp($recipient, 'system.whatsapp_test', [
+            'recipient_name' => $recipient->name,
+            'provider' => str_replace('_', ' ', $this->notificationSetting->fresh()->whatsapp_provider),
+        ]);
+
+        session()->flash(
+            $log->status === 'sent' ? 'success' : 'warning',
+            'Test WhatsApp status: '.$log->status.($log->error_message ? ' - '.$log->error_message : '')
         );
     }
 
@@ -627,6 +654,21 @@ new class extends Component
                                         </div>
                                     </div>
                                 @endif
+
+                                <hr>
+                                <h6 class="mb-3">Test Pengiriman</h6>
+                                <div class="row align-items-end">
+                                    <div class="col-md-8 mb-3">
+                                        <label class="form-label">Nomor Tujuan Test</label>
+                                        <input type="text" class="form-control" wire:model="testWhatsappRecipient" placeholder="Contoh: 081234567890">
+                                        @error('testWhatsappRecipient') <span class="text-danger">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <button type="button" class="btn btn-success w-100" wire:click="sendTestWhatsapp">
+                                            <i class="fab fa-whatsapp me-2"></i> Kirim Test
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

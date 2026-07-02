@@ -11,6 +11,7 @@ use App\Mail\Financial\PaymentVerifiedMail;
 use App\Models\Financial\InvoiceInstallmentRequest;
 use App\Models\Financial\Payment;
 use App\Models\Financial\StudentInvoice;
+use App\Support\Notifications\NotificationDispatchService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -19,22 +20,30 @@ class FinancialNotificationService
 {
     public function invoiceIssued(StudentInvoice $invoice): void
     {
-        if ($invoice->issued_notified_at || ! $this->hasStudentEmail($invoice)) {
+        if ($invoice->issued_notified_at) {
             return;
         }
 
-        $this->send($invoice->studentProfile->user->email, new InvoiceIssuedMail($invoice));
+        if ($this->hasStudentEmail($invoice)) {
+            $this->send($invoice->studentProfile->user->email, new InvoiceIssuedMail($invoice));
+        }
+
+        app(NotificationDispatchService::class)->invoiceIssued($invoice);
 
         $invoice->forceFill(['issued_notified_at' => now()])->save();
     }
 
     public function invoiceOverdue(StudentInvoice $invoice): void
     {
-        if ($invoice->overdue_notified_at || ! $this->hasStudentEmail($invoice)) {
+        if ($invoice->overdue_notified_at) {
             return;
         }
 
-        $this->send($invoice->studentProfile->user->email, new InvoiceOverdueMail($invoice));
+        if ($this->hasStudentEmail($invoice)) {
+            $this->send($invoice->studentProfile->user->email, new InvoiceOverdueMail($invoice));
+        }
+
+        app(NotificationDispatchService::class)->invoiceOverdue($invoice);
 
         $invoice->forceFill(['overdue_notified_at' => now()])->save();
     }
@@ -44,10 +53,13 @@ class FinancialNotificationService
         $payment->loadMissing(['invoice', 'studentProfile.user']);
 
         if (! $payment->studentProfile?->user?->email) {
+            app(NotificationDispatchService::class)->paymentVerified($payment);
+
             return;
         }
 
         $this->send($payment->studentProfile->user->email, new PaymentVerifiedMail($payment));
+        app(NotificationDispatchService::class)->paymentVerified($payment);
     }
 
     public function paymentRejected(Payment $payment): void
@@ -55,10 +67,13 @@ class FinancialNotificationService
         $payment->loadMissing(['invoice', 'studentProfile.user']);
 
         if (! $payment->studentProfile?->user?->email) {
+            app(NotificationDispatchService::class)->paymentRejected($payment);
+
             return;
         }
 
         $this->send($payment->studentProfile->user->email, new PaymentRejectedMail($payment));
+        app(NotificationDispatchService::class)->paymentRejected($payment);
     }
 
     public function installmentApproved(InvoiceInstallmentRequest $request): void

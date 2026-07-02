@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Academic\StudentGrade;
+use App\Support\Notifications\NotificationDispatchService;
 
 class StudentGradePublicationService
 {
@@ -26,6 +27,8 @@ class StudentGradePublicationService
         if ($studentProfileId > 0) {
             app(TranscriptSyncService::class)->syncStudent($studentProfileId, $academicYearId > 0 ? $academicYearId : null);
         }
+
+        app(NotificationDispatchService::class)->gradePublished($grade->refresh());
 
         return true;
     }

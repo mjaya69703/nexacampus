@@ -3,6 +3,7 @@
 namespace App\Support\Notifications;
 
 use App\Models\Settings\NotificationSetting;
+use App\Support\Notifications\Contracts\WhatsAppProvider;
 
 class WhatsAppProviderManager
 {
@@ -80,5 +81,17 @@ class WhatsAppProviderManager
         ])->save();
 
         return $health;
+    }
+
+    public function sendText(NotificationSetting $setting, string $recipient, string $message): array
+    {
+        return $this->provider($setting)->send($setting, $recipient, $message);
+    }
+
+    private function provider(NotificationSetting $setting): WhatsAppProvider
+    {
+        return $setting->whatsapp_provider === NotificationSetting::PROVIDER_UNOFFICIAL
+            ? app(UnofficialWebSessionWhatsAppProvider::class)
+            : app(OfficialCloudApiWhatsAppProvider::class);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Support\StudentService;
 
 use App\Mail\StudentService\StudentServiceStatusMail;
+use App\Support\Notifications\NotificationDispatchService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -89,12 +90,19 @@ class StudentServiceNotificationService
         string $routeName,
     ): void {
         $email = $model->studentProfile?->user?->email;
+        $statusLabel = $this->statusLabel($status);
+
+        app(NotificationDispatchService::class)->studentServiceStatusUpdated(
+            $model,
+            $requestLabel,
+            $requestNumber,
+            $statusLabel,
+            $notes,
+        );
 
         if (! $email) {
             return;
         }
-
-        $statusLabel = $this->statusLabel($status);
 
         $mail = new StudentServiceStatusMail(
             subjectLine: $requestLabel.' '.$requestNumber.' - '.$statusLabel,

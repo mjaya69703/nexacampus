@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         $this->call([
             SettingsSeeder::class,
+            NotificationTemplateSeeder::class,
             UserSeeder::class,
             MenuSeeder::class,
             AcademicSeeder::class,

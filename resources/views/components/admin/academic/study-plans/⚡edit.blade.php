@@ -7,6 +7,7 @@ use App\Models\Academic\StudentRegistration;
 use App\Models\Academic\StudyPlan;
 use App\Models\Academic\StudyPlanDetail;
 use App\Support\ActivePermission;
+use App\Support\Notifications\NotificationDispatchService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -155,6 +156,7 @@ new class extends Component {
         DB::beginTransaction();
 
         try {
+            $previousStatus = $this->studyPlan->status;
             $status = $validatedData['studyPlanForm']['status'];
 
             $payload = [
@@ -185,6 +187,11 @@ new class extends Component {
 
             DB::commit();
             $this->studyPlan->refresh();
+
+            if ($previousStatus !== $this->studyPlan->status && in_array($this->studyPlan->status, ['Submitted', 'Approved', 'Rejected', 'Cancelled'], true)) {
+                app(NotificationDispatchService::class)->studyPlanStatusUpdated($this->studyPlan, $this->studyPlan->notes);
+            }
+
             $this->loadStudentRegistrations();
             $this->loadCourseOfferings();
 
