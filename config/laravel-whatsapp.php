@@ -92,7 +92,8 @@ return [
         //   different machines.
         'host' => env('WHATSAPP_WEB_HOST', '127.0.0.1'),
         'port' => (int) env('WHATSAPP_WEB_PORT', 3000),
-        'token' => env('WHATSAPP_WEB_TOKEN'),
+        'token' => env('WHATSAPP_WEB_TOKEN')
+            ?: (env('APP_KEY') ? hash('sha256', env('APP_KEY').'|whatsapp-sidecar') : null),
         'timeout' => (int) env('WHATSAPP_WEB_TIMEOUT', 60),
 
         'sidecar' => [

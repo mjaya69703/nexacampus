@@ -8,10 +8,11 @@ use App\Models\Settings\System;
 use App\Models\User;
 use App\Support\Notifications\NotificationDispatchService;
 use App\Support\Notifications\WhatsAppProviderManager;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
+use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 
 new class extends Component
@@ -32,6 +33,7 @@ new class extends Component
     public ?string $testWhatsappRecipient = null;
     public ?string $sidecarStatusMessage = null;
     public bool $sidecarReachable = false;
+    public array $storedSidecarSessions = [];
     
     public function mount()
     {
@@ -94,8 +96,8 @@ new class extends Component
             'notificationForm.official_config.business_account_id' => 'nullable|string|max:255',
             'notificationForm.official_config.app_secret' => 'nullable|string|max:2000',
             'notificationForm.official_config.verify_token' => 'nullable|string|max:255',
-            'notificationForm.unofficial_config.sidecar_url' => 'nullable|url|max:255',
-            'notificationForm.unofficial_config.session_name' => 'nullable|string|max:100',
+            'notificationForm.unofficial_config.sidecar_url' => 'nullable|url|starts_with:http://,https://|max:255',
+            'notificationForm.unofficial_config.session_name' => 'nullable|string|max:64|regex:/^[A-Za-z0-9_\-]+$/',
             'notificationForm.unofficial_config.shared_token' => 'nullable|string|max:2000',
         ]);
 
@@ -195,19 +197,68 @@ new class extends Component
 
     public function startBundledWhatsappSidecar()
     {
-        $exitCode = Artisan::call('nexacampus:whatsapp-sidecar-start');
-        $output = trim(Artisan::output());
+        $manager = app(SidecarManager::class);
+        $message = 'WhatsApp sidecar siap digunakan.';
+        $status = 'success';
+
+        try {
+            if (! app(WebClient::class)->ping()) {
+                $pid = $manager->start();
+                $message = 'WhatsApp sidecar sedang dinyalakan (pid '.$pid.').';
+            }
+
+            if (method_exists($manager, 'restorePersistedSessions')) {
+                $restored = $manager->restorePersistedSessions();
+
+                if ($restored !== []) {
+                    $message .= ' Session tersimpan dipulihkan: '.implode(', ', $restored).'.';
+                }
+            }
+
+            $this->waitForSidecar();
+        } catch (SidecarException $exception) {
+            $status = 'warning';
+            $message = $exception->getMessage();
+        } catch (\Throwable $exception) {
+            $status = 'warning';
+            $message = 'WhatsApp sidecar belum bisa dinyalakan: '.$exception->getMessage();
+        }
 
         $this->refreshSidecarStatus();
 
-        session()->flash(
-            $exitCode === 0 ? 'success' : 'warning',
-            $output ?: ($exitCode === 0 ? 'WhatsApp sidecar siap digunakan.' : 'WhatsApp sidecar belum siap.')
-        );
+        session()->flash($status, $message);
     }
 
-    public function refreshSidecarStatus()
+    public function stopBundledWhatsappSidecar()
     {
+        $manager = app(SidecarManager::class);
+        $status = 'success';
+        $message = 'WhatsApp sidecar sudah dihentikan.';
+
+        try {
+            if (! $manager->stop()) {
+                $status = 'warning';
+                $message = 'Tidak ada proses sidecar yang tercatat aktif.';
+            }
+
+            $this->waitForSidecarStop();
+        } catch (\Throwable $exception) {
+            $status = 'warning';
+            $message = 'WhatsApp sidecar belum bisa dihentikan: '.$exception->getMessage();
+        }
+
+        $this->refreshSidecarStatus();
+
+        session()->flash($status, $message);
+    }
+
+    public function refreshSidecarStatus(bool $notify = false)
+    {
+        $manager = app(SidecarManager::class);
+        $this->storedSidecarSessions = method_exists($manager, 'persistedSessionIds')
+            ? $manager->persistedSessionIds()
+            : [];
+
         try {
             $this->sidecarReachable = app(WebClient::class)->ping();
             $this->sidecarStatusMessage = $this->sidecarReachable
@@ -216,6 +267,56 @@ new class extends Component
         } catch (\Throwable $exception) {
             $this->sidecarReachable = false;
             $this->sidecarStatusMessage = 'Sidecar bawaan belum aktif.';
+        }
+
+        if ($notify) {
+            session()->flash(
+                $this->sidecarReachable ? 'success' : 'warning',
+                'Status sidecar diperbarui: '.$this->sidecarStatusMessage
+            );
+        }
+    }
+
+    public function useStoredWhatsappSession(string $sessionId)
+    {
+        if (! preg_match('/^[A-Za-z0-9_\-]{1,64}$/', $sessionId)) {
+            session()->flash('warning', 'Session WhatsApp tidak valid.');
+
+            return;
+        }
+
+        $this->notificationForm['unofficial_config']['session_name'] = $sessionId;
+
+        session()->flash('success', 'Session Name diganti ke '.$sessionId.'. Simpan pengaturan agar dipakai untuk pengiriman.');
+    }
+
+    private function waitForSidecar(): void
+    {
+        for ($i = 0; $i < 30; $i++) {
+            usleep(250_000);
+
+            try {
+                if (app(WebClient::class)->ping()) {
+                    return;
+                }
+            } catch (\Throwable) {
+                //
+            }
+        }
+    }
+
+    private function waitForSidecarStop(): void
+    {
+        for ($i = 0; $i < 20; $i++) {
+            usleep(150_000);
+
+            try {
+                if (! app(WebClient::class)->ping()) {
+                    return;
+                }
+            } catch (\Throwable) {
+                return;
+            }
         }
     }
 
@@ -676,12 +777,33 @@ new class extends Component
                                                 <strong>Status Sidecar:</strong> {{ $sidecarStatusMessage }}
                                             </div>
                                             <div class="d-flex flex-wrap gap-2">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" wire:click="refreshSidecarStatus">
-                                                    <i class="fas fa-rotate me-1"></i> Refresh
+                                                <button type="button" class="btn btn-sm btn-outline-primary" wire:click="refreshSidecarStatus(true)" wire:loading.attr="disabled" wire:target="refreshSidecarStatus">
+                                                    <span wire:loading.remove wire:target="refreshSidecarStatus">
+                                                        <i class="fas fa-rotate me-1"></i> Refresh
+                                                    </span>
+                                                    <span wire:loading wire:target="refreshSidecarStatus">
+                                                        <i class="fas fa-spinner fa-spin me-1"></i> Cek...
+                                                    </span>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-success" wire:click="startBundledWhatsappSidecar">
-                                                    <i class="fas fa-play me-1"></i> Start Sidecar
-                                                </button>
+                                                @if ($sidecarReachable)
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" wire:click="stopBundledWhatsappSidecar" wire:loading.attr="disabled" wire:target="stopBundledWhatsappSidecar">
+                                                        <span wire:loading.remove wire:target="stopBundledWhatsappSidecar">
+                                                            <i class="fas fa-stop me-1"></i> Stop Sidecar
+                                                        </span>
+                                                        <span wire:loading wire:target="stopBundledWhatsappSidecar">
+                                                            <i class="fas fa-spinner fa-spin me-1"></i> Menghentikan...
+                                                        </span>
+                                                    </button>
+                                                @else
+                                                    <button type="button" class="btn btn-sm btn-success" wire:click="startBundledWhatsappSidecar" wire:loading.attr="disabled" wire:target="startBundledWhatsappSidecar">
+                                                        <span wire:loading.remove wire:target="startBundledWhatsappSidecar">
+                                                            <i class="fas fa-play me-1"></i> Start Sidecar
+                                                        </span>
+                                                        <span wire:loading wire:target="startBundledWhatsappSidecar">
+                                                            <i class="fas fa-spinner fa-spin me-1"></i> Menyalakan...
+                                                        </span>
+                                                    </button>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -694,11 +816,21 @@ new class extends Component
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">Session Name</label>
                                             <input type="text" class="form-control" wire:model="notificationForm.unofficial_config.session_name" placeholder="main">
+                                            @if ($storedSidecarSessions !== [])
+                                                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                                                    <small class="text-muted">Session tersimpan:</small>
+                                                    @foreach ($storedSidecarSessions as $storedSession)
+                                                        <button type="button" class="btn btn-xs btn-outline-primary" wire:click="useStoredWhatsappSession(@js($storedSession))">
+                                                            {{ $storedSession }}
+                                                        </button>
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="col-md-12 mb-3">
                                             <label class="form-label">Shared Token</label>
                                             <input type="password" class="form-control" wire:model="notificationForm.unofficial_config.shared_token" autocomplete="new-password">
-                                            <small class="text-muted">Opsional untuk lokal. Isi kalau sidecar memakai token.</small>
+                                            <small class="text-muted">Opsional. Jika kosong, sidecar bawaan memakai token internal dari APP_KEY.</small>
                                         </div>
                                         <div class="col-md-12 mb-3">
                                             <div class="d-flex flex-wrap gap-2">

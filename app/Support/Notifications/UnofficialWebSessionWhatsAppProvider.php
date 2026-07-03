@@ -16,11 +16,15 @@ class UnofficialWebSessionWhatsAppProvider implements WhatsAppProvider
         $baseUrl = rtrim($config['sidecar_url'] ?? '', '/');
         $session = $config['session_name'] ?? 'main';
 
+        if (! preg_match('/^[A-Za-z0-9_\-]{1,64}$/', $session)) {
+            throw new RuntimeException('WhatsApp session name is invalid.');
+        }
+
         if ($baseUrl === '') {
             return $this->sendWithBundledPackage($setting, $recipient, $message, $session, $config);
         }
 
-        $endpoint = $config['send_endpoint'] ?? "/sessions/{$session}/messages/text";
+        $endpoint = '/sessions/'.rawurlencode($session).'/messages/text';
 
         $response = Http::timeout($setting->timeout_seconds ?: 15)
             ->withToken($config['shared_token'] ?? '')
