@@ -91,6 +91,8 @@ new class extends Component
             'notificationForm.fallback_channel' => 'required|in:in_app,email,none',
             'notificationForm.retry_attempts' => 'required|integer|min:0|max:5',
             'notificationForm.timeout_seconds' => 'required|integer|min:5|max:120',
+            'notificationForm.log_retention_days' => 'required|integer|min:7|max:3650',
+            'notificationForm.provider_response_retention_days' => 'required|integer|min:1|max:3650|lte:notificationForm.log_retention_days',
             'notificationForm.official_config.access_token' => 'nullable|string|max:2000',
             'notificationForm.official_config.phone_number_id' => 'nullable|string|max:255',
             'notificationForm.official_config.business_account_id' => 'nullable|string|max:255',
@@ -142,6 +144,8 @@ new class extends Component
                 'fallback_channel' => $validatedData['notificationForm']['fallback_channel'],
                 'retry_attempts' => $validatedData['notificationForm']['retry_attempts'],
                 'timeout_seconds' => $validatedData['notificationForm']['timeout_seconds'],
+                'log_retention_days' => $validatedData['notificationForm']['log_retention_days'],
+                'provider_response_retention_days' => $validatedData['notificationForm']['provider_response_retention_days'],
                 'official_config' => $validatedData['notificationForm']['official_config'] ?? [],
                 'unofficial_config' => $validatedData['notificationForm']['unofficial_config'] ?? [],
             ]);
@@ -328,6 +332,8 @@ new class extends Component
             'fallback_channel' => $setting->fallback_channel ?: 'in_app',
             'retry_attempts' => $setting->retry_attempts ?: 3,
             'timeout_seconds' => $setting->timeout_seconds ?: 15,
+            'log_retention_days' => $setting->log_retention_days ?: 90,
+            'provider_response_retention_days' => $setting->provider_response_retention_days ?: 30,
             'official_config' => array_merge([
                 'access_token' => '',
                 'phone_number_id' => '',
@@ -737,6 +743,16 @@ new class extends Component
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Timeout (detik)</label>
                                         <input type="number" class="form-control" wire:model="notificationForm.timeout_seconds" min="5" max="120">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Retensi Log (hari)</label>
+                                        <input type="number" class="form-control" wire:model="notificationForm.log_retention_days" min="7" max="3650">
+                                        <small class="text-muted">Log notifikasi lama akan dihapus permanen setelah melewati batas ini.</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Retensi Provider Response (hari)</label>
+                                        <input type="number" class="form-control" wire:model="notificationForm.provider_response_retention_days" min="1" max="3650">
+                                        <small class="text-muted">Payload provider berisi data teknis dan dibersihkan lebih cepat dari log utama.</small>
                                     </div>
                                 </div>
 

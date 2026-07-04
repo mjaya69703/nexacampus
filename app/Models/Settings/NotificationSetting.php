@@ -23,6 +23,8 @@ class NotificationSetting extends Model
         'fallback_channel',
         'retry_attempts',
         'timeout_seconds',
+        'log_retention_days',
+        'provider_response_retention_days',
         'last_health_status',
         'last_health_message',
         'last_health_checked_at',
@@ -41,6 +43,8 @@ class NotificationSetting extends Model
             'unofficial_config' => 'encrypted:array',
             'retry_attempts' => 'integer',
             'timeout_seconds' => 'integer',
+            'log_retention_days' => 'integer',
+            'provider_response_retention_days' => 'integer',
             'last_health_checked_at' => 'datetime',
         ];
     }
@@ -55,6 +59,8 @@ class NotificationSetting extends Model
                 'fallback_channel',
                 'retry_attempts',
                 'timeout_seconds',
+                'log_retention_days',
+                'provider_response_retention_days',
                 'last_health_status',
             ])
             ->logOnlyDirty()
@@ -69,6 +75,8 @@ class NotificationSetting extends Model
             'fallback_channel' => 'in_app',
             'retry_attempts' => 3,
             'timeout_seconds' => 15,
+            'log_retention_days' => 90,
+            'provider_response_retention_days' => 30,
         ]);
     }
 }

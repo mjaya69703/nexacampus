@@ -12,3 +12,4 @@ Schedule::command('financial:run-invoice-schedules')->everyFifteenMinutes()->wit
 Schedule::command('financial:refresh-overdue')->dailyAt('00:10')->withoutOverlapping();
 Schedule::command('financial:evaluate-holds')->dailyAt('00:20')->withoutOverlapping();
 Schedule::command('academic:send-assignment-reminders')->dailyAt('07:00')->withoutOverlapping();
+Schedule::command('notifications:prune-logs --force')->dailyAt('00:40')->withoutOverlapping();

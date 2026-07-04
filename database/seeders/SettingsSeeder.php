@@ -44,6 +44,8 @@ class SettingsSeeder extends Seeder
             'fallback_channel' => 'in_app',
             'retry_attempts' => 3,
             'timeout_seconds' => 15,
+            'log_retention_days' => 90,
+            'provider_response_retention_days' => 30,
         ]);
     }
 }
