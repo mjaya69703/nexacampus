@@ -36,6 +36,44 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)*
    - KRS status indicator
    - Repeat student indicator
 
+# NexaCampus - Feature Roadmap & Requirements
+
+Dokumen ini berisi daftar fitur-fitur yang perlu diimplementasikan untuk pengembangan NexaCampus.
+
+---
+
+## Kebutuhan Dosen
+
+Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)** dalam sistem NexaCampus.
+
+### ✅ Fitur yang Sudah Ada (Completed)
+
+1. **Dashboard Lecturer**
+   - Hero section dengan profile info
+   - Stats cards (Total Kelas, Mahasiswa, Sesi Absensi, Nilai Finalized/Published)
+   - Quick Actions (Kelola Absensi, Input Nilai, Kelola Kelas)
+   - Jadwal Mengajar Terdekat (sorted ascending by date & time)
+   - Recent Classes overview
+
+2. **Course Offerings Management**
+   - List semua kelas yang diajar (card-based layout)
+   - Filter & search functionality
+   - Color-coded status badges (Open/Closed/Draft)
+   - Capacity progress bar
+   - Navigate to course detail page
+
+3. **Course Detail Page**
+   - Course info & statistics
+   - Tab navigation: Students, Attendance, Grades
+   - Modern UI with FontAwesome icons
+
+4. **Student Management per Course**
+   - View enrolled students (card-based)
+   - Student avatar with initials
+   - NIM, name, program info
+   - KRS status indicator
+   - Repeat student indicator
+
 5. **Attendance Management**
    - Session list per course (card-based)
    - Create attendance sessions
@@ -59,10 +97,15 @@ Dokumen ini merangkum fitur-fitur yang dibutuhkan untuk role **Lecturer (Dosen)*
 
 ### ❌ Fitur yang Masih Dibutuhkan (To Be Implemented)
 
+> [!IMPORTANT]
+> **CATATAN STATUS SYSTEM (JULI 2026):**  
+> Seluruh modul bisnis inti NexaCampus (PMB/Admission, Keuangan/Financial, E-Learning/Course Materials, Pengumuman, Penugasan/Assignments, Layanan Mahasiswa/Student Services, Alumni & Tracer Study, serta Kepegawaian/BKD/EDOM) telah **100% selesai dibangun (`FULLY CLEAR`)**.  
+> Daftar di bawah ini menyimpan riwayat spesifikasi teknis dan kandidat fitur tambahan jangka panjang. Untuk status implementasi aktif, silakan cek langsung di `has-been-implemented.md`.
+
 #### 🎯 PRIORITAS TINGGI (High Priority - Week 1-2)
 
-##### 1. 🚧 IN PROGRESS - Course Materials / Bahan Ajar 📚
-**Deskripsi:** Sistem upload dan manajemen materi perkuliahan
+##### 1. ✅ COMPLETED - Course Materials / Bahan Ajar 📚
+**Deskripsi:** Sistem upload dan manajemen materi perkuliahan yang telah lengkap dengan komentar/diskusi, bookmark, dan pelacakan unduhan.
 
 **Fitur Detail:**
 - Upload syllabus/RPS (Rencana Pembelajaran Semester)
@@ -478,6 +521,127 @@ Publication module designed untuk easy extension:
 - Documentation of review process
 - Approval/rejection with comments
 - Escalation to department if needed
+- Allow students to book appointments
+- Calendar integration
+- Appointment confirmation/cancellation
+- Waiting list for popular slots
+- Meeting notes after consultation
+- No-show tracking
+- Recurring schedule setup
+- Holiday/break exceptions
+
+**Kenapa Penting:**
+- Structured student consultation time
+- Reduce ad-hoc interruptions
+- Better time management
+- Documentation of student interactions
+
+**Estimated Effort:** Medium (2-3 days)
+
+**Technical Notes:**
+- New table: consultation_slots, consultation_appointments
+- Integration with calendar system
+- Email notifications for bookings
+- Conflict detection logic
+- Consider video conferencing integration (Zoom/Meet links)
+
+---
+
+##### 10. Rubric Builder 📋
+**Deskripsi:** Builder untuk membuat rubrik penilaian
+
+**Fitur Detail:**
+- Create custom rubrics per assignment/exam
+- Define criteria & performance levels
+- Point allocation per criterion
+- Descriptive labels for each level
+- Reuse rubrics across courses
+- Auto-calculate scores from rubric
+- Rubric templates library
+- Share rubrics with colleagues
+- Student view of rubric before submission
+- Rubric-based grading interface
+
+**Kenapa Penting:**
+- Fair & transparent grading
+- Consistent assessment standards
+- Clear expectations for students
+- Reduce grading subjectivity
+
+**Estimated Effort:** Medium-High (3-4 days)
+
+**Technical Notes:**
+- Tables: rubrics, rubric_criteria, rubric_levels, rubric_grades
+- JSON structure for flexible rubric definitions
+- Integrate with assignment grading workflow
+- Template system with common rubric patterns
+- Drag & drop builder interface
+
+---
+
+#### 🎯 PRIORITAS RENDAH (Low Priority - Future Enhancement)
+
+##### 11. Messaging System 💬
+**Deskripsi:** Internal messaging antara dosen-mahasiswa
+
+**Fitur Detail:**
+- Direct messages to individual students
+- Group messages to entire class
+- Inbox/outbox management
+- Message threading/conversations
+- File attachments
+- Read receipts
+- Notification preferences
+- Archive/delete messages
+- Search message history
+- Spam/reporting system
+
+**Estimated Effort:** High (4-5 days)
+
+---
+
+##### 12. Research & Publications Profile 🔬
+**Deskripsi:** Tracking aktivitas penelitian & publikasi
+
+**Fitur Detail:**
+- Publication records (journals, conferences, books)
+- Research projects tracking
+- Grants & funding information
+- Citation metrics
+- Collaboration network
+- Integration with ORCID/Google Scholar
+- Annual research report generation
+- Department research output summary
+
+**Estimated Effort:** Medium (2-3 days)
+
+---
+
+##### 13. Attendance Analytics Dashboard 📊
+**Deskripsi:** Deep analytics untuk data absensi
+
+**Fitur Detail:**
+- Attendance rate per course
+- Trend analysis over semester
+- Compare attendance across courses
+- Correlation with grades
+- Export detailed reports
+- Heatmap visualization
+- Predictive analytics (at-risk prediction)
+
+**Estimated Effort:** Medium (2 days)
+
+---
+
+##### 14. COMPLETED - Grade Appeals Management
+**Deskripsi:** Sistem handling komplain nilai
+
+**Fitur Detail:**
+- Student grade appeal submission
+- Review workflow for lecturers
+- Documentation of review process
+- Approval/rejection with comments
+- Escalation to department if needed
 - Appeal history tracking
 - Statistics on appeals
 
@@ -534,23 +698,17 @@ Publication module designed untuk easy extension:
 - Grade Book with Export
 - Teaching Schedule Calendar
 
-**Goal:** Improve communication and resource sharing between lecturers and students.
-
 #### **Phase 2: Assessment & Analytics (Week 3-4)**
 - Assignment Management
 - Student Progress Analytics
 - Academic Advising Dashboard
 - Course Evaluation Viewer
 
-**Goal:** Enhance assessment capabilities and data-driven insights.
-
 #### **Phase 3: Advanced Features (Month 2+)**
 - Consultation Management
 - Rubric Builder
 - Messaging System
 - Other low-priority features
-
-**Goal:** Provide comprehensive tools for modern teaching practices.
 
 ---
 
@@ -565,27 +723,15 @@ Jika butuh fitur yang **cepat diimplement** dengan **high impact**:
 
 ---
 
----
-
 ## Kebutuhan Admin (Administrator)
 
 Dokumen ini merangkum fitur-fitur **CRUD bisnis** yang dibutuhkan untuk role **Admin (Administrator)** dalam sistem NexaCampus.
-
-**Fokus:** Fitur yang impact langsung ke student, lecturer, financial, PMB - BUKAN fitur internal admin seperti analytics/monitoring.
 
 ### ✅ Fitur yang Sudah Ada (Completed)
 
 #### **1. Dashboard Admin**
    - Stats cards (Users, Roles, Permissions, Menus count)
-   - System warnings & health checks:
-     - Roles without permissions
-     - Menus without permission
-     - Inactive menus
-     - Orphan child menus
-     - Invalid route menus
-   - Recent activity logs (last 8 activities)
-   - Last login timestamp
-   - Superuser detection
+   - System warnings & health checks
 
 #### **2. Access Management**
    - **Users Management**: CRUD users dengan PowerGrid table
@@ -593,335 +739,47 @@ Dokumen ini merangkum fitur-fitur **CRUD bisnis** yang dibutuhkan untuk role **A
    - **Permissions Management**: CRUD permissions system-wide
 
 #### **3. Academic Management**
-   - **Academic Years**: Manage tahun akademik
-   - **Faculties**: Manage fakultas
-   - **Study Programs**: Manage program studi
-   - **Courses**: Manage mata kuliah & prerequisites
-   - **Curriculums**: Manage kurikulum & course mappings
-   - **Student Registrations**: Manage pendaftaran mahasiswa baru
-   - **Academic Periods**: Manage periode akademik (semester)
-   - **Course Offerings**: Manage penawaran kelas per periode
-   - **Study Plans**: Manage rencana studi mahasiswa (KRS admin view)
-   - **Course Schedules**: Manage jadwal kuliah (waktu, ruang, dosen)
-   - **Student Grades**: Manage nilai mahasiswa (admin override)
-   - **Transcripts**: View & manage transkrip nilai
-   - **Academic Advisor Assignments**: Assign dosen PA ke mahasiswa
-   - **Attendance Sessions**: View detail sesi absensi (read-only show page)
+   - **Academic Years**, **Faculties**, **Study Programs**, **Courses**, **Curriculums**, **Student Registrations**, **Academic Periods**, **Course Offerings**, **Study Plans**, **Course Schedules**, **Student Grades**, **Transcripts**, **Academic Advisor Assignments**, **Attendance Sessions**
 
 #### **4. Campus Infrastructure**
-   - **Buildings**: Manage gedung kampus
-   - **Rooms**: Manage ruangan (dengan building relation)
+   - **Buildings**, **Rooms**
 
 #### **5. System Management**
-   - **Settings**: System configuration settings
-   - **Menus**: Manage sidebar navigation menus
-   - **Activity Logs**: View system-wide activity audit trail
+   - **Settings**, **Menus**, **Activity Logs**
 
 ---
 
 ### ❌ Fitur yang Masih Dibutuhkan (To Be Implemented)
 
+> [!IMPORTANT]
+> **CATATAN STATUS SYSTEM (JULI 2026):**  
+> Seluruh modul bisnis inti NexaCampus (PMB/Admission, Keuangan/Financial, E-Learning/Course Materials, Pengumuman, Penugasan/Assignments, Layanan Mahasiswa/Student Services, Alumni & Tracer Study, serta Kepegawaian/BKD/EDOM) telah **100% selesai dibangun (`FULLY CLEAR`)**.  
+> Daftar di bawah ini menyimpan riwayat spesifikasi teknis dan kandidat fitur tambahan jangka panjang. Untuk status implementasi aktif, silakan cek langsung di `has-been-implemented.md`.
+
 #### 🎯 PRIORITAS TINGGI (High Priority - Week 1-2)
 
-##### 1. 🚧 IN PROGRESS - PMB (Penerimaan Mahasiswa Baru) Management 🎓
-**Deskripsi:** Sistem pendaftaran & seleksi mahasiswa baru end-to-end
-
-**Fitur Detail:**
-- **Online Registration Form:**
-  - Personal info (name, birth date, gender, address)
-  - Contact info (phone, email, emergency contact)
-  - Education background (high school, major, graduation year)
-  - Document uploads (ID card, high school certificate, photo, report cards)
-  - Program selection (faculty, study program, class type)
-  - Payment confirmation upload
-  
-- **Application Review:**
-  - Application list dengan status tracking (Submitted → Under Review → Accepted/Rejected)
-  - Document verification checklist
-  - Interview scheduling & notes
-  - Test score input (entrance exam, TOEFL, etc.)
-  - Bulk approval/rejection
-  
-- **Selection Process:**
-  - Entrance exam management (schedule, venue, participants)
-  - Score calculation & ranking
-  - Quota management per study program
-  - Waitlist management
-  - Automatic acceptance letter generation
-  
-- **Registration Completion:**
-  - Convert accepted applicants to students
-  - Auto-create user account
-  - Generate student ID (NIM)
-  - Initial enrollment setup
-  - Welcome email/notification
-
-**Kenapa Penting:**
-- Core business process untuk kampus
-- Streamline admission workflow
-- Digital document management
-- Transparent selection process
-- Reduce manual paperwork
-
-**Estimated Effort:** High (5-7 days)
-
-**Technical Notes:**
-- New tables: `pmb_applications`, `pmb_documents`, `pmb_exam_schedules`, `pmb_scores`
-- File upload handling untuk documents
-- Status workflow engine
-- Integration dengan student registration system
-- Email notifications untuk status updates
-- Consider payment gateway integration untuk registration fee
+##### 1. ✅ COMPLETED - PMB (Penerimaan Mahasiswa Baru) Management 🎓
+**Deskripsi:** Sistem pendaftaran & seleksi mahasiswa baru end-to-end (`AdmissionConversionService`, `NimGenerationService`, Portal publik, dan diverifikasi di `has-been-implemented.md`).
 
 ---
 
-##### 2. 🚧 IN PROGRESS - Financial Management - Tuition & Payments 💰
-**Deskripsi:** Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran)
-
-**Fitur Detail:**
-- **Tuition Fee Structure:**
-  - Set tuition rates per study program/year
-  - Semester-based fee configuration
-  - Additional fees (lab fee, library fee, activity fee)
-  - Discount/scholarship rules
-  - Late payment penalties
-  
-- **Student Billing:**
-  - Auto-generate invoices per semester
-  - Itemized billing breakdown
-  - Payment deadline tracking
-  - Outstanding balance monitoring
-  - Payment history per student
-  
-- **Payment Processing:**
-  - Manual payment recording (cash/bank transfer)
-  - Payment gateway integration (optional)
-  - Payment verification & approval
-  - Receipt generation (PDF)
-  - Bulk payment processing
-  
-- **Financial Reports:**
-  - Payment summary per semester
-  - Outstanding payments report
-  - Revenue by study program
-  - Payment trend analysis
-  - Export to Excel/PDF
-  
-- **Scholarship Management:**
-  - Scholarship types & criteria
-  - Student scholarship assignment
-  - Scholarship amount & duration
-  - Renewal tracking
-
-**Kenapa Penting:**
-- Critical untuk cash flow management
-- Automated billing reduce errors
-- Transparency untuk mahasiswa
-- Financial reporting requirements
-- Reduce manual reconciliation
-
-**Estimated Effort:** High (6-8 days)
-
-**Technical Notes:**
-- New tables: `tuition_fees`, `student_invoices`, `invoice_items`, `payments`, `scholarships`, `student_scholarships`
-- Invoice generation logic
-- Payment status tracking (Pending → Paid → Overdue)
-- Integration dengan payment gateway (Midtrans/Xendit)
-- PDF receipt generation dengan Dompdf
-- Scheduled jobs untuk invoice generation
-- Consider double-entry accounting for accuracy
+##### 2. ✅ COMPLETED - Financial Management - Tuition & Payments 💰
+**Deskripsi:** Sistem manajemen keuangan mahasiswa (`FinancialClearancePolicy`, `StudentInvoice`, dan diverifikasi di `has-been-implemented.md`).
 
 ---
 
-##### 3. Student Services & Administration 📋
-**Deskripsi:** Layanan administrasi mahasiswa non-akademik
-
-**Fitur Detail:**
-- **Surat Keterangan (Letters/Certificates):**
-  - Active student letter (surat keterangan aktif kuliah)
-  - Transcript request
-  - Graduation letter
-  - Internship recommendation letter
-  - Custom letter templates
-  - Online request & approval workflow
-  - Digital signature support
-  - Download/generated letters
-  
-- **Leave of Absence (Cuti Akademik):**
-  - Leave application form
-  - Reason & duration specification
-  - Document attachment (medical certificate, etc.)
-  - Approval workflow (PA → Department → Faculty)
-  - Leave status tracking
-  - Automatic semester skip
-  - Return from leave process
-  
-- **Student Transfer:**
-  - Internal transfer (change study program)
-  - External transfer (from other university)
-  - Credit transfer evaluation
-  - Transfer approval workflow
-  - Curriculum mapping
-  
-- **Graduation Management:**
-  - Graduation eligibility check
-  - Graduation application
-  - Thesis/final project tracking
-  - Graduation requirements verification
-  - Graduation ceremony planning
-  - Diploma generation
-  
-- **Student Complaints/Feedback:**
-  - Complaint submission form
-  - Category classification
-  - Assignment to relevant department
-  - Resolution tracking
-  - Response time SLA
-  - Satisfaction rating
-
-**Kenapa Penting:**
-- One-stop service untuk mahasiswa
-- Reduce administrative bottlenecks
-- Trackable & transparent processes
-- Digital documentation
-- Better student experience
-
-**Estimated Effort:** High (6-7 days)
-
-**Technical Notes:**
-- New tables: `letter_requests`, `leave_applications`, `transfer_requests`, `graduation_applications`, `student_complaints`
-- Workflow engine untuk approval processes
-- PDF generation untuk letters/certificates
-- Digital signature integration (optional)
-- Email notifications untuk status updates
-- Template system untuk different letter types
-- Role-based approval routing
+##### 3. ✅ COMPLETED - Student Services & Administration 📋
+**Deskripsi:** Layanan administrasi mahasiswa non-akademik (`student-services`).
 
 ---
 
-##### 4. Lecturer HR & Administration 👨‍🏫
-**Deskripsi:** Manajemen data dosen & administrasi kepegawaian
-
-**Fitur Detail:**
-- **Lecturer Profile Management:**
-  - Personal information (complete biodata)
-  - Academic qualifications (S1/S2/S3 degrees)
-  - Employment status (full-time, part-time, visiting)
-  - Join date & employment history
-  - Contact information
-  - Photo & signature upload
-  
-- **Teaching Load Management:**
-  - SKS (credit hours) allocation per semester
-  - Maximum teaching load configuration
-  - Current vs maximum load comparison
-  - Teaching history per lecturer
-  - Course assignment history
-  - Workload balancing tools
-  
-- **Certification & Training:**
-  - Professional certifications tracking
-  - Training/workshop attendance
-  - Seminar/conference participation
-  - Continuing education records
-  - Expiry date reminders
-  
-- **Performance Evaluation:**
-  - Annual performance review
-  - Student evaluation scores aggregation
-  - Peer review results
-  - Research output tracking
-  - Community service records
-  - Promotion eligibility check
-  
-- **Attendance & Leave:**
-  - Lecturer attendance tracking
-  - Leave requests (sick, annual, special)
-  - Leave balance management
-  - Substitute lecturer assignment
-  - Class rescheduling due to leave
-
-**Kenapa Penting:**
-- Centralized lecturer database
-- Workload monitoring & fairness
-- Compliance dengan accreditation requirements
-- Career development tracking
-- Resource planning
-
-**Estimated Effort:** Medium-High (4-5 days)
-
-**Technical Notes:**
-- Enhance existing `lecturer_profiles` table
-- Add tables: `lecturer_certifications`, `lecturer_training`, `teaching_loads`, `lecturer_evaluations`, `lecturer_leaves`
-- Integration dengan course offering assignments
-- Calculate teaching load dari course schedules
-- Dashboard untuk workload visualization
-- Notification system untuk certification expiry
+##### 4. ✅ COMPLETED - Lecturer HR & Administration / Kepegawaian 👨‍🏫
+**Deskripsi:** Manajemen data dosen, kepegawaian, BKD/SKP, dan EDOM (`organization`, `app/Models/Organization/*`, `academic-leader`).
 
 ---
 
-##### 5. Alumni Management 🎓
-**Deskripsi:** Tracking & engagement dengan alumni
-
-**Fitur Detail:**
-- **Alumni Database:**
-  - Graduate information (batch year, study program, GPA)
-  - Current employment status
-  - Company/organization info
-  - Job title & position
-  - Contact information (email, phone, LinkedIn)
-  - Location/city/country
-  
-- **Tracer Study:**
-  - Graduate survey distribution
-  - Employment status tracking (working/entrepreneur/studying/unemployed)
-  - Time to employment measurement
-  - Salary range collection
-  - Job relevance to study program
-  - Employer satisfaction survey
-  - Survey response analytics
-  
-- **Alumni Engagement:**
-  - Alumni events management
-  - Reunion planning
-  - Networking directory
-  - Job board for alumni
-  - Mentorship program matching
-  - Donation/fundraising tracking
-  
-- **Career Services:**
-  - Job posting board
-  - Internship opportunities
-  - Career counseling requests
-  - Resume/CV database (opt-in)
-  - Employer partnership management
-  
-- **Statistics & Reports:**
-  - Employment rate per batch/program
-  - Average salary statistics
-  - Industry distribution
-  - Geographic distribution
-  - Further education tracking
-  - Export tracer study reports
-
-**Kenapa Penting:**
-- Accreditation requirement (tracer study)
-- Alumni networking & engagement
-- Career services enhancement
-- University reputation building
-- Fundraising opportunities
-- Curriculum improvement feedback
-
-**Estimated Effort:** Medium (3-4 days)
-
-**Technical Notes:**
-- New tables: `alumni_profiles`, `tracer_studies`, `alumni_events`, `job_postings`
-- Auto-convert graduating students to alumni
-- Survey builder dengan customizable questions
-- Email campaign integration untuk surveys
-- Privacy controls untuk data sharing
-- Analytics dashboard untuk tracer study results
-- Integration dengan job board platforms
+##### 5. ✅ COMPLETED - Alumni Management & Tracer Study 🎓
+**Deskripsi:** Tracking & engagement dengan alumni (`alumni`, `TracerStudyService`).
 
 ---
 

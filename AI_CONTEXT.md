@@ -164,6 +164,18 @@ nexacampus/
 │       └── vendor/                             # Published vendor views
 └── routes/
     └── web.php                                 # ⭐ All routes (admin, student, lecturer, etc.)
+└── tests/
+    ├── Feature/                                # ⭐ Automated Domain E2E & Feature Tests
+    │   ├── Academic/                           # KRS, Nilai, Kalender, QR Attendance
+    │   ├── Admission/                          # PMB, NIM Generator, Konversi Maba
+    │   ├── Alumni/                             # Tracer Study, Job Board, Event
+    │   ├── Financial/                          # Invoice, Clearance Policy, Payment Verification
+    │   ├── Organization/                       # Approval Engine, Kepegawaian, Workload EDOM
+    │   ├── StudentService/                     # Cuti Akademik, Fee Integration, Digital ID
+    │   └── System/                             # Uji sistem umum
+    ├── Unit/                                   # Uji unit murni
+    ├── Pest.php                                # ⭐ Konfigurasi Pest bind TestCase->in('Feature')
+    └── TestCase.php
 ```
 
 ---
@@ -818,8 +830,40 @@ Controllers hanya dipakai untuk non-Livewire operations: file downloads, PDF gen
 
 ---
 
-## 12. Notes & Existing Documentation
+## 12. Automated Testing & Domain QA Suite (Pest / PHPUnit)
 
+**Semua pengujian otomatis di NexaCampus dikelola menggunakan Pest PHP dan diorganisir secara modular berdasarkan Domain Bisnis di dalam folder `tests/Feature/[Domain]/`.**
+
+### 12.1 Struktur Domain Test Suite
+```
+tests/Feature/
+├── Academic/       # AcademicAttendanceQrServiceTest, GradeAppealTest, LecturerCalendarTest, dll.
+├── Admission/      # AdmissionEndToEndTest (NIM Generator, Quota Limits, Conversion Maba)
+├── Alumni/         # AlumniModuleTest (Tracer Study, Job Board, Event)
+├── Financial/      # FinancialClearanceEndToEndTest (InvoiceItem, Clearance Policy, Payment Verification Auto-Release)
+├── Organization/   # ApprovalEnginePhaseTwoTest, EmployeeAttendanceLeaveTest, WorkloadEdomTest
+├── StudentService/ # StudentServicesEndToEndTest (Cuti Akademik, Leave Fee Invoice, Academic Status Auto-Transition)
+└── System/         # ExampleTest, System Check
+```
+
+### 12.2 Konvensi Penulisan Pest Test (`*Test.php`)
+1. **Direct Namespace/Uses:** File pengujian di `tests/Feature/[Domain]/` ditulis langsung dengan `<?php \n\n use App\Models\...` tanpa deklarasi `namespace Tests\Feature\[Domain];` karena `tests/Pest.php` telah dikonfigurasikan dengan `uses(TestCase::class, RefreshDatabase::class)->in('Feature');` yang mengikat seluruh subdirektori secara rekursif.
+2. **Setup Helper Function:** Setiap file test domain disarankan memiliki fungsi helper setup lokal (misal: `admissionTestSetup()`, `financialTestSetup()`, `studentServiceTestSetup()`) yang mendaftarkan *roles* (`Role::firstOrCreate(['name' => '...', 'guard_name' => 'web']);`), membuat entitas inti (`Faculty`, `StudyProgram`, `AcademicYear`), dan mengembalikan array asosiatif via `compact()`.
+3. **Database Constraints Integrity:** Saat membuat data dummy dalam test (misal `AdmissionApplication` atau `StudentInvoice`), selalu pastikan kolom *NOT NULL* (`phone`, `birth_date`, `gender`, `address`) terisi lengkap dan sertakan `InvoiceItem` agar metode penghitungan seperti `InvoiceAdjustmentService::totalWithAdjustments($invoice)` menghasilkan nilai akurat.
+4. **Menjalankan Pengujian:**
+   ```bash
+   php artisan test                                     # Jalankan seluruh 73+ pengujian (semua domain)
+   php artisan test --filter=AdmissionEndToEndTest        # Jalankan test khusus modul Admission
+   php artisan test --filter=FinancialClearanceEndToEndTest # Jalankan test khusus modul Financial
+   php artisan test --filter=StudentServicesEndToEndTest  # Jalankan test khusus modul Student Service
+   ```
+
+---
+
+## 13. Notes & Existing Documentation
+
+- `.notes/AI_DEVELOPMENT_MEMORY.md` → ⭐ Referensi struktural kilat & memori arsitektur untuk sesi AI development baru
 - `.notes/PATTERN-QUICK-REFERENCE.md` → Quick reference untuk pola kode (created for Grade Book feature)
 - `.notes/has-been-implemented.md` → Catatan fitur yang sudah diimplementasi
 - `.notes/will-be-implemented.md` → Catatan fitur yang akan diimplementasi
+
