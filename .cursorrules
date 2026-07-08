@@ -1,0 +1,38 @@
+# NexaCampus Development Rules
+
+## First Step
+Read `AI_CONTEXT.md` in the project root at the start of every session. It contains complete architecture, patterns, and conventions.
+
+## Project Overview
+NexaCampus is a university academic information system (SIAKAD) built with Laravel 12 + Livewire 4 + PowerGrid 6. Multi-role system: superuser, admin, lecturer, student, academic-leader, alumni.
+
+## Critical Conventions
+
+### Authorization
+- Use `ActivePermission::check()` NOT `auth()->user()->can()`
+- Use `@activecan` blade directive NOT `@can`
+- Permissions follow `{resource-kebab}.{action}` pattern (e.g., `faculty.viewAny`)
+- Active role stored in `session('active_role')`
+
+### CRUD Resources
+- Register in `config/resources.php` → auto-generates routes + permissions + menus
+- Run `php artisan app:sync-resources` after changes
+
+### PowerGrid Tables
+- Always extend `BasePowerGridTable` (`app/Livewire/BasePowerGridTable.php`)
+- Use `ExportsPowerGridWithPhpSpreadsheet` trait for export
+- Delete confirmation via SweetAlert2 (`$this->js('Swal.fire(...)')`)
+
+### Views
+- Anonymous Blade Livewire components with `⚡` prefix
+- Path: `resources/views/components/{role}/{domain}/{resource}/⚡{action}.blade.php`
+- Layout: `$this->view()->layout('layouts.app', ['menus' => '...', 'pages' => '...'])`
+
+### Models
+- Always use `SoftDeletes` + `LogsActivity` traits
+- Include `created_by`, `updated_by`, `deleted_by` audit fields
+- Domain-based namespacing: `App\Models\{Domain}\{Model}`
+
+### Language
+- UI text: Bahasa Indonesia
+- Code: English
