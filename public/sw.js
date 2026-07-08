@@ -8,6 +8,8 @@ const filesToCache = [
 ];
 
 self.addEventListener("install", (event) => {
+    self.skipWaiting();
+
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => cache.addAll(filesToCache))
@@ -48,6 +50,54 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
+        }).then(() => self.clients.claim())
+    );
+});
+
+self.addEventListener('push', (event) => {
+    let payload = {};
+
+    if (event.data) {
+        try {
+            payload = event.data.json();
+        } catch (error) {
+            payload = {
+                title: 'NexaCampus',
+                body: event.data.text(),
+            };
+        }
+    }
+
+    const title = payload.title || 'NexaCampus';
+    const options = {
+        body: payload.body || 'Ada pembaruan baru di portal.',
+        icon: '/logo.png',
+        badge: '/logo.png',
+        data: {
+            url: payload.url || '/',
+            eventKey: payload.event_key || null,
+        },
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href;
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            for (const client of clientList) {
+                if (client.url === targetUrl && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
+            }
         })
     );
 });

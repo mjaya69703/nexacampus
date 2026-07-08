@@ -220,7 +220,7 @@ Schema::create('course_material_downloads', function (Blueprint $table) {
 - ✅ **Single attachment (max 5MB)** - SUDAH ADA. Optional file attachment (PDF, DOC, XLS, images).
 - ✅ **Purple theme consistency** - SUDAH ADA. Color scheme `#667eea`/`#764ba2` consistent dengan app design.
 - ❌ **Email notifications** - BELUM ADA. Future enhancement untuk notify users saat announcement published.
-- ❌ **Push notifications (PWA)** - BELUM ADA. Future enhancement untuk real-time alerts.
+- ✅ **Push notifications (PWA/Web Push)** - SUDAH ADA sebagai kanal browser push berbasis VAPID, subscription per user, service worker, dan delivery log. User tetap perlu opt-in dari browser.
 - ❌ **Read statistics dashboard** - BELUM ADA. Admin/lecturer belum bisa lihat detailed read analytics per announcement.
 
 **Description:**
@@ -411,7 +411,7 @@ Schema::create('announcement_reads', function (Blueprint $table) {
 
 **Recommended Future Enhancements:**
 - 🔧 **Email Notifications** - Send email saat announcement published (important/urgent priority)
-- 🔧 **Push Notifications (PWA)** - Real-time push notification untuk new announcements
+- ✅ **Push Notifications (PWA/Web Push)** - Kanal browser push sudah tersedia untuk event notifikasi yang memakai `NotificationDispatchService`; announcement-specific trigger/read analytics masih bisa diperluas terpisah.
 - 🔧 **Read Statistics Dashboard** - Detailed analytics: who read, when, read rate per announcement
 - 🔧 **Bulk Actions** - Delete/archive multiple announcements sekaligus
 - 🔧 **Announcement Templates** - Pre-defined templates untuk common announcements

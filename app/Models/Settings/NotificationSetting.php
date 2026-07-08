@@ -13,10 +13,12 @@ class NotificationSetting extends Model
     use SoftDeletes;
 
     public const PROVIDER_OFFICIAL = 'official_cloud_api';
+
     public const PROVIDER_UNOFFICIAL = 'unofficial_web_session';
 
     protected $fillable = [
         'whatsapp_enabled',
+        'web_push_enabled',
         'whatsapp_provider',
         'official_config',
         'unofficial_config',
@@ -39,6 +41,7 @@ class NotificationSetting extends Model
     {
         return [
             'whatsapp_enabled' => 'boolean',
+            'web_push_enabled' => 'boolean',
             'official_config' => 'encrypted:array',
             'unofficial_config' => 'encrypted:array',
             'retry_attempts' => 'integer',
@@ -55,6 +58,7 @@ class NotificationSetting extends Model
             ->useLogName('notification-setting')
             ->logOnly([
                 'whatsapp_enabled',
+                'web_push_enabled',
                 'whatsapp_provider',
                 'fallback_channel',
                 'retry_attempts',
@@ -71,6 +75,7 @@ class NotificationSetting extends Model
     {
         return static::query()->firstOrCreate([], [
             'whatsapp_enabled' => false,
+            'web_push_enabled' => false,
             'whatsapp_provider' => self::PROVIDER_OFFICIAL,
             'fallback_channel' => 'in_app',
             'retry_attempts' => 3,

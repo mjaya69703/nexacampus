@@ -1282,7 +1282,7 @@ Dokumen ini merangkum fitur-fitur **CRUD bisnis** yang dibutuhkan untuk role **A
 - Database + broadcast channels
 - Integration dengan email service (Mailgun/Sendgrid)
 - SMS gateway integration (Twilio/local provider)
-- Push notifications via PWA service worker
+- Push notifications via PWA service worker ✅ core Web Push channel implemented; remaining work is notification center preferences, scheduling, analytics, and broader trigger coverage.
 - Queue notifications untuk async delivery
 - Template engine dengan variables
 

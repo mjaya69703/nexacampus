@@ -3,9 +3,9 @@
 use App\Http\Controllers\Academic\AssignmentFileController;
 use App\Http\Controllers\Academic\AssignmentReportExportController;
 use App\Http\Controllers\Academic\GradeAppealAttachmentController;
+use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
-use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
 use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
 use App\Http\Controllers\AuthController;
@@ -13,6 +13,7 @@ use App\Http\Controllers\Financial\FinancialReportExportController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
+use App\Http\Controllers\Notifications\PushSubscriptionController;
 use App\Http\Controllers\Organization\AcademicLeaderReportExportController;
 use App\Http\Controllers\Organization\LecturerWorkloadExportController;
 use App\Http\Controllers\Organization\TridharmaAttachmentController;
@@ -52,6 +53,10 @@ Route::middleware('is_installed')->group(function () {
         Route::livewire('/profile', 'profile-index')->name('home.profile-index');
         Route::get('/profile/development-attachments/{attachment}/preview', [UserDevelopmentAttachmentController::class, 'profilePreview'])
             ->name('profile.development-attachments.preview');
+        Route::post('/notifications/push-subscriptions', [PushSubscriptionController::class, 'store'])
+            ->name('notifications.push-subscriptions.store');
+        Route::delete('/notifications/push-subscriptions', [PushSubscriptionController::class, 'destroy'])
+            ->name('notifications.push-subscriptions.destroy');
         Route::get('/tridharma/attachments/{attachment}/preview', [TridharmaAttachmentController::class, 'selfPreview'])
             ->name('tridharma.attachments.preview');
         Route::livewire('/employee/attendance', 'employee.attendance.index')->name('employee.attendance.index');

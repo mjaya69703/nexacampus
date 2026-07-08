@@ -37,6 +37,8 @@
         ->where('is_active', true)
         ->orderByDesc('start_date')
         ->first();
+
+    $webPushPublicKey = config('services.web_push.public_key');
 @endphp
 
 <li class="nav-item dropdown topbar-command-item">
@@ -111,6 +113,22 @@
         </div>
     </li>
 @endif
+
+<li class="nav-item d-none d-xl-flex align-items-center ms-2">
+    <button
+        id="topbar-push-toggle"
+        class="topbar-push-toggle"
+        type="button"
+        data-subscribe-url="{{ route('notifications.push-subscriptions.store') }}"
+        data-unsubscribe-url="{{ route('notifications.push-subscriptions.destroy') }}"
+        data-vapid-public-key="{{ $webPushPublicKey }}"
+        title="{{ $webPushPublicKey ? 'Aktifkan notifikasi browser' : 'Web Push belum dikonfigurasi' }}"
+        @disabled(! $webPushPublicKey)
+    >
+        <i class="fas fa-bell" aria-hidden="true"></i>
+        <span data-push-label>{{ $webPushPublicKey ? 'Aktifkan notifikasi' : 'Push belum siap' }}</span>
+    </button>
+</li>
 
 @once
     <style>
@@ -295,6 +313,30 @@
                 text-overflow: ellipsis;
                 font-size: .75rem;
             }
+
+            .topbar-push-toggle {
+                min-height: 2.35rem;
+                display: inline-flex;
+                align-items: center;
+                gap: .5rem;
+                padding: .45rem .7rem;
+                color: var(--tblr-secondary-color);
+                background: var(--app-surface-bg);
+                border: 1px solid var(--app-topbar-border);
+                border-radius: 6px;
+            }
+
+            .topbar-push-toggle:hover:not(:disabled),
+            .topbar-push-toggle.is-active {
+                color: var(--app-primary);
+                border-color: color-mix(in srgb, var(--app-primary) 45%, transparent);
+                background: var(--app-muted-bg);
+            }
+
+            .topbar-push-toggle:disabled {
+                cursor: not-allowed;
+                opacity: .65;
+            }
     </style>
 
     <script>
@@ -365,6 +407,107 @@
                     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
                         event.preventDefault();
                         bootstrap.Dropdown.getOrCreateInstance(trigger).show();
+                    }
+                });
+            });
+
+            document.addEventListener('DOMContentLoaded', async () => {
+                const button = document.getElementById('topbar-push-toggle');
+                const label = button?.querySelector('[data-push-label]');
+
+                if (!button || !label || !button.dataset.vapidPublicKey) {
+                    return;
+                }
+
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                if (!('serviceWorker' in navigator) || !('PushManager' in window) || !csrf) {
+                    button.disabled = true;
+                    label.textContent = 'Push tidak didukung';
+                    return;
+                }
+
+                const base64ToUint8Array = (base64String) => {
+                    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                    const rawData = window.atob(base64);
+                    const outputArray = new Uint8Array(rawData.length);
+
+                    for (let index = 0; index < rawData.length; index++) {
+                        outputArray[index] = rawData.charCodeAt(index);
+                    }
+
+                    return outputArray;
+                };
+
+                const sendSubscription = async (method, url, subscription) => {
+                    const payload = subscription.toJSON();
+
+                    await fetch(url, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrf,
+                        },
+                        body: JSON.stringify({
+                            endpoint: subscription.endpoint,
+                            keys: payload.keys,
+                            contentEncoding: (PushManager.supportedContentEncodings || ['aes128gcm'])[0],
+                        }),
+                    });
+                };
+
+                const updateState = async () => {
+                    const registration = await navigator.serviceWorker.ready;
+                    const subscription = await registration.pushManager.getSubscription();
+                    const isSubscribed = Boolean(subscription);
+
+                    button.classList.toggle('is-active', isSubscribed);
+                    label.textContent = isSubscribed ? 'Notifikasi aktif' : 'Aktifkan notifikasi';
+                    button.title = isSubscribed ? 'Nonaktifkan notifikasi browser' : 'Aktifkan notifikasi browser';
+
+                    return { registration, subscription };
+                };
+
+                try {
+                    await updateState();
+                } catch (error) {
+                    button.disabled = true;
+                    label.textContent = 'Push tidak siap';
+                    return;
+                }
+
+                button.addEventListener('click', async () => {
+                    button.disabled = true;
+
+                    try {
+                        const { registration, subscription } = await updateState();
+
+                        if (subscription) {
+                            await sendSubscription('DELETE', button.dataset.unsubscribeUrl, subscription);
+                            await subscription.unsubscribe();
+                        } else {
+                            const permission = await Notification.requestPermission();
+
+                            if (permission !== 'granted') {
+                                label.textContent = permission === 'denied' ? 'Izin ditolak' : 'Aktifkan notifikasi';
+                                return;
+                            }
+
+                            const nextSubscription = await registration.pushManager.subscribe({
+                                userVisibleOnly: true,
+                                applicationServerKey: base64ToUint8Array(button.dataset.vapidPublicKey),
+                            });
+
+                            await sendSubscription('POST', button.dataset.subscribeUrl, nextSubscription);
+                        }
+
+                        await updateState();
+                    } catch (error) {
+                        label.textContent = 'Push gagal';
+                    } finally {
+                        button.disabled = false;
                     }
                 });
             });

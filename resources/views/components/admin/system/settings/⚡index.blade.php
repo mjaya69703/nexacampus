@@ -87,6 +87,7 @@ new class extends Component
             'campusForm.tiktok' => 'nullable|string|max:255',
             // Validasi untuk notifikasi WhatsApp
             'notificationForm.whatsapp_enabled' => 'boolean',
+            'notificationForm.web_push_enabled' => 'boolean',
             'notificationForm.whatsapp_provider' => 'required|in:official_cloud_api,unofficial_web_session',
             'notificationForm.fallback_channel' => 'required|in:in_app,email,none',
             'notificationForm.retry_attempts' => 'required|integer|min:0|max:5',
@@ -140,6 +141,7 @@ new class extends Component
             $notification = $this->notificationSetting;
             $notification->fill([
                 'whatsapp_enabled' => $validatedData['notificationForm']['whatsapp_enabled'] ?? false,
+                'web_push_enabled' => $validatedData['notificationForm']['web_push_enabled'] ?? false,
                 'whatsapp_provider' => $validatedData['notificationForm']['whatsapp_provider'],
                 'fallback_channel' => $validatedData['notificationForm']['fallback_channel'],
                 'retry_attempts' => $validatedData['notificationForm']['retry_attempts'],
@@ -328,6 +330,7 @@ new class extends Component
     {
         return [
             'whatsapp_enabled' => $setting->whatsapp_enabled,
+            'web_push_enabled' => $setting->web_push_enabled,
             'whatsapp_provider' => $setting->whatsapp_provider ?: NotificationSetting::PROVIDER_OFFICIAL,
             'fallback_channel' => $setting->fallback_channel ?: 'in_app',
             'retry_attempts' => $setting->retry_attempts ?: 3,
@@ -685,8 +688,8 @@ new class extends Component
                             <div class="form-section">
                                 <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
                                     <div>
-                                        <h5 class="mb-1">Pengaturan WhatsApp</h5>
-                                        <small class="text-muted">Atur provider WhatsApp tanpa mengikat modul lain ke implementasi provider tertentu.</small>
+                                        <h5 class="mb-1">Pengaturan Notifikasi</h5>
+                                        <small class="text-muted">Atur kanal WhatsApp dan Web Push tanpa mengikat modul lain ke implementasi provider tertentu.</small>
                                     </div>
                                     <button type="button" class="btn btn-outline-primary" wire:click="checkWhatsappConfiguration">
                                         <i class="fas fa-plug me-2"></i> Cek Konfigurasi
@@ -719,6 +722,13 @@ new class extends Component
                                             <label class="form-check-label">Aktifkan WhatsApp</label>
                                         </div>
                                         <small class="text-muted">Jika nonaktif, modul tetap bisa memakai kanal fallback yang dipilih.</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" wire:model.live="notificationForm.web_push_enabled">
+                                            <label class="form-check-label">Aktifkan Web Push</label>
+                                        </div>
+                                        <small class="text-muted">Butuh VAPID key di env dan izin browser dari masing-masing user.</small>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Provider Aktif</label>

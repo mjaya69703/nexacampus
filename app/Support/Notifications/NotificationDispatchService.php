@@ -90,6 +90,23 @@ class NotificationDispatchService
         return $log->refresh();
     }
 
+    public function dispatch(User $user, string $eventKey, array $data = [], ?Model $source = null): ?NotificationLog
+    {
+        $whatsappLog = $this->whatsapp($user, $eventKey, $data, $source);
+
+        $template = NotificationTemplate::query()
+            ->where('channel', 'whatsapp')
+            ->where('event_key', $eventKey)
+            ->first();
+
+        $subject = $template?->title ?? str($eventKey)->replace('.', ' ')->title()->toString();
+        $body = $this->render($template?->body ?? ($data['message'] ?? $subject), $data);
+
+        app(WebPushNotificationService::class)->send($user, $eventKey, $subject, $body, $data, $source);
+
+        return $whatsappLog;
+    }
+
     public function gradePublished(StudentGrade $grade): ?NotificationLog
     {
         $grade->loadMissing([
@@ -103,7 +120,7 @@ class NotificationDispatchService
             return null;
         }
 
-        return $this->whatsapp($user, 'academic.grade_published', [
+        return $this->dispatch($user, 'academic.grade_published', [
             'student_name' => $user->name,
             'course_name' => $grade->studyPlanDetail?->courseOffering?->course?->name ?? 'Mata kuliah',
             'letter_grade' => $grade->letter_grade ?? '-',
@@ -120,7 +137,7 @@ class NotificationDispatchService
             return null;
         }
 
-        return $this->whatsapp($user, 'academic.study_plan_status_updated', [
+        return $this->dispatch($user, 'academic.study_plan_status_updated', [
             'student_name' => $user->name,
             'semester_no' => $studyPlan->semester_no ?? '-',
             'status_label' => $studyPlan->status,
@@ -137,7 +154,7 @@ class NotificationDispatchService
             return null;
         }
 
-        return $this->whatsapp($user, 'financial.invoice_issued', [
+        return $this->dispatch($user, 'financial.invoice_issued', [
             'student_name' => $user->name,
             'invoice_number' => $invoice->invoice_number,
             'total_amount' => $this->money($invoice->total_amount),
@@ -154,7 +171,7 @@ class NotificationDispatchService
             return null;
         }
 
-        return $this->whatsapp($user, 'financial.invoice_overdue', [
+        return $this->dispatch($user, 'financial.invoice_overdue', [
             'student_name' => $user->name,
             'invoice_number' => $invoice->invoice_number,
             'outstanding_amount' => $this->money($invoice->outstanding_amount),
@@ -170,7 +187,7 @@ class NotificationDispatchService
             return null;
         }
 
-        return $this->whatsapp($user, 'financial.payment_verified', [
+        return $this->dispatch($user, 'financial.payment_verified', [
             'student_name' => $user->name,
             'payment_number' => $payment->payment_number,
             'amount' => $this->money($payment->amount),
@@ -187,7 +204,7 @@ class NotificationDispatchService
             return null;
         }
 
-        return $this->whatsapp($user, 'financial.payment_rejected', [
+        return $this->dispatch($user, 'financial.payment_rejected', [
             'student_name' => $user->name,
             'payment_number' => $payment->payment_number,
             'notes' => $payment->verification_notes ?: '-',
@@ -219,7 +236,7 @@ class NotificationDispatchService
             return null;
         }
 
-        return $this->whatsapp($user, 'student_service.status_updated', [
+        return $this->dispatch($user, 'student_service.status_updated', [
             'student_name' => $user->name,
             'request_label' => $requestLabel,
             'request_number' => $requestNumber,
