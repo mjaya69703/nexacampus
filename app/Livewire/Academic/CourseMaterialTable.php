@@ -11,11 +11,15 @@ use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class CourseMaterialTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     use WithFileUploads;
 
     public string $tableName = 'courseMaterialTable';
@@ -63,7 +67,7 @@ final class CourseMaterialTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -111,6 +115,23 @@ final class CourseMaterialTable extends BasePowerGridTable
             Column::make('Status', 'is_published'),
             Column::make('Diupload oleh', 'uploaded_by_name')->sortable()->searchable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('category', 'category')
+                ->dataSource(collect([
+                    ['id' => 'syllabus', 'name' => 'Syllabus/RPS'],
+                    ['id' => 'lecture_notes', 'name' => 'Lecture Notes'],
+                    ['id' => 'assignments', 'name' => 'Assignments'],
+                    ['id' => 'references', 'name' => 'References'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::number('meeting_number', 'meeting_number'),
+            Filter::boolean('is_published', 'is_published'),
         ];
     }
 

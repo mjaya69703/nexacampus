@@ -5,6 +5,8 @@ namespace App\Models\StudentService;
 use App\Models\Academic\AcademicYear;
 use App\Models\Academic\StudentProfile;
 use App\Models\Financial\StudentInvoice;
+use App\Models\Organization\ApprovalRequest;
+use App\Support\StudentService\StudentLeaveApplicationService;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +21,7 @@ class StudentLeaveApplication extends Model
 
     protected $fillable = [
         'application_number',
+        'approval_request_id',
         'student_profile_id',
         'academic_year_id',
         'semester',
@@ -76,6 +79,11 @@ class StudentLeaveApplication extends Model
         return $this->belongsTo(AcademicYear::class);
     }
 
+    public function approvalRequest(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalRequest::class);
+    }
+
     public function histories(): HasMany
     {
         return $this->hasMany(StudentLeaveStatusHistory::class);
@@ -104,5 +112,32 @@ class StudentLeaveApplication extends Model
     public function returnedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'returned_by');
+    }
+
+    public function markApprovalApproved(?int $userId = null, ?string $notes = null): void
+    {
+        app(StudentLeaveApplicationService::class)->approveFromApproval($this, $userId, $notes);
+    }
+
+    public function markApprovalRejected(?int $userId = null, ?string $notes = null): void
+    {
+        app(StudentLeaveApplicationService::class)->rejectFromApproval($this, $userId, $notes);
+    }
+
+    public function markApprovalCancelled(?int $userId = null, ?string $notes = null): void
+    {
+        app(StudentLeaveApplicationService::class)->requestRevisionFromApproval($this, $userId, $notes ?: 'Approval dibatalkan.');
+    }
+
+    public function markInvoicePaid(?int $userId = null): void
+    {
+        app(StudentLeaveApplicationService::class)->markFeePaid($this, $userId);
+    }
+
+    public function approvalReadinessError(): ?string
+    {
+        return $this->reviewed_at
+            ? null
+            : 'Pengajuan cuti harus direview dari halaman detail cuti untuk menentukan biaya dan jatuh tempo sebelum approval.';
     }
 }

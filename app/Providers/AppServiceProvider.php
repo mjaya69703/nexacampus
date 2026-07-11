@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Settings\Campus;
 use App\Models\Settings\System;
 use App\Support\ActivePermission;
+use App\Support\WhatsApp\WindowsAwareSidecarManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,7 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(SidecarManager::class, function ($app) {
+            return new WindowsAwareSidecarManager($app['config']->get('laravel-whatsapp.web'));
+        });
     }
 
     /**

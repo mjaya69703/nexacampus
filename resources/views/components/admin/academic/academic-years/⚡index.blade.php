@@ -22,7 +22,8 @@ new class extends Component
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Daftar Tahun Akademik</h3>
-            <div class="card-tools">
+            <div class="card-tools d-flex gap-2 flex-wrap justify-content-end">
+                @include('templates.import.academic.grid-actions')
                 @activecan('academic-year.create')
                 <a href="{{ route('admin.academic.academic-years.create') }}" class="btn btn-ghost-primary">
                     <i class="fa fa-plus me-2"></i> Tambah Tahun Akademik

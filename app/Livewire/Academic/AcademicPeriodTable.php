@@ -3,17 +3,22 @@
 namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\AcademicYear;
 use App\Models\Academic\AcademicPeriod;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class AcademicPeriodTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'academicPeriodTable';
 
     protected ?string $bulkActionModel = AcademicPeriod::class;
@@ -24,7 +29,7 @@ final class AcademicPeriodTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -88,6 +93,24 @@ final class AcademicPeriodTable extends BasePowerGridTable
             Column::make('Created At', 'created_at')
                 ->sortable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('academic_year_name', 'academic_year_id')
+                ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('academic_year_id', $value)),
+            Filter::select('type', 'type')
+                ->dataSource(AcademicPeriod::query()->select('type')->distinct()->orderBy('type')->pluck('type')->filter()->map(fn (string $type) => ['id' => $type, 'name' => $type]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('start_at', 'start_at'),
+            Filter::datepicker('end_at', 'end_at'),
         ];
     }
 

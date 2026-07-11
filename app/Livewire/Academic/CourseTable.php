@@ -12,11 +12,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class CourseTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'courseTable';
 
     protected ?string $bulkActionModel = Course::class;
@@ -27,7 +31,7 @@ final class CourseTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -132,6 +136,44 @@ final class CourseTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('scope_type_label', 'scope_type')
+                ->dataSource(collect([
+                    ['id' => 'global', 'name' => 'Global'],
+                    ['id' => 'faculty', 'name' => 'Fakultas'],
+                    ['id' => 'study_program', 'name' => 'Program Studi'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('latestScope', fn (Builder $scope) => $scope->where('scope_type', $value))),
+            Filter::select('scope_faculty', 'scope_faculty_id')
+                ->dataSource(Faculty::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('latestScope', fn (Builder $scope) => $scope->where('faculty_id', $value))),
+            Filter::select('scope_study_program', 'scope_study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('latestScope', fn (Builder $scope) => $scope->where('study_program_id', $value))),
+            Filter::select('semester_recommendation', 'semester_recommendation')
+                ->dataSource(collect(range(1, 8))->map(fn (int $semester) => ['id' => $semester, 'name' => 'Semester '.$semester]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('requirement_type', 'requirement_type')
+                ->dataSource(Course::query()->select('requirement_type')->distinct()->orderBy('requirement_type')->pluck('requirement_type')->filter()->map(fn (string $type) => ['id' => $type, 'name' => $type]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('category_type', 'category_type')
+                ->dataSource(Course::query()->select('category_type')->distinct()->orderBy('category_type')->pluck('category_type')->filter()->map(fn (string $type) => ['id' => $type, 'name' => $type]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::boolean('is_active', 'is_active'),
         ];
     }
 

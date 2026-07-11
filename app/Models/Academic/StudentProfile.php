@@ -157,4 +157,14 @@ class StudentProfile extends Model
     {
         return $this->hasMany(AssignmentSubmission::class);
     }
+
+    public function gradeAppeals(): HasMany
+    {
+        return $this->hasMany(GradeAppeal::class);
+    }
+
+    public function consultationAppointments(): HasMany
+    {
+        return $this->hasMany(ConsultationAppointment::class);
+    }
 }

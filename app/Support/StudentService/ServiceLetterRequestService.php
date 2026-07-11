@@ -3,9 +3,12 @@
 namespace App\Support\StudentService;
 
 use App\Models\Academic\StudentProfile;
+use App\Models\Organization\ApprovalTemplate;
 use App\Models\StudentService\ServiceLetterRequest;
 use App\Models\StudentService\ServiceLetterType;
+use App\Models\User;
 use App\Support\Financial\FinancialClearanceService;
+use App\Support\Organization\ApprovalEngine;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Http\UploadedFile;
@@ -57,7 +60,7 @@ class ServiceLetterRequestService
             $this->recordHistory($request, null, 'submitted', 'Request submitted by student.', auth()->id());
             app(StudentServiceNotificationService::class)->serviceLetter($request, 'submitted', 'Pengajuan surat berhasil dikirim.');
 
-            return $request;
+            return $this->submitForApproval($request, auth()->id());
         });
     }
 
@@ -65,6 +68,12 @@ class ServiceLetterRequestService
     {
         return DB::transaction(function () use ($request, $status, $notes, $userId): ServiceLetterRequest {
             $from = $request->status;
+
+            if ($status === 'revision_requested' && $request->approvalRequest && $request->approvalRequest->status === 'in_progress') {
+                app(ApprovalEngine::class)->cancel($request->approvalRequest, $userId ? User::find($userId) : null, $notes);
+                $request->refresh();
+            }
+
             $updates = [
                 'status' => $status,
                 'admin_notes' => $notes,
@@ -157,8 +166,58 @@ class ServiceLetterRequestService
             $this->recordHistory($request, $from, 'submitted', 'Request corrected and resubmitted by student.', auth()->id());
             app(StudentServiceNotificationService::class)->serviceLetter($request, 'submitted', 'Perbaikan pengajuan surat berhasil dikirim ulang.');
 
+            return $this->submitForApproval($request->refresh(), auth()->id());
+        });
+    }
+
+    public function approve(ServiceLetterRequest $request, ?string $notes, ?int $userId): ServiceLetterRequest
+    {
+        if (! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true)) {
+            throw new \RuntimeException('Status pengajuan surat saat ini tidak bisa diapprove.');
+        }
+
+        return DB::transaction(function () use ($request, $notes, $userId): ServiceLetterRequest {
+            $request->update([
+                'admin_notes' => $notes,
+                'reviewed_by' => $userId,
+                'reviewed_at' => now(),
+            ]);
+
+            if (! $request->approvalRequest || $request->approvalRequest->status !== 'in_progress') {
+                $this->submitForApproval($request->refresh(), $request->studentProfile?->user_id);
+                $request->refresh();
+            }
+
+            app(ApprovalEngine::class)->approve($request->approvalRequest, User::findOrFail($userId), $notes);
+
             return $request->refresh();
         });
+    }
+
+    public function reject(ServiceLetterRequest $request, ?string $notes, ?int $userId): ServiceLetterRequest
+    {
+        if (! $request->approvalRequest || $request->approvalRequest->status !== 'in_progress') {
+            throw new \RuntimeException('Approval pengajuan surat tidak sedang berjalan.');
+        }
+
+        app(ApprovalEngine::class)->reject($request->approvalRequest, User::findOrFail($userId), $notes);
+
+        return $request->refresh();
+    }
+
+    public function approveFromApproval(ServiceLetterRequest $request, ?int $userId, ?string $notes = null): ServiceLetterRequest
+    {
+        return $this->setStatus($request, 'approved', $notes, $userId);
+    }
+
+    public function rejectFromApproval(ServiceLetterRequest $request, ?int $userId, ?string $notes = null): ServiceLetterRequest
+    {
+        return $this->setStatus($request, 'rejected', $notes, $userId);
+    }
+
+    public function requestRevisionFromApproval(ServiceLetterRequest $request, ?int $userId, ?string $notes = null): ServiceLetterRequest
+    {
+        return $this->setStatus($request, 'revision_requested', $notes, $userId);
     }
 
     public function recordHistory(ServiceLetterRequest $request, ?string $from, string $to, ?string $notes, ?int $userId): void
@@ -169,6 +228,40 @@ class ServiceLetterRequestService
             'notes' => $notes,
             'changed_by' => $userId,
         ]);
+    }
+
+    private function submitForApproval(ServiceLetterRequest $request, ?int $userId = null): ServiceLetterRequest
+    {
+        $request->loadMissing(['letterType', 'studentProfile.user']);
+
+        $template = ApprovalTemplate::query()
+            ->where('code', 'SERVICE_LETTER_REVIEW')
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $approval = app(ApprovalEngine::class)->submitFromTemplate(
+            template: $template,
+            subject: 'Pengajuan surat '.$request->letterType?->name.' '.$request->request_number,
+            requester: $request->studentProfile?->user,
+            approvable: $request,
+            payload: [
+                'student_profile_id' => $request->student_profile_id,
+                'service_letter_type_id' => $request->service_letter_type_id,
+                'purpose' => $request->purpose,
+            ],
+            reference: $request->request_number,
+            notes: $request->student_notes ?: $request->purpose,
+            createdBy: $userId,
+        );
+
+        $from = $request->status;
+        $request->update([
+            'approval_request_id' => $approval->id,
+            'status' => 'in_approval',
+        ]);
+        $this->recordHistory($request, $from, 'in_approval', $approval->waitingMessage(), $userId);
+
+        return $request->refresh();
     }
 
     private function generatePdf(ServiceLetterRequest $request): string

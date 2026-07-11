@@ -64,4 +64,9 @@ class StudentGrade extends Model
     {
         return $this->hasMany(StudentGradeComponent::class);
     }
+
+    public function appeals(): HasMany
+    {
+        return $this->hasMany(GradeAppeal::class);
+    }
 }

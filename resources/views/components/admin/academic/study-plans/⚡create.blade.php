@@ -4,6 +4,7 @@ use App\Models\Academic\AcademicYear;
 use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudentRegistration;
 use App\Models\Academic\StudyPlan;
+use App\Support\Notifications\NotificationDispatchService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -90,6 +91,10 @@ new class extends Component {
                 'approved_by' => $this->status === 'Approved' ? auth()->id() : null,
                 'created_by' => auth()->id(),
             ]);
+
+            if (in_array($studyPlan->status, ['Submitted', 'Approved', 'Rejected', 'Cancelled'], true)) {
+                app(NotificationDispatchService::class)->studyPlanStatusUpdated($studyPlan, $studyPlan->notes);
+            }
 
             session()->flash('success', 'Header KRS berhasil dibuat. Silakan lengkapi detail mata kuliah.');
 

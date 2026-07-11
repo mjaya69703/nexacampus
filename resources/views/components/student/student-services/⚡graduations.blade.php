@@ -47,7 +47,7 @@ new class extends Component
         return match ($status) {
             'finalized' => 'bg-green-lt text-green',
             'approved' => 'bg-blue-lt text-blue',
-            'revision_requested' => 'bg-yellow-lt text-yellow',
+            'revision_requested', 'in_approval' => 'bg-yellow-lt text-yellow',
             'under_review' => 'bg-indigo-lt text-indigo',
             'rejected', 'cancelled' => 'bg-red-lt text-red',
             default => 'bg-secondary-lt text-secondary',
@@ -58,6 +58,7 @@ new class extends Component
     {
         return match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Persetujuan',
             'finalized' => 'Final',
             default => str($status)->replace('_', ' ')->title()->toString(),
         };

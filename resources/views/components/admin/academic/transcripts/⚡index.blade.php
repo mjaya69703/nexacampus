@@ -21,6 +21,9 @@ new class extends Component {
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Transcript Summary per Mahasiswa</h3>
+            <div class="card-tools d-flex gap-2 flex-wrap justify-content-end">
+                @include('templates.import.academic.grid-actions')
+            </div>
         </div>
         <div class="card-body">
             <livewire:academic.transcript-table />

@@ -6,7 +6,7 @@ use App\Models\Financial\StudentInvoice;
 
 class InvoiceStatusService
 {
-    public function refresh(StudentInvoice $invoice): StudentInvoice
+    public function refresh(StudentInvoice $invoice, ?int $actorId = null): StudentInvoice
     {
         if (in_array($invoice->status, ['draft', 'cancelled'], true)) {
             return $invoice;
@@ -38,6 +38,16 @@ class InvoiceStatusService
             'paid_at' => $status === 'paid' ? ($invoice->paid_at ?: now()) : null,
         ]);
 
-        return $invoice->refresh();
+        $invoice = $invoice->refresh();
+
+        if ($invoice->status === 'paid') {
+            $source = $invoice->source;
+
+            if ($source && method_exists($source, 'markInvoicePaid')) {
+                $source->markInvoicePaid($actorId);
+            }
+        }
+
+        return $invoice;
     }
 }

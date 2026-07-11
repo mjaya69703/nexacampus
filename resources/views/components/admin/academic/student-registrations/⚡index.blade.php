@@ -21,11 +21,14 @@ new class extends Component {
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Daftar Registrasi Mahasiswa</h3>
-            @activecan('student-registration.create')
-                <a href="{{ route('admin.academic.student-registrations.create') }}" class="btn btn-ghost-primary">
-                    <i class="fas fa-plus me-1"></i> Buat Registrasi Baru
-                </a>
-            @endactivecan
+            <div class="card-tools d-flex gap-2 flex-wrap justify-content-end">
+                @include('templates.import.academic.grid-actions')
+                @activecan('student-registration.create')
+                    <a href="{{ route('admin.academic.student-registrations.create') }}" class="btn btn-ghost-primary">
+                        <i class="fas fa-plus me-1"></i> Buat Registrasi Baru
+                    </a>
+                @endactivecan
+            </div>
         </div>
         <div class="card-body">
             <livewire:academic.student-registration-table />

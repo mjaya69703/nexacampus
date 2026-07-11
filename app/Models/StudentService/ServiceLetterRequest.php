@@ -3,6 +3,8 @@
 namespace App\Models\StudentService;
 
 use App\Models\Academic\StudentProfile;
+use App\Models\Organization\ApprovalRequest;
+use App\Support\StudentService\ServiceLetterRequestService;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +19,7 @@ class ServiceLetterRequest extends Model
 
     protected $fillable = [
         'request_number',
+        'approval_request_id',
         'service_letter_type_id',
         'student_profile_id',
         'purpose',
@@ -62,6 +65,11 @@ class ServiceLetterRequest extends Model
         return $this->belongsTo(ServiceLetterType::class, 'service_letter_type_id');
     }
 
+    public function approvalRequest(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalRequest::class);
+    }
+
     public function studentProfile(): BelongsTo
     {
         return $this->belongsTo(StudentProfile::class);
@@ -95,5 +103,20 @@ class ServiceLetterRequest extends Model
     public function finalFilePath(): ?string
     {
         return $this->uploaded_file_path ?: $this->generated_file_path;
+    }
+
+    public function markApprovalApproved(?int $userId = null, ?string $notes = null): void
+    {
+        app(ServiceLetterRequestService::class)->approveFromApproval($this, $userId, $notes);
+    }
+
+    public function markApprovalRejected(?int $userId = null, ?string $notes = null): void
+    {
+        app(ServiceLetterRequestService::class)->rejectFromApproval($this, $userId, $notes);
+    }
+
+    public function markApprovalCancelled(?int $userId = null, ?string $notes = null): void
+    {
+        app(ServiceLetterRequestService::class)->requestRevisionFromApproval($this, $userId, $notes ?: 'Approval dibatalkan.');
     }
 }

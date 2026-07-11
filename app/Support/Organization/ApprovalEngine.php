@@ -98,6 +98,16 @@ class ApprovalEngine
                 throw ValidationException::withMessages(['approval' => 'User ini tidak berwenang memproses step approval saat ini.']);
             }
 
+            $approvable = $request->approvable;
+
+            if ($approvable && method_exists($approvable, 'approvalReadinessError')) {
+                $readinessError = $approvable->approvalReadinessError();
+
+                if ($readinessError) {
+                    throw ValidationException::withMessages(['approval' => $readinessError]);
+                }
+            }
+
             $fromStatus = $request->status;
 
             $step->update([

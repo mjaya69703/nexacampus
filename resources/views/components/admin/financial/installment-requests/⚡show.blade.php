@@ -19,6 +19,7 @@ new class extends Component
             'studentProfile.studyProgram',
             'reviewedBy',
             'installments',
+            'approvalRequest.steps.actedBy',
         ])->findOrFail($id);
     }
 
@@ -71,6 +72,7 @@ new class extends Component
             'studentProfile.studyProgram',
             'reviewedBy',
             'installments',
+            'approvalRequest.steps.actedBy',
         ]);
     }
 };
@@ -163,7 +165,7 @@ new class extends Component
                 <h5 class="card-title mb-0">Decision</h5>
             </div>
             <div class="card-body">
-                @if($requestModel->status === 'submitted')
+                @if(in_array($requestModel->status, ['submitted', 'in_approval'], true))
                     <div class="mb-3">
                         <label class="form-label">Finance Notes</label>
                         <textarea wire:model="financeNotes" class="form-control" rows="4"></textarea>

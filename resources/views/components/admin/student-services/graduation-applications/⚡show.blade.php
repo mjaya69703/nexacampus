@@ -33,6 +33,7 @@ new class extends Component
             'finalizedBy',
             'academicPeriod',
             'graduationBatch',
+            'approvalRequest.steps.actedBy',
             'documents.requirement',
             'documents.verifiedBy',
         ])->findOrFail($id);
@@ -61,6 +62,7 @@ new class extends Component
                 'finalizedBy',
                 'academicPeriod',
                 'graduationBatch',
+                'approvalRequest.steps.actedBy',
                 'documents.requirement',
                 'documents.verifiedBy',
             ]);
@@ -122,8 +124,12 @@ new class extends Component
     public function reject(GraduationApplicationService $service): void
     {
         abort_unless(ActivePermission::check('graduation-application.update'), 403);
-        $this->application = $service->setStatus($this->application, 'rejected', $this->adminNotes, auth()->id());
-        session()->flash('success', 'Pengajuan yudisium ditolak.');
+        try {
+            $this->application = $service->reject($this->application, $this->adminNotes, auth()->id());
+            session()->flash('success', 'Pengajuan yudisium ditolak.');
+        } catch (\Throwable $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
         $this->reload();
     }
 
@@ -154,7 +160,7 @@ new class extends Component
         return match ($status) {
             'finalized' => 'bg-success',
             'approved' => 'bg-info',
-            'revision_requested' => 'bg-warning text-dark',
+            'revision_requested', 'in_approval' => 'bg-warning text-dark',
             'under_review' => 'bg-primary',
             'rejected', 'cancelled' => 'bg-danger',
             default => 'bg-secondary',
@@ -165,6 +171,7 @@ new class extends Component
     {
         return match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Approval',
             'finalized' => 'Final',
             default => str($status)->replace('_', ' ')->title()->toString(),
         };
@@ -646,18 +653,18 @@ new class extends Component
                     <button wire:click="markUnderReview" class="btn btn-outline-primary" @disabled(! in_array($application->status, ['submitted', 'revision_requested'], true))>
                         <i class="fas fa-search me-1"></i> Mark Under Review
                     </button>
-                    <button wire:click="approve" class="btn btn-success" @disabled(! $this->checklistIsComplete() || ! $this->requiredDocumentsAreVerified() || ! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                    <button wire:click="approve" class="btn btn-success" @disabled(! $this->checklistIsComplete() || ! $this->requiredDocumentsAreVerified() || ! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         <i class="fas fa-check me-1"></i> Approve
                     </button>
-                    @if ((! $this->checklistIsComplete() || ! $this->requiredDocumentsAreVerified()) && in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))
+                    @if ((! $this->checklistIsComplete() || ! $this->requiredDocumentsAreVerified()) && in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))
                         <div class="small text-muted text-center">
                             Approve aktif setelah semua checklist lengkap dan dokumen wajib verified.
                         </div>
                     @endif
-                    <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                    <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan
                     </button>
-                    <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                    <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         <i class="fas fa-times me-1"></i> Reject
                     </button>
                 </div>

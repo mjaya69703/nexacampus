@@ -86,6 +86,7 @@ final class StudentTransferRequestTable extends BasePowerGridTable
             Filter::select('status', 'status')
                 ->dataSource(collect([
                     ['id' => 'submitted', 'name' => 'Submitted'],
+                    ['id' => 'in_approval', 'name' => 'Menunggu Approval'],
                     ['id' => 'under_review', 'name' => 'Under Review'],
                     ['id' => 'revision_requested', 'name' => 'Perlu Perbaikan'],
                     ['id' => 'approved', 'name' => 'Approved'],
@@ -123,7 +124,7 @@ final class StudentTransferRequestTable extends BasePowerGridTable
         $class = match ($status) {
             'applied' => 'bg-success',
             'approved' => 'bg-info',
-            'approved_pending_payment', 'revision_requested' => 'bg-warning text-dark',
+            'approved_pending_payment', 'revision_requested', 'in_approval' => 'bg-warning text-dark',
             'under_review' => 'bg-primary',
             'rejected', 'cancelled' => 'bg-danger',
             default => 'bg-secondary',
@@ -131,6 +132,7 @@ final class StudentTransferRequestTable extends BasePowerGridTable
 
         $label = match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Approval',
             'approved_pending_payment' => 'Menunggu Pembayaran',
             default => str($status)->replace('_', ' ')->title(),
         };

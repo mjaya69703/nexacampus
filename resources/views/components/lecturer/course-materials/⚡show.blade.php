@@ -14,20 +14,34 @@ new class extends Component
     use WithFileUploads;
 
     public int $materialId;
+
     public array $materialData = [];
+
     public array $attachments = [];
+
+    public array $versions = [];
+
     public bool $isLiked = false;
+
     public int $likesCount = 0;
 
     // Edit panel properties
     public string $title = '';
+
     public string $description = '';
+
     public string $category = 'lecture_notes';
+
     public ?int $meetingNumber = null;
+
     public bool $isPublished = true;
+
     public $files = [];
+
     public string $videoUrl = '';
+
     public string $videoTitle = '';
+
     public bool $showEditPanel = false;
 
     public function mount(int|string $material): void
@@ -39,7 +53,7 @@ new class extends Component
     private function loadMaterial(): void
     {
         $material = CourseMaterial::query()
-            ->with(['files', 'uploadedBy', 'courseOffering.course'])
+            ->with(['files', 'uploadedBy', 'courseOffering.course', 'versions.createdBy'])
             ->find($this->materialId);
 
         if (! $material) {
@@ -88,6 +102,23 @@ new class extends Component
             ];
         }
 
+        $this->versions = $material->versions
+            ->map(fn ($version) => [
+                'id' => $version->id,
+                'version_number' => $version->version_number,
+                'change_type' => $version->change_type,
+                'change_summary' => $version->change_summary,
+                'title' => $version->title,
+                'category' => $version->category,
+                'meeting_number' => $version->meeting_number,
+                'is_published' => $version->is_published,
+                'files_count' => count($version->files_snapshot ?? []),
+                'created_by' => $version->createdBy?->name ?? '-',
+                'created_at' => $version->created_at?->format('d M Y H:i') ?? '-',
+            ])
+            ->values()
+            ->all();
+
         $this->fillForm($material);
         $this->loadLikeState();
     }
@@ -119,6 +150,34 @@ new class extends Component
         $this->isPublished = $material->is_published;
         $this->videoUrl = '';
         $this->videoTitle = '';
+    }
+
+    private function recordMaterialVersion(CourseMaterial $material, string $changeType, ?string $summary = null): void
+    {
+        $material->loadMissing('files');
+
+        $latestVersion = (int) $material->versions()->max('version_number');
+
+        $material->versions()->create([
+            'version_number' => $latestVersion + 1,
+            'change_type' => $changeType,
+            'title' => $material->title,
+            'description' => $material->description,
+            'category' => $material->category,
+            'meeting_number' => $material->meeting_number,
+            'is_published' => $material->is_published,
+            'files_snapshot' => $material->files
+                ->map(fn ($file) => [
+                    'file_name' => $file->file_name,
+                    'file_type' => $file->file_type,
+                    'file_size' => $file->file_size,
+                    'download_count' => $file->download_count,
+                ])
+                ->values()
+                ->all(),
+            'change_summary' => $summary,
+            'created_by' => auth()->id(),
+        ]);
     }
 
     public function toggleEditPanel(): void
@@ -162,13 +221,20 @@ new class extends Component
                     continue;
                 }
 
-                $filePath = $file->store('course-materials', 'public');
+                $originalName = $file->getClientOriginalName();
+                $fileType = $file->getClientOriginalExtension();
                 $fileSize = $file->getSize();
+                $filePath = $file->store('course-materials', 'public');
+
+                if ($fileSize === false || $fileSize === null) {
+                    $storedPath = Storage::disk('public')->path($filePath);
+                    $fileSize = file_exists($storedPath) ? filesize($storedPath) : null;
+                }
 
                 $material->files()->create([
                     'file_path' => $filePath,
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_type' => $file->getClientOriginalExtension(),
+                    'file_name' => $originalName,
+                    'file_type' => $fileType,
                     'file_size' => $fileSize,
                 ]);
             }
@@ -182,6 +248,8 @@ new class extends Component
                 'file_size' => null,
             ]);
         }
+
+        $this->recordMaterialVersion($material->fresh('files'), 'updated', 'Materi diperbarui dari halaman detail.');
 
         $this->files = [];
         $this->videoUrl = '';
@@ -209,6 +277,17 @@ new class extends Component
         }
 
         $file->delete();
+
+        $material = CourseMaterial::with('files')->find($this->materialId);
+
+        if ($material) {
+            $this->recordMaterialVersion(
+                $material,
+                'attachment_removed',
+                'Lampiran dihapus: '.$file->file_name
+            );
+        }
+
         $this->loadMaterial();
 
         session()->flash('success', 'File berhasil dihapus.');
@@ -234,6 +313,8 @@ new class extends Component
             'file_type' => null,
             'file_size' => null,
         ]);
+
+        $this->recordMaterialVersion($material->fresh('files'), 'attachment_removed', 'File utama lama dihapus.');
 
         $this->loadMaterial();
 
@@ -262,6 +343,7 @@ new class extends Component
 
         if (! $user || ! $user->hasRole('lecturer')) {
             session()->flash('error', 'Anda harus login sebagai dosen.');
+
             return;
         }
 
@@ -385,6 +467,27 @@ new class extends Component
         };
     }
 
+    public function versionChangeLabel(?string $type): string
+    {
+        return match ($type) {
+            'created' => 'Dibuat',
+            'updated' => 'Diperbarui',
+            'status_changed' => 'Status Diubah',
+            'attachment_removed' => 'Lampiran Dihapus',
+            default => 'Diperbarui',
+        };
+    }
+
+    public function versionBadgeClass(?string $type): string
+    {
+        return match ($type) {
+            'created' => 'bg-green-lt text-green',
+            'status_changed' => 'bg-blue-lt text-blue',
+            'attachment_removed' => 'bg-red-lt text-red',
+            default => 'bg-indigo-lt text-indigo',
+        };
+    }
+
     public function render(): View
     {
         return $this->view()->layout('layouts.app', [
@@ -488,6 +591,19 @@ new class extends Component
             box-shadow: 0 8px 18px rgba(99, 102, 241, 0.12);
         }
 
+        .version-row {
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            padding: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .version-row:hover {
+            border-color: #c7d2fe;
+            background: #eef2ff;
+        }
+
         .action-btn {
             padding: 0.6rem 1.2rem;
             border-radius: 10px;
@@ -511,6 +627,56 @@ new class extends Component
             border: 2px dashed #cbd5f5;
             border-radius: 18px;
             background: #f8fafc;
+        }
+
+        .upload-dropzone {
+            border: 2px dashed #c7d2fe;
+            border-radius: 14px;
+            background: #eef2ff;
+            cursor: pointer;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .upload-dropzone:hover,
+        .upload-dropzone.is-dragging {
+            background: #e0e7ff;
+            border-color: #667eea;
+            box-shadow: 0 8px 22px rgba(102, 126, 234, 0.16);
+            transform: translateY(-2px);
+        }
+
+        .upload-dropzone-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.45rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .upload-help {
+            color: #64748b;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .upload-progress-track {
+            height: 0.7rem;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.2s ease;
         }
     </style>
 @endpush
@@ -595,6 +761,49 @@ new class extends Component
         </div>
     </div>
 
+    <div class="card modern-card mb-4">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2" style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+            <div>
+                <h4 class="mb-0" style="font-weight: 700;">Riwayat Versi</h4>
+                <div class="text-secondary small">Perubahan materi, status publish, dan lampiran tercatat otomatis.</div>
+            </div>
+            <span class="badge bg-indigo-lt text-indigo" style="border-radius: 999px; padding: 0.5rem 0.75rem;">
+                {{ count($versions) }} versi
+            </span>
+        </div>
+        <div class="card-body p-4">
+            @forelse($versions as $version)
+                <div class="version-row mb-3">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                        <div>
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <span class="badge bg-dark-lt text-dark" style="border-radius: 999px;">v{{ $version['version_number'] }}</span>
+                                <span class="badge {{ $this->versionBadgeClass($version['change_type']) }}" style="border-radius: 999px;">{{ $this->versionChangeLabel($version['change_type']) }}</span>
+                                <span class="badge {{ $version['is_published'] ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow' }}" style="border-radius: 999px;">
+                                    {{ $version['is_published'] ? 'Published' : 'Draft' }}
+                                </span>
+                            </div>
+                            <div style="font-weight: 700; color: #1e293b;">{{ $version['title'] }}</div>
+                            <div class="text-secondary small mt-1">
+                                {{ $version['change_summary'] ?: 'Perubahan materi tercatat.' }}
+                            </div>
+                        </div>
+                        <div class="text-lg-end text-secondary small">
+                            <div><i class="fas fa-user me-1"></i>{{ $version['created_by'] }}</div>
+                            <div><i class="fas fa-clock me-1"></i>{{ $version['created_at'] }}</div>
+                            <div><i class="fas fa-paperclip me-1"></i>{{ $version['files_count'] }} lampiran</div>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="text-center py-4 text-secondary">
+                    <i class="fas fa-clock-rotate-left" style="font-size: 2.5rem; opacity: 0.35;"></i>
+                    <div class="mt-2">Belum ada riwayat versi untuk materi ini.</div>
+                </div>
+            @endforelse
+        </div>
+    </div>
+
     @if($showEditPanel)
         <div class="card modern-card mb-4 edit-panel">
             <div class="card-body p-4">
@@ -646,15 +855,61 @@ new class extends Component
 
                     <div class="mb-3">
                         <label class="form-label" style="font-weight: 600; color: #1e293b;">Tambah Lampiran</label>
-                        <input
-                            type="file"
-                            class="form-control form-control-lg"
-                            wire:model="files"
-                            multiple
-                            accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.jpg,.jpeg,.png"
-                            style="border-radius: 12px; border: 2px solid #e2e8f0; padding: 12px 16px;"
+                        <div
+                            class="upload-dropzone"
+                            x-data="{ uploading: false, progress: 0, dragging: false }"
+                            x-on:dragover.prevent="dragging = true"
+                            x-on:dragleave.prevent="dragging = false"
+                            x-on:drop.prevent="dragging = false; $refs.detailFilesInput.files = $event.dataTransfer.files; $refs.detailFilesInput.dispatchEvent(new Event('change', { bubbles: true }))"
+                            x-on:livewire-upload-start="uploading = true; progress = 0"
+                            x-on:livewire-upload-finish="uploading = false; progress = 100"
+                            x-on:livewire-upload-error="uploading = false"
+                            x-on:livewire-upload-progress="progress = $event.detail.progress"
+                            x-bind:class="{ 'is-dragging': dragging }"
+                            x-on:click="$refs.detailFilesInput.click()"
                         >
-                        <small class="text-muted d-block mt-2">Format: PDF, PPT, PPTX, DOC, DOCX, MP4, JPG, PNG. Maks 50MB per file.</small>
+                            <div class="upload-dropzone-icon">
+                                <i class="fas fa-file-circle-plus"></i>
+                            </div>
+                            <div style="font-weight: 800; color: #3730a3;">Tambah lampiran</div>
+                            <div class="upload-help mt-1">Tarik file ke area ini atau klik untuk memilih file.</div>
+                            <input
+                                type="file"
+                                class="d-none"
+                                wire:model="files"
+                                multiple
+                                accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.jpg,.jpeg,.png"
+                                x-ref="detailFilesInput"
+                                x-on:click.stop
+                            >
+                            <div class="upload-help mt-2">Format: PDF, PPT, PPTX, DOC, DOCX, MP4, JPG, PNG. Maks 50MB per file.</div>
+
+                            <div class="mt-3" x-show="uploading" x-cloak>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="upload-help fw-bold">Mengupload file...</span>
+                                    <span class="upload-help fw-bold" x-text="progress + '%'"></span>
+                                </div>
+                                <div class="upload-progress-track">
+                                    <div class="upload-progress-bar" x-bind:style="`width: ${progress}%`"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if($files)
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                @foreach($files as $index => $file)
+                                    <span class="badge bg-primary-lt text-primary" style="border-radius: 999px; padding: 0.55rem 0.75rem;">
+                                        <i class="fas fa-file me-1"></i>{{ $file->getClientOriginalName() }}
+                                        <button
+                                            type="button"
+                                            class="btn-close btn-close-xs ms-2"
+                                            wire:click="$remove('files', {{ $index }})"
+                                            aria-label="Remove"
+                                        ></button>
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <div class="mb-3">
@@ -692,8 +947,9 @@ new class extends Component
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="action-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-                            <i class="fas fa-save"></i> Simpan Perubahan
+                        <button type="submit" class="action-btn" wire:loading.attr="disabled" wire:target="files,updateMaterial" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                            <span wire:loading.remove wire:target="updateMaterial"><i class="fas fa-save"></i> Simpan Perubahan</span>
+                            <span wire:loading wire:target="updateMaterial"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Menyimpan...</span>
                         </button>
                         <button type="button" class="action-btn" wire:click="toggleEditPanel" style="background: #e2e8f0; color: #1e293b;">
                             Tutup

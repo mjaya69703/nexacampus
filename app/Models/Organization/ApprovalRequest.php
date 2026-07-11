@@ -85,4 +85,44 @@ class ApprovalRequest extends Model
             ->orderBy('step_order')
             ->first();
     }
+
+    public function currentApproverLabel(): ?string
+    {
+        $step = $this->relationLoaded('steps')
+            ? $this->steps->firstWhere('status', 'current')
+            : $this->currentStep();
+
+        if (! $step) {
+            return null;
+        }
+
+        $step->loadMissing(['approverUser', 'organizationalPosition', 'workUnit']);
+
+        return match ($step->approver_type) {
+            'user' => $step->approverUser?->name,
+            'position' => $step->organizationalPosition?->name,
+            'work_unit' => $step->workUnit?->name,
+            'role' => filled($step->approver_role)
+                ? str($step->approver_role)->replace(['-', '_'], ' ')->title()->toString()
+                : null,
+            'permission' => $this->stepAudienceLabel($step->name),
+            default => $this->stepAudienceLabel($step->name),
+        };
+    }
+
+    public function waitingMessage(): string
+    {
+        $label = $this->currentApproverLabel();
+
+        return $label
+            ? 'Menunggu persetujuan '.$label.'.'
+            : 'Menunggu proses persetujuan berikutnya.';
+    }
+
+    private function stepAudienceLabel(string $name): string
+    {
+        $label = preg_replace('/^(review|approval|persetujuan|finalisasi)\s+/i', '', trim($name));
+
+        return filled($label) ? $label : trim($name);
+    }
 }

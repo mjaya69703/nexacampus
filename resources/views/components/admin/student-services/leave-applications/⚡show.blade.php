@@ -28,6 +28,7 @@ new class extends Component
             'activatedBy',
             'returnedBy',
             'leaveFeeInvoice',
+            'approvalRequest.steps.actedBy',
         ])->findOrFail($id);
 
         $this->adminNotes = $this->application->admin_notes;
@@ -91,8 +92,12 @@ new class extends Component
     public function reject(StudentLeaveApplicationService $service): void
     {
         abort_unless(ActivePermission::check('leave-application.update'), 403);
-        $this->application = $service->setStatus($this->application, 'rejected', $this->adminNotes, auth()->id());
-        session()->flash('success', 'Pengajuan cuti ditolak.');
+        try {
+            $this->application = $service->reject($this->application, $this->adminNotes, auth()->id());
+            session()->flash('success', 'Pengajuan cuti ditolak.');
+        } catch (\Throwable $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
         $this->reload();
     }
 
@@ -138,6 +143,7 @@ new class extends Component
             'returned', 'activated' => 'bg-success',
             'approved' => 'bg-info',
             'approved_pending_payment' => 'bg-warning text-dark',
+            'in_approval' => 'bg-warning text-dark',
             'under_review' => 'bg-primary',
             'revision_requested' => 'bg-warning text-dark',
             'rejected', 'cancelled' => 'bg-danger',
@@ -149,6 +155,7 @@ new class extends Component
     {
         return match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Approval',
             'approved_pending_payment' => 'Menunggu Pembayaran',
             'activated' => 'Cuti Aktif',
             default => str($status)->replace('_', ' ')->title()->toString(),
@@ -172,6 +179,7 @@ new class extends Component
             'activatedBy',
             'returnedBy',
             'leaveFeeInvoice',
+            'approvalRequest.steps.actedBy',
         ]);
     }
 };
@@ -296,12 +304,12 @@ new class extends Component
                 <div class="row g-2 mb-3">
                     <div class="col-6">
                         <label class="form-label">Biaya Cuti</label>
-                        <input type="number" min="0" step="0.01" class="form-control" wire:model="leaveFeeAmount" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                        <input type="number" min="0" step="0.01" class="form-control" wire:model="leaveFeeAmount" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         @error('leaveFeeAmount') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
                     <div class="col-6">
                         <label class="form-label">Due Date</label>
-                        <input type="date" class="form-control" wire:model="leaveFeeDueDate" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                        <input type="date" class="form-control" wire:model="leaveFeeDueDate" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         @error('leaveFeeDueDate') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
                     <div class="col-12">
@@ -313,13 +321,13 @@ new class extends Component
                     <button wire:click="markUnderReview" class="btn btn-outline-primary" @disabled(! in_array($application->status, ['submitted', 'revision_requested'], true))>
                         <i class="fas fa-search me-1"></i> Mark Under Review
                     </button>
-                    <button wire:click="approve" class="btn btn-success" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                    <button wire:click="approve" class="btn btn-success" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         <i class="fas fa-check me-1"></i> Approve
                     </button>
-                    <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                    <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan
                     </button>
-                    <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                    <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         <i class="fas fa-times me-1"></i> Reject
                     </button>
                 </div>

@@ -5,6 +5,8 @@ namespace App\Models\StudentService;
 use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudyProgram;
 use App\Models\Financial\StudentInvoice;
+use App\Models\Organization\ApprovalRequest;
+use App\Support\StudentService\StudentTransferRequestService;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +21,7 @@ class StudentTransferRequest extends Model
 
     protected $fillable = [
         'request_number',
+        'approval_request_id',
         'student_profile_id',
         'from_study_program_id',
         'to_study_program_id',
@@ -74,6 +77,11 @@ class StudentTransferRequest extends Model
         return $this->belongsTo(StudentProfile::class);
     }
 
+    public function approvalRequest(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalRequest::class);
+    }
+
     public function fromStudyProgram(): BelongsTo
     {
         return $this->belongsTo(StudyProgram::class, 'from_study_program_id');
@@ -107,5 +115,32 @@ class StudentTransferRequest extends Model
     public function appliedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'applied_by');
+    }
+
+    public function markApprovalApproved(?int $userId = null, ?string $notes = null): void
+    {
+        app(StudentTransferRequestService::class)->approveFromApproval($this, $userId, $notes);
+    }
+
+    public function markApprovalRejected(?int $userId = null, ?string $notes = null): void
+    {
+        app(StudentTransferRequestService::class)->rejectFromApproval($this, $userId, $notes);
+    }
+
+    public function markApprovalCancelled(?int $userId = null, ?string $notes = null): void
+    {
+        app(StudentTransferRequestService::class)->requestRevisionFromApproval($this, $userId, $notes ?: 'Approval dibatalkan.');
+    }
+
+    public function markInvoicePaid(?int $userId = null): void
+    {
+        app(StudentTransferRequestService::class)->markFeePaid($this, $userId);
+    }
+
+    public function approvalReadinessError(): ?string
+    {
+        return $this->reviewed_at
+            ? null
+            : 'Pengajuan pindah harus direview dari halaman detail pindah untuk melengkapi evaluasi dan biaya sebelum approval.';
     }
 }

@@ -114,7 +114,7 @@ final class InstallmentRequestTable extends BasePowerGridTable
     {
         $class = match ($status) {
             'approved' => 'bg-success',
-            'submitted' => 'bg-warning text-dark',
+            'submitted', 'in_approval' => 'bg-warning text-dark',
             'rejected' => 'bg-danger',
             'cancelled' => 'bg-secondary',
             default => 'bg-light text-dark',

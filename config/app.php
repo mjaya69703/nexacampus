@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'source_url' => env('APP_SOURCE_URL', 'https://github.com/mjaya69703/nexacampus'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

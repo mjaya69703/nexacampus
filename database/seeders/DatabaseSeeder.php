@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         $this->call([
             SettingsSeeder::class,
+            NotificationTemplateSeeder::class,
             UserSeeder::class,
             MenuSeeder::class,
             AcademicSeeder::class,
@@ -25,6 +26,7 @@ class DatabaseSeeder extends Seeder
             AdmissionSeeder::class,
             FinancialSeeder::class,
             StudentServiceSeeder::class,
+            AlumniSeeder::class,
         ]);
     }
 }

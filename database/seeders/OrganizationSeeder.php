@@ -352,11 +352,102 @@ class OrganizationSeeder extends Seeder
         }
 
         $this->seedWorkloadAndEdomFoundation($admin);
+        $this->seedCrossModuleApprovalTemplates($admin);
 
         $students = StudentProfile::query()->with('user')->where('is_active', true)->get();
         $this->seedOrganizationJourney();
         $this->seedDevelopmentRecords($students);
         $this->seedTridharmaJourney($students);
+    }
+
+    private function seedCrossModuleApprovalTemplates(User $admin): void
+    {
+        $templates = [
+            'SERVICE_LETTER_REVIEW' => [
+                'name' => 'Review Surat Layanan Mahasiswa',
+                'module' => 'student-services',
+                'description' => 'Alur approval untuk pengajuan surat layanan akademik mahasiswa.',
+                'steps' => [
+                    [1, 'Review Layanan Akademik', 'service-letter-request.update', 24],
+                ],
+            ],
+            'STUDENT_LEAVE_REVIEW' => [
+                'name' => 'Review Cuti Mahasiswa',
+                'module' => 'student-services',
+                'description' => 'Alur approval untuk pengajuan cuti akademik mahasiswa.',
+                'steps' => [
+                    [1, 'Review Layanan Akademik', 'leave-application.update', 24],
+                ],
+            ],
+            'STUDENT_TRANSFER_REVIEW' => [
+                'name' => 'Review Pindah Internal Mahasiswa',
+                'module' => 'student-services',
+                'description' => 'Alur approval untuk pengajuan pindah program studi, fakultas, atau kelas.',
+                'steps' => [
+                    [1, 'Review Akademik', 'transfer-request.update', 48],
+                    [2, 'Review Administrasi dan Biaya', 'transfer-request.update', 48],
+                ],
+            ],
+            'GRADUATION_REVIEW' => [
+                'name' => 'Review Yudisium Mahasiswa',
+                'module' => 'student-services',
+                'description' => 'Alur approval untuk pengajuan yudisium setelah checklist dan dokumen terpenuhi.',
+                'steps' => [
+                    [1, 'Review Dokumen dan Checklist', 'graduation-application.update', 48],
+                    [2, 'Persetujuan Akademik', 'graduation-application.update', 48],
+                ],
+            ],
+            'INSTALLMENT_REQUEST_REVIEW' => [
+                'name' => 'Review Cicilan Invoice',
+                'module' => 'financial',
+                'description' => 'Alur approval untuk pengajuan cicilan tagihan mahasiswa.',
+                'steps' => [
+                    [1, 'Review Finance', 'installment-request.update', 24],
+                ],
+            ],
+        ];
+
+        foreach ($templates as $code => $config) {
+            foreach (collect($config['steps'])->pluck(2)->unique() as $permission) {
+                Permission::findOrCreate($permission, 'web');
+            }
+
+            $template = ApprovalTemplate::updateOrCreate(
+                ['code' => $code],
+                [
+                    'name' => $config['name'],
+                    'module' => $config['module'],
+                    'description' => $config['description'],
+                    'is_active' => true,
+                    'created_by' => $admin->id,
+                    'updated_by' => $admin->id,
+                ],
+            );
+
+            foreach ($config['steps'] as [$order, $name, $permission, $sla]) {
+                $template->steps()->updateOrCreate(
+                    ['step_order' => $order],
+                    [
+                        'name' => $name,
+                        'approver_type' => 'permission',
+                        'approver_permission' => $permission,
+                        'approver_user_id' => null,
+                        'approver_role' => null,
+                        'organizational_position_id' => null,
+                        'work_unit_id' => null,
+                        'is_required' => true,
+                        'can_reject' => true,
+                        'sla_hours' => $sla,
+                        'created_by' => $admin->id,
+                        'updated_by' => $admin->id,
+                    ],
+                );
+            }
+        }
+
+        if ($admin->hasRole('superuser')) {
+            $admin->roles()->where('name', 'superuser')->first()?->givePermissionTo(Permission::where('guard_name', 'web')->get());
+        }
     }
 
     private function seedWorkloadAndEdomFoundation(User $admin): void

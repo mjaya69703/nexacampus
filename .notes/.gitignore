@@ -1,3 +1,5 @@
 *.md
 !has-been-implemented.md
 !will-be-implemented.md
+!AI_DEVELOPMENT_MEMORY.md
+!PATTERN-QUICK-REFERENCE.md

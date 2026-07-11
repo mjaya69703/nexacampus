@@ -3,17 +3,24 @@
 namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\AcademicYear;
+use App\Models\Academic\Course;
 use App\Models\Academic\CourseOffering;
+use App\Models\Academic\StudyProgram;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class CourseOfferingTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'courseOfferingTable';
 
     protected ?string $bulkActionModel = CourseOffering::class;
@@ -24,7 +31,7 @@ final class CourseOfferingTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -91,6 +98,42 @@ final class CourseOfferingTable extends BasePowerGridTable
             Column::make('Created At', 'created_at')
                 ->sortable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('academic_year_name', 'academic_year_id')
+                ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('academic_year_id', $value)),
+            Filter::select('study_program_name', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
+            Filter::select('course_name', 'course_id')
+                ->dataSource(Course::query()->orderBy('code')->get(['id', 'code', 'name'])->map(fn (Course $course) => [
+                    'id' => $course->id,
+                    'name' => $course->code.' - '.$course->name,
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('course_id', $value)),
+            Filter::select('semester_no', 'semester_no')
+                ->dataSource(collect(range(1, 8))->map(fn (int $semester) => ['id' => $semester, 'name' => 'Semester '.$semester]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('delivery_mode', 'delivery_mode')
+                ->dataSource(CourseOffering::query()->select('delivery_mode')->distinct()->orderBy('delivery_mode')->pluck('delivery_mode')->filter()->map(fn (string $mode) => ['id' => $mode, 'name' => $mode]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('status', 'status')
+                ->dataSource(CourseOffering::query()->select('status')->distinct()->orderBy('status')->pluck('status')->filter()->map(fn (string $status) => ['id' => $status, 'name' => $status]))
+                ->optionValue('id')
+                ->optionLabel('name'),
         ];
     }
 

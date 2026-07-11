@@ -5,11 +5,16 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Academic\LecturerProfile;
 use App\Models\Academic\StudentProfile;
+use App\Models\Alumni\AlumniProfile;
 use App\Models\Organization\EmployeeProfile;
+use App\Models\Organization\TridharmaRecord;
+use App\Models\Organization\UserDevelopmentRecord;
 use App\Models\Organization\WorkUnit;
+use App\Models\Settings\PushNotificationSubscription;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -138,6 +143,11 @@ class User extends Authenticatable
         return $this->hasOne(EmployeeProfile::class);
     }
 
+    public function alumniProfile(): HasOne
+    {
+        return $this->hasOne(AlumniProfile::class);
+    }
+
     public function workUnits(): BelongsToMany
     {
         return $this->belongsToMany(WorkUnit::class, 'work_unit_user')
@@ -150,14 +160,19 @@ class User extends Authenticatable
         return $this->workUnits()->wherePivot('is_active', true);
     }
 
-    public function developmentRecords(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function pushNotificationSubscriptions(): HasMany
     {
-        return $this->hasMany(\App\Models\Organization\UserDevelopmentRecord::class);
+        return $this->hasMany(PushNotificationSubscription::class);
     }
 
-    public function tridharmaRecords(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function developmentRecords(): HasMany
     {
-        return $this->hasMany(\App\Models\Organization\TridharmaRecord::class);
+        return $this->hasMany(UserDevelopmentRecord::class);
+    }
+
+    public function tridharmaRecords(): HasMany
+    {
+        return $this->hasMany(TridharmaRecord::class);
     }
 
     // Prefix untuk route names berdasarkan active role
@@ -174,6 +189,7 @@ class User extends Authenticatable
             'student' => 'student.',
             'lecturer' => 'lecturer.',
             'academic-leader' => 'academic-leader.',
+            'alumni' => 'alumni.',
             default => 'admin.',
         };
     }

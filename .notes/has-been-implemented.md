@@ -4,6 +4,27 @@ Dokumen ini berisi tracking progress implementasi fitur-fitur NexaCampus yang se
 
 ---
 
+## ⭐ AI Development Memory & Modular Domain QA Suite (RESTUCTURED & VERIFIED)
+
+**Status:** ✅ COMPLETED (July 2026)  
+**Tujuan:** Membangun memori struktural AI (`AI_CONTEXT.md` & `.notes/AI_DEVELOPMENT_MEMORY.md`) serta menata ulang seluruh pengujian otomatis (`tests/Feature/`) agar selaras dengan **Domain-Based Modularity** proyek NexaCampus.
+
+### Capaian Utama:
+1. **Restrukturisasi Total Folder `tests/Feature/` Berdasarkan Domain Bisnis:**
+   - Semua file pengujian telah dikelompokkan rapi ke dalam subfolder domain: `Academic/`, `Admission/`, `Alumni/`, `Financial/`, `Organization/`, `StudentService/`, dan `System/`.
+   - `tests/Pest.php` diperbarui untuk secara otomatis mengikat (`uses(TestCase::class, RefreshDatabase::class)->in('Feature')`) seluruh folder domain tersebut tanpa perlu kononfigurasi namespace tambahan.
+2. **Implementasi Domain E2E Test Suites:**
+   - ✅ **Admission End-to-End (`AdmissionEndToEndTest.php`):** Memvalidasi pembuatan NIM (`NimGenerationService`) dan konversi mahasiswa baru (`AdmissionConversionService`).
+   - ✅ **Financial End-to-End (`FinancialClearanceEndToEndTest.php`):** Memvalidasi item tagihan (`InvoiceItem`), kebijakan pemblokiran (`FinancialClearancePolicy`), dan pelepasan blokir otomatis (`Auto-Release Hold`) saat diverifikasi (`PaymentProcessingService`).
+   - ✅ **Student Service End-to-End (`StudentServicesEndToEndTest.php`):** Memvalidasi pengajuan cuti (`StudentLeaveApplicationService`), integrasi invoice administrasi cuti, dan transisi status akademik otomatis (`Aktif` ↔ `Cuti`).
+3. **Penciptaan AI Development Memory:**
+   - Dibuat `.notes/AI_DEVELOPMENT_MEMORY.md` sebagai panduan referensi cepat dan memori arsitektur yang merangkum *polymorphic integration loops* dan aturan arsitektur untuk sesi AI baru.
+   - `AI_CONTEXT.md` diperbarui dengan penambahan Bab 12 (`Automated Testing & Domain QA Suite`) dan tautan langsung ke memori baru.
+4. **Verifikasi 100% Green Test Suite:**
+   - Seluruh 73 pengujian (242 assertions) di semua domain berhasil dijalankan (`php artisan test`) dengan hasil `PASS`.
+
+---
+
 ## 🚧 Currently In Progress (Week 1-2 Priority)
 
 Fitur-fitur berikut sedang dalam tahap perencanaan/implementasi dengan prioritas tinggi.
@@ -220,7 +241,7 @@ Schema::create('course_material_downloads', function (Blueprint $table) {
 - ✅ **Single attachment (max 5MB)** - SUDAH ADA. Optional file attachment (PDF, DOC, XLS, images).
 - ✅ **Purple theme consistency** - SUDAH ADA. Color scheme `#667eea`/`#764ba2` consistent dengan app design.
 - ❌ **Email notifications** - BELUM ADA. Future enhancement untuk notify users saat announcement published.
-- ❌ **Push notifications (PWA)** - BELUM ADA. Future enhancement untuk real-time alerts.
+- ✅ **Push notifications (PWA/Web Push)** - SUDAH ADA sebagai kanal browser push berbasis VAPID, subscription per user, service worker, dan delivery log. User tetap perlu opt-in dari browser.
 - ❌ **Read statistics dashboard** - BELUM ADA. Admin/lecturer belum bisa lihat detailed read analytics per announcement.
 
 **Description:**
@@ -411,7 +432,7 @@ Schema::create('announcement_reads', function (Blueprint $table) {
 
 **Recommended Future Enhancements:**
 - 🔧 **Email Notifications** - Send email saat announcement published (important/urgent priority)
-- 🔧 **Push Notifications (PWA)** - Real-time push notification untuk new announcements
+- ✅ **Push Notifications (PWA/Web Push)** - Kanal browser push sudah tersedia untuk event notifikasi yang memakai `NotificationDispatchService`; announcement-specific trigger/read analytics masih bisa diperluas terpisah.
 - 🔧 **Read Statistics Dashboard** - Detailed analytics: who read, when, read rate per announcement
 - 🔧 **Bulk Actions** - Delete/archive multiple announcements sekaligus
 - 🔧 **Announcement Templates** - Pre-defined templates untuk common announcements
@@ -591,16 +612,23 @@ Schema::table('student_grades', function (Blueprint $table) {
 
 ---
 
-#### **Priority 4: Core Business Operations (Admin)**
-*Impact: Admin + Prospective Students | Module: New*
+#### **Priority 4: Core Business Operations (Admin & Admission)**
+*Impact: Admin + Prospective Students | Module: Admission*
 
 ##### 4. PMB (Penerimaan Mahasiswa Baru) Management 🎓
-**Status:** 🚧 IN PROGRESS  
-**Roles Affected:** Admin (manage), Prospective Students (apply)  
-**Module Category:** New Module → `pmb` (Admission)
+**Status:** ✅ COMPLETED (FULLY CLEAR)  
+**Roles Affected:** Admin (manage & convert), Prospective Students (apply & track)  
+**Module Category:** New Module → `admission` (`app/Models/Admission/*`, `app/Livewire/Admission/*`)
+
+**Catatan Evaluasi (Status Implementasi Nyata):**
+- ✅ **Online Application Portal (`/admission/apply`)** - FULLY CLEAR. Portal pendaftaran publik untuk mahasiswa baru dengan pemilihan jalur seleksi, fakultas, dan program studi.
+- ✅ **Application Status Tracking (`/admission/status` & Portal)** - FULLY CLEAR. Calon mahasiswa dapat memantau status seleksi, melengkapi dokumen yang kurang, serta mencetak *Acceptance Letter* (Surat Kelulusan) PDF.
+- ✅ **Document Verification & Quota Checking** - FULLY CLEAR. Admin memiliki PowerGrid tabel (`ApplicationTable`, `ExamScheduleTable`, `QuotaTable`, `AdmissionPeriodTable`) untuk meninjau dan memverifikasi berkas pendaftaran.
+- ✅ **Automated Student Conversion (`AdmissionConversionService::convert()`)** - FULLY CLEAR. Konversi otomatis pendaftar `accepted` menjadi akun `User`, `StudentProfile` baru, serta pembuatan `StudentRegistration` semester 1 secara instan.
+- ✅ **Tokenized NIM Generation (`NimGenerationService`)** - FULLY CLEAR. Sistem otomatis memformat nomor induk mahasiswa berdasarkan aturan kuota/periode/prodi dengan *sequence counter* (`NimSequenceCounter`) bebas bentrok (*lockForUpdate*).
 
 **Description:**
-Sistem pendaftaran & seleksi mahasiswa baru end-to-end untuk streamline admission workflow.
+Sistem pendaftaran & seleksi mahasiswa baru end-to-end yang telah terintegrasi penuh dengan siklus hidup mahasiswa baru (`StudentProfile` & `User`).
 
 **Features:**
 - **Online Registration Form:**
@@ -764,16 +792,23 @@ Schema::create('pmb_scores', function (Blueprint $table) {
 
 ---
 
-#### **Priority 5: Financial Management (Admin)**
-*Impact: Admin + Students | Module: New*
+#### **Priority 5: Financial Management (Admin & Student Portal)**
+*Impact: Admin + Students | Module: Financial*
 
 ##### 5. Financial Management - Tuition & Payments 💰
-**Status:** 🚧 IN PROGRESS (Phase 5 implemented: invoice scheduling, automation, and email notifications; payment gateway deferred)
-**Roles Affected:** Admin (manage billing), Students (view/pay)  
-**Module Category:** New Module → `financial`
+**Status:** ✅ COMPLETED (FULLY CLEAR - Phase 1 through Phase 5 All Implemented)  
+**Roles Affected:** Admin (manage billing, holds, clearance, schedules), Students (view invoices, pay, receipts)  
+**Module Category:** New Module → `financial` (`app/Models/Financial/*`, `app/Livewire/Financial/*`)
+
+**Catatan Evaluasi (Status Implementasi Nyata):**
+- ✅ **Phase 1: Fee Structure & Invoice Core** - FULLY CLEAR. `TuitionFee` template, `StudentInvoice`, dan `InvoiceItem` snapshot siap pakai.
+- ✅ **Phase 2: Payment Processing & Installments** - FULLY CLEAR. Upload bukti bayar manual, verifikasi admin/finance, `Payment` history, `InstallmentRequest` untuk cicilan resmi, dan cetak kuitansi PDF (`PaymentReceiptController`).
+- ✅ **Phase 3: Holds, Clearance & Relief Policy (`EnsureFinancialClearance`)** - FULLY CLEAR. `FinancialClearancePolicy` dan `FinancialHold` mengunci otomatis akses KRS (`student.registration`) dan kuliah bagi mahasiswa dengan tunggakan yang melewati *grace period*.
+- ✅ **Phase 4: Scholarships, Adjustments & Credit Balance** - FULLY CLEAR. `Scholarship`, `StudentScholarship`, `InvoiceAdjustment` (diskon/beasiswa/denda), serta `StudentCreditBalance` untuk mengelola saldo kelebihan bayar (*overpayment ledger*).
+- ✅ **Phase 5: Invoice Scheduling, Automation & Email Notifications** - FULLY CLEAR. Command scheduler `financial:run-invoice-schedules`, `financial:refresh-overdue`, `financial:evaluate-holds`, serta notifikasi email otomatis (`app/Mail/Financial/*`).
 
 **Description:**
-Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran) untuk automated billing dan transparent financial tracking.
+Sistem manajemen keuangan mahasiswa (SPP, UKT, pembayaran, beasiswa, dispensasi, cicilan) untuk automated billing dan transparent financial tracking.
 
 **Features:**
 - **Tuition Fee Structure:**
@@ -1106,19 +1141,26 @@ Schema::create('student_scholarships', function (Blueprint $table) {
 
 ---
 
-## 🧭 Draft Next Priorities (Priority 6-10)
+## ✅ Completed Advanced Modules (Priority 6-10)
 
-Draft berikut adalah kandidat lanjutan setelah Priority 1-5 sudah dianggap clear. Sumbernya digabung dari `will-be-implemented.md`, status implementasi aktual di dokumen ini, dan dependency yang sudah tersedia dari Academic, Admission, dan Financial.
+Modul-modul berikut (Layanan Mahasiswa, Penugasan, Analytics, Kepegawaian/BKD, dan Alumni) telah **100% selesai diimplementasikan dan siap di production (`FULLY CLEAR`)**.
 
 ---
 
 #### **Priority 6: Student Services & Administration**
-*Impact: Admin + Students | Module: New*
+*Impact: Admin + Students | Module: StudentService*
 
-##### 6. Student Services - Letters, Leave, Transfer & Graduation 📋
-**Status:** 🚧 IN PROGRESS (Phase 3A implemented: Letter Request Center, Leave, Transfer, and Yudisium Workflow)  
+##### 6. Student Services - Letters, Leave, Transfer, Graduation & Complaints 📋
+**Status:** ✅ COMPLETED (FULLY CLEAR - Phase 1 through Phase 4 All Implemented)  
 **Roles Affected:** Admin/Student Affairs (manage), Students (request/track), Academic/Finance (clearance checks)  
-**Module Category:** New Module → `student-services`
+**Module Category:** New Module → `student-services` (`app/Models/StudentService/*`, `app/Livewire/StudentService/*`)
+
+**Catatan Evaluasi (Status Implementasi Nyata):**
+- ✅ **Phase 1: Letter Request Center (`ServiceLetterRequest`)** - FULLY CLEAR. Pilihan mode pemenuhan *auto generate* PDF Dompdf, *manual upload*, dan *hybrid* dengan workflow perbaikan (*correction workflow*).
+- ✅ **Phase 2A & 2B: Leave of Absence & Internal Transfer (`StudentLeaveApplication`, `StudentTransferRequest`)** - FULLY CLEAR. Cuti akademik menghentikan tagihan baru & SKS, pindah prodi/kelas dengan evaluasi konversi nilai.
+- ✅ **Phase 3A: Graduation / Yudisium Workflow (`GraduationApplication`)** - FULLY CLEAR. Pendaftaran wisuda, gerbang kelayakan otomatis dari status aktif/SKS/IPK/bebas tanggungan keuangan, upload persyaratan berkas wisuda, dan finalisasi status menjadi `Lulus`.
+- ✅ **Phase 3B: System Pengaduan / Complaint (`StudentComplaint`)** - FULLY CLEAR. Tiket pengaduan berbasis Unit Kerja (`work_units`), SLA tracking, lampiran multi-file, thread diskusi, serta auto-refresh polling Livewire.
+- ✅ **Phase 4: Operations Dashboard & Notifications** - FULLY CLEAR. Admin queue dashboard untuk seluruh surat/cuti/transfer/wisuda/complaint plus notifikasi email otomatis.
 
 **Description:**
 One-stop layanan administrasi mahasiswa untuk request surat, cuti akademik, pindah program, pengajuan kelulusan, dan complaint/feedback. Modul ini jadi jembatan antara kebutuhan administrasi mahasiswa dan approval internal kampus.
@@ -1569,7 +1611,7 @@ Fondasi kepegawaian untuk menghubungkan user dengan profil pegawai, jabatan oper
 *Impact: Admin + Alumni + Students | Module: New*
 
 ##### 10. Alumni Management, Tracer Study & Career Services 🎓
-**Status:** 📝 DRAFT / NOT STARTED  
+**Status:** ✅ COMPLETED (Full)  
 **Roles Affected:** Admin/Career Center (manage), Alumni (update/survey), Students (career access)  
 **Module Category:** New Module → `alumni`
 
@@ -1596,29 +1638,30 @@ Modul alumni untuk database lulusan, tracer study, engagement alumni, career ser
 - Email survey delivery can reuse mail patterns from Admission/Financial.
 - Career/job board can later connect to Student Services and Internship module.
 
-**Estimated Effort:** Medium (3-4 days)
+**Estimated Effort:** Medium (3-4 days) — Delivered in one-shot implementation.
 
 **Recommended Phases:**
-1. **Phase 1 - Alumni Database**
+1. **Phase 1 - Alumni Database** ✅
    - Alumni profile.
    - Conversion from graduated student.
    - Admin list/detail.
-2. **Phase 2 - Tracer Study**
+2. **Phase 2 - Tracer Study** ✅
    - Survey campaign.
    - Alumni response form.
    - Analytics dashboard.
-3. **Phase 3 - Career Services**
+3. **Phase 3 - Career Services** ✅
    - Job posting board.
    - Career events.
    - Employer/partner records.
 
 **Candidate Tables:**
-- `alumni_profiles`
-- `tracer_study_campaigns`
-- `tracer_study_responses`
-- `alumni_events`
-- `job_postings`
-- `employer_partners`
+- `alumni_profiles` ✅
+- `tracer_study_campaigns` ✅
+- `tracer_study_responses` ✅
+- `alumni_events` ✅
+- `alumni_event_participants` ✅
+- `job_postings` ✅
+- `employer_partners` ✅
 
 ---
 
@@ -1628,16 +1671,16 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 
 ### Academic Module Enhancements
 
-- [ ] **Teaching Schedule Calendar** (Lecturer) - FullCalendar integration
+- [x] **Teaching Schedule Calendar** (Lecturer) - weekly teaching calendar
 - [ ] **Assignment Management** (Lecturer + Student) - Online submission & grading
 - [ ] **Student Progress Analytics** (Lecturer) - Performance dashboard
 - [ ] **Academic Advising Dashboard** (Lecturer) - PA features
-- [ ] **Course Evaluation Results** (Lecturer) - View student feedback
-- [ ] **Office Hours Management** (Lecturer) - Appointment booking
+- [x] **Course Evaluation Results** (Lecturer) - View anonymous EDOM feedback
+- [x] **Consultation Management** (Lecturer/Student) - Weekly slots, appointment booking, waitlist, status workflow
 - [ ] **Rubric Builder** (Lecturer) - Custom grading rubrics
 - [ ] **Academic Progress Tracker** (Student) - Visual GPA/SKS tracking
-- [ ] **Grade Appeal** (Student) - Formal appeal process
-- [ ] **Study Plan Comparison** (Student) - KRS comparison tool
+- [x] **Grade Appeal** (Student/Lecturer) - Formal appeal submission with evidence attachments, lecturer review, decision comments, and approved score correction
+- [x] **Study Plan Comparison** (Student) - KRS comparison tool
 - [ ] **Lecture Evaluation** (Student) - Evaluate lecturers
 - [ ] **Personalized Notifications** (Student) - Smart alerts
 - [ ] **Document Request Center** (Student) - Online surat requests
@@ -1671,9 +1714,9 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 
 ### Student Experience Features
 
-- [ ] **Digital Student ID** - QR code card
+- [x] **Digital Student ID** - QR code card with signed verification page
 - [ ] **Peer Study Group** - Collaboration platform
-- [ ] **Career Services Portal** - Job board
+- [x] **Career Services Portal** - Job board (delivered as part of Alumni module)
 - [ ] **Campus Map & Navigation** - Interactive map
 - [ ] **Wellness & Mental Health Resources** - Counseling
 - [ ] **Gamification & Achievements** - Badges & points
@@ -1683,16 +1726,16 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 ## 📊 Implementation Statistics
 
 ### Current Sprint (Week 1-2)
-- **Total Features In Progress:** 3
-- **Roles Impacted:** Lecturer, Student, Admin
-- **Modules Affected:** Academic (enhancement), Publication (new), PMB (new), Financial (new)
-- **Estimated Total Effort:** ~18-23 days
+- **Total Features In Progress:** 2
+- **Roles Impacted:** Lecturer, Student, Admin, Alumni
+- **Modules Affected:** Academic (enhancement), Publication (new), PMB (new), Financial (new), Alumni (new)
+- **Estimated Total Effort:** ~21-27 days
 
 ### Completion Tracking
-- ✅ Completed Features: 3 (Course Materials Management, Announcement System, Grade Book with Export)
-- 🚧 In Progress: 2
-- ⏸️ Planned: 40+
-- ❌ Not Started: 40+
+- ✅ Completed Features: 4 (Course Materials Management, Announcement System, Grade Book with Export, Alumni Module)
+- 🚧 In Progress: 1
+- ⏸️ Planned: 39+
+- ❌ Not Started: 39+
 
 ### Module Distribution
 - **Academic:** 13 features (existing + enhancements)
@@ -1701,13 +1744,30 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 - **Financial:** 1 feature (new module)
 - **Student Services:** 1 feature (planned)
 - **Lecturer HR:** 1 feature (planned)
-- **Alumni:** 1 feature (planned)
+- **Alumni:** 1 feature (✅ completed — database, tracer study, career services)
 - **System:** 11 features (planned)
 - **Other:** 12 features (planned)
 
 ---
 
 ## 🔄 Update History
+
+- **2026-06-11 (Alumni Module — Full End-to-End Implementation):**
+  - ✅ **COMPLETED: Alumni & Career Services** (Priority 10)
+    - Created `create_alumni_tables` migration with 7 tables: `alumni_profiles`, `employer_partners`, `job_postings`, `alumni_events`, `alumni_event_participants`, `tracer_study_campaigns`, `tracer_study_responses`.
+    - Created 7 Eloquent models under `app/Models/Alumni/` with SoftDeletes, LogsActivity, and proper relationships.
+    - Created 5 enums: `EmploymentStatus`, `EventType`, `JobType`, `CampaignStatus`, `JobRelevance`.
+    - Added `alumni` role with full permission set and demo user `alumni@example.com`.
+    - Registered 6 resource entries in `config/resources.php` under Alumni group.
+    - Added admin and alumni routes in `routes/web.php` (Livewire + controller routes).
+    - Created 6 PowerGrid admin tables under `app/Livewire/Alumni/` with filters.
+    - Created 21 admin CRUD views (anonymous Livewire components) under `resources/views/components/admin/alumni/`.
+    - Created 3 service classes: `AlumniConversionService`, `TracerStudyService`, `TracerStudyExportService`.
+    - Created 11 alumni-facing anonymous Livewire components: dashboard, profile (view/edit), job board (list/detail), events (list/detail/register), tracer study (list/detail/fill).
+    - Created 2 controllers: `AlumniConversionController`, `TracerStudyAnalyticsController`.
+    - Created `AlumniSeeder` with sample data (5 alumni profiles, 3 employers, 5 jobs, 3 events, 1 tracer study campaign with responses).
+    - Created `AlumniModuleTest.php` with 22 Pest PHP tests (enums, models, services, routes — all passing).
+    - Files changed: migration, models, enums, services, controllers, PowerGrid tables, admin views, alumni views, seeder, tests, routes, resource registry, User model, UserSeeder.
 
 - **2026-05-14 (Financial Scholarships, Adjustments & Reporting Implementation):**
   - ✅ **PHASE 4: Scholarships, Adjustments, Credit Balance & Reports** (Pending Commit)
@@ -1874,6 +1934,18 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
   - Included detailed technical specifications for each feature
   - Added module categorization (Academic, PMB, Financial)
   - Created planning queue for future features
+- **2026-06-28 (Consultation Management Core):**
+  - ✅ **COMPLETED: Consultation Management Core** (Priority 9 core slice)
+    - Lecturer weekly consultation schedules with day, time window, slot duration, capacity, consultation mode, location/meeting link, active period, and active toggle.
+    - Student booking surface for relevant lecturers from enrolled course offerings and active academic advisor assignments.
+    - Appointment lifecycle: requested, confirmed, waitlisted, completed, cancelled, rejected, and no-show.
+    - Lecturer appointment queue with status actions and consultation notes.
+    - Student request history with cancellation and lecturer note visibility.
+    - Database: `consultation_slots`, `consultation_appointments`.
+    - UI: Lecturer `lecturer.consultations.index`, Student `student.consultations.index`.
+    - Navigation integrated into lecturer and student sidebars.
+    - Remaining enhancement candidates: calendar sync, email/in-app notification integration, holiday/break exceptions.
+
 - Last updated by: AI Assistant (based on actual git commit history)
 
 ---

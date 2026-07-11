@@ -21,7 +21,8 @@ new class extends Component {
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Daftar Jadwal Kuliah</h3>
-            <div class="card-tools">
+            <div class="card-tools d-flex gap-2 flex-wrap justify-content-end">
+                @include('templates.import.academic.grid-actions')
                 @activecan('course-schedule.create')
                 <a href="{{ route('admin.academic.course-schedules.create') }}" class="btn btn-ghost-primary">
                     <i class="fa fa-plus me-2"></i> Tambah Jadwal Kuliah

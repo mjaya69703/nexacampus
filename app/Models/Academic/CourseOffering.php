@@ -97,4 +97,9 @@ class CourseOffering extends Model
     {
         return $this->hasMany(Assignment::class);
     }
+
+    public function gradeAppeals(): HasMany
+    {
+        return $this->hasMany(GradeAppeal::class);
+    }
 }

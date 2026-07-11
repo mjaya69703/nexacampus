@@ -4,16 +4,22 @@ namespace App\Livewire\Academic;
 
 use App\Livewire\BasePowerGridTable;
 use App\Models\Academic\AttendanceSession;
+use App\Models\Academic\CourseOffering;
+use App\Models\Academic\StudyProgram;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class AttendanceSessionTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'attendanceSessionTable';
 
     protected ?string $bulkActionModel = AttendanceSession::class;
@@ -24,7 +30,7 @@ final class AttendanceSessionTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -79,6 +85,31 @@ final class AttendanceSessionTable extends BasePowerGridTable
             Column::make('Status', 'status')->sortable(),
             Column::make('Absensi', 'records_count')->sortable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('course_label', 'course_offering_id')
+                ->dataSource(CourseOffering::query()->with('course')->orderByDesc('created_at')->get()->map(fn (CourseOffering $offering) => [
+                    'id' => $offering->id,
+                    'name' => ($offering->course?->code ?? '-').' - '.($offering->course?->name ?? '-').' / '.$offering->label,
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('course_offering_id', $value)),
+            Filter::select('study_program', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('courseOffering', fn (Builder $offering) => $offering->where('study_program_id', $value))),
+            Filter::select('status', 'status')
+                ->dataSource(AttendanceSession::query()->select('status')->distinct()->orderBy('status')->pluck('status')->filter()->map(fn (string $status) => ['id' => $status, 'name' => $status]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::datepicker('meeting_date', 'meeting_date'),
+            Filter::number('meeting_no', 'meeting_no'),
         ];
     }
 

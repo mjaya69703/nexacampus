@@ -3,10 +3,17 @@
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Settings\Campus;
+use App\Models\Settings\NotificationSetting;
 use App\Models\Settings\System;
+use App\Models\User;
+use App\Support\Notifications\NotificationDispatchService;
+use App\Support\Notifications\WhatsAppProviderManager;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
+use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
+use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 
 new class extends Component
 {
@@ -20,15 +27,26 @@ new class extends Component
     public $tab = 'aplikasi';
     public $campus;
     public $system;
+    public $notificationSetting;
+    public $notificationForm = [];
+    public $notificationHealth = [];
+    public ?string $testWhatsappRecipient = null;
+    public ?string $sidecarStatusMessage = null;
+    public bool $sidecarReachable = false;
+    public array $storedSidecarSessions = [];
     
     public function mount()
     {
 
         $this->campus = Campus::first() ?? new Campus();
         $this->system = System::first() ?? new System();
+        $this->notificationSetting = NotificationSetting::current();
 
         $this->campusForm = $this->campus->toArray();
         $this->systemForm = $this->system->toArray();
+        $this->notificationForm = $this->notificationSettingToForm($this->notificationSetting);
+        $this->notificationHealth = app(WhatsAppProviderManager::class)->health($this->notificationSetting);
+        $this->refreshSidecarStatus();
     }
 
     public function update()
@@ -67,6 +85,23 @@ new class extends Component
             'campusForm.linkedin' => 'nullable|string|max:255',
             'campusForm.xtwitter' => 'nullable|string|max:255',
             'campusForm.tiktok' => 'nullable|string|max:255',
+            // Validasi untuk notifikasi WhatsApp
+            'notificationForm.whatsapp_enabled' => 'boolean',
+            'notificationForm.web_push_enabled' => 'boolean',
+            'notificationForm.whatsapp_provider' => 'required|in:official_cloud_api,unofficial_web_session',
+            'notificationForm.fallback_channel' => 'required|in:in_app,email,none',
+            'notificationForm.retry_attempts' => 'required|integer|min:0|max:5',
+            'notificationForm.timeout_seconds' => 'required|integer|min:5|max:120',
+            'notificationForm.log_retention_days' => 'required|integer|min:7|max:3650',
+            'notificationForm.provider_response_retention_days' => 'required|integer|min:1|max:3650|lte:notificationForm.log_retention_days',
+            'notificationForm.official_config.access_token' => 'nullable|string|max:2000',
+            'notificationForm.official_config.phone_number_id' => 'nullable|string|max:255',
+            'notificationForm.official_config.business_account_id' => 'nullable|string|max:255',
+            'notificationForm.official_config.app_secret' => 'nullable|string|max:2000',
+            'notificationForm.official_config.verify_token' => 'nullable|string|max:255',
+            'notificationForm.unofficial_config.sidecar_url' => 'nullable|url|starts_with:http://,https://|max:255',
+            'notificationForm.unofficial_config.session_name' => 'nullable|string|max:64|regex:/^[A-Za-z0-9_\-]+$/',
+            'notificationForm.unofficial_config.shared_token' => 'nullable|string|max:2000',
         ]);
 
         DB::transaction(function () use ($validatedData) {
@@ -103,6 +138,23 @@ new class extends Component
             $campus->fill($validatedData['campusForm']);
             $campus->save();
 
+            $notification = $this->notificationSetting;
+            $notification->fill([
+                'whatsapp_enabled' => $validatedData['notificationForm']['whatsapp_enabled'] ?? false,
+                'web_push_enabled' => $validatedData['notificationForm']['web_push_enabled'] ?? false,
+                'whatsapp_provider' => $validatedData['notificationForm']['whatsapp_provider'],
+                'fallback_channel' => $validatedData['notificationForm']['fallback_channel'],
+                'retry_attempts' => $validatedData['notificationForm']['retry_attempts'],
+                'timeout_seconds' => $validatedData['notificationForm']['timeout_seconds'],
+                'log_retention_days' => $validatedData['notificationForm']['log_retention_days'],
+                'provider_response_retention_days' => $validatedData['notificationForm']['provider_response_retention_days'],
+                'official_config' => $validatedData['notificationForm']['official_config'] ?? [],
+                'unofficial_config' => $validatedData['notificationForm']['unofficial_config'] ?? [],
+            ]);
+            $notification->save();
+            $this->notificationSetting = $notification->fresh();
+            $this->notificationHealth = app(WhatsAppProviderManager::class)->health($this->notificationSetting);
+
             $this->reset([
                 'appFavicon',
                 'appLogoVertikal',
@@ -113,6 +165,191 @@ new class extends Component
         Cache::forget('global_system');
 
         session()->flash('success', 'Pengaturan kampus berhasil disimpan.');
+    }
+
+    public function checkWhatsappConfiguration()
+    {
+        $this->notificationHealth = app(WhatsAppProviderManager::class)->persistHealth($this->notificationSetting->fresh());
+
+        session()->flash(
+            $this->notificationHealth['status'] === 'ready' ? 'success' : 'warning',
+            $this->notificationHealth['message']
+        );
+    }
+
+    public function sendTestWhatsapp()
+    {
+        $validated = $this->validate([
+            'testWhatsappRecipient' => 'required|string|max:30',
+        ]);
+
+        $recipient = new User([
+            'first_name' => auth()->user()?->first_name ?: 'Admin',
+            'last_name' => auth()->user()?->last_name ?: '',
+            'email' => auth()->user()?->email ?: 'admin@example.test',
+            'phone' => $validated['testWhatsappRecipient'],
+        ]);
+
+        $log = app(NotificationDispatchService::class)->whatsapp($recipient, 'system.whatsapp_test', [
+            'recipient_name' => $recipient->name,
+            'provider' => str_replace('_', ' ', $this->notificationSetting->fresh()->whatsapp_provider),
+        ]);
+
+        session()->flash(
+            $log->status === 'sent' ? 'success' : 'warning',
+            'Test WhatsApp status: '.$log->status.($log->error_message ? ' - '.$log->error_message : '')
+        );
+    }
+
+    public function startBundledWhatsappSidecar()
+    {
+        $manager = app(SidecarManager::class);
+        $message = 'WhatsApp sidecar siap digunakan.';
+        $status = 'success';
+
+        try {
+            if (! app(WebClient::class)->ping()) {
+                $pid = $manager->start();
+                $message = 'WhatsApp sidecar sedang dinyalakan (pid '.$pid.').';
+            }
+
+            if (method_exists($manager, 'restorePersistedSessions')) {
+                $restored = $manager->restorePersistedSessions();
+
+                if ($restored !== []) {
+                    $message .= ' Session tersimpan dipulihkan: '.implode(', ', $restored).'.';
+                }
+            }
+
+            $this->waitForSidecar();
+        } catch (SidecarException $exception) {
+            $status = 'warning';
+            $message = $exception->getMessage();
+        } catch (\Throwable $exception) {
+            $status = 'warning';
+            $message = 'WhatsApp sidecar belum bisa dinyalakan: '.$exception->getMessage();
+        }
+
+        $this->refreshSidecarStatus();
+
+        session()->flash($status, $message);
+    }
+
+    public function stopBundledWhatsappSidecar()
+    {
+        $manager = app(SidecarManager::class);
+        $status = 'success';
+        $message = 'WhatsApp sidecar sudah dihentikan.';
+
+        try {
+            if (! $manager->stop()) {
+                $status = 'warning';
+                $message = 'Tidak ada proses sidecar yang tercatat aktif.';
+            }
+
+            $this->waitForSidecarStop();
+        } catch (\Throwable $exception) {
+            $status = 'warning';
+            $message = 'WhatsApp sidecar belum bisa dihentikan: '.$exception->getMessage();
+        }
+
+        $this->refreshSidecarStatus();
+
+        session()->flash($status, $message);
+    }
+
+    public function refreshSidecarStatus(bool $notify = false)
+    {
+        $manager = app(SidecarManager::class);
+        $this->storedSidecarSessions = method_exists($manager, 'persistedSessionIds')
+            ? $manager->persistedSessionIds()
+            : [];
+
+        try {
+            $this->sidecarReachable = app(WebClient::class)->ping();
+            $this->sidecarStatusMessage = $this->sidecarReachable
+                ? 'Sidecar bawaan aktif di http://'.config('laravel-whatsapp.web.host').':'.config('laravel-whatsapp.web.port')
+                : 'Sidecar bawaan belum aktif.';
+        } catch (\Throwable $exception) {
+            $this->sidecarReachable = false;
+            $this->sidecarStatusMessage = 'Sidecar bawaan belum aktif.';
+        }
+
+        if ($notify) {
+            session()->flash(
+                $this->sidecarReachable ? 'success' : 'warning',
+                'Status sidecar diperbarui: '.$this->sidecarStatusMessage
+            );
+        }
+    }
+
+    public function useStoredWhatsappSession(string $sessionId)
+    {
+        if (! preg_match('/^[A-Za-z0-9_\-]{1,64}$/', $sessionId)) {
+            session()->flash('warning', 'Session WhatsApp tidak valid.');
+
+            return;
+        }
+
+        $this->notificationForm['unofficial_config']['session_name'] = $sessionId;
+
+        session()->flash('success', 'Session Name diganti ke '.$sessionId.'. Simpan pengaturan agar dipakai untuk pengiriman.');
+    }
+
+    private function waitForSidecar(): void
+    {
+        for ($i = 0; $i < 30; $i++) {
+            usleep(250_000);
+
+            try {
+                if (app(WebClient::class)->ping()) {
+                    return;
+                }
+            } catch (\Throwable) {
+                //
+            }
+        }
+    }
+
+    private function waitForSidecarStop(): void
+    {
+        for ($i = 0; $i < 20; $i++) {
+            usleep(150_000);
+
+            try {
+                if (! app(WebClient::class)->ping()) {
+                    return;
+                }
+            } catch (\Throwable) {
+                return;
+            }
+        }
+    }
+
+    private function notificationSettingToForm(NotificationSetting $setting): array
+    {
+        return [
+            'whatsapp_enabled' => $setting->whatsapp_enabled,
+            'web_push_enabled' => $setting->web_push_enabled,
+            'whatsapp_provider' => $setting->whatsapp_provider ?: NotificationSetting::PROVIDER_OFFICIAL,
+            'fallback_channel' => $setting->fallback_channel ?: 'in_app',
+            'retry_attempts' => $setting->retry_attempts ?: 3,
+            'timeout_seconds' => $setting->timeout_seconds ?: 15,
+            'log_retention_days' => $setting->log_retention_days ?: 90,
+            'provider_response_retention_days' => $setting->provider_response_retention_days ?: 30,
+            'official_config' => array_merge([
+                'access_token' => '',
+                'phone_number_id' => '',
+                'business_account_id' => '',
+                'app_secret' => '',
+                'verify_token' => '',
+            ], $setting->official_config ?? []),
+            'unofficial_config' => array_merge([
+                'sidecar_url' => '',
+                'session_name' => 'main',
+                'shared_token' => '',
+            ], $setting->unofficial_config ?? []),
+        ];
     }
 
     public function render()
@@ -215,6 +452,11 @@ new class extends Component
                         <li class="nav-item">
                             <a class="nav-link {{ $tab === 'keamanan' ? 'active' : '' }}" wire:click="$set('tab', 'keamanan')" href="#keamanan" >
                                 <i class="fas fa-lock me-2"></i> Keamanan
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ $tab === 'notifikasi' ? 'active' : '' }}" wire:click="$set('tab', 'notifikasi')" href="#notifikasi" >
+                                <i class="fab fa-whatsapp me-2"></i> Notifikasi
                             </a>
                         </li>
                     </ul>
@@ -440,6 +682,211 @@ new class extends Component
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Tab Notifikasi -->
+                        <div class="tab-pane {{ $tab === 'notifikasi' ? 'active show' : '' }}" id="notifikasi" role="tabpanel">
+                            <div class="form-section">
+                                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                                    <div>
+                                        <h5 class="mb-1">Pengaturan Notifikasi</h5>
+                                        <small class="text-muted">Atur kanal WhatsApp dan Web Push tanpa mengikat modul lain ke implementasi provider tertentu.</small>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary" wire:click="checkWhatsappConfiguration">
+                                        <i class="fas fa-plug me-2"></i> Cek Konfigurasi
+                                    </button>
+                                </div>
+
+                                <div class="alert alert-{{ ($notificationHealth['status'] ?? null) === 'ready' ? 'success' : (($notificationHealth['status'] ?? null) === 'disabled' ? 'secondary' : 'warning') }} mb-4">
+                                    <div class="d-flex">
+                                        <div class="me-3">
+                                            <i class="fas fa-circle-info"></i>
+                                        </div>
+                                        <div>
+                                            <strong>Status: {{ str_replace('_', ' ', $notificationHealth['status'] ?? 'unknown') }}</strong>
+                                            <div>{{ $notificationHealth['message'] ?? 'Status konfigurasi belum tersedia.' }}</div>
+                                            @if (! empty($notificationHealth['issues']))
+                                                <ul class="mb-0 mt-2">
+                                                    @foreach ($notificationHealth['issues'] as $issue)
+                                                        <li>{{ $issue }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" wire:model.live="notificationForm.whatsapp_enabled">
+                                            <label class="form-check-label">Aktifkan WhatsApp</label>
+                                        </div>
+                                        <small class="text-muted">Jika nonaktif, modul tetap bisa memakai kanal fallback yang dipilih.</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" wire:model.live="notificationForm.web_push_enabled">
+                                            <label class="form-check-label">Aktifkan Web Push</label>
+                                        </div>
+                                        <small class="text-muted">Butuh VAPID key di env dan izin browser dari masing-masing user.</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Provider Aktif</label>
+                                        <select class="form-select" wire:model.live="notificationForm.whatsapp_provider">
+                                            <option value="official_cloud_api">Official - Meta Cloud API</option>
+                                            <option value="unofficial_web_session">Unofficial - Web Session Sidecar</option>
+                                        </select>
+                                        <small class="text-muted">Official direkomendasikan untuk production; unofficial cocok untuk kebutuhan internal atau uji coba terbatas.</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Fallback</label>
+                                        <select class="form-select" wire:model="notificationForm.fallback_channel">
+                                            <option value="in_app">Notifikasi aplikasi</option>
+                                            <option value="email">Email</option>
+                                            <option value="none">Tanpa fallback</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Retry</label>
+                                        <input type="number" class="form-control" wire:model="notificationForm.retry_attempts" min="0" max="5">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Timeout (detik)</label>
+                                        <input type="number" class="form-control" wire:model="notificationForm.timeout_seconds" min="5" max="120">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Retensi Log (hari)</label>
+                                        <input type="number" class="form-control" wire:model="notificationForm.log_retention_days" min="7" max="3650">
+                                        <small class="text-muted">Log notifikasi lama akan dihapus permanen setelah melewati batas ini.</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Retensi Provider Response (hari)</label>
+                                        <input type="number" class="form-control" wire:model="notificationForm.provider_response_retention_days" min="1" max="3650">
+                                        <small class="text-muted">Payload provider berisi data teknis dan dibersihkan lebih cepat dari log utama.</small>
+                                    </div>
+                                </div>
+
+                                @if (($notificationForm['whatsapp_provider'] ?? 'official_cloud_api') === 'official_cloud_api')
+                                    <hr>
+                                    <h6 class="mb-3">Meta Cloud API</h6>
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Access Token</label>
+                                            <input type="password" class="form-control" wire:model="notificationForm.official_config.access_token" autocomplete="new-password">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Phone Number ID</label>
+                                            <input type="text" class="form-control" wire:model="notificationForm.official_config.phone_number_id">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Business Account ID</label>
+                                            <input type="text" class="form-control" wire:model="notificationForm.official_config.business_account_id">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Verify Token</label>
+                                            <input type="password" class="form-control" wire:model="notificationForm.official_config.verify_token" autocomplete="new-password">
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">App Secret</label>
+                                            <input type="password" class="form-control" wire:model="notificationForm.official_config.app_secret" autocomplete="new-password">
+                                        </div>
+                                    </div>
+                                @else
+                                    <hr>
+                                    <h6 class="mb-3">Web Session Sidecar</h6>
+                                    <div class="alert alert-warning">
+                                        Provider unofficial memakai sidecar bawaan package. Buka <a href="{{ url('/whatsapp/sessions') }}" target="_blank" class="alert-link">/whatsapp/sessions</a> untuk start session dan scan QR. Sidecar URL hanya diisi kalau memakai service eksternal.
+                                    </div>
+                                    <div class="alert alert-{{ $sidecarReachable ? 'success' : 'secondary' }}">
+                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                            <div>
+                                                <strong>Status Sidecar:</strong> {{ $sidecarStatusMessage }}
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" wire:click="refreshSidecarStatus(true)" wire:loading.attr="disabled" wire:target="refreshSidecarStatus">
+                                                    <span wire:loading.remove wire:target="refreshSidecarStatus">
+                                                        <i class="fas fa-rotate me-1"></i> Refresh
+                                                    </span>
+                                                    <span wire:loading wire:target="refreshSidecarStatus">
+                                                        <i class="fas fa-spinner fa-spin me-1"></i> Cek...
+                                                    </span>
+                                                </button>
+                                                @if ($sidecarReachable)
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" wire:click="stopBundledWhatsappSidecar" wire:loading.attr="disabled" wire:target="stopBundledWhatsappSidecar">
+                                                        <span wire:loading.remove wire:target="stopBundledWhatsappSidecar">
+                                                            <i class="fas fa-stop me-1"></i> Stop Sidecar
+                                                        </span>
+                                                        <span wire:loading wire:target="stopBundledWhatsappSidecar">
+                                                            <i class="fas fa-spinner fa-spin me-1"></i> Menghentikan...
+                                                        </span>
+                                                    </button>
+                                                @else
+                                                    <button type="button" class="btn btn-sm btn-success" wire:click="startBundledWhatsappSidecar" wire:loading.attr="disabled" wire:target="startBundledWhatsappSidecar">
+                                                        <span wire:loading.remove wire:target="startBundledWhatsappSidecar">
+                                                            <i class="fas fa-play me-1"></i> Start Sidecar
+                                                        </span>
+                                                        <span wire:loading wire:target="startBundledWhatsappSidecar">
+                                                            <i class="fas fa-spinner fa-spin me-1"></i> Menyalakan...
+                                                        </span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Sidecar URL Override</label>
+                                            <input type="url" class="form-control" wire:model="notificationForm.unofficial_config.sidecar_url" placeholder="Kosongkan untuk sidecar bawaan package">
+                                            <small class="text-muted">Default bawaan package: http://127.0.0.1:3000.</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Session Name</label>
+                                            <input type="text" class="form-control" wire:model="notificationForm.unofficial_config.session_name" placeholder="main">
+                                            @if ($storedSidecarSessions !== [])
+                                                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                                                    <small class="text-muted">Session tersimpan:</small>
+                                                    @foreach ($storedSidecarSessions as $storedSession)
+                                                        <button type="button" class="btn btn-xs btn-outline-primary" wire:click="useStoredWhatsappSession(@js($storedSession))">
+                                                            {{ $storedSession }}
+                                                        </button>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Shared Token</label>
+                                            <input type="password" class="form-control" wire:model="notificationForm.unofficial_config.shared_token" autocomplete="new-password">
+                                            <small class="text-muted">Opsional. Jika kosong, sidecar bawaan memakai token internal dari APP_KEY.</small>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <a href="{{ url('/whatsapp/sessions') }}" target="_blank" class="btn btn-outline-success">
+                                                    <i class="fab fa-whatsapp me-2"></i> Buka QR Session
+                                                </a>
+                                                <a href="{{ url('/whatsapp') }}" target="_blank" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-gauge me-2"></i> Dashboard WhatsApp
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <hr>
+                                <h6 class="mb-3">Test Pengiriman</h6>
+                                <div class="row align-items-end">
+                                    <div class="col-md-8 mb-3">
+                                        <label class="form-label">Nomor Tujuan Test</label>
+                                        <input type="text" class="form-control" wire:model="testWhatsappRecipient" placeholder="Contoh: 081234567890">
+                                        @error('testWhatsappRecipient') <span class="text-danger">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <button type="button" class="btn btn-success w-100" wire:click="sendTestWhatsapp">
+                                            <i class="fab fa-whatsapp me-2"></i> Kirim Test
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-flex justify-content-end mt-3">
@@ -452,4 +899,3 @@ new class extends Component
         </div>
     </div>
 </div>
-

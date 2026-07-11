@@ -31,6 +31,7 @@ new class extends Component
             'reviewedBy',
             'approvedBy',
             'issuedBy',
+            'approvalRequest.steps.actedBy',
         ])->findOrFail($id);
 
         $this->adminNotes = $this->request->admin_notes;
@@ -50,8 +51,12 @@ new class extends Component
     public function approve(ServiceLetterRequestService $service): void
     {
         abort_unless(ActivePermission::check('service-letter-request.update'), 403);
-        $this->request = $service->setStatus($this->request, 'approved', $this->adminNotes, auth()->id());
-        session()->flash('success', 'Request berhasil diapprove.');
+        try {
+            $this->request = $service->approve($this->request, $this->adminNotes, auth()->id());
+            session()->flash('success', 'Request berhasil diapprove.');
+        } catch (\Throwable $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
         $this->reload();
     }
 
@@ -66,8 +71,12 @@ new class extends Component
     public function reject(ServiceLetterRequestService $service): void
     {
         abort_unless(ActivePermission::check('service-letter-request.update'), 403);
-        $this->request = $service->setStatus($this->request, 'rejected', $this->adminNotes, auth()->id());
-        session()->flash('success', 'Request ditolak.');
+        try {
+            $this->request = $service->reject($this->request, $this->adminNotes, auth()->id());
+            session()->flash('success', 'Request ditolak.');
+        } catch (\Throwable $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
         $this->reload();
     }
 
@@ -105,7 +114,7 @@ new class extends Component
             'issued' => 'bg-success',
             'approved' => 'bg-info',
             'under_review' => 'bg-primary',
-            'revision_requested' => 'bg-warning text-dark',
+            'revision_requested', 'in_approval' => 'bg-warning text-dark',
             'rejected', 'cancelled' => 'bg-danger',
             default => 'bg-secondary',
         };
@@ -115,6 +124,7 @@ new class extends Component
     {
         return match ($status) {
             'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Approval',
             default => str($status)->replace('_', ' ')->title()->toString(),
         };
     }
@@ -134,6 +144,7 @@ new class extends Component
             'reviewedBy',
             'approvedBy',
             'issuedBy',
+            'approvalRequest.steps.actedBy',
         ]);
     }
 };
@@ -241,7 +252,7 @@ new class extends Component
                     <button wire:click="markUnderReview" class="btn btn-outline-primary" @disabled(! in_array($request->status, ['submitted', 'revision_requested'], true))>
                         <i class="fas fa-search me-1"></i> Mark Under Review
                     </button>
-                    <button wire:click="approve" class="btn btn-success" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested'], true))>
+                    <button wire:click="approve" class="btn btn-success" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         <i class="fas fa-check me-1"></i> Approve
                     </button>
                     <button wire:click="requestRevision" class="btn btn-warning" @disabled(in_array($request->status, ['issued', 'rejected', 'cancelled'], true))>

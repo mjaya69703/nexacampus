@@ -9,11 +9,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
 
 final class AcademicYearTable extends BasePowerGridTable
 {
+    use ExportsPowerGridWithPhpSpreadsheet;
+
     public string $tableName = 'academicYearTable';
 
     protected ?string $bulkActionModel = AcademicYear::class;
@@ -24,7 +28,7 @@ final class AcademicYearTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
     }
 
     public function datasource(): Builder
@@ -85,6 +89,19 @@ final class AcademicYearTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('semester', 'semester')
+                ->dataSource(collect(['Ganjil', 'Genap', 'Pendek'])->map(fn (string $semester) => ['id' => $semester, 'name' => $semester]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('start_date', 'start_date'),
+            Filter::datepicker('end_date', 'end_date'),
         ];
     }
 

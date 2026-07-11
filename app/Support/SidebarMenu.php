@@ -147,13 +147,16 @@ class SidebarMenu
                 static::makeGroup('student-academic', 'Akademik', 'fas fa-graduation-cap', [
                     static::makeChildLink('student.registration.index', 'Registrasi'),
                     static::makeChildLink('student.study-plan.index', 'KRS'),
+                    static::makeChildLink('student.study-plan.comparison', 'Banding KRS'),
                     static::makeChildLink('student.schedule.index', 'Jadwal'),
                     static::makeChildLink('student.progress.index', 'Progress'),
                 ]),
                 static::makeGroup('student-learning', 'Pembelajaran', 'fas fa-book-open', [
                     static::makeChildLink('student.course-materials.index', 'Materi'),
                     static::makeChildLink('student.assignments.index', 'Tugas'),
+                    static::makeChildLink('student.consultations.index', 'Konsultasi'),
                     static::makeChildLink('student.grades.index', 'Nilai'),
+                    static::makeChildLink('student.grade-appeals.index', 'Keberatan Nilai'),
                     static::makeChildLink('student.transcript.index', 'Transkrip'),
                     static::makeChildLink('student.edom.index', 'Evaluasi Dosen'),
                 ]),
@@ -161,6 +164,7 @@ class SidebarMenu
                     static::makeChildLink('student.financial.invoices', 'Tagihan'),
                 ]),
                 static::makeGroup('student-services', 'Layanan', 'fas fa-hands-helping', [
+                    static::makeChildLink('student.digital-id.index', 'Kartu Mahasiswa'),
                     static::makeChildLink('student.student-services.letters', 'Surat'),
                     static::makeChildLink('student.student-services.leaves', 'Cuti Akademik'),
                     static::makeChildLink('student.student-services.transfers', 'Pindah Program'),
@@ -169,6 +173,17 @@ class SidebarMenu
                 ]),
                 static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
                     static::makeChildLink('student.announcements.index', 'Pengumuman'),
+                ]),
+            ]),
+            'alumni' => collect([
+                static::makeGroup('alumni-career', 'Karir & Lowongan', 'fas fa-briefcase', [
+                    static::makeChildLink('alumni.jobs.index', 'Job Board'),
+                ]),
+                static::makeGroup('alumni-events', 'Event & Networking', 'fas fa-calendar-star', [
+                    static::makeChildLink('alumni.events.index', 'Event Alumni'),
+                ]),
+                static::makeGroup('alumni-tracer', 'Tracer Study', 'fas fa-chart-bar', [
+                    static::makeChildLink('alumni.tracer-study.index', 'Survei Tracer'),
                 ]),
             ]),
             'lecturer' => static::lecturerMenus(),
@@ -192,6 +207,7 @@ class SidebarMenu
         $menus = collect([
             static::makeGroup('lecturer-teaching', 'Mengajar', 'fas fa-chalkboard-teacher', [
                 static::makeChildLink('lecturer.course-offerings.index', 'Kelas Saya'),
+                static::makeChildLink('lecturer.calendar.index', 'Kalender Mengajar'),
             ]),
             static::makeGroup('lecturer-learning', 'Pembelajaran', 'fas fa-book-open', [
                 static::makeChildLink('lecturer.course-materials.list', 'Materi'),
@@ -200,6 +216,8 @@ class SidebarMenu
             static::makeGroup('lecturer-assessment', 'Evaluasi', 'fas fa-chart-bar', [
                 static::makeChildLink('lecturer.student-grades.index', 'Nilai'),
                 static::makeChildLink('lecturer.student-grades.grade-book', 'Grade Book'),
+                static::makeChildLink('lecturer.grade-appeals.index', 'Keberatan Nilai'),
+                static::makeChildLink('lecturer.edom.index', 'Hasil EDOM'),
                 static::makeChildLink('lecturer.workloads.index', 'BKD Saya'),
             ]),
             static::makeGroup('lecturer-publication', 'Publikasi', 'fas fa-bullhorn', [
@@ -210,14 +228,16 @@ class SidebarMenu
             ]),
         ]);
 
-        if (! static::lecturerHasAdvisorAssignments()) {
-            return $menus;
+        $advisingChildren = [
+            static::makeChildLink('lecturer.consultations.index', 'Konsultasi'),
+        ];
+
+        if (static::lecturerHasAdvisorAssignments()) {
+            array_unshift($advisingChildren, static::makeChildLink('lecturer.academic-advising.index', 'Mahasiswa Bimbingan'));
         }
 
         $menus->splice(1, 0, [
-            static::makeGroup('lecturer-advising', 'Bimbingan Akademik', 'fas fa-user-graduate', [
-                static::makeChildLink('lecturer.academic-advising.index', 'Mahasiswa Bimbingan'),
-            ]),
+            static::makeGroup('lecturer-advising', 'Bimbingan Akademik', 'fas fa-user-graduate', $advisingChildren),
         ]);
 
         return $menus;

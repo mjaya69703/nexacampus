@@ -6,21 +6,27 @@ use App\Models\Academic\StudentGradeComponent;
 use App\Models\Academic\StudyPlanDetail;
 use App\Support\ActivePermission;
 use App\Support\StudentGradeCalculator;
+use App\Support\StudentGradePublicationService;
 use App\Support\TranscriptSyncService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public StudentGrade $studentGrade;
 
     public array $gradeForm = [];
+
     public array $componentForm = [];
 
     public array $studyPlanDetails = [];
+
     public array $graders = [];
 
     public ?int $editingComponentId = null;
+
     public bool $showComponentForm = false;
 
     public function mount($id): void
@@ -56,9 +62,9 @@ new class extends Component {
             ->map(function (StudyPlanDetail $detail) {
                 return [
                     'id' => $detail->id,
-                    'label' => ($detail->studyPlan?->studentProfile?->user?->name ?? '-') .
-                        ' (' . ($detail->studyPlan?->studentProfile?->nim ?? '-') . ') - ' .
-                        ($detail->courseOffering?->course?->code ?? '-') . ' - ' .
+                    'label' => ($detail->studyPlan?->studentProfile?->user?->name ?? '-').
+                        ' ('.($detail->studyPlan?->studentProfile?->nim ?? '-').') - '.
+                        ($detail->courseOffering?->course?->code ?? '-').' - '.
                         ($detail->courseOffering?->course?->name ?? '-'),
                 ];
             })
@@ -138,7 +144,7 @@ new class extends Component {
 
     protected function calculator(): StudentGradeCalculator
     {
-        return new StudentGradeCalculator();
+        return new StudentGradeCalculator;
     }
 
     protected function recalculateSnapshot(bool $setDraftWhenFinalized = true): void
@@ -219,9 +225,9 @@ new class extends Component {
             DB::commit();
 
             session()->flash('success', 'Header nilai berhasil diperbarui.');
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             DB::rollBack();
-            session()->flash('error', 'Terjadi kesalahan: ' . $th->getMessage());
+            session()->flash('error', 'Terjadi kesalahan: '.$th->getMessage());
         }
     }
 
@@ -246,12 +252,36 @@ new class extends Component {
         $academicYearId = (int) ($this->studentGrade->studyPlanDetail?->studyPlan?->academic_year_id ?? 0);
 
         if ($studentProfileId > 0) {
-            $service = new TranscriptSyncService();
+            $service = new TranscriptSyncService;
             $service->syncStudent($studentProfileId, $academicYearId > 0 ? $academicYearId : null);
         }
 
         $this->studentGrade->refresh();
         session()->flash('success', 'Nilai berhasil difinalisasi.');
+    }
+
+    public function publishGrade(StudentGradePublicationService $publicationService): void
+    {
+        if (! ActivePermission::check('student-grade.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk publish nilai mahasiswa.');
+
+            return;
+        }
+
+        if ($this->studentGrade->grade_status !== 'Finalized') {
+            $this->addError('publish', 'Hanya nilai berstatus Finalized yang bisa dipublikasikan.');
+
+            return;
+        }
+
+        if (! $publicationService->publish($this->studentGrade, auth()->id())) {
+            $this->addError('publish', 'Nilai tidak bisa dipublikasikan dari status saat ini.');
+
+            return;
+        }
+
+        $this->studentGrade->refresh();
+        session()->flash('success', 'Nilai berhasil dipublikasikan dan sudah bisa dilihat mahasiswa.');
     }
 
     public function startCreateComponent(): void
@@ -320,7 +350,7 @@ new class extends Component {
         $projectedTotal = round($currentTotalWithoutEditing + $newWeight, 2);
 
         if ($projectedTotal > 100) {
-            $this->addError('componentForm.weight_percentage', 'Total bobot komponen tidak boleh melebihi 100%. Total saat ini akan menjadi ' . number_format($projectedTotal, 2) . '%.');
+            $this->addError('componentForm.weight_percentage', 'Total bobot komponen tidak boleh melebihi 100%. Total saat ini akan menjadi '.number_format($projectedTotal, 2).'%.');
 
             return;
         }
@@ -362,21 +392,21 @@ new class extends Component {
             $this->js('
                 Swal.fire({
                     title: "Hapus komponen nilai?",
-                    text: "' . $component->name . ' - Data tidak bisa dikembalikan!",
+                    text: "'.$component->name.' - Data tidak bisa dikembalikan!",
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonText: "Ya hapus",
                     cancelButtonText: "Batal"
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        Livewire.dispatch("deleteComponentConfirmed", { id: ' . $id . ' })
+                        Livewire.dispatch("deleteComponentConfirmed", { id: '.$id.' })
                     }
                 });
             ');
         }
     }
 
-    #[\Livewire\Attributes\On('deleteComponentConfirmed')]
+    #[On('deleteComponentConfirmed')]
     public function deleteComponentConfirmed($id = null): void
     {
         if (! ActivePermission::check('student-grade.update')) {
@@ -536,9 +566,13 @@ new class extends Component {
                             <button type="button" class="btn btn-success" wire:click="finalizeGrade" @disabled(! $this->canFinalize)>
                                 <i class="fas fa-check me-1"></i> Finalize
                             </button>
+                            <button type="button" class="btn btn-primary" wire:click="publishGrade" @disabled($studentGrade->grade_status !== 'Finalized')>
+                                <i class="fas fa-bullhorn me-1"></i> Publish
+                            </button>
                             <button type="button" class="btn btn-secondary" wire:click="cancel">
                                 <i class="fas fa-arrow-left me-1"></i> Kembali
                             </button>
+                            @error('publish') <span class="text-danger d-block mt-2">{{ $message }}</span> @enderror
                         </div>
                     </div>
                 </form>

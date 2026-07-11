@@ -1,6 +1,9 @@
 <?php
 
 use App\Models\Organization\ApprovalRequest;
+use App\Models\StudentService\GraduationApplication;
+use App\Models\StudentService\StudentLeaveApplication;
+use App\Models\StudentService\StudentTransferRequest;
 use App\Support\Organization\ApprovalEngine;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -15,6 +18,7 @@ new class extends Component
         $this->requestModel = ApprovalRequest::with([
             'template',
             'requester',
+            'approvable',
             'steps.actedBy',
             'steps.organizationalPosition',
             'steps.workUnit',
@@ -24,6 +28,12 @@ new class extends Component
 
     public function approve(ApprovalEngine $engine): void
     {
+        if ($this->requiresDedicatedReview()) {
+            session()->flash('error', 'Keputusan harus diproses dari halaman review modul agar data operasionalnya lengkap.');
+
+            return;
+        }
+
         try {
             $this->requestModel = $engine->approve($this->requestModel, auth()->user(), $this->actionNotes)
                 ->load(['template', 'requester', 'steps.actedBy', 'steps.organizationalPosition', 'steps.workUnit', 'actions.user']);
@@ -36,6 +46,12 @@ new class extends Component
 
     public function reject(ApprovalEngine $engine): void
     {
+        if ($this->requiresDedicatedReview()) {
+            session()->flash('error', 'Keputusan harus diproses dari halaman review modul agar data operasionalnya lengkap.');
+
+            return;
+        }
+
         try {
             $this->requestModel = $engine->reject($this->requestModel, auth()->user(), $this->actionNotes)
                 ->load(['template', 'requester', 'steps.actedBy', 'steps.organizationalPosition', 'steps.workUnit', 'actions.user']);
@@ -48,6 +64,12 @@ new class extends Component
 
     public function cancel(ApprovalEngine $engine): void
     {
+        if ($this->requiresDedicatedReview()) {
+            session()->flash('error', 'Perubahan workflow harus diproses dari halaman review modul.');
+
+            return;
+        }
+
         try {
             $this->requestModel = $engine->cancel($this->requestModel, auth()->user(), $this->actionNotes)
                 ->load(['template', 'requester', 'steps.actedBy', 'steps.organizationalPosition', 'steps.workUnit', 'actions.user']);
@@ -68,9 +90,49 @@ new class extends Component
 
     public function canAct(): bool
     {
+        if ($this->requiresDedicatedReview()) {
+            return false;
+        }
+
         $step = $this->requestModel->currentStep();
 
         return $step && app(ApprovalEngine::class)->canUserActOnStep(auth()->user(), $step);
+    }
+
+    public function requiresDedicatedReview(): bool
+    {
+        return $this->requestModel->approvable instanceof StudentLeaveApplication
+            || $this->requestModel->approvable instanceof StudentTransferRequest
+            || $this->requestModel->approvable instanceof GraduationApplication;
+    }
+
+    public function dedicatedReviewUrl(): ?string
+    {
+        return match (true) {
+            $this->requestModel->approvable instanceof StudentLeaveApplication => route(
+                'admin.student-services.leave-applications.show',
+                ['id' => $this->requestModel->approvable_id],
+            ),
+            $this->requestModel->approvable instanceof StudentTransferRequest => route(
+                'admin.student-services.transfer-requests.show',
+                ['id' => $this->requestModel->approvable_id],
+            ),
+            $this->requestModel->approvable instanceof GraduationApplication => route(
+                'admin.student-services.graduation-applications.show',
+                ['id' => $this->requestModel->approvable_id],
+            ),
+            default => null,
+        };
+    }
+
+    public function dedicatedReviewLabel(): string
+    {
+        return match (true) {
+            $this->requestModel->approvable instanceof StudentLeaveApplication => 'Buka Review Cuti',
+            $this->requestModel->approvable instanceof StudentTransferRequest => 'Buka Review Pindah',
+            $this->requestModel->approvable instanceof GraduationApplication => 'Buka Review Yudisium',
+            default => 'Buka Detail Modul',
+        };
     }
 
     public function statusBadge(string $status): string
@@ -183,9 +245,15 @@ new class extends Component
                     <h3 class="card-title mb-0">Aksi</h3>
                 </div>
                 <div class="card-body">
-                    <textarea class="form-control mb-3" rows="4" wire:model.defer="actionNotes" placeholder="Catatan aksi"></textarea>
-
-                    @if (in_array($requestModel->status, ['submitted', 'in_progress'], true))
+                    @if ($this->requiresDedicatedReview())
+                        <div class="alert alert-info">
+                            Pengajuan ini membutuhkan data review khusus modul. Proses keputusan dari halaman detail agar biaya, evaluasi, atau checklist tidak terlewat.
+                        </div>
+                        <a href="{{ $this->dedicatedReviewUrl() }}" class="btn btn-primary w-100">
+                            <i class="fas fa-arrow-up-right-from-square me-2"></i>{{ $this->dedicatedReviewLabel() }}
+                        </a>
+                    @elseif (in_array($requestModel->status, ['submitted', 'in_progress'], true))
+                        <textarea class="form-control mb-3" rows="4" wire:model.defer="actionNotes" placeholder="Catatan aksi"></textarea>
                         <div class="d-grid gap-2">
                             <button type="button" class="btn btn-success" wire:click="approve" @disabled(! $this->canAct())>
                                 <i class="fas fa-check me-2"></i> Approve Step

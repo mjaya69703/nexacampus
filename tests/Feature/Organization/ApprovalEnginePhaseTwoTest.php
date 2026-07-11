@@ -1,12 +1,18 @@
 <?php
 
+use App\Models\Academic\Faculty;
+use App\Models\Academic\StudentProfile;
+use App\Models\Academic\StudyProgram;
 use App\Models\Organization\ApprovalTemplate;
 use App\Models\Organization\EmployeeProfile;
 use App\Models\Organization\OrganizationalPosition;
 use App\Models\Organization\WorkUnit;
+use App\Models\StudentService\StudentLeaveApplication;
 use App\Models\User;
 use App\Support\Organization\ApprovalEngine;
 use App\Support\Organization\EmployeePositionAssignmentService;
+use App\Support\Financial\PaymentProcessingService;
+use App\Support\StudentService\StudentLeaveApplicationService;
 use Illuminate\Validation\ValidationException;
 
 it('submits approval requests and advances sequential steps', function () {
@@ -138,4 +144,92 @@ it('authorizes approval by organizational position and work unit scope', functio
     $request = $engine->approve($request, $approver);
 
     expect($request->status)->toBe('approved');
+});
+
+it('requires dedicated leave review before approval and issues the configured invoice', function () {
+    $student = User::factory()->create();
+    $approver = User::factory()->create();
+    $faculty = Faculty::create([
+        'name' => 'Teknik',
+        'code' => 'FT-LEAVE',
+        'is_active' => true,
+    ]);
+    $program = StudyProgram::create([
+        'faculty_id' => $faculty->id,
+        'name' => 'Informatika',
+        'code' => 'IF-LEAVE',
+        'degree' => 'S1',
+        'is_active' => true,
+    ]);
+    $studentProfile = StudentProfile::create([
+        'user_id' => $student->id,
+        'study_program_id' => $program->id,
+        'nim' => 'LEAVE-2026-001',
+        'is_active' => true,
+    ]);
+
+    $template = ApprovalTemplate::create([
+        'name' => 'Student Leave Review',
+        'code' => 'STUDENT_LEAVE_REVIEW',
+        'module' => 'student-services',
+        'is_active' => true,
+    ]);
+    $template->steps()->create([
+        'step_order' => 1,
+        'name' => 'Layanan Akademik',
+        'approver_type' => 'user',
+        'approver_user_id' => $approver->id,
+    ]);
+
+    $application = StudentLeaveApplication::create([
+        'application_number' => 'LEV-TEST-001',
+        'student_profile_id' => $studentProfile->id,
+        'duration_semesters' => 1,
+        'reason_category' => 'personal',
+        'reason' => 'Keperluan keluarga.',
+        'status' => 'in_approval',
+    ]);
+
+    $engine = app(ApprovalEngine::class);
+    $approval = $engine->submitFromTemplate(
+        template: $template,
+        subject: 'Pengajuan cuti LEV-TEST-001',
+        requester: $student,
+        approvable: $application,
+        reference: $application->application_number,
+    );
+    $application->update(['approval_request_id' => $approval->id]);
+
+    expect(fn () => $engine->approve($approval, $approver))
+        ->toThrow(ValidationException::class);
+
+    $application = app(StudentLeaveApplicationService::class)->approve(
+        application: $application->refresh(),
+        notes: 'Disetujui dengan biaya administrasi.',
+        userId: $approver->id,
+        feeAmount: 150000,
+        feeDueDate: now()->addDays(7)->toDateString(),
+    );
+
+    expect($approval->refresh()->status)->toBe('approved')
+        ->and($application->status)->toBe('approved_pending_payment')
+        ->and($application->leave_fee_invoice_id)->not->toBeNull()
+        ->and($application->leaveFeeInvoice->invoice_type)->toBe('leave')
+        ->and($application->leaveFeeInvoice->total_amount)->toBe('150000.00')
+        ->and($application->leaveFeeInvoice->status)->toBe('issued');
+
+    $payment = app(PaymentProcessingService::class)->submitProof(
+        invoice: $application->leaveFeeInvoice,
+        amount: 150000,
+        proofPath: 'financial/payment-proofs/leave-test.pdf',
+        submittedBy: $student->id,
+    );
+    app(PaymentProcessingService::class)->verify($payment, $approver->id);
+
+    $application->refresh();
+
+    expect($application->leaveFeeInvoice->refresh()->status)->toBe('paid')
+        ->and($application->status)->toBe('approved')
+        ->and($application->histories()->latest('id')->value('notes'))
+        ->toBe('Pembayaran biaya cuti telah lunas. Pengajuan siap diaktifkan.');
 });

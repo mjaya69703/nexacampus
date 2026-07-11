@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Financial\StudentInvoice;
+use App\Support\Financial\InstallmentApprovalService;
 use App\Support\Financial\InstallmentSimulationService;
 use App\Support\Financial\InvoiceStatusService;
 use App\Support\Financial\PaymentProcessingService;
@@ -117,7 +118,7 @@ new class extends Component
 
         $simulation = app(InstallmentSimulationService::class)->simulate($this->invoice, $this->installmentTenor);
 
-        $this->invoice->installmentRequests()->create([
+        app(InstallmentApprovalService::class)->createAndSubmit($this->invoice, [
             'student_profile_id' => $this->invoice->student_profile_id,
             'requested_tenor' => $this->installmentTenor,
             'requested_fee_amount' => $simulation['fee_amount'],

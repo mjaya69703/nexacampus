@@ -1,0 +1,194 @@
+name: nexacampus
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .docker/php/Dockerfile
+      target: app
+    image: nexacampus-app:local
+    restart: unless-stopped
+    working_dir: /var/www/html
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-nexacampus}
+      DB_USERNAME: ${DB_USERNAME:-nexacampus}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+      CACHE_STORE: ${CACHE_STORE:-redis}
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      WHATSAPP_WEB_HOST: ${WHATSAPP_WEB_HOST:-127.0.0.1}
+      WHATSAPP_WEB_PORT: ${WHATSAPP_WEB_PORT:-3000}
+      WHATSAPP_WEB_NODE_BINARY: ${WHATSAPP_WEB_NODE_BINARY:-node}
+      WHATSAPP_WEB_SIDECAR_PATH: /var/www/html/vendor/kstmostofa/laravel-whatsapp/sidecar
+      PUPPETEER_SKIP_DOWNLOAD: "true"
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+    volumes:
+      - ..:/var/www/html
+      - app-vendor:/var/www/html/vendor
+      - app-node-modules:/var/www/html/node_modules
+      - app-storage:/var/www/html/storage
+      - whatsapp-sidecar:/var/www/html/storage/app/whatsapp-sidecar
+    depends_on:
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(file_exists('/var/www/html/vendor/autoload.php') && is_dir('/var/www/html/public/build') ? 0 : 1);\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - nexacampus
+
+  web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ..:/var/www/html:ro
+      - app-storage:/var/www/html/storage:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - nexacampus
+
+  queue:
+    image: nexacampus-app:local
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=120
+    environment:
+      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-nexacampus}
+      DB_USERNAME: ${DB_USERNAME:-nexacampus}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+      CACHE_STORE: ${CACHE_STORE:-redis}
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+      PUPPETEER_SKIP_DOWNLOAD: "true"
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+    volumes:
+      - ..:/var/www/html
+      - app-vendor:/var/www/html/vendor
+      - app-node-modules:/var/www/html/node_modules
+      - app-storage:/var/www/html/storage
+      - whatsapp-sidecar:/var/www/html/storage/app/whatsapp-sidecar
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - nexacampus
+
+  scheduler:
+    image: nexacampus-app:local
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: sh -lc 'while true; do php artisan schedule:run --no-interaction; sleep 60; done'
+    environment:
+      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-nexacampus}
+      DB_USERNAME: ${DB_USERNAME:-nexacampus}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+      CACHE_STORE: ${CACHE_STORE:-redis}
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+      PUPPETEER_SKIP_DOWNLOAD: "true"
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+    volumes:
+      - ..:/var/www/html
+      - app-vendor:/var/www/html/vendor
+      - app-node-modules:/var/www/html/node_modules
+      - app-storage:/var/www/html/storage
+      - whatsapp-sidecar:/var/www/html/storage/app/whatsapp-sidecar
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - nexacampus
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - nexacampus
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-nexacampus}
+      POSTGRES_USER: ${DB_USERNAME:-nexacampus}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-nexacampus} -d ${DB_DATABASE:-nexacampus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - nexacampus
+
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    profiles:
+      - mariadb
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE:-nexacampus}
+      MARIADB_USER: ${DB_USERNAME:-nexacampus}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-secret}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+    ports:
+      - "${MARIADB_PORT:-3306}:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - nexacampus
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_PORT:-8025}:8025"
+    networks:
+      - nexacampus
+
+networks:
+  nexacampus:
+    driver: bridge
+
+volumes:
+  app-vendor:
+  app-node-modules:
+  app-storage:
+  whatsapp-sidecar:
+  postgres-data:
+  mariadb-data:
+  redis-data:

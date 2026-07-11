@@ -8,6 +8,7 @@ use App\Models\Academic\CourseOffering;
 use App\Models\Academic\StudentGrade;
 use App\Models\Academic\StudyProgram;
 use App\Support\ActivePermission;
+use App\Support\StudentGradePublicationService;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -33,6 +34,8 @@ final class StudentGradeTable extends BasePowerGridTable
     protected ?string $bulkActionPermissionPrefix = 'student-grade';
 
     protected string $bulkActionItemLabel = 'nilai mahasiswa';
+
+    protected ?string $customBulkActionLabel = 'Publish Selected';
 
     public function setUp(): array
     {
@@ -215,6 +218,51 @@ final class StudentGradeTable extends BasePowerGridTable
         }, $this->exportFileName('xlsx'), [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    public function canCustomBulkAction(): bool
+    {
+        return ActivePermission::check('student-grade.update');
+    }
+
+    public function runCustomBulkAction(): void
+    {
+        if (! ActivePermission::check('student-grade.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk publish nilai mahasiswa.');
+
+            return;
+        }
+
+        $ids = collect($this->checkboxValues)->filter()->values();
+
+        if ($ids->isEmpty()) {
+            session()->flash('error', 'Pilih minimal satu nilai mahasiswa terlebih dahulu.');
+
+            return;
+        }
+
+        $publicationService = app(StudentGradePublicationService::class);
+        $published = 0;
+        $skipped = 0;
+
+        foreach (StudentGrade::query()->whereKey($ids)->get() as $grade) {
+            if ($publicationService->publish($grade, auth()->id())) {
+                $published++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        $this->dispatch('pg:eventRefresh-studentGradeTable');
+        $this->clearBulkSelection();
+
+        if ($published > 0) {
+            session()->flash('success', $published.' nilai mahasiswa berhasil dipublikasikan.');
+        }
+
+        if ($skipped > 0) {
+            session()->flash('error', $skipped.' nilai dilewati karena belum berstatus Finalized atau sudah Published.');
+        }
     }
 
     public function exportToCsv(bool $selected = false): StreamedResponse|bool

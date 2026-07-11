@@ -4,6 +4,8 @@ namespace App\Models\StudentService;
 
 use App\Models\Academic\AcademicPeriod;
 use App\Models\Academic\StudentProfile;
+use App\Models\Organization\ApprovalRequest;
+use App\Support\StudentService\GraduationApplicationService;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +20,7 @@ class GraduationApplication extends Model
 
     protected $fillable = [
         'application_number',
+        'approval_request_id',
         'student_profile_id',
         'academic_period_id',
         'graduation_batch_id',
@@ -66,6 +69,11 @@ class GraduationApplication extends Model
         return $this->belongsTo(StudentProfile::class);
     }
 
+    public function approvalRequest(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalRequest::class);
+    }
+
     public function academicPeriod(): BelongsTo
     {
         return $this->belongsTo(AcademicPeriod::class);
@@ -99,5 +107,27 @@ class GraduationApplication extends Model
     public function finalizedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'finalized_by');
+    }
+
+    public function markApprovalApproved(?int $userId = null, ?string $notes = null): void
+    {
+        app(GraduationApplicationService::class)->approveFromApproval($this, $userId, $notes);
+    }
+
+    public function markApprovalRejected(?int $userId = null, ?string $notes = null): void
+    {
+        app(GraduationApplicationService::class)->rejectFromApproval($this, $userId, $notes);
+    }
+
+    public function markApprovalCancelled(?int $userId = null, ?string $notes = null): void
+    {
+        app(GraduationApplicationService::class)->requestRevisionFromApproval($this, $userId, $notes ?: 'Approval dibatalkan.');
+    }
+
+    public function approvalReadinessError(): ?string
+    {
+        return $this->reviewed_at
+            ? null
+            : 'Pengajuan yudisium harus direview dari halaman detail yudisium untuk melengkapi checklist dan verifikasi dokumen sebelum approval.';
     }
 }

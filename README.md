@@ -123,6 +123,14 @@ Setelah login, pilih role yang ingin digunakan bila akun memiliki lebih dari sat
 - Scheduled overdue refresh dan financial hold evaluation agar status tagihan/hold tetap sinkron walau tidak sedang dibuka manual.
 - Email notification untuk invoice terbit, payment verified/rejected, invoice overdue, dan cicilan approved/rejected.
 
+### Notifikasi
+
+- Template dan log notifikasi terpusat untuk event akademik, keuangan, admission, dan layanan mahasiswa.
+- WhatsApp notification channel dengan provider official Meta Cloud API atau web session sidecar.
+- Web Push/PWA notification channel berbasis VAPID, browser subscription per user, service worker, dan delivery log.
+- Tombol opt-in notifikasi browser di topbar untuk perangkat yang mendukung Push API.
+- Command generator VAPID key untuk konfigurasi environment production.
+
 ### Kepegawaian dan Organisasi
 
 - Struktur organisasi kampus: unit kerja, jabatan organisasi, profil pegawai, dan penugasan jabatan.
@@ -164,6 +172,7 @@ Setelah login, pilih role yang ingin digunakan bila akun memiliki lebih dari sat
 - Leaflet untuk tampilan peta dan validasi lokasi absensi.
 - Private file preview/download controller untuk dokumen sensitif.
 - PWA support via erag/laravel-pwa.
+- Browser push notification via `minishlink/web-push` dan service worker di `public/sw.js`.
 - Vite dan Tailwind CSS untuk build frontend.
 - Resource registry di `config/resources.php` untuk menyatukan CRUD, permission, dan menu.
 - Seeder modular per domain: academic, admission, financial, student service, dan organization.
@@ -207,6 +216,30 @@ php artisan financial:evaluate-holds
 php artisan academic:send-assignment-reminders
 ```
 
+### Web Push Notifications
+
+Generate VAPID keys:
+
+```bash
+php artisan notifications:web-push-vapid
+```
+
+Tambahkan hasilnya ke `.env`:
+
+```dotenv
+WEB_PUSH_VAPID_SUBJECT="${APP_URL}"
+WEB_PUSH_VAPID_PUBLIC_KEY=
+WEB_PUSH_VAPID_PRIVATE_KEY=
+```
+
+Lalu refresh konfigurasi:
+
+```bash
+php artisan optimize:clear
+```
+
+Aktifkan kanal Web Push dari `System Management > Pengaturan Sistem > Notifikasi`, kemudian user perlu klik tombol notifikasi di topbar dan memberi izin browser. Browser push membutuhkan `localhost` atau HTTPS; setelah update service worker, reload halaman atau unregister service worker lama dari DevTools bila notifikasi belum muncul.
+
 ### Testing
 
 ```bash
@@ -220,6 +253,16 @@ php artisan permissions:sync
 php artisan menus:sync
 php artisan resources:sync
 ```
+
+## Lisensi
+
+NexaCampus dilisensikan di bawah **GNU Affero General Public License v3.0 only** (`AGPL-3.0-only`).
+
+Anda dapat menggunakan, mempelajari, memodifikasi, dan mendistribusikan proyek ini sesuai ketentuan AGPL v3. Jika Anda memodifikasi NexaCampus dan menyediakan akses kepada pengguna melalui jaringan, Anda wajib menawarkan source code yang sesuai kepada pengguna tersebut sebagaimana diatur oleh lisensi.
+
+Copyright (C) 2026 NexaCampus contributors. Dependensi pihak ketiga tetap mengikuti lisensinya masing-masing.
+
+Teks lisensi lengkap tersedia di [LICENSE](LICENSE).
 
 ## Catatan
 

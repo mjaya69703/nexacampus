@@ -17,7 +17,7 @@ new class extends Component
     {
         return [
             'total' => ServiceLetterRequest::count(),
-            'pending' => ServiceLetterRequest::whereIn('status', ['submitted', 'under_review'])->count(),
+            'pending' => ServiceLetterRequest::whereIn('status', ['submitted', 'in_approval', 'under_review'])->count(),
             'approved' => ServiceLetterRequest::where('status', 'approved')->count(),
             'issued' => ServiceLetterRequest::where('status', 'issued')->count(),
         ];

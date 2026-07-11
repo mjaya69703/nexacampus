@@ -113,7 +113,7 @@ class PaymentProcessingService
             app(StudentCreditService::class)->addOverpayment($payment, $overpaidAmount, $verifiedBy);
 
             $this->refreshInstallmentOverdue($invoice);
-            $invoice = app(InvoiceStatusService::class)->refresh($invoice->refresh());
+            $invoice = app(InvoiceStatusService::class)->refresh($invoice->refresh(), $verifiedBy);
             app(FinancialClearanceService::class)->evaluate($invoice->studentProfile);
 
             $payment = $payment->refresh()->load(['invoice', 'studentProfile.user', 'verifiedBy']);
