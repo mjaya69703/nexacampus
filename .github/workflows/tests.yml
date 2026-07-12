@@ -1,4 +1,4 @@
-name: Tests
+name: Tests & Build
 
 on:
   push:
@@ -7,15 +7,16 @@ on:
     branches: [ "*" ]
 
 jobs:
-  test:
+  test-and-build:
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
         php-version: ['8.4']
+        node-version: ['20']
 
-    name: PHP ${{ matrix.php-version }} Tests
+    name: PHP ${{ matrix.php-version }} & Node ${{ matrix.node-version }} CI
 
     steps:
       - name: Checkout Code
@@ -28,6 +29,12 @@ jobs:
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
           coverage: none
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
       - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:
@@ -36,16 +43,31 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
-      - name: Install Dependencies
+      - name: Install Composer Dependencies
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Install Node Dependencies & Build Frontend
+        run: |
+          npm install
+          npm run build
 
       - name: Prepare Environment
         run: |
           cp .env.example .env
           php artisan key:generate
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs
+          chmod -R 777 storage bootstrap/cache
 
-      - name: Run Directory Permissions check
-        run: chmod -R 777 storage bootstrap/cache
+      - name: Create SQLite Database
+        run: touch database/database.sqlite
+
+      - name: Execute Migrations & Seeders
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ${{ github.workspace }}/database/database.sqlite
+        run: |
+          php artisan migrate --force
+          php artisan migrate:fresh --force --seed
 
       - name: Execute Tests via Artisan
         env:
