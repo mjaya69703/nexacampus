@@ -70,8 +70,7 @@ final class FacultyTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::make('Study Programs', 'study_programs_count')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
             Column::make('Is Active', 'is_active')
                 ->toggleable(
                     ActivePermission::check('faculty.update'),
@@ -83,8 +82,7 @@ final class FacultyTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::make('Created at', 'created_at')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
             Column::action('Action'),
         ];
     }
@@ -92,7 +90,17 @@ final class FacultyTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('name', 'name')
+                ->placeholder('Cari nama fakultas...')
+                ->operators(['contains']),
+            Filter::inputText('code', 'code')
+                ->placeholder('Cari kode...')
+                ->operators(['contains']),
+            Filter::inputText('short_name', 'short_name')
+                ->placeholder('Cari singkatan...')
+                ->operators(['contains']),
             Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 

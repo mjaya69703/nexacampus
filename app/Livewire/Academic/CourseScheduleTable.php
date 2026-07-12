@@ -5,6 +5,7 @@ namespace App\Livewire\Academic;
 use App\Livewire\BasePowerGridTable;
 use App\Models\Academic\CourseOffering;
 use App\Models\Academic\CourseSchedule;
+use App\Models\Campus\Building;
 use App\Models\Campus\Room;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,6 +28,26 @@ final class CourseScheduleTable extends BasePowerGridTable
     protected ?string $bulkActionPermissionPrefix = 'course-schedule';
 
     protected string $bulkActionItemLabel = 'jadwal kuliah';
+
+    public function getTotalSchedulesProperty(): int
+    {
+        return CourseSchedule::count();
+    }
+
+    public function getActiveSchedulesProperty(): int
+    {
+        return CourseSchedule::where('is_active', true)->count();
+    }
+
+    public function getOfflineSchedulesProperty(): int
+    {
+        return CourseSchedule::where('delivery_mode', 'Offline')->count();
+    }
+
+    public function getOnlineSchedulesProperty(): int
+    {
+        return CourseSchedule::where('delivery_mode', 'Online')->count();
+    }
 
     public function setUp(): array
     {
@@ -111,6 +132,26 @@ final class CourseScheduleTable extends BasePowerGridTable
                 ->optionValue('id')
                 ->optionLabel('name')
                 ->builder(fn (Builder $query, $value) => $query->where('course_offering_id', $value)),
+            Filter::inputText('course_name')
+                ->placeholder('Cari mata kuliah...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('courseOffering.course', fn (Builder $course) => $course->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%'));
+                }),
+            Filter::inputText('lecturer_name')
+                ->placeholder('Cari nama dosen...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('lecturerProfile.user', fn (Builder $user) => $user->where('first_name', 'like', '%'.$search.'%')->orWhere('last_name', 'like', '%'.$search.'%'));
+                }),
             Filter::select('day_of_week', 'day_of_week')
                 ->dataSource(collect(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])->map(fn (string $day) => ['id' => $day, 'name' => $day]))
                 ->optionValue('id')
@@ -120,6 +161,11 @@ final class CourseScheduleTable extends BasePowerGridTable
                 ->optionValue('id')
                 ->optionLabel('name')
                 ->builder(fn (Builder $query, $value) => $query->where('room_id', $value)),
+            Filter::select('building_name', 'building_id')
+                ->dataSource(Building::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('room', fn (Builder $room) => $room->where('building_id', $value))),
             Filter::select('session_type', 'session_type')
                 ->dataSource(CourseSchedule::query()->select('session_type')->distinct()->orderBy('session_type')->pluck('session_type')->filter()->map(fn (string $type) => ['id' => $type, 'name' => $type]))
                 ->optionValue('id')
@@ -129,6 +175,7 @@ final class CourseScheduleTable extends BasePowerGridTable
                 ->optionValue('id')
                 ->optionLabel('name'),
             Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -238,22 +285,22 @@ final class CourseScheduleTable extends BasePowerGridTable
 
         if (ActivePermission::check('course-schedule.update')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-info')
+                ->slot('<i class="fa fa-eye"></i> <span>Detail</span>')
+                ->class('btn btn-sm btn-info d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('course-schedule.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-pencil"></i> <span>Edit</span>')
+                ->class('btn btn-sm btn-primary d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('course-schedule.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> <span>Hapus</span>')
+                ->class('btn btn-sm btn-danger d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

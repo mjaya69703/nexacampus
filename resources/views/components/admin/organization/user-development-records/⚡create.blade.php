@@ -166,15 +166,65 @@ new class extends Component
 
 <div>
     <x-alert />
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title mb-0">Tambah Sertifikasi & Pelatihan</h3>
-            <a href="{{ route('admin.organization.user-development-records.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back
-            </a>
+
+    <x-admin.organization.header
+        title="Tambah Sertifikasi & Pelatihan"
+        description="Catat riwayat keikutsertaan sertifikasi profesi, pelatihan, workshop, atau seminar bagi dosen/pegawai."
+        icon="plus-circle"
+    >
+        <a href="{{ route('admin.organization.user-development-records.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+        </a>
+    </x-admin.organization.header>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-certificate fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-1 text-dark">Formulir Riwayat Pengembangan Kompetensi</h4>
+                            <div class="text-muted small">Pilih pegawai bersangkutan, jenis kegiatan, nomor sertifikat, waktu pelaksanaan, serta unggah bukti sertifikat.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    @include('components.admin.organization.user-development-records._form', ['isEdit' => false])
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            @include('components.admin.organization.user-development-records._form', ['isEdit' => false])
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                <div class="card-body p-4 bg-light bg-opacity-50">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-circle-info"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-1">Pedoman Pengembangan SDM</h5>
+                            <div class="text-muted small">Informasi pencatatan sertifikat.</div>
+                        </div>
+                    </div>
+
+                    <ul class="list-unstyled mb-0 text-muted small d-grid gap-2">
+                        <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Pastikan <strong>Tanggal Pelaksanaan</strong> dan <strong>Masa Berlaku</strong> sesuai dengan yang tertera pada dokumen resmi.</span></li>
+                        <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Unggah <strong>Berkas Sertifikat/Piagam</strong> dengan format PDF, JPG, atau PNG (Maks. 5MB) untuk memudahkan proses verifikasi asesor.</span></li>
+                        <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Jika berkas sudah diverifikasi keasliannya oleh tim SDM, aktifkan tombol switch <strong>Sudah Diverifikasi Keabsahannya</strong>.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="text-muted small mb-1">Kredensial & Lisensi</div>
+                    <div class="fw-bold fs-5 text-dark mb-2">Pentingnya Nomor Kredensial</div>
+                    <p class="text-muted small mb-0">Nomor kredensial atau SK digunakan untuk proses validasi eksternal saat pelaporan kinerja atau kepangkatan pegawai.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -21,7 +21,7 @@ final class ScholarshipTable extends BasePowerGridTable
 
     protected ?string $bulkActionPermissionPrefix = 'scholarship';
 
-    protected string $bulkActionItemLabel = 'scholarship';
+    protected string $bulkActionItemLabel = 'program beasiswa';
 
     public function setUp(): array
     {
@@ -38,38 +38,55 @@ final class ScholarshipTable extends BasePowerGridTable
         return PowerGrid::fields()
             ->add('id')
             ->add('name')
-            ->add('type_label', fn (Scholarship $model) => str($model->type)->replace('_', ' ')->title()->toString())
+            ->add('type_label', fn (Scholarship $model) => match($model->type) {
+                'merit' => 'Prestasi Akademik (Merit)',
+                'need_based' => 'Bantuan Ekonomi / Kurang Mampu',
+                'athletic' => 'Prestasi Olahraga / Seni',
+                'partner' => 'Kerjasama Instansi Mitra',
+                default => str($model->type)->replace('_', ' ')->title()->toString()
+            })
             ->add('discount_label', fn (Scholarship $model) => $model->discount_type === 'fixed'
                 ? $this->money($model->fixed_amount)
-                : number_format((float) $model->discount_percentage, 2).'%')
-            ->add('duration_semesters')
-            ->add('assignments_count')
+                : number_format((float) $model->discount_percentage, 0).'% dari SPP')
+            ->add('duration_semesters', fn (Scholarship $model) => $model->duration_semesters . ' Semester')
+            ->add('assignments_count', fn (Scholarship $model) => $model->assignments_count . ' Penerima')
             ->add('is_active_label', fn (Scholarship $model) => $model->is_active
-                ? '<span class="badge bg-success">Active</span>'
-                : '<span class="badge bg-secondary">Inactive</span>')
+                ? '<span class="badge bg-success text-white rounded-pill px-3 py-1 fs-8">Aktif</span>'
+                : '<span class="badge bg-secondary text-white rounded-pill px-3 py-1 fs-8">Nonaktif</span>')
             ->add('is_active');
     }
 
     public function columns(): array
     {
         return [
-            Column::make('Name', 'name')->sortable()->searchable(),
-            Column::make('Type', 'type_label')->sortable(),
-            Column::make('Discount', 'discount_label'),
-            Column::make('Duration', 'duration_semesters')->sortable(),
-            Column::make('Assignments', 'assignments_count')->sortable(),
-            Column::make('Status', 'is_active_label')->sortable(),
-            Column::action('Action'),
+            Column::make('Nama Program Beasiswa', 'name')->sortable()->searchable(),
+            Column::make('Kategori / Jenis', 'type_label', 'type')->sortable(),
+            Column::make('Potongan Biaya', 'discount_label'),
+            Column::make('Durasi', 'duration_semesters')->sortable(),
+            Column::make('Total Penerima', 'assignments_count')->sortable(),
+            Column::make('Status', 'is_active_label', 'is_active')->sortable(),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('is_active', 'is_active')
+            Filter::inputText('name', 'name')
+                ->operators(['contains']),
+            Filter::select('type_label', 'type')
                 ->dataSource(collect([
-                    ['id' => 1, 'name' => 'Active'],
-                    ['id' => 0, 'name' => 'Inactive'],
+                    ['id' => 'merit', 'name' => 'Prestasi Akademik (Merit)'],
+                    ['id' => 'need_based', 'name' => 'Bantuan Ekonomi (Need Based)'],
+                    ['id' => 'athletic', 'name' => 'Prestasi Non-Akademik (Athletic)'],
+                    ['id' => 'partner', 'name' => 'Kerjasama Mitra (Partner)'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('is_active_label', 'is_active')
+                ->dataSource(collect([
+                    ['id' => 1, 'name' => 'Aktif'],
+                    ['id' => 0, 'name' => 'Nonaktif'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
@@ -90,8 +107,8 @@ final class ScholarshipTable extends BasePowerGridTable
 
         return [
             Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-edit me-1"></i>Edit Program')
+                ->class('btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]),
         ];
     }

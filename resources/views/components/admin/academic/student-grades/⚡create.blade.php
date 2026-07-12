@@ -167,69 +167,109 @@ new class extends Component {
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
+<div>
+    <x-alert />
 
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Form Header Nilai Mahasiswa</h5>
-            </div>
-            <div class="card-body">
-                <form wire:submit.prevent="save">
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Study Plan Detail <span class="text-danger">*</span></label>
-                            <select class="form-select" wire:model="studyPlanDetailId" required>
-                                <option value="">Pilih Study Plan Detail</option>
-                                @foreach($studyPlanDetails as $detail)
-                                    <option value="{{ $detail['id'] }}">{{ $detail['label'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('studyPlanDetailId') <span class="text-danger">{{ $message }}</span> @enderror
+    <x-admin.academic.header
+        title="Buat Nilai Mahasiswa (KHS)"
+        description="Pilih mata kuliah yang diambil mahasiswa pada KRS untuk memulai pencatatan dan penghitungan komponen nilai."
+        icon="graduation-cap"
+    >
+        <button type="button" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2" wire:click="cancel">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+        </button>
+    </x-admin.academic.header>
+
+    <form wire:submit.prevent="save">
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white border-bottom p-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-file-signature fs-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="card-title fw-bold mb-1 text-dark">Formulir Header Nilai</h4>
+                                <div class="text-muted small">Pilih detail KRS mahasiswa dan dosen penilai yang bertanggung jawab.</div>
+                            </div>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Graded By</label>
-                            <select class="form-select" wire:model="gradedBy" @disabled(! $studyPlanDetailId)>
-                                <option value="">Pilih Penilai (Dosen Offering)</option>
-                                @foreach($graders as $grader)
-                                    <option value="{{ $grader['id'] }}">{{ $grader['label'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('gradedBy') <span class="text-danger">{{ $message }}</span> @enderror
-                            @if (! $studyPlanDetailId)
-                                <small class="text-muted">Pilih study plan detail terlebih dahulu untuk memuat dosen pengajar.</small>
-                            @endif
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Status Lifecycle</label>
-                            <input type="text" class="form-control" value="Draft" readonly>
-                        </div>
-
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Catatan</label>
-                            <textarea class="form-control" rows="3" wire:model="notes"></textarea>
-                            @error('notes') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <div class="alert alert-info mb-3">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Nilai akhir (final score, letter grade, grade point, result status) dihitung otomatis dari komponen nilai.
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Study Plan Detail (KRS) <span class="text-danger">*</span></label>
+                                <select class="form-select" wire:model="studyPlanDetailId" required>
+                                    <option value="">Pilih Study Plan Detail</option>
+                                    @foreach($studyPlanDetails as $detail)
+                                        <option value="{{ $detail['id'] }}">{{ $detail['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('studyPlanDetailId') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                             </div>
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i> Simpan dan Lanjut Edit Komponen
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Dosen Penilai (Graded By)</label>
+                                <select class="form-select" wire:model="gradedBy" @disabled(! $studyPlanDetailId)>
+                                    <option value="">Pilih Penilai (Dosen Offering)</option>
+                                    @foreach($graders as $grader)
+                                        <option value="{{ $grader['id'] }}">{{ $grader['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('gradedBy') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                @if (! $studyPlanDetailId)
+                                    <small class="text-muted d-block mt-1">Pilih study plan detail terlebih dahulu untuk memuat daftar dosen pengajar.</small>
+                                @endif
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Status Lifecycle</label>
+                                <input type="text" class="form-control bg-light" value="Draft" readonly>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Catatan Tambahan</label>
+                                <textarea class="form-control" rows="3" wire:model="notes" placeholder="Catatan atau keterangan evaluasi..."></textarea>
+                                @error('notes') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white border-bottom p-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-calculator fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title fw-bold mb-1 text-dark">Simpan & Lanjutkan</h5>
+                                <div class="text-muted small">Buat kerangka nilai awal.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="text-muted small mb-4">Setelah header nilai dibuat, Anda akan diarahkan ke halaman pengisian rincian komponen nilai (seperti Tugas, UTS, UAS, atau Praktikum).</p>
+                        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                            <button type="button" class="btn btn-light rounded-pill px-3 py-2" wire:click="cancel">
+                                <i class="fa fa-times me-1"></i> Batal
                             </button>
-                            <button type="button" class="btn btn-secondary" wire:click="cancel">
-                                <i class="fas fa-times me-1"></i> Batal
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-semibold">
+                                <i class="fa fa-save me-1"></i> Buat & Isi Komponen
                             </button>
                         </div>
                     </div>
-                </form>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-light">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-2 text-dark"><i class="fa fa-info-circle text-primary me-2"></i>Penghitungan Otomatis</h6>
+                        <p class="text-muted small mb-0">Nilai akhir (Final Score, Letter Grade, Grade Point, dan Result Status) dihitung secara otomatis dan dinamis berdasarkan bobot persentase dari setiap komponen nilai yang dimasukkan.</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </form>
 </div>

@@ -75,29 +75,26 @@ final class AlumniEventTable extends BasePowerGridTable
                 ->sortable(),
             Column::make('Peserta', 'slots_label')->sortable(),
             Column::make('Dibuat', 'created_at_label')->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('event_type', 'event_type')
+            Filter::inputText('title')->placeholder('Cari judul kegiatan/event...'),
+            Filter::select('event_type_label', 'event_type')
                 ->dataSource(collect(EventType::options())
                     ->map(fn ($label, $value) => ['id' => $value, 'name' => $label])
                     ->values()
                     ->toArray()
                 )
                 ->optionValue('id')
-                ->optionLabel('name'),
-
-            Filter::select('is_published', 'is_published')
-                ->dataSource([
-                    ['id' => '1', 'name' => 'Published'],
-                    ['id' => '0', 'name' => 'Draft'],
-                ])
-                ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('event_type', $value)),
+            Filter::boolean('is_online', 'Online (Virtual)', 'Offline (Tatap Muka)'),
+            Filter::boolean('is_published', 'Published', 'Draft'),
+            Filter::datepicker('event_date_label', 'event_date'),
         ];
     }
 
@@ -201,23 +198,22 @@ final class AlumniEventTable extends BasePowerGridTable
 
         if (ActivePermission::check('alumni-event.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-eye"></i> Detail')
+                ->class('btn btn-outline-info rounded-pill px-2.5 py-1 text-info fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('alumni-event.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->id()
-                ->class('btn btn-warning')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('alumni-event.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

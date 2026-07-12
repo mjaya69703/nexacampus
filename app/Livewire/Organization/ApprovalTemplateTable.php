@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -61,6 +62,22 @@ final class ApprovalTemplateTable extends BasePowerGridTable
         ];
     }
 
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name', 'name')
+                ->placeholder('Cari nama template...')
+                ->operators(['contains']),
+            Filter::inputText('code', 'code')
+                ->placeholder('Cari kode...')
+                ->operators(['contains']),
+            Filter::inputText('module', 'module')
+                ->placeholder('Cari module...')
+                ->operators(['contains']),
+            Filter::boolean('is_active', 'is_active')->label('Aktif', 'Nonaktif'),
+        ];
+    }
+
     public function onUpdatedToggleable(string $id, string $field, string $value): void
     {
         if ($field !== 'is_active' || ! ActivePermission::check('approval-template.update')) {
@@ -88,13 +105,18 @@ final class ApprovalTemplateTable extends BasePowerGridTable
             return;
         }
 
+        if ($template->requests()->exists()) {
+            $this->js('Swal.fire("Gagal", "Template ini tidak dapat dihapus karena sedang atau pernah digunakan dalam pengajuan persetujuan.", "error");');
+            return;
+        }
+
         $this->js('
             Swal.fire({
-                title: "Hapus template approval?",
-                text: "'.$template->name.' akan dipindahkan ke tempat sampah.",
+                title: "Hapus Template Approval?",
+                text: "Template \''.$template->name.'\' akan dipindahkan ke tempat sampah.",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonText: "Ya hapus",
+                confirmButtonText: "Ya, hapus!",
                 cancelButtonText: "Batal"
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -109,13 +131,18 @@ final class ApprovalTemplateTable extends BasePowerGridTable
     {
         if (! ActivePermission::check('approval-template.delete')) {
             session()->flash('error', 'Anda tidak memiliki izin menghapus template approval.');
-
             return;
         }
 
         $template = ApprovalTemplate::find($id);
 
         if (! $template) {
+            session()->flash('error', 'Template approval tidak ditemukan.');
+            return;
+        }
+
+        if ($template->requests()->exists()) {
+            session()->flash('error', 'Template yang memiliki riwayat pengajuan tidak dapat dihapus.');
             return;
         }
 
@@ -136,7 +163,7 @@ final class ApprovalTemplateTable extends BasePowerGridTable
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
-        if (ActivePermission::check('approval-template.delete')) {
+        if (ActivePermission::check('approval-template.delete') && ! $row->requests()->exists()) {
             $actions[] = Button::add('delete')
                 ->slot('<i class="fa fa-trash"></i>')
                 ->class('btn btn-danger')

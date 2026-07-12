@@ -21,7 +21,7 @@ final class ClearancePolicyTable extends BasePowerGridTable
 
     protected ?string $bulkActionPermissionPrefix = 'clearance-policy';
 
-    protected string $bulkActionItemLabel = 'clearance policy';
+    protected string $bulkActionItemLabel = 'kebijakan bebas tanggungan';
 
     public function setUp(): array
     {
@@ -43,7 +43,7 @@ final class ClearancePolicyTable extends BasePowerGridTable
             ->add('hold_type_label', fn (FinancialClearancePolicy $model) => str($model->hold_type)->replace('_', ' ')->title()->toString())
             ->add('mode_badge', fn (FinancialClearancePolicy $model) => $this->modeBadge($model->mode))
             ->add('mode')
-            ->add('grace_days')
+            ->add('grace_days', fn (FinancialClearancePolicy $model) => $model->grace_days . ' Hari')
             ->add('is_active')
             ->add('description_label', fn (FinancialClearancePolicy $model) => str($model->description ?: '-')->limit(80)->toString())
             ->add('created_at');
@@ -52,37 +52,40 @@ final class ClearancePolicyTable extends BasePowerGridTable
     public function columns(): array
     {
         return [
-            Column::make('Invoice Type', 'invoice_type_label', 'invoice_type')->sortable()->searchable(),
-            Column::make('Hold Target', 'hold_type_label', 'hold_type')->sortable()->searchable(),
-            Column::make('Mode', 'mode_badge', 'mode')->sortable(),
-            Column::make('Grace Days', 'grace_days')->sortable(),
-            Column::make('Active', 'is_active')
-                ->toggleable(ActivePermission::check('clearance-policy.update'), 'Active', 'Inactive')
+            Column::make('Jenis Tagihan (Invoice)', 'invoice_type_label', 'invoice_type')->sortable()->searchable(),
+            Column::make('Target Pemblokiran (Hold)', 'hold_type_label', 'hold_type')->sortable()->searchable(),
+            Column::make('Mode Sanksi', 'mode_badge', 'mode')->sortable(),
+            Column::make('Toleransi (Grace Days)', 'grace_days')->sortable(),
+            Column::make('Status Aktif', 'is_active')
+                ->toggleable(ActivePermission::check('clearance-policy.update'), 'Aktif', 'Nonaktif')
                 ->sortable(),
-            Column::make('Description', 'description_label', 'description')->searchable(),
-            Column::action('Action'),
+            Column::make('Keterangan / Deskripsi', 'description_label', 'description')->searchable(),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('invoice_type', 'invoice_type')
+            Filter::inputText('description_label', 'description')
+                ->operators(['contains']),
+            Filter::select('invoice_type_label', 'invoice_type')
                 ->dataSource(collect($this->options(config('financial.invoice_types', []))))
                 ->optionValue('id')
                 ->optionLabel('name'),
-            Filter::select('hold_type', 'hold_type')
+            Filter::select('hold_type_label', 'hold_type')
                 ->dataSource(collect($this->options($this->holdTargetOptions())))
                 ->optionValue('id')
                 ->optionLabel('name'),
-            Filter::select('mode', 'mode')
+            Filter::select('mode_badge', 'mode')
                 ->dataSource(collect([
-                    ['id' => 'warning', 'name' => 'Warning'],
-                    ['id' => 'blocking', 'name' => 'Blocking'],
+                    ['id' => 'warning', 'name' => 'Peringatan (Warning)'],
+                    ['id' => 'blocking', 'name' => 'Pemblokiran (Blocking)'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
-            Filter::boolean('is_active', 'is_active'),
+            Filter::boolean('is_active', 'is_active')
+                ->label('Aktif', 'Nonaktif'),
         ];
     }
 
@@ -92,7 +95,9 @@ final class ClearancePolicyTable extends BasePowerGridTable
             return;
         }
 
-        abort_unless(ActivePermission::check('clearance-policy.update'), 403);
+        if (! ActivePermission::check('clearance-policy.update')) {
+            return;
+        }
 
         FinancialClearancePolicy::whereKey($id)->update([
             'is_active' => (bool) $value,
@@ -110,11 +115,11 @@ final class ClearancePolicyTable extends BasePowerGridTable
     {
         $this->js('
             Swal.fire({
-                title: "Hapus clearance policy?",
-                text: "Policy ini akan dihapus dari konfigurasi aktif.",
+                title: "Hapus kebijakan ini?",
+                text: "Kebijakan bebas tanggungan ini akan dihapus dari konfigurasi aktif.",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonText: "Ya hapus",
+                confirmButtonText: "Ya, Hapus",
                 cancelButtonText: "Batal"
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -127,10 +132,12 @@ final class ClearancePolicyTable extends BasePowerGridTable
     #[On('deleteClearancePolicy')]
     public function deleteItem($id = null): void
     {
-        abort_unless(ActivePermission::check('clearance-policy.delete'), 403);
+        if (! ActivePermission::check('clearance-policy.delete')) {
+            return;
+        }
 
         FinancialClearancePolicy::findOrFail($id)->delete();
-        session()->flash('success', 'Clearance policy berhasil dihapus.');
+        session()->flash('success', 'Kebijakan bebas tanggungan berhasil dihapus.');
         $this->dispatch('pg:eventRefresh-clearancePolicyTable');
     }
 
@@ -140,15 +147,15 @@ final class ClearancePolicyTable extends BasePowerGridTable
 
         if (ActivePermission::check('clearance-policy.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('clearance-policy.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 
@@ -157,9 +164,10 @@ final class ClearancePolicyTable extends BasePowerGridTable
 
     private function modeBadge(string $mode): string
     {
-        $class = $mode === 'blocking' ? 'bg-danger' : 'bg-warning text-dark';
+        $class = $mode === 'blocking' ? 'bg-danger text-white' : 'bg-warning text-dark';
+        $label = $mode === 'blocking' ? 'Pemblokiran' : 'Peringatan';
 
-        return '<span class="badge '.$class.'">'.str($mode)->title().'</span>';
+        return '<span class="badge '.$class.' rounded-pill px-3 py-1 fs-8">'.$label.'</span>';
     }
 
     private function options(array $values): array

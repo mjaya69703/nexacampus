@@ -72,20 +72,34 @@ final class EmployerPartnerTable extends BasePowerGridTable
                 )
                 ->sortable(),
             Column::make('Dibuat', 'created_at_label')->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('is_active', 'is_active')
-                ->dataSource([
-                    ['id' => '1', 'name' => 'Aktif'],
-                    ['id' => '0', 'name' => 'Nonaktif'],
-                ])
+            Filter::inputText('name')->placeholder('Cari nama perusahaan mitra...'),
+            Filter::select('industry', 'industry')
+                ->dataSource(
+                    EmployerPartner::query()
+                        ->select('industry')
+                        ->whereNotNull('industry')
+                        ->where('industry', '!=', '')
+                        ->distinct()
+                        ->orderBy('industry')
+                        ->pluck('industry')
+                        ->map(fn ($ind) => [
+                            'id' => $ind,
+                            'name' => $ind,
+                        ])
+                )
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('industry', $value)),
+            Filter::inputText('city')->placeholder('Cari kota / lokasi mitra...'),
+            Filter::boolean('is_active', 'Aktif', 'Nonaktif'),
+            Filter::datepicker('created_at_label', 'created_at'),
         ];
     }
 
@@ -183,16 +197,15 @@ final class EmployerPartnerTable extends BasePowerGridTable
 
         if (ActivePermission::check('employer-partner.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->id()
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('employer-partner.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

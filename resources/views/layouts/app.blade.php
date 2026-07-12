@@ -17,9 +17,7 @@
     <link rel="stylesheet" href="https://unpkg.com/jodit@4.1.16/es2021/jodit.min.css">
     <!-- END PLUGINS STYLES -->
     <!-- BEGIN CUSTOM FONT -->
-    <style>
-        @import url("https://rsms.me/inter/inter.css");
-    </style>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <!-- END CUSTOM FONT -->
     {{-- BEGIN ADDITIONAL STYLES --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])

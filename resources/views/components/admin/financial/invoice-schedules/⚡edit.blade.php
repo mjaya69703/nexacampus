@@ -72,7 +72,7 @@ new class extends Component
     public function save(): void
     {
         if (! in_array($this->schedule->status, ['pending', 'failed'], true)) {
-            session()->flash('error', 'Schedule yang sudah completed/running/cancelled tidak bisa diedit.');
+            session()->flash('error', 'Jadwal yang sudah completed/running/cancelled tidak dapat diubah lagi.');
 
             return;
         }
@@ -92,15 +92,15 @@ new class extends Component
             'updated_by' => auth()->id(),
         ]);
 
-        session()->flash('success', 'Invoice schedule berhasil diperbarui.');
+        session()->flash('success', 'Jadwal penerbitan tagihan berhasil diperbarui.');
         $this->redirectRoute('admin.financial.invoice-schedules.index');
     }
 
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Financial',
-            'pages' => 'Edit Invoice Schedule',
+            'menus' => 'Keuangan',
+            'pages' => 'Edit Jadwal Penerbitan Tagihan',
         ]);
     }
 
@@ -178,24 +178,35 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="card-title mb-0">Edit Invoice Schedule</h3>
-                    <small class="text-muted">{{ $schedule->name }} / {{ str($schedule->status)->title() }}</small>
+<div class="w-full" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.financial.header
+        title="Edit Jadwal Penerbitan Tagihan"
+        description="Perbarui parameter, target mahasiswa, atau tanggal eksekusi jadwal: {{ $schedule->name }}"
+        icon="edit"
+    >
+        <a href="{{ route('admin.financial.invoice-schedules.index') }}" class="btn btn-sm btn-light text-secondary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke Daftar</span>
+        </a>
+    </x-admin.financial.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-3 p-md-4 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fa fa-clock fs-5"></i>
                 </div>
-                <a href="{{ route('admin.financial.invoice-schedules.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
+                <div>
+                    <h4 class="card-title fw-bold mb-0 text-dark">Formulir Edit Jadwal</h4>
+                    <span class="text-muted small">Status saat ini: {{ str($schedule->status)->title() }}</span>
+                </div>
             </div>
-            <div class="card-body">
-                <form wire:submit.prevent="save">
-                    @include('components.admin.financial.invoice-schedules._form')
-                </form>
-            </div>
+        </div>
+        <div class="card-body p-3 p-md-4">
+            <form wire:submit.prevent="save">
+                @include('components.admin.financial.invoice-schedules._form')
+            </form>
         </div>
     </div>
 </div>

@@ -421,35 +421,86 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-lg-8">
-        <x-alert />
+@push('styles')
+    <style>
+        .service-show .soft-card {
+            border: 0;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, .08);
+            margin-bottom: 1.5rem;
+        }
+    </style>
+@endpush
 
-        @php($nextAction = $this->nextAction())
-        <div class="alert alert-{{ $nextAction['tone'] }} d-flex gap-3 align-items-start">
-            <i class="fas {{ $nextAction['icon'] }} mt-1"></i>
-            <div>
-                <div class="fw-bold">{{ $nextAction['title'] }}</div>
-                <div>{{ $nextAction['body'] }}</div>
-            </div>
+<div class="w-full service-show" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.student-services.header
+        title="Pengajuan Yudisium & Kelulusan"
+        description="Nomor Pengajuan: {{ $application->application_number }} • Mahasiswa: {{ $application->studentProfile?->user?->name ?? '-' }} ({{ $application->studentProfile?->nim ?? '-' }})"
+        icon="user-graduate"
+    >
+        <div class="d-flex align-items-center gap-2">
+            @if ($application->student_profile_id)
+                <a href="{{ route('admin.academic.transcripts.show', ['id' => $application->student_profile_id]) }}" class="btn btn-sm btn-light text-primary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                    <i class="fa fa-file-alt"></i> <span>Transkrip Akademik</span>
+                </a>
+            @endif
+            <a href="{{ route('admin.student-services.graduation-applications.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </a>
         </div>
 
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="card-title mb-0">{{ $application->application_number }}</h3>
-                    <small class="text-muted">Pengajuan Yudisium</small>
+        <x-slot:stats>
+            <div class="d-flex flex-wrap gap-2 gap-lg-3">
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-circle-info fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Status Pengajuan</div>
+                        <div class="fw-bold">{{ $this->statusLabel($application->status) }}</div>
+                    </div>
                 </div>
-                <div class="d-flex gap-2 flex-wrap">
-                    @if ($application->student_profile_id)
-                        <a href="{{ route('admin.academic.transcripts.show', ['id' => $application->student_profile_id]) }}" class="btn btn-outline-primary">
-                            <i class="fas fa-file-alt me-1"></i> Transcript
-                        </a>
-                    @endif
-                    <a href="{{ route('admin.student-services.graduation-applications.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-1"></i> Back
-                    </a>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-layer-group fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Gelombang</div>
+                        <div class="fw-bold">{{ $application->graduationBatch?->name ?? $application->graduation_period }}</div>
+                    </div>
                 </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-school fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Program Studi</div>
+                        <div class="fw-bold">{{ $application->studentProfile?->studyProgram?->name ?? '-' }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-list-check fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Progress Review</div>
+                        <div class="fw-bold">{{ $this->checklistCompletedCount() }}/{{ count($this->checklistLabels()) }} Item</div>
+                    </div>
+                </div>
+            </div>
+        </x-slot:stats>
+    </x-admin.student-services.header>
+
+    @php($nextAction = $this->nextAction())
+    <div class="alert alert-{{ $nextAction['tone'] }} d-flex gap-3 align-items-start shadow-sm border-0 rounded-4 mb-4 p-3 p-md-4">
+        <div class="bg-{{ $nextAction['tone'] }} bg-opacity-10 text-{{ $nextAction['tone'] }} rounded-3 p-3 d-flex align-items-center justify-content-center flex-shrink-0">
+            <i class="fas {{ $nextAction['icon'] }} fs-4"></i>
+        </div>
+        <div>
+            <div class="fw-bold fs-5 mb-1 text-dark">{{ $nextAction['title'] }}</div>
+            <div class="text-muted small">{{ $nextAction['body'] }}</div>
+        </div>
+    </div>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Informasi Pengajuan Yudisium</h4>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -609,17 +660,17 @@ new class extends Component
     </div>
 
     <div class="col-lg-4">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Review Actions</h3>
+        <div class="card soft-card mb-4">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Tindakan Evaluasi (Review)</h4>
             </div>
-            <div class="card-body">
-                <label class="form-label">Admin Notes</label>
-                <textarea wire:model="adminNotes" class="form-control mb-3" rows="4" placeholder="Catatan untuk mahasiswa"></textarea>
+            <div class="card-body p-4">
+                <label class="form-label fw-semibold">Catatan Admin / Operator</label>
+                <textarea wire:model="adminNotes" class="form-control mb-3" rows="4" placeholder="Tuliskan catatan untuk mahasiswa..."></textarea>
 
                 <div class="mb-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <label class="form-label mb-0">Checklist Review</label>
+                        <label class="form-label mb-0 fw-semibold">Checklist Evaluasi</label>
                         <span class="badge {{ $this->checklistIsComplete() ? 'bg-success' : 'bg-warning text-dark' }}">
                             {{ $this->checklistCompletedCount() }}/{{ count($this->checklistLabels()) }}
                         </span>
@@ -650,44 +701,44 @@ new class extends Component
                 </div>
 
                 <div class="d-grid gap-2">
-                    <button wire:click="markUnderReview" class="btn btn-outline-primary" @disabled(! in_array($application->status, ['submitted', 'revision_requested'], true))>
-                        <i class="fas fa-search me-1"></i> Mark Under Review
+                    <button wire:click="markUnderReview" class="btn btn-outline-primary fw-bold" @disabled(! in_array($application->status, ['submitted', 'revision_requested'], true))>
+                        <i class="fas fa-search me-1"></i> Tandai Sedang Direview
                     </button>
-                    <button wire:click="approve" class="btn btn-success" @disabled(! $this->checklistIsComplete() || ! $this->requiredDocumentsAreVerified() || ! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                        <i class="fas fa-check me-1"></i> Approve
+                    <button wire:click="approve" class="btn btn-success fw-bold py-2" @disabled(! $this->checklistIsComplete() || ! $this->requiredDocumentsAreVerified() || ! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                        <i class="fas fa-check me-1"></i> Setujui Pengajuan (Approve)
                     </button>
                     @if ((! $this->checklistIsComplete() || ! $this->requiredDocumentsAreVerified()) && in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))
                         <div class="small text-muted text-center">
                             Approve aktif setelah semua checklist lengkap dan dokumen wajib verified.
                         </div>
                     @endif
-                    <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                        <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan
+                    <button wire:click="requestCorrection" class="btn btn-warning fw-bold text-dark py-2" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                        <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan Mahasiswa
                     </button>
-                    <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                        <i class="fas fa-times me-1"></i> Reject
+                    <button wire:click="reject" class="btn btn-danger fw-bold py-2" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                        <i class="fas fa-times me-1"></i> Tolak Pengajuan
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Finalisasi Yudisium</h3>
+        <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Finalisasi Yudisium</h4>
             </div>
-            <div class="card-body d-grid gap-2">
-                <label class="form-label">Tanggal Yudisium Batch</label>
+            <div class="card-body p-4 d-grid gap-2">
+                <label class="form-label fw-semibold">Tanggal Yudisium Batch</label>
                 <input type="text" class="form-control" value="{{ $application->graduationBatch?->yudisium_date?->format('d M Y') ?? 'Belum diatur pada batch' }}" disabled>
-                <button wire:click="finalize" class="btn btn-primary" @disabled($application->status !== 'approved' || ! $application->graduationBatch?->yudisium_date)>
-                    <i class="fas fa-user-graduate me-1"></i> Finalisasi Yudisium
+                <button wire:click="finalize" class="btn btn-primary fw-bold py-2" @disabled($application->status !== 'approved' || ! $application->graduationBatch?->yudisium_date)>
+                    <i class="fas fa-user-graduate me-1"></i> Finalisasi & Luluskan Mahasiswa
                 </button>
                 @if ($application->status === 'approved' && ! $application->graduationBatch?->yudisium_date)
-                    <div class="alert alert-danger mb-0">
+                    <div class="alert alert-danger mb-0 mt-2">
                         Tanggal yudisium batch wajib diisi sebelum finalize. Edit batch yudisium terlebih dulu.
                     </div>
                 @endif
-                <div class="alert alert-info mb-0">
-                    Finalisasi per mahasiswa memakai tanggal yudisium dari batch. Untuk banyak mahasiswa, gunakan finalisasi massal dari halaman Batch Yudisium.
+                <div class="alert alert-info mb-0 mt-2">
+                    Finalisasi per mahasiswa memakai tanggal yudisium dari batch. Untuk banyak mahasiswa sekaligus, gunakan finalisasi massal dari halaman Batch Yudisium.
                 </div>
             </div>
         </div>

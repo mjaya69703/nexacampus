@@ -43,7 +43,7 @@ final class StudentRegistrationTable extends BasePowerGridTable
     public function relationSearch(): array
     {
         return [
-            'studentProfile.user' => ['name', 'email'],
+            'studentProfile.user' => ['first_name', 'last_name', 'email'],
             'studentProfile.studyProgram' => ['name'],
             'academicYear' => ['name'],
         ];
@@ -103,6 +103,26 @@ final class StudentRegistrationTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('student_name', 'student_name')
+                ->placeholder('Cari nama mahasiswa...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('studentProfile.user', fn (Builder $user) => $user->where('first_name', 'like', '%'.$search.'%')->orWhere('last_name', 'like', '%'.$search.'%'));
+                }),
+            Filter::inputText('student_nim', 'student_nim')
+                ->placeholder('Cari NIM...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('studentProfile', fn (Builder $sp) => $sp->where('nim', 'like', '%'.$search.'%'));
+                }),
             Filter::select('academic_year_name', 'academic_year_id')
                 ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
                 ->optionValue('id')
@@ -126,6 +146,7 @@ final class StudentRegistrationTable extends BasePowerGridTable
                 ->optionValue('id')
                 ->optionLabel('name'),
             Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 

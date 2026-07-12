@@ -49,7 +49,7 @@ new class extends Component
             'created_by' => auth()->id(),
         ]);
 
-        session()->flash('success', 'Quota admission berhasil dibuat.');
+        session()->flash('success', 'Kuota daya tampung admission berhasil disimpan.');
         $this->redirectRoute('admin.admission.admission-quotas.index');
     }
 
@@ -57,7 +57,7 @@ new class extends Component
     {
         return $this->view()->layout('layouts.app', [
             'menus' => 'Admission',
-            'pages' => 'Create Admission Quota',
+            'pages' => 'Tambah Kuota PMB',
         ]);
     }
 
@@ -84,21 +84,30 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">Create Admission Quota</h3>
-                <a href="{{ route('admin.admission.admission-quotas.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
-            </div>
-            <div class="card-body">
-                <form wire:submit.prevent="save">
-                    @include('components.admin.admission.admission-quotas._form')
-                </form>
-            </div>
+<div class="w-full" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.admission.header
+        title="Tambah Batasan Kuota PMB"
+        description="Atur alokasi kursi atau daya tampung penerimaan mahasiswa baru berdasarkan gelombang, fakultas, program studi, dan jenis kelas."
+        icon="cubes"
+    >
+        <a href="{{ route('admin.admission.admission-quotas.index') }}" class="btn btn-light rounded-pill px-4 py-2 text-dark fw-bold shadow-sm d-inline-flex align-items-center gap-2 border-0">
+            <i class="fas fa-arrow-left"></i> Kembali ke Daftar
+        </a>
+    </x-admin.admission.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white border-bottom p-4">
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="fas fa-chart-pie text-primary"></i> Formulir Penetapan Kuota
+            </h4>
+            <p class="text-muted fs-7 mb-0">Pilih ruang lingkup kuota dan masukkan angka batas maksimal calon mahasiswa yang diterima.</p>
+        </div>
+        <div class="card-body p-4">
+            <form wire:submit.prevent="save">
+                @include('components.admin.admission.admission-quotas._form')
+            </form>
         </div>
     </div>
 </div>

@@ -64,6 +64,45 @@ final class LecturerWorkloadSubmissionTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('lecturer_name', 'lecturer_name')
+                ->placeholder('Cari nama dosen/username...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('owner', function (Builder $sub) use ($value) {
+                            $sub->where(function (Builder $q) use ($value) {
+                                $q->where('first_name', 'like', '%' . $value . '%')
+                                    ->orWhere('last_name', 'like', '%' . $value . '%')
+                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhere('username', 'like', '%' . $value . '%');
+                            });
+                        });
+                    }
+                }),
+            Filter::inputText('period_name', 'period_name')
+                ->placeholder('Cari periode BKD...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('period', function (Builder $sub) use ($value) {
+                            $sub->where('name', 'like', '%' . $value . '%')
+                                ->orWhere('code', 'like', '%' . $value . '%');
+                        });
+                    }
+                }),
+            Filter::inputText('program_name', 'program_name')
+                ->placeholder('Cari program studi...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('lecturerProfile.studyProgram', function (Builder $sub) use ($value) {
+                            $sub->where('name', 'like', '%' . $value . '%');
+                        });
+                    }
+                }),
             Filter::select('status', 'status')
                 ->dataSource(collect([
                     ['id' => 'draft', 'name' => 'Draft'],
@@ -75,6 +114,7 @@ final class LecturerWorkloadSubmissionTable extends BasePowerGridTable
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::datepicker('submitted_at', 'submitted_at'),
         ];
     }
 
@@ -84,11 +124,65 @@ final class LecturerWorkloadSubmissionTable extends BasePowerGridTable
         $this->redirectRoute('admin.organization.lecturer-workload-submissions.show', ['id' => $rowId]);
     }
 
+    #[On('delete')]
+    public function delete($id): void
+    {
+        $submission = LecturerWorkloadSubmission::find($id);
+
+        if (! $submission) {
+            return;
+        }
+
+        $this->js('
+            Swal.fire({
+                title: "Hapus Laporan BKD?",
+                text: "Laporan BKD milik \''.($submission->owner?->name ?? 'Dosen').'\' beserta rincian itemnya akan dihapus permanen.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Ya, hapus!",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.dispatch("deleteItem", {id: '.$id.'})
+                }
+            });
+        ');
+    }
+
+    #[On('deleteItem')]
+    public function deleteItem($id = null): void
+    {
+        if (! ActivePermission::check('lecturer-workload-submission.delete')) {
+            session()->flash('error', 'Anda tidak memiliki izin menghapus laporan BKD.');
+            return;
+        }
+
+        $submission = LecturerWorkloadSubmission::find($id);
+
+        if (! $submission) {
+            session()->flash('error', 'Laporan BKD tidak ditemukan.');
+            return;
+        }
+
+        $submission->items()->delete();
+        $submission->delete();
+        session()->flash('success', 'Laporan BKD berhasil dihapus.');
+        $this->dispatch('pg:eventRefresh-lecturerWorkloadSubmissionTable');
+    }
+
     public function actions(LecturerWorkloadSubmission $row): array
     {
-        return ActivePermission::check('lecturer-workload-submission.view')
-            ? [Button::add('show')->slot('<i class="fa fa-eye"></i>')->class('btn btn-primary')->dispatch('show', ['rowId' => $row->id])]
-            : [];
+        $actions = [];
+
+        if (ActivePermission::check('lecturer-workload-submission.view')) {
+            $actions[] = Button::add('show')->slot('<i class="fa fa-eye"></i>')->class('btn btn-primary')->dispatch('show', ['rowId' => $row->id]);
+        }
+
+        if (ActivePermission::check('lecturer-workload-submission.delete') && in_array($row->status, ['draft', 'cancelled', 'revision', 'rejected'])) {
+            $actions[] = Button::add('delete')->slot('<i class="fa fa-trash"></i>')->class('btn btn-danger')->dispatch('delete', ['id' => $row->id]);
+        }
+
+        return $actions;
     }
 
     private function statusBadge(string $status): string

@@ -96,35 +96,39 @@ final class ApplicationTable extends BasePowerGridTable
     public function columns(): array
     {
         return [
-            Column::make('No. Application', 'application_number')->sortable()->searchable(),
-            Column::make('Applicant', 'full_name')->sortable()->searchable(),
+            Column::make('No. Pendaftaran', 'application_number')->sortable()->searchable(),
+            Column::make('Nama Pendaftar', 'full_name')->sortable()->searchable(),
             Column::make('Email', 'email')->sortable()->searchable()->hidden(),
-            Column::make('Phone', 'phone')->sortable()->searchable(),
-            Column::make('Period', 'period_name')->sortable()->searchable(),
-            Column::make('Faculty', 'faculty_name')->sortable()->searchable()->hidden(),
-            Column::make('Study Program', 'study_program_name')->sortable()->searchable(),
-            Column::make('Class', 'class_type')->sortable(),
+            Column::make('No. HP / WA', 'phone')->sortable()->searchable(),
+            Column::make('Gelombang / Periode', 'period_name')->sortable()->searchable(),
+            Column::make('Fakultas', 'faculty_name')->sortable()->searchable()->hidden(),
+            Column::make('Program Studi', 'study_program_name')->sortable()->searchable(),
+            Column::make('Kelas', 'class_type')->sortable(),
             Column::make('Status', 'status')->sortable(),
-            Column::make('Final Score', 'final_score')->sortable(),
-            Column::make('Docs', 'documents_count')->sortable(),
-            Column::make('Scores', 'scores_count')->sortable()->hidden(),
-            Column::make('Sessions', 'exam_participants_count')->sortable()->hidden(),
-            Column::make('Converted', 'converted_at')->sortable()->hidden(),
-            Column::make('Submitted', 'submitted_at')->sortable(),
-            Column::action('Action'),
+            Column::make('Skor Akhir', 'final_score')->sortable(),
+            Column::make('Dokumen', 'documents_count')->sortable(),
+            Column::make('Nilai Ujian', 'scores_count')->sortable()->hidden(),
+            Column::make('Sesi Ujian', 'exam_participants_count')->sortable()->hidden(),
+            Column::make('Dikonversi', 'converted_at')->sortable()->hidden(),
+            Column::make('Tanggal Daftar', 'submitted_at')->sortable(),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
+            Filter::inputText('application_number')->placeholder('Cari no. pendaftaran...'),
+            Filter::inputText('full_name')->placeholder('Cari nama pendaftar...'),
+            Filter::inputText('phone')->placeholder('Cari no. HP/WhatsApp...'),
+            Filter::inputText('email')->placeholder('Cari email pendaftar...'),
             Filter::select('status', 'status')
                 ->dataSource(collect([
-                    ['id' => 'submitted', 'name' => 'Submitted'],
-                    ['id' => 'under_review', 'name' => 'Under Review'],
-                    ['id' => 'accepted', 'name' => 'Accepted'],
-                    ['id' => 'rejected', 'name' => 'Rejected'],
-                    ['id' => 'waitlisted', 'name' => 'Waitlisted'],
+                    ['id' => 'submitted', 'name' => 'Submitted (Terkirim)'],
+                    ['id' => 'under_review', 'name' => 'Under Review (Proses Seleksi)'],
+                    ['id' => 'accepted', 'name' => 'Accepted (Diterima)'],
+                    ['id' => 'rejected', 'name' => 'Rejected (Ditolak)'],
+                    ['id' => 'waitlisted', 'name' => 'Waitlisted (Cadangan)'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
@@ -145,9 +149,9 @@ final class ApplicationTable extends BasePowerGridTable
                 ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
             Filter::select('class_type', 'class_type')
                 ->dataSource(collect([
-                    ['id' => 'regular', 'name' => 'Regular'],
-                    ['id' => 'evening', 'name' => 'Evening'],
-                    ['id' => 'weekend', 'name' => 'Weekend'],
+                    ['id' => 'regular', 'name' => 'Reguler Pagi'],
+                    ['id' => 'evening', 'name' => 'Kelas Malam'],
+                    ['id' => 'weekend', 'name' => 'Kelas Akhir Pekan (Weekend)'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
@@ -338,15 +342,15 @@ final class ApplicationTable extends BasePowerGridTable
 
         if (ActivePermission::check('admission-application.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-info')
+                ->slot('<i class="fa fa-eye"></i> Detail')
+                ->class('btn btn-outline-info rounded-pill px-2.5 py-1 text-info fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('admission-application.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

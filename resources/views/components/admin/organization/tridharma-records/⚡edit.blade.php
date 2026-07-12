@@ -116,15 +116,65 @@ new class extends Component
 
 <div>
     <x-alert />
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title mb-0">Edit Tridharma</h3>
-            <a href="{{ route('admin.organization.tridharma-records.show', $record->id) }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Kembali
-            </a>
+
+    <x-admin.organization.header
+        title="Edit Data Kegiatan Tri Dharma"
+        description="Perbarui rincian kegiatan, judul, skema hibah, atau lampiran dokumen untuk: {{ str($record->title)->limit(60) }}"
+        icon="edit"
+    >
+        <a href="{{ route('admin.organization.tridharma-records.show', $record->id) }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke detail</span>
+        </a>
+    </x-admin.organization.header>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-award fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-1 text-dark">Formulir Perubahan Data Tri Dharma</h4>
+                            <div class="text-muted small">Sesuaikan judul, status siklus, jumlah pendanaan, atau keterangan admin untuk kegiatan ini.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    @include('components.admin.organization.tridharma-records._form', ['isEdit' => true])
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            @include('components.admin.organization.tridharma-records._form', ['isEdit' => true])
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                <div class="card-body p-4 bg-light bg-opacity-50">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-circle-info"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-1">Pedoman Perubahan</h5>
+                            <div class="text-muted small">Informasi update portofolio.</div>
+                        </div>
+                    </div>
+
+                    <ul class="list-unstyled mb-0 text-muted small d-grid gap-2">
+                        <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Perubahan informasi pada kegiatan ini akan langsung ter-update di halaman detail dan rekap BKD dosen.</span></li>
+                        <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Jika status diubah menjadi <strong>Approved / Completed</strong>, sistem otomatis mencantumkan identitas dan waktu verifikasi Anda.</span></li>
+                        <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Anda dapat mengunggah berkas lampiran atau bukti evidence baru yang lebih mutakhir jika diperlukan.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="text-muted small mb-1">Penyimpanan & Lampiran</div>
+                    <div class="fw-bold fs-5 text-dark mb-2">Riwayat Berkas</div>
+                    <p class="text-muted small mb-0">Lampiran terdahulu tetap tersimpan dan dapat dikelola atau diunduh dari tab lampiran di halaman detail kegiatan.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>

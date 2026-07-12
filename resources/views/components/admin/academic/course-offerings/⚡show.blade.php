@@ -123,320 +123,302 @@ new class extends Component {
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <!-- Header Card -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Course Offering Detail</h5>
-                <div class="btn-group" role="group">
-                    @can('course-offering.update')
-                        <a href="{{ route('admin.academic.course-offerings.edit', ['id' => $offering->id]) }}" class="btn btn-warning ">
-                            <i class="fas fa-pencil me-1"></i> Edit
-                        </a>
-                    @endcan
-                    <button class="btn btn-secondary " wire:click="goBack">
-                        <i class="fas fa-arrow-left me-1"></i> Kembali ke Daftar
-                    </button>
+<div>
+    <x-alert />
+
+    <x-admin.academic.header
+        title="Detail Kelas Penawaran: {{ $offering->code ?? '' }} {{ $offering->label ?? '' }}"
+        description="Mata Kuliah: {{ $offering->course?->code }} - {{ $offering->course?->name }} | Program Studi: {{ $offering->studyProgram?->name }} ({{ $offering->academicYear?->name }})"
+        icon="layer-group"
+    >
+        <div class="d-flex align-items-center gap-2">
+            @can('course-offering.update')
+                <a href="{{ route('admin.academic.course-offerings.edit', ['id' => $offering->id]) }}" class="btn btn-sm btn-primary rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1">
+                    <i class="fas fa-edit"></i> Edit Kelas
+                </a>
+            @endcan
+            <button type="button" class="btn btn-sm btn-light text-secondary rounded-pill px-3 py-2 border shadow-sm d-flex align-items-center gap-1" wire:click="goBack">
+                <i class="fas fa-arrow-left"></i> Kembali
+            </button>
+        </div>
+    </x-admin.academic.header>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-row align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Kapasitas</span>
+                    <h3 class="fw-bold mb-0 text-primary mt-1">{{ $offering->capacity ?? '-' }} <small class="fs-6 text-muted fw-normal">Mhs</small></h3>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="fas fa-users fs-5"></i>
                 </div>
             </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-lg-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Tahun Akademik</label>
-                            <div class="h6 mb-0">{{ $offering->academicYear?->name ?? '-' }}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Program Studi</label>
-                            <div class="h6 mb-0">{{ $offering->studyProgram?->name ?? '-' }}</div>
-                        </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-row align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Bobot SKS</span>
+                    <h3 class="fw-bold mb-0 text-info mt-1">{{ $offering->credits ?? '-' }} <small class="fs-6 text-muted fw-normal">SKS</small></h3>
+                </div>
+                <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="fas fa-book-reader fs-5"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-row align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Total Pertemuan</span>
+                    <h3 class="fw-bold mb-0 text-success mt-1">{{ count($attendanceSessionsData) }} / {{ $offering->total_meetings ?? '-' }}</h3>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="fas fa-calendar-check fs-5"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-row align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Status & Mode</span>
+                    <div class="d-flex gap-1 mt-1">
+                        @php
+                            $statusBadge = match($offering->status) {
+                                'Draft' => 'bg-secondary',
+                                'Open' => 'bg-success',
+                                'Closed' => 'bg-danger',
+                                'Cancelled' => 'bg-dark',
+                                default => 'bg-secondary',
+                            };
+                            $modeBadge = match($offering->delivery_mode) {
+                                'Offline' => 'bg-info text-dark',
+                                'Online' => 'bg-primary',
+                                'Hybrid' => 'bg-warning text-dark',
+                                default => 'bg-secondary',
+                            };
+                        @endphp
+                        <span class="badge {{ $statusBadge }} rounded-pill px-2 py-1">{{ $offering->status }}</span>
+                        <span class="badge {{ $modeBadge }} rounded-pill px-2 py-1">{{ $offering->delivery_mode }}</span>
                     </div>
                 </div>
-
-                <div class="row mb-3">
-                    <div class="col-lg-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Mata Kuliah</label>
-                            <div class="h6 mb-0">
-                                {{ $offering->course?->code }} - {{ $offering->course?->name ?? '-' }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Label (Kelas)</label>
-                            <div class="h6 mb-0">{{ $offering->label ?? '-' }}</div>
-                        </div>
-                    </div>
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="fas fa-info-circle fs-5"></i>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="row mb-3">
-                    <div class="col-lg-3">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Kode</label>
-                            <div class="h6 mb-0">{{ $offering->code ?? '-' }}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Semester</label>
-                            <div class="h6 mb-0">{{ $offering->semester_no ?? '-' }}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Kapasitas</label>
-                            <div class="h6 mb-0">{{ $offering->capacity ?? '-' }} Mahasiswa</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">SKS</label>
-                            <div class="h6 mb-0">{{ $offering->credits ?? '-' }}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Total Pertemuan</label>
-                            <div class="h6 mb-0">{{ $offering->total_meetings ?? '-' }}</div>
-                        </div>
-                    </div>
+    <div class="row g-4">
+        <!-- Left Column: Details & Schedules & Attendance Sessions -->
+        <div class="col-lg-8">
+            <!-- Course Offering Detail -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-bold mb-0">Informasi Lengkap Penawaran</h5>
                 </div>
-
-                <div class="row mb-3">
-                    <div class="col-lg-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Tanggal Mulai Kelas</label>
-                            <div class="h6 mb-0">{{ $offering->class_start_date?->format('d M Y') ?? '-' }}</div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold mb-1">Tahun Akademik</label>
+                            <div class="fw-bold">{{ $offering->academicYear?->name ?? '-' }}</div>
                         </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Tanggal Akhir Kelas</label>
-                            <div class="h6 mb-0">{{ $offering->class_end_date?->format('d M Y') ?? '-' }}</div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold mb-1">Program Studi</label>
+                            <div class="fw-bold">{{ $offering->studyProgram?->name ?? '-' }}</div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-lg-4">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Mode Pengiriman</label>
-                            <div>
-                                @php
-                                    $badgeClass = match($offering->delivery_mode) {
-                                        'Offline' => 'bg-info',
-                                        'Online' => 'bg-primary',
-                                        'Hybrid' => 'bg-warning',
-                                        default => 'bg-secondary',
-                                    };
-                                @endphp
-                                <span class="badge {{ $badgeClass }}">{{ $offering->delivery_mode }}</span>
-                            </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold mb-1">Mata Kuliah</label>
+                            <div class="fw-bold">{{ $offering->course?->code }} - {{ $offering->course?->name ?? '-' }}</div>
                         </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Status</label>
-                            <div>
-                                @php
-                                    $statusBadge = match($offering->status) {
-                                        'Draft' => 'bg-secondary',
-                                        'Open' => 'bg-success',
-                                        'Closed' => 'bg-danger',
-                                        'Cancelled' => 'bg-dark',
-                                        default => 'bg-secondary',
-                                    };
-                                @endphp
-                                <span class="badge {{ $statusBadge }}">{{ $offering->status }}</span>
-                            </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold mb-1">Label Kelas / Kode</label>
+                            <div class="fw-bold">{{ $offering->label ?? '-' }} <span class="text-muted">({{ $offering->code ?? '-' }})</span></div>
                         </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Wajib Diambil</label>
+                        <div class="col-md-3 col-6">
+                            <label class="form-label text-muted small fw-semibold mb-1">Target Semester</label>
+                            <div class="fw-bold">Semester {{ $offering->semester_no ?? '-' }}</div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <label class="form-label text-muted small fw-semibold mb-1">Sifat Mata Kuliah</label>
                             <div>
                                 @if ($offering->is_required)
-                                    <span class="badge bg-success">Ya</span>
+                                    <span class="badge bg-success bg-opacity-10 text-success px-2 py-1"><i class="fas fa-check-circle me-1"></i> Wajib Diambil</span>
                                 @else
-                                    <span class="badge bg-danger">Tidak</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">Pilihan</span>
                                 @endif
                             </div>
                         </div>
+                        <div class="col-md-3 col-6">
+                            <label class="form-label text-muted small fw-semibold mb-1">Tanggal Mulai</label>
+                            <div class="fw-semibold">{{ $offering->class_start_date?->format('d M Y') ?? '-' }}</div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <label class="form-label text-muted small fw-semibold mb-1">Tanggal Akhir</label>
+                            <div class="fw-semibold">{{ $offering->class_end_date?->format('d M Y') ?? '-' }}</div>
+                        </div>
+                        @if ($offering->notes)
+                            <div class="col-12 border-top pt-3 mt-3">
+                                <label class="form-label text-muted small fw-semibold mb-1">Catatan</label>
+                                <div class="p-3 bg-light rounded-3 small">{{ $offering->notes }}</div>
+                            </div>
+                        @endif
                     </div>
                 </div>
+            </div>
 
-                @if ($offering->notes)
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label text-muted">Catatan</label>
-                            <div class="p-2 rounded">
-                                {{ $offering->notes }}
-                            </div>
+            <!-- Schedules & Generate Sessions -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-bold mb-0">Jadwal Perkuliahan Mingguan</h5>
+                    @can('course-offering.update')
+                        <button type="button" class="btn btn-sm btn-info rounded-pill px-3 shadow-sm text-white" wire:click="generateSessions">
+                            <i class="fas fa-bolt me-1"></i> Generate Sesi Absensi
+                        </button>
+                    @endcan
+                </div>
+                <div class="card-body p-4">
+                    @if (!empty($generationMessage))
+                        <div class="alert alert-{{ $generationMessage['type'] }} mb-3 rounded-3 border-0">
+                            {{ $generationMessage['text'] }}
                         </div>
-                    </div>
-                @endif
+                    @endif
+
+                    @if (count($schedulesData) > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Hari</th>
+                                        <th>Jam Perkuliahan</th>
+                                        <th>Dosen Pengampu</th>
+                                        <th>Ruang & Gedung</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($schedulesData as $schedule)
+                                        <tr>
+                                            <td class="fw-bold">{{ $schedule['day_name'] }}</td>
+                                            <td><span class="badge bg-light text-dark border px-2 py-1">{{ $schedule['start_time'] }} - {{ $schedule['end_time'] }}</span></td>
+                                            <td>{{ $schedule['lecturer_name'] }}</td>
+                                            <td>{{ trim(($schedule['building'] ?? '') . ' ' . ($schedule['room'] ?? '')) ?: '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-warning mb-0 border-0 bg-warning bg-opacity-10 text-warning-emphasis d-flex align-items-center gap-2">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Belum ada jadwal perkuliahan yang diatur untuk kelas ini.</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Attendance Sessions -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-bold mb-0">Daftar Sesi Absensi Pertemuan</h5>
+                    <span class="badge bg-primary rounded-pill px-3">{{ count($attendanceSessionsData) }} Sesi</span>
+                </div>
+                <div class="card-body p-4">
+                    @if (count($attendanceSessionsData) > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Pertemuan</th>
+                                        <th>Tanggal & Waktu</th>
+                                        <th>Dosen & Topik</th>
+                                        <th>Status</th>
+                                        <th class="text-center">Absensi</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($attendanceSessionsData as $session)
+                                        <tr>
+                                            <td><span class="badge bg-primary bg-opacity-10 text-primary fw-bold">Ke-{{ $session['meeting_no'] ?? '-' }}</span></td>
+                                            <td>
+                                                <div class="fw-semibold">{{ $session['meeting_date'] }}</div>
+                                                <div class="small text-muted">{{ $session['start_time'] }} - {{ $session['end_time'] }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold">{{ $session['topic'] }}</div>
+                                                <div class="small text-muted">{{ $session['lecturer_name'] }}</div>
+                                            </td>
+                                            <td>
+                                                @php
+                                                    $sessBadge = match($session['status']) {
+                                                        'Scheduled' => 'bg-secondary',
+                                                        'Open' => 'bg-success',
+                                                        'Closed' => 'bg-dark',
+                                                        'Cancelled' => 'bg-danger',
+                                                        default => 'bg-secondary',
+                                                    };
+                                                @endphp
+                                                <span class="badge {{ $sessBadge }} rounded-pill px-2 py-1">{{ $session['status'] }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-info bg-opacity-10 text-info fw-bold">{{ $session['records_count'] }} Mahasiswa</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ route('admin.academic.attendance-sessions.show', ['offeringId' => $offering->id, 'id' => $session['id']]) }}" class="btn btn-sm btn-light border text-primary rounded-pill px-3 shadow-sm">
+                                                    <i class="fas fa-eye me-1"></i> Detail
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-info mb-0 border-0 bg-info bg-opacity-10 text-info-emphasis d-flex align-items-center gap-2">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Belum ada sesi absensi. Klik tombol <strong>Generate Sesi Absensi</strong> di atas untuk membuat sesi pertemuan otomatis.</span>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
 
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Schedules & Generate Sessions</h5>
-                @can('course-offering.update')
-                    <button class="btn btn-info" wire:click="generateSessions">
-                        <i class="fas fa-bolt me-1"></i> Generate Sessions
-                    </button>
-                @endcan
-            </div>
-            <div class="card-body">
-                @if (!empty($generationMessage))
-                    <div class="alert alert-{{ $generationMessage['type'] }} mb-3">
-                        {{ $generationMessage['text'] }}
-                    </div>
-                @endif
-
-                @if (count($schedulesData) > 0)
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Hari</th>
-                                    <th>Mulai</th>
-                                    <th>Selesai</th>
-                                    <th>Dosen</th>
-                                    <th>Lokasi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($schedulesData as $schedule)
-                                    <tr>
-                                        <td>{{ $schedule['day_name'] }}</td>
-                                        <td>{{ $schedule['start_time'] }}</td>
-                                        <td>{{ $schedule['end_time'] }}</td>
-                                        <td>{{ $schedule['lecturer_name'] }}</td>
-                                        <td>{{ trim(($schedule['building'] ?? '') . ' ' . ($schedule['room'] ?? '')) ?: '-' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="alert alert-warning mb-0">
-                        Belum ada schedule. Tambahkan dulu agar sistem bisa generate sessions.
-                    </div>
-                @endif
-                <small class="text-muted d-block mt-2">Setelah generate, session tetap bisa diubah manual untuk kebutuhan reschedule/libur/pengganti.</small>
-            </div>
-        </div>
-
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Attendance Sessions</h5>
-            </div>
-            <div class="card-body">
-                @if (count($attendanceSessionsData) > 0)
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Pertemuan</th>
-                                    <th>Tanggal</th>
-                                    <th>Jam</th>
-                                    <th>Dosen</th>
-                                    <th>Topik</th>
-                                    <th>Status</th>
-                                    <th>Records</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($attendanceSessionsData as $session)
-                                    <tr>
-                                        <td>{{ $session['meeting_no'] ?? '-' }}</td>
-                                        <td>{{ $session['meeting_date'] }}</td>
-                                        <td>{{ $session['start_time'] }} - {{ $session['end_time'] }}</td>
-                                        <td>{{ $session['lecturer_name'] }}</td>
-                                        <td>{{ $session['topic'] }}</td>
-                                        <td>
-                                            <span class="badge bg-secondary">{{ $session['status'] }}</span>
-                                        </td>
-                                        <td>{{ $session['records_count'] }}</td>
-                                        <td>
-                                            <a
-                                                href="{{ route('admin.academic.attendance-sessions.show', ['offeringId' => $offering->id, 'id' => $session['id']]) }}"
-                                                class="btn  btn-primary"
-                                            >
-                                                <i class="fas fa-eye me-1"></i> Detail Session
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="alert alert-info mb-0">
-                        Belum ada attendance session. Gunakan tombol Generate Sessions di atas.
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        <!-- Lecturers Card -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Dosen Pengajar</h5>
-            </div>
-            <div class="card-body">
-                @if ($offering->lecturers && count($offering->lecturers) > 0)
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-striped">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Dosen</th>
-                                    <th>Role</th>
-                                    <th>Urut</th>
-                                    <th>Status</th>
-                                    <th>Catatan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($offering->lecturers->sortBy('sort_order') as $index => $lecturer)
-                                    <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>
-                                            <strong>{{ $lecturer->lecturerProfile?->user?->name ?? '-' }}</strong>
-                                        </td>
-                                        <td><span class="badge bg-info">{{ $lecturer->role }}</span></td>
-                                        <td>{{ $lecturer->sort_order }}</td>
-                                        <td>
-                                            @if ($lecturer->is_active)
-                                                <span class="badge bg-success">Aktif</span>
-                                            @else
-                                                <span class="badge bg-secondary">Nonaktif</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if ($lecturer->notes)
-                                                <span class="text-muted small">{{ Str::limit($lecturer->notes, 50) }}</span>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-info-circle me-2"></i> Belum ada dosen pengajar yang ditugaskan.
-                    </div>
-                @endif
+        <!-- Right Column: Lecturers List -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-bold mb-0">Dosen Pengampu</h5>
+                </div>
+                <div class="card-body p-4">
+                    @if ($offering->lecturers && count($offering->lecturers) > 0)
+                        <div class="d-flex flex-column gap-3">
+                            @foreach ($offering->lecturers->sortBy('sort_order') as $index => $lecturer)
+                                <div class="p-3 rounded-3 border bg-light bg-opacity-50">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="fw-bold text-dark">{{ $lecturer->lecturerProfile?->user?->name ?? '-' }}</div>
+                                        @if ($lecturer->is_active)
+                                            <span class="badge bg-success bg-opacity-10 text-success">Aktif</span>
+                                        @else
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary">Nonaktif</span>
+                                        @endif
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">{{ $lecturer->role }}</span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">Urutan: {{ $lecturer->sort_order }}</span>
+                                    </div>
+                                    @if ($lecturer->notes)
+                                        <div class="small text-muted mt-2 border-top pt-2">{{ $lecturer->notes }}</div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="alert alert-info border-0 bg-info bg-opacity-10 text-info-emphasis mb-0 d-flex align-items-center gap-2">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Belum ada dosen pengajar yang ditugaskan pada kelas ini.</span>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

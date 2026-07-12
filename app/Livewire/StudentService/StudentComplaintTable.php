@@ -3,6 +3,7 @@
 namespace App\Livewire\StudentService;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\StudyProgram;
 use App\Models\Organization\WorkUnit;
 use App\Models\StudentService\StudentComplaint;
 use App\Models\StudentService\StudentComplaintCategory;
@@ -95,15 +96,18 @@ final class StudentComplaintTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::select('student_complaint_category_id', 'student_complaint_category_id')
+            Filter::inputText('ticket_number')->placeholder('Cari nomor tiket...'),
+            Filter::select('category_name', 'student_complaint_category_id')
                 ->dataSource(StudentComplaintCategory::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::select('assigned_work_unit_id', 'assigned_work_unit_id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('student_complaint_category_id', $value)),
+            Filter::select('assigned_unit', 'assigned_work_unit_id')
                 ->dataSource(WorkUnit::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::select('status', 'status')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('assigned_work_unit_id', $value)),
+            Filter::select('status_badge', 'status')
                 ->dataSource(collect([
                     ['id' => 'submitted', 'name' => 'Masuk'],
                     ['id' => 'in_review', 'name' => 'Direview'],
@@ -115,8 +119,9 @@ final class StudentComplaintTable extends BasePowerGridTable
                     ['id' => 'reopened', 'name' => 'Dibuka Lagi'],
                 ]))
                 ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::select('priority', 'priority')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('status', $value)),
+            Filter::select('priority_badge', 'priority')
                 ->dataSource(collect([
                     ['id' => 'low', 'name' => 'Rendah'],
                     ['id' => 'normal', 'name' => 'Normal'],
@@ -124,8 +129,9 @@ final class StudentComplaintTable extends BasePowerGridTable
                     ['id' => 'urgent', 'name' => 'Urgent'],
                 ]))
                 ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::datepicker('due_at', 'due_at'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('priority', $value)),
+            Filter::datepicker('sla_badge', 'due_at'),
         ];
     }
 

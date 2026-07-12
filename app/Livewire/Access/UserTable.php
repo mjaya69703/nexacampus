@@ -3,6 +3,7 @@
 namespace App\Livewire\Access;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Access\Role;
 use App\Models\User;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,8 +16,6 @@ use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
-// use App\Livewire\Examples\FiltersInlineTable\FiltersInlineTable;
-
 final class UserTable extends BasePowerGridTable
 {
     public string $tableName = 'userTable';
@@ -27,14 +26,9 @@ final class UserTable extends BasePowerGridTable
 
     protected string $bulkActionItemLabel = 'user';
 
-    // public function boot(): void
-    // {
-    //     config(['livewire-powergrid.filter' => 'outside']);
-    // }
-
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true);
     }
 
     public function datasource(): Builder
@@ -93,50 +87,118 @@ final class UserTable extends BasePowerGridTable
         return [
             Column::make('No', 'id')
                 ->index(),
-            Column::make('First name', 'first_name')
+            Column::make('Nama Depan', 'first_name')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Last name', 'last_name')
+            Column::make('Nama Belakang', 'last_name')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Photo', 'photo_preview')
+            Column::make('Foto', 'photo_preview')
                 ->bodyAttribute('text-center'),
 
             Column::make('Username', 'username')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Phone', 'phone')
+            Column::make('No. HP', 'phone')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Role', 'roles'),
+            Column::make('Peran / Role', 'roles'),
 
-            Column::make('Gender', 'gender')
+            Column::make('Jenis Kelamin', 'gender')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Place of birth', 'place_of_birth')
+            Column::make('Tempat Lahir', 'place_of_birth')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Date of birth', 'date_of_birth_formatted', 'date_of_birth')
+            Column::make('Tanggal Lahir', 'date_of_birth_formatted', 'date_of_birth')
                 ->sortable(),
 
             Column::make('Email', 'email')
                 ->sortable()
                 ->searchable(),
 
-            Column::action('Action'),
+            Column::make('Status', 'is_active')
+                ->toggleable(
+                    ActivePermission::check('user.update'),
+                    'Aktif',
+                    'Nonaktif'
+                )
+                ->sortable(),
+
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
+            Filter::inputText('first_name')->placeholder('Cari nama depan...'),
+            Filter::inputText('last_name')->placeholder('Cari nama belakang...'),
+            Filter::inputText('username')->placeholder('Cari username...'),
+            Filter::inputText('email')->placeholder('Cari alamat email...'),
+            Filter::inputText('phone')->placeholder('Cari nomor HP...'),
+            Filter::select('roles', 'role_id')
+                ->dataSource(
+                    Role::query()
+                        ->orderBy('name')
+                        ->get(['id', 'name'])
+                        ->map(fn (Role $role) => [
+                            'id' => $role->id,
+                            'name' => $role->name,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('roles', fn ($q) => $q->where('roles.id', $value))),
+            Filter::select('gender', 'gender')
+                ->dataSource([
+                    ['id' => 'Male', 'name' => 'Laki-laki (Male)'],
+                    ['id' => 'Female', 'name' => 'Perempuan (Female)'],
+                    ['id' => 'Laki-laki', 'name' => 'Laki-laki'],
+                    ['id' => 'Perempuan', 'name' => 'Perempuan'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('gender', $value)),
+            Filter::boolean('is_active', 'Aktif', 'Nonaktif'),
         ];
+    }
+
+    public function onUpdatedToggleable(string $id, string $field, string $value): void
+    {
+        if ($field !== 'is_active') {
+            return;
+        }
+
+        if (! ActivePermission::check('user.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk mengubah status user!');
+            $this->dispatch('pg:eventRefresh-'.$this->tableName);
+
+            return;
+        }
+
+        if ($id == auth()->id()) {
+            session()->flash('error', 'Anda tidak dapat menonaktifkan akun yang sedang login!');
+            $this->dispatch('pg:eventRefresh-'.$this->tableName);
+
+            return;
+        }
+
+        $user = User::find($id);
+
+        if ($user) {
+            $user->update([
+                'is_active' => (bool) $value,
+            ]);
+        }
+
+        $this->dispatch('pg:eventRefresh-'.$this->tableName);
     }
 
     #[On('edit')]
@@ -220,16 +282,16 @@ final class UserTable extends BasePowerGridTable
 
         if (ActivePermission::check('user.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
+                ->slot('<i class="fa fa-edit"></i> Edit')
                 ->id()
-                ->class('btn btn-primary')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('user.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

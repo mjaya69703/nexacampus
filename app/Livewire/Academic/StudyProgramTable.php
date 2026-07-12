@@ -97,8 +97,7 @@ final class StudyProgramTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::make('Created at', 'created_at')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
             Column::action('Action'),
         ];
     }
@@ -106,6 +105,15 @@ final class StudyProgramTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('name', 'name')
+                ->placeholder('Cari nama program studi...')
+                ->operators(['contains']),
+            Filter::inputText('code', 'code')
+                ->placeholder('Cari kode...')
+                ->operators(['contains']),
+            Filter::inputText('short_name', 'short_name')
+                ->placeholder('Cari singkatan...')
+                ->operators(['contains']),
             Filter::select('faculty_name', 'faculty_id')
                 ->dataSource(Faculty::query()->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
@@ -116,6 +124,7 @@ final class StudyProgramTable extends BasePowerGridTable
                 ->optionValue('id')
                 ->optionLabel('name'),
             Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -204,21 +213,33 @@ final class StudyProgramTable extends BasePowerGridTable
 
         $studyProgram = StudyProgram::find($id);
 
-        if ($studyProgram) {
-            $studyProgramName = $studyProgram->name;
-            $studyProgram->delete();
-
+        if (! $studyProgram) {
+            session()->flash('error', 'Program studi tidak ditemukan!');
             $this->dispatch('pg:eventRefresh-studyProgramTable');
-            $this->js('
-                Swal.fire({
-                    title: "Program studi dihapus",
-                    text: "'.$studyProgramName.' berhasil dihapus!",
-                    icon: "success",
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            ');
+
+            return;
         }
+
+        if ($studyProgram->curriculums()->exists() || $studyProgram->courseScopes()->exists()) {
+            session()->flash('error', 'Program studi tidak dapat dihapus karena masih terkait dengan data kurikulum atau mata kuliah.');
+            $this->dispatch('pg:eventRefresh-studyProgramTable');
+
+            return;
+        }
+
+        $studyProgramName = $studyProgram->name;
+        $studyProgram->delete();
+
+        $this->dispatch('pg:eventRefresh-studyProgramTable');
+        $this->js('
+            Swal.fire({
+                title: "Program studi dihapus",
+                text: "'.$studyProgramName.' berhasil dihapus!",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false
+            });
+        ');
     }
 
     public function actions(StudyProgram $row): array

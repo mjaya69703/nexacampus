@@ -27,181 +27,211 @@ new class extends Component {
 };
 ?>
 
-<div class="row">
-    <div class="col-lg-8">
-        <x-alert />
+<div>
+    <x-alert />
 
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Data Mahasiswa</h5>
-                <div>
-                    @activecan('student-registration.update')
-                        <a href="{{ route('admin.academic.student-registrations.edit', ['id' => $registration->id]) }}" class="btn btn-warning ">
-                            <i class="fas fa-pencil me-1"></i> Edit
-                        </a>
-                    @endactivecan
-                    <a href="{{ route('admin.academic.student-registrations.index') }}" class="btn btn-secondary ">
-                        <i class="fas fa-arrow-left me-1"></i> Kembali
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <small class="text-muted">Nama Mahasiswa</small>
-                            <div class="h6 mb-0">{{ $registration->studentProfile?->user?->name }}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <small class="text-muted">NIM</small>
-                            <div class="h6 mb-0">{{ $registration->studentProfile?->nim }}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <small class="text-muted">Program Studi</small>
-                            <div class="h6 mb-0">{{ $registration->studentProfile?->studyProgram?->name }}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <small class="text-muted">Email</small>
-                            <div class="h6 mb-0">{{ $registration->studentProfile?->user?->email }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <x-admin.academic.header
+        title="Detail Registrasi Mahasiswa"
+        description="Informasi lengkap biodata mahasiswa, status akademik semester, serta timeline persetujuan (approval)."
+        icon="user-check"
+    >
+        <div class="d-flex align-items-center gap-2">
+            @activecan('student-registration.update')
+                <a href="{{ route('admin.academic.student-registrations.edit', ['id' => $registration->id]) }}" class="btn btn-sm btn-light text-warning fw-semibold rounded-pill px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2 border">
+                    <i class="fa fa-edit"></i> <span>Edit Registrasi</span>
+                </a>
+            @endactivecan
+            <a href="{{ route('admin.academic.student-registrations.index') }}" class="btn btn-sm btn-light text-dark fw-semibold rounded-pill px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2 border">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </a>
         </div>
+    </x-admin.academic.header>
 
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Detail Registrasi</h5>
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-id-card fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-1 text-dark">Data Mahasiswa</h4>
+                            <div class="text-muted small">Biodata dan identitas akademik mahasiswa terdaftar.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Nama Mahasiswa</label>
+                            <div class="fw-bold text-dark fs-6">{{ $registration->studentProfile?->user?->name ?? '-' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Nomor Induk Mahasiswa (NIM)</label>
+                            <div class="fw-semibold text-dark">{{ $registration->studentProfile?->nim ?? '-' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Program Studi</label>
+                            <div class="fw-semibold text-dark">{{ $registration->studentProfile?->studyProgram?->name ?? '-' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Alamat Email</label>
+                            <div class="fw-semibold text-dark">{{ $registration->studentProfile?->user?->email ?? '-' }}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <small class="text-muted">Tahun Akademik</small>
-                            <div class="h6 mb-0">{{ $registration->academicYear?->name }}</div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-file-invoice fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-1 text-dark">Detail Parameter Registrasi</h4>
+                            <div class="text-muted small">Tahun akademik, semester, dan status registrasi saat ini.</div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <small class="text-muted">Semester</small>
-                            <div class="h6 mb-0">{{ $registration->semester_no ? 'Semester ' . $registration->semester_no : '-' }}</div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Tahun Akademik</label>
+                            <div class="fw-bold text-primary fs-6">{{ $registration->academicYear?->name ?? '-' }}</div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <small class="text-muted">Status Registrasi</small>
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Semester Ke</label>
+                            <div class="fw-semibold text-dark">{{ $registration->semester_no ? 'Semester ' . $registration->semester_no : '-' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Status Registrasi</label>
                             <div>
-                                <span class="badge @if($registration->registration_status === 'Approved') bg-success @elseif($registration->registration_status === 'Rejected') bg-danger @elseif($registration->registration_status === 'Submitted') bg-warning text-dark @elseif($registration->registration_status === 'Cancelled') bg-secondary @else bg-info @endif">
+                                <span class="badge rounded-pill px-3 py-2 @if($registration->registration_status === 'Approved') bg-success @elseif($registration->registration_status === 'Rejected') bg-danger @elseif($registration->registration_status === 'Submitted') bg-warning text-dark @elseif($registration->registration_status === 'Cancelled') bg-secondary @else bg-info @endif">
                                     {{ $registration->registration_status }}
                                 </span>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Status Akademik</label>
+                            <div class="fw-semibold text-dark">{{ $registration->academic_status }}</div>
+                        </div>
+                        @if($registration->notes)
+                            <div class="col-12 mt-3">
+                                <label class="text-muted small d-block mb-1">Catatan Tambahan</label>
+                                <div class="p-3 bg-light rounded-3 text-dark border">{{ $registration->notes }}</div>
+                            </div>
+                        @endif
                     </div>
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <small class="text-muted">Status Akademik</small>
-                            <div class="h6 mb-0">{{ $registration->academic_status }}</div>
+                </div>
+            </div>
+
+            @if($registration->registration_status === 'Approved' || $registration->registration_status === 'Rejected' || $registration->submitted_at)
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white border-bottom p-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-warning bg-opacity-10 text-warning rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-history fs-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="card-title fw-bold mb-1 text-dark">Timeline Approval</h4>
+                                <div class="text-muted small">Jejak pengajuan dan proses persetujuan.</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-12">
-                        @if($registration->notes)
-                            <div class="mb-2">
-                                <small class="text-muted">Catatan</small>
-                                <div class="alert alert-light border mb-0">{{ $registration->notes }}</div>
-                            </div>
-                        @endif
+                    <div class="card-body p-4">
+                        <div class="timeline ps-3">
+                            @if($registration->submitted_at)
+                                <div class="timeline-item pb-4">
+                                    <div class="timeline-marker bg-info"></div>
+                                    <div class="timeline-content ms-3">
+                                        <div class="text-muted small">Diajukan pada</div>
+                                        <div class="fw-semibold text-dark">{{ $registration->submitted_at->format('d F Y H:i') }}</div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if($registration->approved_at)
+                                <div class="timeline-item">
+                                    <div class="timeline-marker @if($registration->registration_status === 'Approved') bg-success @else bg-danger @endif"></div>
+                                    <div class="timeline-content ms-3">
+                                        <div class="text-muted small">Diproses pada</div>
+                                        <div class="fw-semibold text-dark">{{ $registration->approved_at->format('d F Y H:i') }}</div>
+                                        <div class="text-muted small mt-1">Oleh: <span class="fw-semibold text-dark">{{ $registration->approvedBy?->name ?? '-' }}</span></div>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
-            </div>
+            @endif
         </div>
 
-        @if($registration->registration_status === 'Approved' || $registration->registration_status === 'Rejected')
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Timeline Approval</h5>
-                </div>
-                <div class="card-body">
-                    <div class="timeline">
-                        @if($registration->submitted_at)
-                            <div class="timeline-item">
-                                <div class="timeline-marker bg-info"></div>
-                                <div class="timeline-content">
-                                    <div class="text-muted"><small>Diajukan pada</small></div>
-                                    <div>{{ $registration->submitted_at->format('d F Y H:i') }}</div>
-                                </div>
-                            </div>
-                        @endif
-
-                        @if($registration->approved_at)
-                            <div class="timeline-item">
-                                <div class="timeline-marker @if($registration->registration_status === 'Approved') bg-success @else bg-danger @endif"></div>
-                                <div class="timeline-content">
-                                    <div class="text-muted"><small>Diproses pada</small></div>
-                                    <div>{{ $registration->approved_at->format('d F Y H:i') }}</div>
-                                    <div class="text-muted"><small>Oleh: {{ $registration->approvedBy?->name }}</small></div>
-                                </div>
-                            </div>
-                        @endif
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-info-circle fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title fw-bold mb-1 text-dark">Status Ringkas</h5>
+                            <div class="text-muted small">Ringkasan cepat kondisi registrasi.</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        @endif
-
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Metadata</h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-sm">
-                    <div class="col-md-6">
-                        <small class="text-muted">Dibuat pada:</small>
-                        <div class="text-break">{{ $registration->created_at->format('d F Y H:i') }}</div>
+                <div class="card-body p-4">
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Status Registrasi</label>
+                        <span class="badge rounded-pill px-3 py-2 @if($registration->registration_status === 'Approved') bg-success @elseif($registration->registration_status === 'Rejected') bg-danger @elseif($registration->registration_status === 'Submitted') bg-warning text-dark @elseif($registration->registration_status === 'Cancelled') bg-secondary @else bg-info @endif">
+                            {{ $registration->registration_status }}
+                        </span>
                     </div>
-                    <div class="col-md-6">
-                        <small class="text-muted">Diperbarui pada:</small>
-                        <div class="text-break">{{ $registration->updated_at->format('d F Y H:i') }}</div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Status Akademik</label>
+                        <span class="badge rounded-pill bg-light text-dark border px-3 py-2">{{ $registration->academic_status }}</span>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Keaktifan Registrasi</label>
+                        <span class="badge rounded-pill px-3 py-2 @if($registration->is_active) bg-success @else bg-danger @endif">
+                            @if($registration->is_active) <i class="fa fa-check me-1"></i> Aktif @else <i class="fa fa-times me-1"></i> Nonaktif @endif
+                        </span>
+                    </div>
+
+                    @if($registration->registration_status !== 'Approved' && $registration->registration_status !== 'Rejected')
+                        <div class="alert alert-warning border-0 rounded-3 mb-0 mt-3 d-flex align-items-center gap-2">
+                            <i class="fa fa-clock text-warning"></i>
+                            <div class="small fw-semibold">Menunggu Proses Approval</div>
+                        </div>
+                    @endif
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Status Ringkas</h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <div class="text-muted mb-1">Status Registrasi</div>
-                    <span class="badge @if($registration->registration_status === 'Approved') bg-success @elseif($registration->registration_status === 'Rejected') bg-danger @elseif($registration->registration_status === 'Submitted') bg-warning text-dark @elseif($registration->registration_status === 'Cancelled') bg-secondary @else bg-info @endif p-2">
-                        {{ $registration->registration_status }}
-                    </span>
-                </div>
-
-                <div class="mb-3">
-                    <div class="text-muted mb-1">Status Akademik</div>
-                    <span class="badge bg-light text-dark p-2">{{ $registration->academic_status }}</span>
-                </div>
-
-                <div class="mb-3">
-                    <div class="text-muted mb-1">Aktif</div>
-                    <span class="badge @if($registration->is_active) bg-success @else bg-danger @endif p-2">
-                        @if($registration->is_active) ✓ Aktif @else ✗ Nonaktif @endif
-                    </span>
-                </div>
-
-                @if($registration->registration_status !== 'Approved' && $registration->registration_status !== 'Rejected')
-                    <div class="alert alert-warning">
-                        <small><strong>Menunggu Approval</strong></small>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-clock fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title fw-bold mb-1 text-dark">Metadata Sistem</h5>
+                            <div class="text-muted small">Riwayat rekam data.</div>
+                        </div>
                     </div>
-                @endif
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Dibuat pada</label>
+                        <div class="fw-semibold text-dark small">{{ $registration->created_at?->format('d F Y H:i') ?? '-' }}</div>
+                    </div>
+                    <div>
+                        <label class="text-muted small d-block mb-1">Diperbarui pada</label>
+                        <div class="fw-semibold text-dark small">{{ $registration->updated_at?->format('d F Y H:i') ?? '-' }}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -210,28 +240,26 @@ new class extends Component {
 <style>
     .timeline {
         position: relative;
-        padding-left: 30px;
     }
 
     .timeline-item {
         position: relative;
-        padding-bottom: 20px;
     }
 
     .timeline-item:not(:last-child)::before {
         content: '';
         position: absolute;
-        left: -16px;
-        top: 28px;
-        bottom: -20px;
+        left: 7px;
+        top: 24px;
+        bottom: -10px;
         width: 2px;
         background: #e9ecef;
     }
 
     .timeline-marker {
         position: absolute;
-        left: -24px;
-        top: 0;
+        left: 0;
+        top: 4px;
         width: 16px;
         height: 16px;
         border-radius: 50%;

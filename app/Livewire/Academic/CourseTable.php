@@ -97,11 +97,9 @@ final class CourseTable extends BasePowerGridTable
             Column::make('Id', 'id')
                 ->sortable(),
             Column::make('Scope Type', 'scope_type_label')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
             Column::make('Scope', 'scope_name')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
             Column::make('Code', 'code')
                 ->sortable()
                 ->searchable(),
@@ -123,8 +121,7 @@ final class CourseTable extends BasePowerGridTable
             Column::make('Category', 'category_type')
                 ->sortable()
                 ->searchable(),
-            Column::make('Prerequisites', 'prerequisites')
-                ->searchable(),
+            Column::make('Prerequisites', 'prerequisites'),
             Column::make('Is Active', 'is_active')
                 ->toggleable(
                     ActivePermission::check('course.update'),
@@ -142,6 +139,15 @@ final class CourseTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('code', 'code')
+                ->placeholder('Cari kode mata kuliah...')
+                ->operators(['contains']),
+            Filter::inputText('name', 'name')
+                ->placeholder('Cari nama mata kuliah...')
+                ->operators(['contains']),
+            Filter::inputText('short_name', 'short_name')
+                ->placeholder('Cari nama singkat...')
+                ->operators(['contains']),
             Filter::select('scope_type_label', 'scope_type')
                 ->dataSource(collect([
                     ['id' => 'global', 'name' => 'Global'],
@@ -173,7 +179,12 @@ final class CourseTable extends BasePowerGridTable
                 ->dataSource(Course::query()->select('category_type')->distinct()->orderBy('category_type')->pluck('category_type')->filter()->map(fn (string $type) => ['id' => $type, 'name' => $type]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::select('credits', 'credits')
+                ->dataSource(Course::query()->select('credits')->distinct()->orderBy('credits')->pluck('credits')->filter()->map(fn (int $credits) => ['id' => $credits, 'name' => $credits.' SKS']))
+                ->optionValue('id')
+                ->optionLabel('name'),
             Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -283,21 +294,42 @@ final class CourseTable extends BasePowerGridTable
 
         $course = Course::find($id);
 
-        if ($course) {
-            $courseName = $course->name;
-            $course->delete();
-
+        if (! $course) {
+            session()->flash('error', 'Mata kuliah tidak ditemukan!');
             $this->dispatch('pg:eventRefresh-courseTable');
-            $this->js('
-                Swal.fire({
-                    title: "Mata kuliah dihapus",
-                    text: "'.$courseName.' berhasil dihapus!",
-                    icon: "success",
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            ');
+
+            return;
         }
+
+        if ($course->curriculumCourses()->exists()) {
+            session()->flash('error', 'Mata kuliah tidak dapat dihapus karena sudah masuk dalam kurikulum.');
+            $this->dispatch('pg:eventRefresh-courseTable');
+
+            return;
+        }
+
+        if ($course->requiredByRows()->exists()) {
+            session()->flash('error', 'Mata kuliah tidak dapat dihapus karena menjadi prasyarat untuk mata kuliah lain.');
+            $this->dispatch('pg:eventRefresh-courseTable');
+
+            return;
+        }
+
+        $courseName = $course->name;
+        $course->scopes()->delete();
+        $course->prerequisiteRows()->delete();
+        $course->delete();
+
+        $this->dispatch('pg:eventRefresh-courseTable');
+        $this->js('
+            Swal.fire({
+                title: "Mata kuliah dihapus",
+                text: "'.$courseName.' berhasil dihapus!",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false
+            });
+        ');
     }
 
     public function actions(Course $row): array

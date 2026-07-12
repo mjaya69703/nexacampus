@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -26,13 +27,14 @@ final class AnnouncementTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true);
     }
 
     public function datasource(): Builder
     {
         $query = Announcement::query()
-            ->with('creator')
+            ->with(['creator'])
+            ->withCount('reads')
             ->orderByDesc('is_pinned')
             ->orderByDesc('created_at');
 
@@ -65,34 +67,134 @@ final class AnnouncementTable extends BasePowerGridTable
                     <i class="'.$priority->icon().' me-1"></i>'.$priority->label().'
                 </span>';
             })
-            ->add('is_pinned', fn (Announcement $model) => $model->is_pinned
-                ? '<span class="badge bg-info"><i class="fas fa-thumbtack me-1"></i>Pinned</span>'
-                : '<span class="text-muted">-</span>')
-            ->add('is_published', fn (Announcement $model) => $model->is_published
-                ? '<span class="badge bg-success">Published</span>'
-                : '<span class="badge bg-secondary">Draft</span>')
+            ->add('is_pinned', fn (Announcement $model) => $model->is_pinned)
+            ->add('is_published', fn (Announcement $model) => $model->is_published)
             ->add('published_at_formatted', fn (Announcement $model) => $model->published_at
                 ? $model->published_at->format('d M Y H:i')
                 : '-')
             ->add('creator_name', fn (Announcement $model) => $model->creator?->name ?? '-')
-            ->add('reads_count', fn (Announcement $model) => $model->reads()->count())
-            ->add('created_at_formatted', fn (Announcement $model) => $model->created_at->format('d M Y H:i'));
+            ->add('reads_count')
+            ->add('created_at_formatted', fn (Announcement $model) => $model->created_at->format('d M Y H:i'))
+            ->add('has_attachment', fn (Announcement $model) => $model->attachment_path ? true : false);
     }
 
     public function columns(): array
     {
         return [
-            Column::make('Judul', 'title')->sortable()->searchable(),
+            Column::make('Judul', 'title')
+                ->sortable()
+                ->searchable(),
+
             Column::make('Target', 'target_type_label'),
+
             Column::make('Prioritas', 'priority_badge'),
-            Column::make('Pin', 'is_pinned'),
-            Column::make('Status', 'is_published'),
-            Column::make('Dipublikasi', 'published_at_formatted'),
-            Column::make('Dibuat oleh', 'creator_name')->searchable(),
-            Column::make('Dibaca', 'reads_count'),
-            Column::make('Dibuat', 'created_at_formatted')->sortable(),
+
+            Column::make('Pin', 'is_pinned')
+                ->toggleable(
+                    ActivePermission::check('announcement.update'),
+                    'Ya',
+                    'Tidak'
+                )
+                ->sortable(),
+
+            Column::make('Status', 'is_published')
+                ->toggleable(
+                    ActivePermission::check('announcement.update'),
+                    'Published',
+                    'Draft'
+                )
+                ->sortable(),
+
+            Column::make('Dipublikasi', 'published_at_formatted')
+                ->sortable(),
+
+            Column::make('Dibuat oleh', 'creator_name')
+                ->searchable(),
+
+            Column::make('Dibaca', 'reads_count')
+                ->sortable(),
+
+            Column::make('Lampiran', 'has_attachment')
+                ->toggleable(false, 'Ya', 'Tidak')
+                ->sortable(),
+
+            Column::make('Dibuat', 'created_at_formatted')
+                ->sortable(),
+
             Column::action('Action'),
         ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('title')
+                ->placeholder('Cari judul pengumuman...'),
+
+            Filter::inputText('creator_name')
+                ->placeholder('Cari pembuat...'),
+
+            Filter::select('priority', 'priority')
+                ->dataSource(
+                    collect(AnnouncementPriority::cases())
+                        ->map(fn ($case) => [
+                            'id' => $case->value,
+                            'name' => $case->label(),
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name'),
+
+            Filter::boolean('is_published', 'is_published')
+                ->label('Published', 'Draft'),
+
+            Filter::boolean('is_pinned', 'is_pinned')
+                ->label('Ya', 'Tidak'),
+
+            Filter::datepicker('created_at'),
+
+            Filter::datepicker('published_at'),
+        ];
+    }
+
+    public function onUpdatedToggleable(string $id, string $field, string $value): void
+    {
+        if (! in_array($field, ['is_pinned', 'is_published'])) {
+            return;
+        }
+
+        if (! ActivePermission::check('announcement.update')) {
+            $fieldLabel = $field === 'is_pinned' ? 'pin' : 'status publikasi';
+            session()->flash('error', "Anda tidak memiliki izin untuk mengubah {$fieldLabel} pengumuman!");
+            $this->dispatch('pg:eventRefresh-'.$this->tableName);
+
+            return;
+        }
+
+        $announcement = Announcement::find($id);
+
+        if (! $announcement) {
+            session()->flash('error', 'Pengumuman tidak ditemukan!');
+            $this->dispatch('pg:eventRefresh-'.$this->tableName);
+
+            return;
+        }
+
+        $updateData = [
+            'updated_by' => auth()->id(),
+        ];
+
+        if ($field === 'is_pinned') {
+            $updateData['is_pinned'] = (bool) $value;
+        } elseif ($field === 'is_published') {
+            $updateData['is_published'] = (bool) $value;
+            if ((bool) $value && ! $announcement->published_at) {
+                $updateData['published_at'] = now();
+            }
+        }
+
+        $announcement->update($updateData);
+        $this->dispatch('pg:eventRefresh-'.$this->tableName);
     }
 
     #[On('edit')]
@@ -150,7 +252,7 @@ final class AnnouncementTable extends BasePowerGridTable
             $announcement->update(['deleted_by' => auth()->id()]);
             $announcement->delete();
 
-            $this->dispatch('pg:eventRefresh-announcementTable');
+            $this->dispatch('pg:eventRefresh-'.$this->tableName);
             $this->js('
                 Swal.fire({
                     title: "Dihapus",
@@ -169,15 +271,15 @@ final class AnnouncementTable extends BasePowerGridTable
 
         if (ActivePermission::check('announcement.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-pencil"></i> <span>Edit</span>')
+                ->class('btn btn-sm btn-primary d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('announcement.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> <span>Hapus</span>')
+                ->class('btn btn-sm btn-danger d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

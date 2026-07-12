@@ -98,6 +98,26 @@ final class StudyPlanTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('student_name', 'student_name')
+                ->placeholder('Cari nama mahasiswa...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('studentProfile.user', fn (Builder $user) => $user->where('first_name', 'like', '%'.$search.'%')->orWhere('last_name', 'like', '%'.$search.'%'));
+                }),
+            Filter::inputText('student_nim', 'student_nim')
+                ->placeholder('Cari NIM...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('studentProfile', fn (Builder $sp) => $sp->where('nim', 'like', '%'.$search.'%'));
+                }),
             Filter::select('academic_year_name', 'academic_year_id')
                 ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
                 ->optionValue('id')
@@ -116,6 +136,7 @@ final class StudyPlanTable extends BasePowerGridTable
                 ->dataSource(StudyPlan::query()->select('status')->distinct()->orderBy('status')->pluck('status')->filter()->map(fn (string $status) => ['id' => $status, 'name' => $status]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -195,22 +216,22 @@ final class StudyPlanTable extends BasePowerGridTable
 
         if (ActivePermission::check('study-plan.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-info')
+                ->slot('<i class="fa fa-eye"></i> <span>Detail</span>')
+                ->class('btn btn-sm btn-info d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('study-plan.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-pencil"></i> <span>Edit</span>')
+                ->class('btn btn-sm btn-primary d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('study-plan.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> <span>Hapus</span>')
+                ->class('btn btn-sm btn-danger d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

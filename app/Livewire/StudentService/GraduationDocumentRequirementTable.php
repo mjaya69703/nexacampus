@@ -55,8 +55,8 @@ final class GraduationDocumentRequirementTable extends BasePowerGridTable
         return [
             Column::make('Label', 'label')->sortable()->searchable(),
             Column::make('Type', 'document_type')->sortable()->searchable(),
-            Column::make('Scope', 'scope')->sortable()->searchable(),
-            Column::make('Required', 'required_label'),
+            Column::make('Scope', 'scope', 'study_program_id')->sortable()->searchable(),
+            Column::make('Required', 'required_label', 'is_required'),
             Column::make('Extensions', 'allowed_extensions')->searchable(),
             Column::make('Max Size', 'max_size_label'),
             Column::make('Order', 'sort_order')->sortable(),
@@ -70,10 +70,22 @@ final class GraduationDocumentRequirementTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::select('study_program_id', 'study_program_id')
+            Filter::inputText('label')->placeholder('Cari nama dokumen...'),
+            Filter::select('scope', 'study_program_id')
                 ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
+            Filter::select('document_type', 'document_type')
+                ->dataSource(collect([
+                    ['id' => 'file', 'name' => 'File Upload'],
+                    ['id' => 'text', 'name' => 'Text Input'],
+                    ['id' => 'url', 'name' => 'URL Link'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('document_type', $value)),
+            Filter::boolean('required_label', 'is_required'),
             Filter::boolean('is_active', 'is_active'),
         ];
     }

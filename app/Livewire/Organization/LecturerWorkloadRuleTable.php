@@ -60,6 +60,8 @@ final class LecturerWorkloadRuleTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('source_code', 'source_code')->placeholder('Cari kode sumber/modul...')->operators(['contains']),
+            Filter::inputText('name', 'name')->placeholder('Cari nama aturan beban kerja...')->operators(['contains']),
             Filter::select('category', 'category')
                 ->dataSource(collect([
                     ['id' => 'teaching', 'name' => 'Mengajar'],
@@ -68,6 +70,7 @@ final class LecturerWorkloadRuleTable extends BasePowerGridTable
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::boolean('is_active', 'is_active')->label('Aktif', 'Nonaktif'),
         ];
     }
 
@@ -77,10 +80,63 @@ final class LecturerWorkloadRuleTable extends BasePowerGridTable
         $this->redirectRoute('admin.organization.lecturer-workload-rules.edit', ['id' => $rowId]);
     }
 
+    #[On('delete')]
+    public function delete($id): void
+    {
+        $rule = LecturerWorkloadRule::find($id);
+
+        if (! $rule) {
+            return;
+        }
+
+        $this->js('
+            Swal.fire({
+                title: "Hapus Aturan BKD?",
+                text: "Aturan BKD \''.$rule->name.'\' akan dihapus/dinonaktifkan.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Ya, hapus!",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.dispatch("deleteItem", {id: '.$id.'})
+                }
+            });
+        ');
+    }
+
+    #[On('deleteItem')]
+    public function deleteItem($id = null): void
+    {
+        if (! ActivePermission::check('lecturer-workload-rule.delete')) {
+            session()->flash('error', 'Anda tidak memiliki izin menghapus aturan BKD.');
+            return;
+        }
+
+        $rule = LecturerWorkloadRule::find($id);
+
+        if (! $rule) {
+            session()->flash('error', 'Aturan BKD tidak ditemukan.');
+            return;
+        }
+
+        $rule->delete();
+        session()->flash('success', 'Aturan BKD berhasil dihapus.');
+        $this->dispatch('pg:eventRefresh-lecturerWorkloadRuleTable');
+    }
+
     public function actions(LecturerWorkloadRule $row): array
     {
-        return ActivePermission::check('lecturer-workload-rule.update')
-            ? [Button::add('edit')->slot('<i class="fa fa-edit"></i>')->class('btn btn-primary')->dispatch('edit', ['rowId' => $row->id])]
-            : [];
+        $actions = [];
+
+        if (ActivePermission::check('lecturer-workload-rule.update')) {
+            $actions[] = Button::add('edit')->slot('<i class="fa fa-edit"></i>')->class('btn btn-primary')->dispatch('edit', ['rowId' => $row->id]);
+        }
+
+        if (ActivePermission::check('lecturer-workload-rule.delete')) {
+            $actions[] = Button::add('delete')->slot('<i class="fa fa-trash"></i>')->class('btn btn-danger')->dispatch('delete', ['id' => $row->id]);
+        }
+
+        return $actions;
     }
 }

@@ -3,12 +3,14 @@
 namespace App\Livewire\Admission;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\AcademicYear;
 use App\Models\Admission\AdmissionPeriod;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -24,7 +26,7 @@ final class AdmissionPeriodTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true);
     }
 
     public function datasource(): Builder
@@ -56,22 +58,42 @@ final class AdmissionPeriodTable extends BasePowerGridTable
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id')->sortable(),
-            Column::make('Name', 'name')->sortable()->searchable(),
-            Column::make('Code', 'code')->sortable()->searchable(),
-            Column::make('Academic Year', 'academic_year_name'),
-            Column::make('Wave', 'wave')->sortable(),
-            Column::make('Opens', 'opens_at')->sortable(),
-            Column::make('Closes', 'closes_at')->sortable(),
-            Column::make('Applications', 'applications_count')->sortable(),
-            Column::make('Docs', 'document_requirements_count')->sortable(),
-            Column::make('Active', 'is_active')
+            Column::make('No', 'id')->sortable(),
+            Column::make('Nama Periode', 'name')->sortable()->searchable(),
+            Column::make('Kode', 'code')->sortable()->searchable(),
+            Column::make('Tahun Akademik', 'academic_year_name'),
+            Column::make('Gelombang', 'wave')->sortable(),
+            Column::make('Buka', 'opens_at')->sortable(),
+            Column::make('Tutup', 'closes_at')->sortable(),
+            Column::make('Pendaftar', 'applications_count')->sortable(),
+            Column::make('Syarat Dokumen', 'document_requirements_count')->sortable(),
+            Column::make('Aktif', 'is_active')
                 ->toggleable(ActivePermission::check('admission-period.update'), 'Aktif', 'Nonaktif')
                 ->sortable(),
-            Column::make('Published', 'is_published')
+            Column::make('Publikasi', 'is_published')
                 ->toggleable(ActivePermission::check('admission-period.update'), 'Published', 'Draft')
                 ->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name')->placeholder('Cari nama periode / gelombang...'),
+            Filter::inputText('code')->placeholder('Cari kode periode...'),
+            Filter::select('academic_year_name', 'academic_year_id')
+                ->dataSource(
+                    AcademicYear::query()
+                        ->orderByDesc('start_date')
+                        ->get(['id', 'name'])
+                        ->map(fn ($ay) => ['id' => $ay->id, 'name' => $ay->name])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('academic_year_id', $value)),
+            Filter::boolean('is_active', 'Aktif', 'Nonaktif'),
+            Filter::boolean('is_published', 'Published', 'Draft'),
         ];
     }
 
@@ -172,15 +194,15 @@ final class AdmissionPeriodTable extends BasePowerGridTable
 
         if (ActivePermission::check('admission-period.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('admission-period.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

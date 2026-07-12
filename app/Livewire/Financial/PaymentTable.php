@@ -50,42 +50,66 @@ final class PaymentTable extends BasePowerGridTable
             ->add('invoice_number', fn (Payment $model) => $model->invoice?->invoice_number ?? '-')
             ->add('student_name', fn (Payment $model) => $model->studentProfile?->user?->name ?? '-')
             ->add('nim', fn (Payment $model) => $model->studentProfile?->nim ?? '-')
-            ->add('installment_label', fn (Payment $model) => $model->installment ? 'Cicilan '.$model->installment->installment_no : 'Invoice')
+            ->add('installment_label', fn (Payment $model) => $model->installment ? 'Cicilan Ke-'.$model->installment->installment_no : 'Tagihan Utama')
             ->add('amount_label', fn (Payment $model) => $this->money($model->amount))
-            ->add('payment_method', fn (Payment $model) => str($model->payment_method)->replace('_', ' ')->title()->toString())
+            ->add('payment_method', fn (Payment $model) => match($model->payment_method) {
+                'bank_transfer' => 'Transfer Bank',
+                'virtual_account' => 'Virtual Account (VA)',
+                'credit_card' => 'Kartu Kredit',
+                'cash' => 'Tunai / Kasir',
+                default => str($model->payment_method)->replace('_', ' ')->title()->toString()
+            })
             ->add('status_badge', fn (Payment $model) => $this->statusBadge($model->status))
             ->add('status')
-            ->add('paid_at', fn (Payment $model) => $model->paid_at?->format('d M Y H:i') ?? '-');
+            ->add('paid_at', fn (Payment $model) => $model->paid_at?->format('d M Y, H:i') ?? '-');
     }
 
     public function columns(): array
     {
         return [
-            Column::make('Payment', 'payment_number')->sortable()->searchable(),
-            Column::make('Invoice', 'invoice_number')->sortable()->searchable(),
-            Column::make('Mahasiswa', 'student_name')->sortable()->searchable(),
+            Column::make('Nomor Pembayaran', 'payment_number')->sortable()->searchable(),
+            Column::make('Nomor Tagihan', 'invoice_number')->sortable()->searchable(),
+            Column::make('Nama Mahasiswa', 'student_name')->sortable()->searchable(),
             Column::make('NIM', 'nim')->sortable()->searchable(),
-            Column::make('Target', 'installment_label'),
-            Column::make('Amount', 'amount_label'),
-            Column::make('Method', 'payment_method'),
-            Column::make('Status', 'status_badge'),
-            Column::make('Paid At', 'paid_at')->sortable(),
-            Column::action('Action'),
+            Column::make('Target Bayar', 'installment_label'),
+            Column::make('Nominal Dibayar', 'amount_label'),
+            Column::make('Metode Bayar', 'payment_method', 'payment_method'),
+            Column::make('Status Verifikasi', 'status_badge', 'status'),
+            Column::make('Waktu Bayar', 'paid_at', 'paid_at')->sortable(),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('status', 'status')
+            Filter::inputText('payment_number', 'payment_number')
+                ->operators(['contains']),
+            Filter::inputText('invoice_number', 'invoice.invoice_number')
+                ->operators(['contains']),
+            Filter::inputText('student_name', 'studentProfile.user.first_name')
+                ->operators(['contains']),
+            Filter::inputText('nim', 'studentProfile.nim')
+                ->operators(['contains']),
+            Filter::select('payment_method', 'payment_method')
                 ->dataSource(collect([
-                    ['id' => 'pending', 'name' => 'Pending'],
-                    ['id' => 'verified', 'name' => 'Verified'],
-                    ['id' => 'rejected', 'name' => 'Rejected'],
-                    ['id' => 'failed', 'name' => 'Failed'],
+                    ['id' => 'bank_transfer', 'name' => 'Transfer Bank'],
+                    ['id' => 'virtual_account', 'name' => 'Virtual Account (VA)'],
+                    ['id' => 'credit_card', 'name' => 'Kartu Kredit / Debit'],
+                    ['id' => 'cash', 'name' => 'Tunai / Kasir Kampus'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::select('status_badge', 'status')
+                ->dataSource(collect([
+                    ['id' => 'pending', 'name' => 'Menunggu Verifikasi (Pending)'],
+                    ['id' => 'verified', 'name' => 'Terverifikasi Sah (Verified)'],
+                    ['id' => 'rejected', 'name' => 'Ditolak / Tidak Sah (Rejected)'],
+                    ['id' => 'failed', 'name' => 'Gagal Sistem (Failed)'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::datepicker('paid_at', 'paid_at'),
         ];
     }
 
@@ -103,26 +127,34 @@ final class PaymentTable extends BasePowerGridTable
 
         return [
             Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-eye me-1"></i>Detail & Verifikasi')
+                ->class('btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]),
         ];
     }
 
     private function money(float|string|null $amount): string
     {
-        return 'Rp '.number_format((float) $amount, 0, ',', '.');
+        return 'Rp ' . number_format((float) $amount, 0, ',', '.');
     }
 
     private function statusBadge(string $status): string
     {
         $class = match ($status) {
-            'verified' => 'bg-success',
+            'verified' => 'bg-success text-white',
             'pending' => 'bg-warning text-dark',
-            'rejected', 'failed' => 'bg-danger',
-            default => 'bg-secondary',
+            'rejected', 'failed' => 'bg-danger text-white',
+            default => 'bg-secondary text-white',
         };
 
-        return '<span class="badge '.$class.'">'.str_replace('_', ' ', ucfirst($status)).'</span>';
+        $label = match ($status) {
+            'verified' => 'Terverifikasi',
+            'pending' => 'Menunggu Review',
+            'rejected' => 'Ditolak',
+            'failed' => 'Gagal',
+            default => str_replace('_', ' ', ucfirst($status)),
+        };
+
+        return '<span class="badge '.$class.' rounded-pill px-3 py-1 fs-8">'.$label.'</span>';
     }
 }

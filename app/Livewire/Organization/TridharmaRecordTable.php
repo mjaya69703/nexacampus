@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -76,6 +77,52 @@ final class TridharmaRecordTable extends BasePowerGridTable
         ];
     }
 
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('owner_name', 'owner_name')
+                ->placeholder('Cari nama / NIDN dosen...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('owner', function (Builder $sub) use ($value) {
+                            $sub->where(function (Builder $q) use ($value) {
+                                $q->where('first_name', 'like', '%' . $value . '%')
+                                    ->orWhere('last_name', 'like', '%' . $value . '%')
+                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhere('username', 'like', '%' . $value . '%')
+                                    ->orWhere('email', 'like', '%' . $value . '%');
+                            });
+                        });
+                    }
+                }),
+            Filter::inputText('title', 'title')->placeholder('Cari judul penelitian / pengabdian...')->operators(['contains']),
+            Filter::select('type', 'type')
+                ->dataSource(collect([
+                    ['id' => 'research', 'name' => 'Research'],
+                    ['id' => 'community_service', 'name' => 'Community Service'],
+                    ['id' => 'publication', 'name' => 'Publication'],
+                    ['id' => 'intellectual_property', 'name' => 'Intellectual Property'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('status', 'status')
+                ->dataSource(collect([
+                    ['id' => 'draft', 'name' => 'Draft'],
+                    ['id' => 'submitted', 'name' => 'Submitted'],
+                    ['id' => 'in_approval', 'name' => 'In Approval'],
+                    ['id' => 'approved', 'name' => 'Approved'],
+                    ['id' => 'active', 'name' => 'Active'],
+                    ['id' => 'completed', 'name' => 'Completed'],
+                    ['id' => 'rejected', 'name' => 'Rejected'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::boolean('is_verified', 'is_verified')->label('Terverifikasi', 'Belum Verifikasi'),
+        ];
+    }
+
     #[On('show')]
     public function show($rowId): void
     {
@@ -91,12 +138,44 @@ final class TridharmaRecordTable extends BasePowerGridTable
     #[On('delete')]
     public function delete($id): void
     {
+        $record = TridharmaRecord::find($id);
+
+        if (! $record) {
+            return;
+        }
+
+        $this->js('
+            Swal.fire({
+                title: "Hapus rekam Tridharma?",
+                text: "Rekam Tridharma \''.$record->title.'\' akan dihapus dari sistem.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Ya, hapus!",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.dispatch("deleteItem", {id: '.$id.'})
+                }
+            });
+        ');
+    }
+
+    #[On('deleteItem')]
+    public function deleteItem($id = null): void
+    {
         if (! ActivePermission::check('tridharma-record.delete')) {
             session()->flash('error', 'Anda tidak memiliki izin menghapus record Tridharma.');
             return;
         }
 
-        TridharmaRecord::query()->find($id)?->delete();
+        $record = TridharmaRecord::find($id);
+
+        if (! $record) {
+            session()->flash('error', 'Record Tridharma tidak ditemukan.');
+            return;
+        }
+
+        $record->delete();
         session()->flash('success', 'Record Tridharma berhasil dihapus.');
         $this->dispatch('pg:eventRefresh-tridharmaRecordTable');
     }

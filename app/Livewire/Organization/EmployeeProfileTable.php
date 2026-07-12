@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -86,6 +87,56 @@ final class EmployeeProfileTable extends BasePowerGridTable
         ];
     }
 
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('user_name', 'user_name')
+                ->placeholder('Cari nama / username...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('user', function (Builder $sub) use ($value) {
+                            $sub->where(function (Builder $q) use ($value) {
+                                $q->where('first_name', 'like', '%' . $value . '%')
+                                    ->orWhere('last_name', 'like', '%' . $value . '%')
+                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhere('username', 'like', '%' . $value . '%');
+                            });
+                        });
+                    }
+                }),
+            Filter::inputText('user_email', 'user_email')
+                ->placeholder('Cari email...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('user', function (Builder $sub) use ($value) {
+                            $sub->where('email', 'like', '%' . $value . '%');
+                        });
+                    }
+                }),
+            Filter::inputText('employee_number', 'employee_number')->placeholder('Cari NIP/nomor...')->operators(['contains']),
+            Filter::inputText('employment_type', 'employment_type')->placeholder('Cari tipe...')->operators(['contains']),
+            Filter::inputText('employment_status', 'employment_status')->placeholder('Cari status...')->operators(['contains']),
+            Filter::inputText('primary_work_unit_name', 'primary_work_unit_name')
+                ->placeholder('Cari unit kerja...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('primaryWorkUnit', function (Builder $sub) use ($value) {
+                            $sub->where('name', 'like', '%' . $value . '%')
+                                ->orWhere('code', 'like', '%' . $value . '%');
+                        });
+                    }
+                }),
+            Filter::boolean('is_active', 'is_active')->label('Aktif', 'Nonaktif'),
+            Filter::datepicker('created_at', 'created_at'),
+        ];
+    }
+
     public function onUpdatedToggleable(string $id, string $field, string $value): void
     {
         if ($field !== 'is_active') {
@@ -125,7 +176,7 @@ final class EmployeeProfileTable extends BasePowerGridTable
         $this->js('
             Swal.fire({
                 title: "Hapus profil pegawai?",
-                text: "'.$profile->user?->name.' akan dipindahkan ke tempat sampah.",
+                text: "'.addslashes($profile->user?->name ?: 'Pegawai').' akan dipindahkan ke tempat sampah.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "Ya hapus",
@@ -151,6 +202,12 @@ final class EmployeeProfileTable extends BasePowerGridTable
 
         if (! $profile) {
             session()->flash('error', 'Profil pegawai tidak ditemukan.');
+
+            return;
+        }
+
+        if ($profile->positionAssignments()->exists() || $profile->leaveRequests()->exists()) {
+            session()->flash('error', 'Profil pegawai tidak dapat dihapus karena masih memiliki riwayat penugasan jabatan atau pengajuan cuti.');
 
             return;
         }

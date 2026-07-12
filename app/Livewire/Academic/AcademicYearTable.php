@@ -95,6 +95,12 @@ final class AcademicYearTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('name', 'name')
+                ->placeholder('Cari nama tahun akademik...')
+                ->operators(['contains']),
+            Filter::inputText('code', 'code')
+                ->placeholder('Cari kode...')
+                ->operators(['contains']),
             Filter::select('semester', 'semester')
                 ->dataSource(collect(['Ganjil', 'Genap', 'Pendek'])->map(fn (string $semester) => ['id' => $semester, 'name' => $semester]))
                 ->optionValue('id')
@@ -102,6 +108,7 @@ final class AcademicYearTable extends BasePowerGridTable
             Filter::boolean('is_active', 'is_active'),
             Filter::datepicker('start_date', 'start_date'),
             Filter::datepicker('end_date', 'end_date'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -192,21 +199,33 @@ final class AcademicYearTable extends BasePowerGridTable
 
         $academicYear = AcademicYear::find($id);
 
-        if ($academicYear) {
-            $academicYearName = $academicYear->name;
-            $academicYear->delete();
-
+        if (! $academicYear) {
+            session()->flash('error', 'Tahun akademik tidak ditemukan!');
             $this->dispatch('pg:eventRefresh-academicYearTable');
-            $this->js('
-                Swal.fire({
-                    title: "Tahun akademik dihapus",
-                    text: "'.$academicYearName.' berhasil dihapus!",
-                    icon: "success",
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            ');
+
+            return;
         }
+
+        if ($academicYear->academicPeriods()->exists() || $academicYear->advisorAssignments()->exists()) {
+            session()->flash('error', 'Tahun akademik tidak dapat dihapus karena masih terkait dengan periode akademik atau penugasan dosen wali.');
+            $this->dispatch('pg:eventRefresh-academicYearTable');
+
+            return;
+        }
+
+        $academicYearName = $academicYear->name;
+        $academicYear->delete();
+
+        $this->dispatch('pg:eventRefresh-academicYearTable');
+        $this->js('
+            Swal.fire({
+                title: "Tahun akademik dihapus",
+                text: "'.$academicYearName.' berhasil dihapus!",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false
+            });
+        ');
     }
 
     public function actions(AcademicYear $row): array

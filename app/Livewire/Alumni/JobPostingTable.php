@@ -4,6 +4,7 @@ namespace App\Livewire\Alumni;
 
 use App\Enums\JobType;
 use App\Livewire\BasePowerGridTable;
+use App\Models\Alumni\EmployerPartner;
 use App\Models\Alumni\JobPosting;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,7 +34,7 @@ final class JobPostingTable extends BasePowerGridTable
     {
         return JobPosting::query()
             ->with(['employerPartner'])
-            ->orderByDesc('created_at');
+            ->orderByDesc('posted_date');
     }
 
     public function relationSearch(): array
@@ -48,10 +49,11 @@ final class JobPostingTable extends BasePowerGridTable
         return PowerGrid::fields()
             ->add('id')
             ->add('title')
-            ->add('company_name')
-            ->add('job_type_label', fn (JobPosting $m) => JobType::tryFrom($m->job_type)?->label() ?? $m->job_type ?? '-')
+            ->add('company_name', fn (JobPosting $m) => $m->employerPartner?->name ?? '-')
+            ->add('job_type_label', fn (JobPosting $m) => JobType::tryFrom($m->job_type)?->label() ?? $m->job_type)
             ->add('location')
-            ->add('deadline_label', fn (JobPosting $m) => $m->deadline_date?->format('d M Y') ?? '-')
+            ->add('salary_range')
+            ->add('deadline_label', fn (JobPosting $m) => $m->application_deadline?->format('d M Y') ?? '-')
             ->add('is_active')
             ->add('posted_date_label', fn (JobPosting $m) => $m->posted_date?->format('d M Y') ?? '-')
             ->add('created_at_label', fn (JobPosting $m) => $m->created_at?->format('d M Y'));
@@ -73,29 +75,39 @@ final class JobPostingTable extends BasePowerGridTable
                 )
                 ->sortable(),
             Column::make('Diposting', 'posted_date_label')->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('job_type', 'job_type')
+            Filter::inputText('title')->placeholder('Cari judul lowongan...'),
+            Filter::select('company_name', 'employer_partner_id')
+                ->dataSource(
+                    EmployerPartner::query()
+                        ->orderBy('name')
+                        ->get(['id', 'name'])
+                        ->map(fn (EmployerPartner $ep) => [
+                            'id' => $ep->id,
+                            'name' => $ep->name,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('employer_partner_id', $value)),
+            Filter::select('job_type_label', 'job_type')
                 ->dataSource(collect(JobType::options())
                     ->map(fn ($label, $value) => ['id' => $value, 'name' => $label])
                     ->values()
                     ->toArray()
                 )
                 ->optionValue('id')
-                ->optionLabel('name'),
-
-            Filter::select('is_active', 'is_active')
-                ->dataSource([
-                    ['id' => '1', 'name' => 'Aktif'],
-                    ['id' => '0', 'name' => 'Nonaktif'],
-                ])
-                ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('job_type', $value)),
+            Filter::inputText('location')->placeholder('Cari lokasi / penempatan...'),
+            Filter::boolean('is_active', 'Aktif', 'Nonaktif'),
+            Filter::datepicker('posted_date_label', 'posted_date'),
         ];
     }
 
@@ -199,23 +211,22 @@ final class JobPostingTable extends BasePowerGridTable
 
         if (ActivePermission::check('job-posting.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-eye"></i> Detail')
+                ->class('btn btn-outline-info rounded-pill px-2.5 py-1 text-info fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('job-posting.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->id()
-                ->class('btn btn-warning')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('job-posting.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

@@ -91,6 +91,16 @@ final class AttendanceSessionTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('lecturer_name', 'lecturer_name')
+                ->placeholder('Cari nama dosen...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('lecturerProfile.user', fn (Builder $user) => $user->where('first_name', 'like', '%'.$search.'%')->orWhere('last_name', 'like', '%'.$search.'%'));
+                }),
             Filter::select('course_label', 'course_offering_id')
                 ->dataSource(CourseOffering::query()->with('course')->orderByDesc('created_at')->get()->map(fn (CourseOffering $offering) => [
                     'id' => $offering->id,
@@ -110,6 +120,7 @@ final class AttendanceSessionTable extends BasePowerGridTable
                 ->optionLabel('name'),
             Filter::datepicker('meeting_date', 'meeting_date'),
             Filter::number('meeting_no', 'meeting_no'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 

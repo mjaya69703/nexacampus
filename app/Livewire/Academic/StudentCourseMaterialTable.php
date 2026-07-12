@@ -9,6 +9,7 @@ use App\Models\Academic\StudyPlan;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
@@ -101,6 +102,39 @@ final class StudentCourseMaterialTable extends BasePowerGridTable
             Column::make('Diupload oleh', 'uploaded_by_name')->sortable(),
             Column::make('Terakhir diakses', 'last_accessed_at'),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('title', 'title')
+                ->placeholder('Cari judul...')
+                ->operators(['contains']),
+            Filter::inputText('description', 'description')
+                ->placeholder('Cari deskripsi...')
+                ->operators(['contains']),
+            Filter::select('category', 'category')
+                ->dataSource(collect([
+                    ['id' => 'syllabus', 'name' => 'Syllabus/RPS'],
+                    ['id' => 'lecture_notes', 'name' => 'Lecture Notes'],
+                    ['id' => 'assignments', 'name' => 'Assignments'],
+                    ['id' => 'references', 'name' => 'References'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::number('meeting_number', 'meeting_number'),
+            Filter::inputText('uploaded_by_name', 'uploaded_by_name')
+                ->placeholder('Cari pengupload...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('uploadedBy', fn (Builder $user) => $user->where('first_name', 'like', '%'.$search.'%')->orWhere('last_name', 'like', '%'.$search.'%'));
+                }),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 

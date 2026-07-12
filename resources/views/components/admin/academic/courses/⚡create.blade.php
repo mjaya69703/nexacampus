@@ -173,140 +173,193 @@ new class extends Component
 
 <div>
     <x-alert />
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title">Tambah Mata Kuliah</h3>
-        </div>
-        <div class="card-body row">
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label for="scope_type">Scope Mata Kuliah</label>
-                <select id="scope_type" class="form-control" wire:model.live="courseForm.scope_type">
-                    <option value="global">Global</option>
-                    <option value="faculty">Fakultas</option>
-                    <option value="study_program">Program Studi</option>
-                </select>
-                @error('courseForm.scope_type')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
 
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label for="scope_id">Tujuan Scope</label>
-                <select id="scope_id" class="form-control" wire:model.defer="courseForm.scope_id" @disabled(($courseForm['scope_type'] ?? 'global') === 'global')>
-                    <option value="">Pilih Tujuan</option>
-                    @if (($courseForm['scope_type'] ?? 'global') === 'faculty')
-                        @foreach ($availableFaculties as $faculty)
-                            <option value="{{ $faculty['id'] }}">{{ $faculty['name'] }}@if(!$faculty['is_active']) (Nonaktif) @endif</option>
-                        @endforeach
-                    @elseif (($courseForm['scope_type'] ?? 'global') === 'study_program')
-                        @foreach ($availableStudyPrograms as $studyProgram)
-                            <option value="{{ $studyProgram['id'] }}">{{ $studyProgram['name'] }}@if(!$studyProgram['is_active']) (Nonaktif) @endif</option>
-                        @endforeach
-                    @endif
-                </select>
-                @error('courseForm.scope_id')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-lg-3 col-md-6 col-sm-12 mt-2">
-                <label for="code">Kode</label>
-                <input type="text" id="code" class="form-control" wire:model.defer="courseForm.code">
-                @error('courseForm.code')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-lg-3 col-md-6 col-sm-12 mt-2">
-                <label for="short_name">Nama Singkat</label>
-                <input type="text" id="short_name" class="form-control" wire:model.defer="courseForm.short_name">
-                @error('courseForm.short_name')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-lg-6 col-md-12 col-sm-12 mt-2">
-                <label for="name">Nama Mata Kuliah</label>
-                <input type="text" id="name" class="form-control" wire:model.defer="courseForm.name">
-                @error('courseForm.name')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-lg-2 col-md-4 col-sm-12 mt-2">
-                <label for="credits">SKS</label>
-                <input type="number" id="credits" class="form-control" min="1" max="24" wire:model.defer="courseForm.credits">
-                @error('courseForm.credits')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-lg-4 col-md-8 col-sm-12 mt-2">
-                <label for="semester_recommendation">Semester Rekomendasi</label>
-                <input type="number" id="semester_recommendation" class="form-control" min="1" max="14" wire:model.defer="courseForm.semester_recommendation">
-                @error('courseForm.semester_recommendation')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label for="requirement_type">Jenis Kebutuhan</label>
-                <select id="requirement_type" class="form-control" wire:model.defer="courseForm.requirement_type">
-                    <option value="Wajib">Wajib</option>
-                    <option value="Pilihan">Pilihan</option>
-                </select>
-                @error('courseForm.requirement_type')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label for="category_type">Kategori</label>
-                <select id="category_type" class="form-control" wire:model.defer="courseForm.category_type">
-                    <option value="Umum">Umum</option>
-                    <option value="MKWU">MKWU</option>
-                    <option value="MKU">MKU</option>
-                    <option value="Keilmuan">Keilmuan</option>
-                    <option value="Praktikum">Praktikum</option>
-                    <option value="Tugas Akhir">Tugas Akhir</option>
-                    <option value="Magang">Magang</option>
-                </select>
-                @error('courseForm.category_type')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-12 mt-2">
-                <label for="prerequisites">Prasyarat Mata Kuliah</label>
-                <select id="prerequisites" class="form-control" multiple wire:model.defer="selectedPrerequisites">
-                    @foreach ($availablePrerequisites as $prerequisite)
-                        <option value="{{ $prerequisite['id'] }}">{{ $prerequisite['label'] }}</option>
-                    @endforeach
-                </select>
-                @error('selectedPrerequisites')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-                @error('selectedPrerequisites.*')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-12 mt-2">
-                <label for="desc">Deskripsi</label>
-                <textarea id="desc" class="form-control" rows="3" wire:model.defer="courseForm.desc"></textarea>
-                @error('courseForm.desc')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-            </div>
-            <div class="form-group col-12 mt-2">
-                <div class="form-check form-switch mt-2">
-                    <input id="is_active" class="form-check-input" type="checkbox" wire:model.defer="courseForm.is_active">
-                    <label for="is_active" class="form-check-label">Aktif</label>
+    <x-admin.academic.header
+        title="Tambah Mata Kuliah Baru"
+        description="Buat mata kuliah baru, atur bobot SKS, sifat mata kuliah, prasyarat, dan lingkup unit penanggung jawab."
+        icon="book"
+    >
+        <button type="button" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2" wire:click="cancel">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+        </button>
+    </x-admin.academic.header>
+
+    <form wire:submit.prevent="createCourse">
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white border-bottom p-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-book fs-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="card-title fw-bold mb-1 text-dark">Formulir Mata Kuliah Baru</h4>
+                                <div class="text-muted small">Lengkapi informasi kode, bobot kredit SKS, kategori keilmuan, serta sifat mata kuliah.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold" for="code">Kode Mata Kuliah <span class="text-danger">*</span></label>
+                                <input type="text" id="code" class="form-control" wire:model.defer="courseForm.code" placeholder="Contoh: IF101">
+                                @error('courseForm.code') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold" for="name">Nama Mata Kuliah <span class="text-danger">*</span></label>
+                                <input type="text" id="name" class="form-control" wire:model.defer="courseForm.name" placeholder="Contoh: Algoritma & Pemrograman">
+                                @error('courseForm.name') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold" for="short_name">Nama Singkat (Opsional)</label>
+                                <input type="text" id="short_name" class="form-control" wire:model.defer="courseForm.short_name" placeholder="Contoh: ALPRO">
+                                @error('courseForm.short_name') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold" for="credits">Bobot SKS <span class="text-danger">*</span></label>
+                                <input type="number" id="credits" class="form-control" min="1" max="24" wire:model.defer="courseForm.credits" placeholder="3">
+                                @error('courseForm.credits') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold" for="semester_recommendation">Semester Rekomendasi</label>
+                                <input type="number" id="semester_recommendation" class="form-control" min="1" max="14" wire:model.defer="courseForm.semester_recommendation" placeholder="Contoh: 1">
+                                @error('courseForm.semester_recommendation') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="requirement_type">Sifat Mata Kuliah <span class="text-danger">*</span></label>
+                                <select id="requirement_type" class="form-select" wire:model.defer="courseForm.requirement_type">
+                                    <option value="Wajib">Wajib</option>
+                                    <option value="Pilihan">Pilihan</option>
+                                </select>
+                                @error('courseForm.requirement_type') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="category_type">Kategori Keilmuan <span class="text-danger">*</span></label>
+                                <select id="category_type" class="form-select" wire:model.defer="courseForm.category_type">
+                                    <option value="Umum">Umum</option>
+                                    <option value="MKWU">MKWU</option>
+                                    <option value="MKU">MKU</option>
+                                    <option value="Keilmuan">Keilmuan</option>
+                                    <option value="Praktikum">Praktikum</option>
+                                    <option value="Tugas Akhir">Tugas Akhir</option>
+                                    <option value="Magang">Magang</option>
+                                </select>
+                                @error('courseForm.category_type') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="desc">Deskripsi Mata Kuliah</label>
+                                <textarea id="desc" class="form-control" rows="4" wire:model.defer="courseForm.desc" placeholder="Tuliskan silabus singkat atau deskripsi mata kuliah..."></textarea>
+                                @error('courseForm.desc') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                @error('courseForm.is_active')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
             </div>
 
-            <div class="form-group col-12 mt-4 d-flex align-items-center justify-content-end gap-2">
-                <button class="btn btn-primary" wire:click="createCourse">
-                    <i class="fas fa-save me-2"></i> Simpan Perubahan
-                </button>
-                <button class="btn btn-secondary" wire:click="cancel">
-                    <i class="fas fa-times me-2"></i> Batal
-                </button>
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                    <div class="card-body p-4 bg-light bg-opacity-50">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-circle-info"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-1">Pedoman Mata Kuliah</h5>
+                                <div class="text-muted small">Panduan pengisian kurikulum.</div>
+                            </div>
+                        </div>
+
+                        <ul class="list-unstyled mb-0 text-muted small d-grid gap-2">
+                            <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Pastikan <strong>Kode Mata Kuliah</strong> unik dan belum pernah digunakan di sistem sebelumnya.</span></li>
+                            <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Pilih <strong>Tingkat Scope</strong> (Global, Fakultas, atau Prodi) agar mata kuliah tepat sasaran pada kurikulum.</span></li>
+                            <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Gunakan fitur <strong>Prasyarat</strong> untuk mewajibkan kelulusan mata kuliah dasar sebelum mengambil mata kuliah ini.</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white border-bottom p-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-sitemap fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title fw-bold mb-0 text-dark">Scope & Prasyarat</h5>
+                                <div class="text-muted small">Penempatan unit dan syarat kelulusan.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="scope_type">Tingkat Scope <span class="text-danger">*</span></label>
+                                <select id="scope_type" class="form-select" wire:model.live="courseForm.scope_type">
+                                    <option value="global">Global (Semua Unit)</option>
+                                    <option value="faculty">Fakultas</option>
+                                    <option value="study_program">Program Studi</option>
+                                </select>
+                                @error('courseForm.scope_type') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            @if(($courseForm['scope_type'] ?? 'global') !== 'global')
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold" for="scope_id">Unit Tujuan <span class="text-danger">*</span></label>
+                                    <select id="scope_id" class="form-select" wire:model.defer="courseForm.scope_id">
+                                        <option value="">Pilih Tujuan</option>
+                                        @if (($courseForm['scope_type'] ?? 'global') === 'faculty')
+                                            @foreach ($availableFaculties as $faculty)
+                                                <option value="{{ $faculty['id'] }}">{{ $faculty['name'] }} @if(!$faculty['is_active']) (Nonaktif) @endif</option>
+                                            @endforeach
+                                        @elseif (($courseForm['scope_type'] ?? 'global') === 'study_program')
+                                            @foreach ($availableStudyPrograms as $studyProgram)
+                                                <option value="{{ $studyProgram['id'] }}">{{ $studyProgram['name'] }} @if(!$studyProgram['is_active']) (Nonaktif) @endif</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    @error('courseForm.scope_id') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
+
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="prerequisites">Prasyarat Mata Kuliah</label>
+                                <select id="prerequisites" class="form-select" multiple size="5" wire:model.defer="selectedPrerequisites">
+                                    @foreach ($availablePrerequisites as $prerequisite)
+                                        <option value="{{ $prerequisite['id'] }}">{{ $prerequisite['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted d-block mt-1">Tahan tombol Ctrl / Cmd untuk memilih lebih dari satu mata kuliah.</small>
+                                @error('selectedPrerequisites') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                @error('selectedPrerequisites.*') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-12 border-top pt-3 mt-3">
+                                <div class="form-check form-switch">
+                                    <input id="is_active" class="form-check-input" type="checkbox" wire:model.defer="courseForm.is_active">
+                                    <label for="is_active" class="form-check-label fw-semibold">Status Mata Kuliah Aktif</label>
+                                </div>
+                                @error('courseForm.is_active') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-12 border-top pt-3 mt-3 d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-light rounded-pill px-3 py-2" wire:click="cancel">
+                                    Batal
+                                </button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm">
+                                    <i class="fas fa-save me-1"></i> Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </form>
 </div>

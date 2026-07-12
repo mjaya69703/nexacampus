@@ -42,15 +42,15 @@ new class extends Component
             'updated_by' => auth()->id(),
         ]);
 
-        session()->flash('success', 'Tuition fee berhasil diperbarui.');
+        session()->flash('success', 'Tarif biaya kuliah (SPP) berhasil diperbarui.');
         $this->redirectRoute('admin.financial.tuition-fees.index');
     }
 
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Financial',
-            'pages' => 'Edit Tuition Fee',
+            'menus' => 'Keuangan',
+            'pages' => 'Edit Tarif Biaya Kuliah',
         ]);
     }
 
@@ -93,21 +93,35 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">Edit Tuition Fee</h3>
-                <a href="{{ route('admin.financial.tuition-fees.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
+<div class="w-full" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.financial.header
+        title="Edit Tarif Biaya Kuliah"
+        description="Perbarui nominal biaya kuliah dasar, rincian komponen tambahan, serta status masa berlaku tarif SPP."
+        icon="edit"
+    >
+        <a href="{{ route('admin.financial.tuition-fees.index') }}" class="btn btn-sm btn-light text-secondary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke Daftar</span>
+        </a>
+    </x-admin.financial.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-3 p-md-4 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fa fa-money-check-dollar fs-5"></i>
+                </div>
+                <div>
+                    <h4 class="card-title fw-bold mb-0 text-dark">Formulir Edit Tarif SPP</h4>
+                    <span class="text-muted small">Periksa kembali komponen biaya sebelum menyimpan perubahan.</span>
+                </div>
             </div>
-            <div class="card-body">
-                <form wire:submit.prevent="save">
-                    @include('components.admin.financial.tuition-fees._form')
-                </form>
-            </div>
+        </div>
+        <div class="card-body p-3 p-md-4">
+            <form wire:submit.prevent="save">
+                @include('components.admin.financial.tuition-fees._form')
+            </form>
         </div>
     </div>
 </div>

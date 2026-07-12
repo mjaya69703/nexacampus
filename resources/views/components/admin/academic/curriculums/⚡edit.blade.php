@@ -285,213 +285,244 @@ new class extends Component {
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
+<div>
+    <x-alert />
 
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Section A - Form Curriculum</h5>
-            </div>
-            <div class="card-body">
-                <form wire:submit.prevent="update">
-                    <div class="mb-3">
-                        <label class="form-label">Program Studi <span class="text-danger">*</span></label>
-                        <select class="form-select" wire:model="curriculumForm.study_program_id" required>
-                            <option value="">Pilih Program Studi</option>
-                            @foreach($availableStudyPrograms as $id => $name)
-                                <option value="{{ $id }}">{{ $name }}</option>
-                            @endforeach
-                        </select>
-                        @error('curriculumForm.study_program_id') <span class="text-danger">{{ $message }}</span> @enderror
-                    </div>
+    <x-admin.academic.header
+        title="Edit & Atur Kurikulum"
+        description="Perbarui informasi data kurikulum dan kelola susunan sebaran mata kuliah per semester."
+        icon="book-open"
+    >
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2" wire:click="cancel">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </button>
+            @activecan('curriculum.view')
+                <a href="{{ route('admin.academic.curriculums.show', ['id' => $curriculum->id]) }}" class="btn btn-sm btn-primary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                    <i class="fa fa-eye"></i> <span>Lihat Pratinjau Detail</span>
+                </a>
+            @endactivecan
+        </div>
+    </x-admin.academic.header>
 
-                    <div class="mb-3">
-                        <label class="form-label">Nama Kurikulum <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" wire:model="curriculumForm.name" placeholder="Contoh: Kurikulum 2024" required>
-                        @error('curriculumForm.name') <span class="text-danger">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Kode Kurikulum</label>
-                        <input type="text" class="form-control" wire:model="curriculumForm.code" placeholder="Contoh: K2024">
-                        @error('curriculumForm.code') <span class="text-danger">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tahun Mulai</label>
-                            <input type="number" class="form-control" wire:model="curriculumForm.start_year" placeholder="Contoh: 2024" min="1900">
-                            @error('curriculumForm.start_year') <span class="text-danger">{{ $message }}</span> @enderror
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-book-open fs-5"></i>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tahun Akhir</label>
-                            <input type="number" class="form-control" wire:model="curriculumForm.end_year" placeholder="Contoh: 2028" min="1900">
-                            @error('curriculumForm.end_year') <span class="text-danger">{{ $message }}</span> @enderror
+                        <div>
+                            <h5 class="card-title fw-bold mb-1 text-dark">Informasi Kurikulum</h5>
+                            <div class="text-muted small">Perbarui rincian kurikulum ini.</div>
                         </div>
                     </div>
-
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" wire:model="curriculumForm.is_active">
-                            <label class="form-check-label">Kurikulum Aktif</label>
+                </div>
+                <div class="card-body p-4">
+                    <form wire:submit.prevent="update" class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Program Studi <span class="text-danger">*</span></label>
+                            <select class="form-select" wire:model="curriculumForm.study_program_id" required>
+                                <option value="">Pilih Program Studi</option>
+                                @foreach($availableStudyPrograms as $id => $name)
+                                    <option value="{{ $id }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
+                            @error('curriculumForm.study_program_id') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Deskripsi</label>
-                        <textarea class="form-control" wire:model="curriculumForm.desc" rows="3" placeholder="Tambahkan deskripsi kurikulum"></textarea>
-                        @error('curriculumForm.desc') <span class="text-danger">{{ $message }}</span> @enderror
-                    </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nama Kurikulum <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" wire:model="curriculumForm.name" placeholder="Contoh: Kurikulum Merdeka 2024" required>
+                            @error('curriculumForm.name') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                        </div>
 
-                    <div class="text-end">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i> Simpan Perubahan
-                        </button>
-                        @activecan('curriculum.view')
-                            <a href="{{ route('admin.academic.curriculums.show', ['id' => $curriculum->id]) }}" class="btn btn-info">
-                                <i class="fas fa-eye me-2"></i> Lihat Detail
-                            </a>
-                        @endactivecan
-                        <button type="button" class="btn btn-secondary" wire:click="cancel">
-                            <i class="fas fa-times me-2"></i> Batal
-                        </button>
-                    </div>
-                </form>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Kode Kurikulum</label>
+                            <input type="text" class="form-control" wire:model="curriculumForm.code" placeholder="Contoh: KUR-2024">
+                            @error('curriculumForm.code') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Tahun Mulai</label>
+                            <input type="number" class="form-control" wire:model="curriculumForm.start_year" placeholder="2024" min="1900">
+                            @error('curriculumForm.start_year') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Tahun Akhir</label>
+                            <input type="number" class="form-control" wire:model="curriculumForm.end_year" placeholder="2028" min="1900">
+                            @error('curriculumForm.end_year') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Deskripsi</label>
+                            <textarea class="form-control" wire:model="curriculumForm.desc" rows="3" placeholder="Keterangan kurikulum"></textarea>
+                            @error('curriculumForm.desc') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch mt-1">
+                                <input class="form-check-input" type="checkbox" wire:model="curriculumForm.is_active" id="edit_is_active">
+                                <label class="form-check-label fw-semibold" for="edit_is_active">Status Kurikulum Aktif</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 border-top pt-3 mt-3 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light rounded-pill px-3 py-2" wire:click="cancel">
+                                <i class="fa fa-times me-1"></i> Batal
+                            </button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm">
+                                <i class="fa fa-save me-1"></i> Simpan
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Section B - Manage Curriculum Courses</h5>
-                @activecan('curriculum.update')
-                    <button type="button" class="btn  btn-ghost-primary" wire:click="startCreateCurriculumCourse">
-                        <i class="fa fa-plus me-1"></i> Tambah Mata Kuliah
-                    </button>
-                @endactivecan
-            </div>
-            <div class="card-body">
-                @if($showCurriculumCourseForm)
-                    <div class="border rounded p-3 mb-3 ">
-                        <h6 class="mb-3">{{ $editingCurriculumCourseId ? 'Edit Assignment Mata Kuliah' : 'Tambah Assignment Mata Kuliah' }}</h6>
-                        <form wire:submit.prevent="saveCurriculumCourse">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Mata Kuliah <span class="text-danger">*</span></label>
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="card-title fw-bold mb-1">Daftar & Sebaran Mata Kuliah</h5>
+                        <p class="text-muted small mb-0">Kelola penempatan mata kuliah pada semester di kurikulum ini.</p>
+                    </div>
+                    @activecan('curriculum.update')
+                        <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1" wire:click="startCreateCurriculumCourse">
+                            <i class="fa fa-plus-circle"></i> Tambah Mata Kuliah
+                        </button>
+                    @endactivecan
+                </div>
+                <div class="card-body p-4">
+                    @if($showCurriculumCourseForm)
+                        <div class="card bg-light border-0 rounded-4 p-4 mb-4 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-primary mb-0">
+                                    <i class="fa fa-layer-group me-2"></i>{{ $editingCurriculumCourseId ? 'Edit Assignment Mata Kuliah' : 'Tambah Assignment Mata Kuliah' }}
+                                </h6>
+                                <button type="button" class="btn-close" wire:click="cancelCurriculumCourseForm" aria-label="Close"></button>
+                            </div>
+                            <form wire:submit.prevent="saveCurriculumCourse" class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Mata Kuliah <span class="text-danger">*</span></label>
                                     <select class="form-select" wire:model="curriculumCourseForm.course_id" required>
                                         <option value="">Pilih Mata Kuliah</option>
                                         @foreach($availableCourses as $id => $label)
                                             <option value="{{ $id }}">{{ $label }}</option>
                                         @endforeach
                                     </select>
-                                    @error('curriculumCourseForm.course_id') <span class="text-danger">{{ $message }}</span> @enderror
+                                    @error('curriculumCourseForm.course_id') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label">Semester</label>
-                                    <input type="number" class="form-control" min="1" max="14" wire:model="curriculumCourseForm.semester_no">
-                                    @error('curriculumCourseForm.semester_no') <span class="text-danger">{{ $message }}</span> @enderror
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">Semester Ke-</label>
+                                    <input type="number" class="form-control" min="1" max="14" wire:model="curriculumCourseForm.semester_no" placeholder="Contoh: 1">
+                                    @error('curriculumCourseForm.semester_no') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label">Urutan</label>
-                                    <input type="number" class="form-control" min="0" wire:model="curriculumCourseForm.sort_order">
-                                    @error('curriculumCourseForm.sort_order') <span class="text-danger">{{ $message }}</span> @enderror
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">Urutan (Sort)</label>
+                                    <input type="number" class="form-control" min="0" wire:model="curriculumCourseForm.sort_order" placeholder="0">
+                                    @error('curriculumCourseForm.sort_order') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Credits Override</label>
-                                    <input type="number" class="form-control" min="1" max="30" wire:model="curriculumCourseForm.credits_override">
-                                    @error('curriculumCourseForm.credits_override') <span class="text-danger">{{ $message }}</span> @enderror
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Override SKS (Opsional)</label>
+                                    <input type="number" class="form-control" min="1" max="30" wire:model="curriculumCourseForm.credits_override" placeholder="Kosongkan jika sesuai SKS asli">
+                                    @error('curriculumCourseForm.credits_override') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-8 mb-3">
-                                    <label class="form-label">Catatan</label>
-                                    <input type="text" class="form-control" wire:model="curriculumCourseForm.notes">
-                                    @error('curriculumCourseForm.notes') <span class="text-danger">{{ $message }}</span> @enderror
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold">Catatan Tambahan</label>
+                                    <input type="text" class="form-control" wire:model="curriculumCourseForm.notes" placeholder="Contoh: Mata kuliah prasyarat skripsi">
+                                    @error('curriculumCourseForm.notes') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-check">
-                                        <input class="form-check-input" type="checkbox" wire:model="curriculumCourseForm.is_required">
-                                        <span class="form-check-label">Mata kuliah wajib</span>
-                                    </label>
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" wire:model="curriculumCourseForm.is_required" id="is_required">
+                                        <label class="form-check-label fw-semibold" for="is_required">Mata Kuliah Wajib</label>
+                                    </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-check">
-                                        <input class="form-check-input" type="checkbox" wire:model="curriculumCourseForm.is_active">
-                                        <span class="form-check-label">Aktif</span>
-                                    </label>
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" wire:model="curriculumCourseForm.is_active" id="cc_is_active">
+                                        <label class="form-check-label fw-semibold" for="cc_is_active">Aktif dalam Kurikulum</label>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="text-end">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-1"></i> Simpan Assignment
-                                </button>
-                                <button type="button" class="btn btn-secondary" wire:click="cancelCurriculumCourseForm">
-                                    Batal
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                @endif
+                                <div class="col-12 border-top pt-3 mt-3 d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-light rounded-pill px-3 py-2" wire:click="cancelCurriculumCourseForm">
+                                        Batal
+                                    </button>
+                                    <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm">
+                                        <i class="fa fa-save me-1"></i> Simpan Assignment
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    @endif
 
-                @if($this->curriculumCourses->count() > 0)
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover table-vcenter">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="min-width: 80px;" class="text-center">Semester</th>
-                                    <th style="min-width: 120px;">Course Code</th>
-                                    <th>Course Name</th>
-                                    <th style="min-width: 160px;" class="text-center">Credits Asli / Override</th>
-                                    <th style="min-width: 90px;" class="text-center">Wajib</th>
-                                    <th style="min-width: 90px;" class="text-center">Sort</th>
-                                    <th style="min-width: 90px;" class="text-center">Status</th>
-                                    <th style="min-width: 120px;" class="text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($this->curriculumCourses as $cc)
+                    @if($this->curriculumCourses->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td class="text-center">{{ $cc->semester_no ?? '-' }}</td>
-                                        <td>{{ $cc->course->code }}</td>
-                                        <td>{{ $cc->course->name }}</td>
-                                        <td class="text-center">{{ $cc->course->credits }} / {{ $cc->credits_override ?? '-' }}</td>
-                                        <td class="text-center">
-                                            <span class="badge {{ $cc->is_required ? 'bg-success' : 'bg-secondary' }}">
-                                                {{ $cc->is_required ? 'Ya' : 'Tidak' }}
-                                            </span>
-                                        </td>
-                                        <td class="text-center">{{ $cc->sort_order }}</td>
-                                        <td class="text-center">
-                                            <span class="badge {{ $cc->is_active ? 'bg-success' : 'bg-secondary' }}">
-                                                {{ $cc->is_active ? 'Aktif' : 'Nonaktif' }}
-                                            </span>
-                                        </td>
-                                        <td class="text-center">
-                                            @activecan('curriculum.update')
-                                                <button type="button" class="btn  btn-icon btn-warning" wire:click="startEditCurriculumCourse({{ $cc->id }})" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn  btn-icon btn-danger" wire:click="confirmDeleteCurriculumCourse({{ $cc->id }})" title="Hapus" type="button">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            @endactivecan
-                                        </td>
+                                        <th style="width: 80px;" class="text-center">Smt</th>
+                                        <th>Kode</th>
+                                        <th>Mata Kuliah</th>
+                                        <th class="text-center">SKS</th>
+                                        <th class="text-center">Sifat</th>
+                                        <th class="text-center">Sort</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center" style="width: 100px;">Aksi</th>
                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center text-muted py-3">
-                                            <small>Belum ada mata kuliah yang ditambahkan ke kurikulum ini</small>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="alert alert-light border text-center py-3 mb-0">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <small>Belum ada mata kuliah yang ditambahkan ke kurikulum ini</small>
-                    </div>
-                @endif
+                                </thead>
+                                <tbody>
+                                    @foreach($this->curriculumCourses as $cc)
+                                        <tr>
+                                            <td class="text-center fw-bold text-primary">{{ $cc->semester_no ?? '-' }}</td>
+                                            <td><span class="badge bg-light text-dark border">{{ $cc->course->code }}</span></td>
+                                            <td class="fw-semibold">{{ $cc->course->name }}</td>
+                                            <td class="text-center">
+                                                @if($cc->credits_override)
+                                                    <span class="fw-bold">{{ $cc->credits_override }}</span> <small class="text-muted">({{ $cc->course->credits }})</small>
+                                                @else
+                                                    {{ $cc->course->credits }}
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge {{ $cc->is_required ? 'bg-primary bg-opacity-10 text-primary' : 'bg-secondary bg-opacity-10 text-secondary' }} rounded-pill px-2 py-1">
+                                                    {{ $cc->is_required ? 'Wajib' : 'Pilihan' }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center text-muted small">{{ $cc->sort_order }}</td>
+                                            <td class="text-center">
+                                                <span class="badge {{ $cc->is_active ? 'bg-success' : 'bg-secondary' }}">
+                                                    {{ $cc->is_active ? 'Aktif' : 'Nonaktif' }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                @activecan('curriculum.update')
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button type="button" class="btn btn-light text-primary" wire:click="startEditCurriculumCourse({{ $cc->id }})" title="Edit">
+                                                            <i class="fa fa-edit"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-light text-danger" wire:click="confirmDeleteCurriculumCourse({{ $cc->id }})" title="Hapus">
+                                                            <i class="fa fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                @endactivecan
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center py-5">
+                            <div class="text-muted mb-2"><i class="fa fa-folder-open fs-1 text-opacity-50"></i></div>
+                            <h6 class="fw-bold text-muted">Belum ada mata kuliah dalam kurikulum ini</h6>
+                            <p class="small text-muted mb-3">Klik tombol "Tambah Mata Kuliah" di atas untuk menempatkan mata kuliah pada semester tertentu.</p>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

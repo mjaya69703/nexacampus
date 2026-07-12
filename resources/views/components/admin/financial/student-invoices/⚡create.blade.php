@@ -71,7 +71,7 @@ new class extends Component
         $errors = [];
 
         if ($students->isEmpty()) {
-            session()->flash('error', 'Tidak ada student profile aktif yang cocok dengan target invoice. Invoice hanya bisa dibuat untuk mahasiswa yang sudah punya student profile.');
+            session()->flash('error', 'Tidak ada student profile aktif yang cocok dengan target invoice. Invoice hanya dapat diterbitkan untuk mahasiswa yang telah memiliki student profile.');
 
             return;
         }
@@ -108,7 +108,7 @@ new class extends Component
         }
 
         if ($created > 0) {
-            session()->flash('success', $created.' invoice berhasil dibuat.');
+            session()->flash('success', $created.' invoice tagihan berhasil diterbitkan.');
         }
 
         if (! empty($errors)) {
@@ -121,8 +121,8 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Financial',
-            'pages' => 'Create Student Invoice',
+            'menus' => 'Keuangan',
+            'pages' => 'Terbitkan Tagihan Mahasiswa',
         ]);
     }
 
@@ -229,96 +229,116 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-lg-8">
-        <x-alert />
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="card-title mb-0">Create Student Invoice</h3>
-                    <small class="text-muted">Generate tuition invoice or create custom manual invoice.</small>
+<div class="w-full" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.financial.header
+        title="Terbitkan Tagihan Mahasiswa (Create Invoice)"
+        description="Buat tagihan SPP otomatis berdasarkan tarif master atau terbitkan tagihan kustom manual untuk mahasiswa tunggal maupun massal."
+        icon="plus-circle"
+    >
+        <a href="{{ route('admin.financial.student-invoices.index') }}" class="btn btn-sm btn-light text-secondary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke Daftar</span>
+        </a>
+    </x-admin.financial.header>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-3 p-md-4 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="fa fa-file-invoice-dollar fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-0 text-dark">Formulir Penerbitan Tagihan</h4>
+                            <span class="text-muted small">Pilih mode target mahasiswa dan konfigurasikan rincian biaya studi.</span>
+                        </div>
+                    </div>
                 </div>
-                <a href="{{ route('admin.financial.student-invoices.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
-            </div>
-            <div class="card-body">
-                <form wire:submit.prevent="save">
+                <div class="card-body p-3 p-md-4">
+                    <form wire:submit.prevent="save">
                     @if (StudentProfile::where('is_active', true)->doesntExist())
-                        <div class="alert alert-warning">
+                        <div class="alert alert-warning border-0 rounded-3 mb-4">
                             <div class="d-flex gap-2">
-                                <i class="fas fa-triangle-exclamation mt-1"></i>
+                                <i class="fas fa-triangle-exclamation fs-5 mt-1"></i>
                                 <div>
-                                    <strong>Belum ada student profile aktif.</strong>
-                                    Invoice financial tidak dibuat dari user biasa, tapi dari <code>student_profiles</code>. Convert/admission-kan mahasiswa dulu atau aktifkan student profile sebelum membuat invoice.
+                                    <strong>Belum ada profil mahasiswa (Student Profile) aktif.</strong>
+                                    Tagihan keuangan hanya dapat diterbitkan untuk akun mahasiswa yang telah memiliki profil akademik aktif. Silakan verifikasi pendaftaran/registrasi mahasiswa terlebih dahulu.
                                 </div>
                             </div>
                         </div>
                     @endif
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Invoice Kind</label>
-                            <select class="form-control" wire:model.live="form.invoice_kind">
-                                <option value="tuition">Tuition Template</option>
-                                <option value="custom">Custom / Manual</option>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Sumber / Format Tagihan</label>
+                            <select class="form-select" wire:model.live="form.invoice_kind">
+                                <option value="tuition">Template SPP / Kuliah (Otomatis dari Master)</option>
+                                <option value="custom">Tagihan Kustom / Non-SPP (Input Manual)</option>
                             </select>
-                            @error('form.invoice_kind') <span class="text-danger">{{ $message }}</span> @enderror
+                            @error('form.invoice_kind') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Mode</label>
-                            <select class="form-control" wire:model.live="form.generation_mode">
-                                <option value="single">Single Student</option>
-                                <option value="selected_students">Selected Students</option>
-                                <option value="active_students">Approved Active Students</option>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Mode Target Mahasiswa</label>
+                            <select class="form-select" wire:model.live="form.generation_mode">
+                                <option value="single">Satu Mahasiswa Khusus</option>
+                                <option value="selected_students">Pilih Beberapa Mahasiswa</option>
+                                <option value="active_students">Seluruh Mahasiswa Aktif (Massal)</option>
                             </select>
-                            @error('form.generation_mode') <span class="text-danger">{{ $message }}</span> @enderror
+                            @error('form.generation_mode') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
 
                         @if (($form['generation_mode'] ?? 'single') === 'single')
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Student <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control mb-2" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari NIM, nama, atau email...">
-                                <div class="border rounded p-2" style="max-height: 260px; overflow-y: auto;">
-                                    @foreach ($this->studentOptions() as $student)
-                                        <label class="form-check mb-2" wire:key="invoice-single-student-{{ $student['id'] }}">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Pilih Satu Mahasiswa <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control mb-2 rounded-pill px-3" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari berdasarkan NIM, Nama, atau Email...">
+                                <div class="border rounded-3 p-3 bg-light bg-opacity-50" style="max-height: 240px; overflow-y: auto;">
+                                    @forelse ($this->studentOptions() as $student)
+                                        <label class="form-check py-1 d-block" wire:key="invoice-single-student-{{ $student['id'] }}">
                                             <input class="form-check-input" type="radio" wire:model="form.student_profile_id" value="{{ $student['id'] }}">
-                                            <span class="form-check-label">{{ $student['label'] }}</span>
+                                            <span class="form-check-label fw-medium">{{ $student['label'] }}</span>
                                         </label>
-                                    @endforeach
+                                    @empty
+                                        <div class="text-secondary small text-center py-2">Mahasiswa tidak ditemukan.</div>
+                                    @endforelse
                                 </div>
-                                <small class="text-muted">Search hanya menampilkan 25 kandidat teratas.</small>
-                                @error('form.student_profile_id') <span class="text-danger">{{ $message }}</span> @enderror
+                                <div class="small text-secondary mt-1">Pencarian menampilkan maksimal 25 kandidat teratas.</div>
+                                @error('form.student_profile_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
                         @elseif (($form['generation_mode'] ?? 'single') === 'selected_students')
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Students <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control mb-2" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari NIM, nama, atau email...">
-                                <div class="border rounded p-2" style="max-height: 260px; overflow-y: auto;">
-                                    @foreach ($this->studentOptions() as $student)
-                                        <label class="form-check mb-2" wire:key="invoice-selected-student-{{ $student['id'] }}">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Pilih Mahasiswa <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control mb-2 rounded-pill px-3" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari berdasarkan NIM, Nama, atau Email...">
+                                <div class="border rounded-3 p-3 bg-light bg-opacity-50" style="max-height: 240px; overflow-y: auto;">
+                                    @forelse ($this->studentOptions() as $student)
+                                        <label class="form-check py-1 d-block" wire:key="invoice-selected-student-{{ $student['id'] }}">
                                             <input class="form-check-input" type="checkbox" wire:model="selectedStudentProfileIds" value="{{ $student['id'] }}">
-                                            <span class="form-check-label">{{ $student['label'] }}</span>
+                                            <span class="form-check-label fw-medium">{{ $student['label'] }}</span>
                                         </label>
-                                    @endforeach
+                                    @empty
+                                        <div class="text-secondary small text-center py-2">Mahasiswa tidak ditemukan.</div>
+                                    @endforelse
                                 </div>
-                                <small class="text-muted">{{ count($selectedStudentProfileIds) }} mahasiswa dipilih. Search hanya menampilkan 25 kandidat teratas.</small>
-                                @error('selectedStudentProfileIds') <span class="text-danger d-block">{{ $message }}</span> @enderror
-                                @error('selectedStudentProfileIds.*') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                                <div class="small text-secondary mt-1">
+                                    <i class="fas fa-check-circle text-primary me-1"></i> {{ count($selectedStudentProfileIds) }} mahasiswa terpilih.
+                                </div>
+                                @error('selectedStudentProfileIds') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                @error('selectedStudentProfileIds.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
                         @else
                             @php($eligibleBulkStudentsCount = $this->eligibleBulkStudentsCount())
-                            <div class="col-12 mb-3">
-                                <div class="alert {{ $eligibleBulkStudentsCount > 0 ? 'alert-info' : 'alert-warning' }} mb-0">
-                                    <div class="d-flex gap-2">
-                                        <i class="fas {{ $eligibleBulkStudentsCount > 0 ? 'fa-circle-info' : 'fa-triangle-exclamation' }} mt-1"></i>
+                            <div class="col-12">
+                                <div class="alert {{ $eligibleBulkStudentsCount > 0 ? 'alert-info' : 'alert-warning' }} border-0 rounded-3 mb-0">
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <i class="fas {{ $eligibleBulkStudentsCount > 0 ? 'fa-circle-info' : 'fa-triangle-exclamation' }} fs-4"></i>
                                         <div>
-                                            <strong>{{ $eligibleBulkStudentsCount }} mahasiswa eligible.</strong>
+                                            <strong>{{ number_format($eligibleBulkStudentsCount) }} mahasiswa memenuhi syarat (eligible).</strong>
                                             @if ($eligibleBulkStudentsCount > 0)
-                                                Bulk invoice akan dibuat hanya untuk student profile aktif yang cocok dengan academic year, semester, dan registrasi approved aktif.
+                                                Penerbitan tagihan massal akan menyasar seluruh mahasiswa dengan profil aktif yang terdaftar pada tahun akademik dan semester yang dipilih.
                                             @else
-                                                Tidak ada student profile aktif yang cocok dengan filter ini. Invoice tidak akan dibuat sampai ada mahasiswa eligible.
+                                                Tidak ada mahasiswa aktif yang cocok dengan parameter filter ini.
                                             @endif
                                         </div>
                                     </div>
@@ -326,83 +346,83 @@ new class extends Component
                             </div>
                         @endif
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Invoice Type</label>
-                            <select class="form-control" wire:model="form.invoice_type" @if(($form['invoice_kind'] ?? 'tuition') === 'tuition') disabled @endif>
-                                <option value="tuition">Tuition</option>
-                                <option value="custom">Custom</option>
-                                <option value="admission">Admission</option>
-                                <option value="registration">Registration</option>
-                                <option value="leave">Leave</option>
-                                <option value="transfer">Transfer</option>
-                                <option value="graduation">Graduation</option>
-                                <option value="exam">Exam</option>
-                                <option value="library_fine">Library Fine</option>
-                                <option value="certificate">Certificate</option>
-                                <option value="other">Other</option>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Kategori Tagihan</label>
+                            <select class="form-select" wire:model="form.invoice_type" @if(($form['invoice_kind'] ?? 'tuition') === 'tuition') disabled @endif>
+                                <option value="tuition">SPP / Kuliah (Tuition)</option>
+                                <option value="custom">Tagihan Kustom (Custom)</option>
+                                <option value="admission">Pendaftaran Mahasiswa Baru</option>
+                                <option value="registration">Daftar Ulang / Registrasi</option>
+                                <option value="leave">Cuti Akademik (Leave)</option>
+                                <option value="transfer">Pindah Jalur / Program (Transfer)</option>
+                                <option value="graduation">Wisuda / Kelulusan (Graduation)</option>
+                                <option value="exam">Ujian Akhir / Skripsi (Exam)</option>
+                                <option value="library_fine">Denda Perpustakaan</option>
+                                <option value="certificate">Legalisir / Sertifikat</option>
+                                <option value="other">Lainnya (Other)</option>
                             </select>
-                            @error('form.invoice_type') <span class="text-danger">{{ $message }}</span> @enderror
+                            @error('form.invoice_type') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Academic Year @if(in_array(($form['invoice_type'] ?? 'custom'), ['tuition', 'registration', 'exam'])) <span class="text-danger">*</span> @endif</label>
-                            <select class="form-control" wire:model="form.academic_year_id">
-                                <option value="">Select Academic Year</option>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tahun Akademik @if(in_array(($form['invoice_type'] ?? 'custom'), ['tuition', 'registration', 'exam'])) <span class="text-danger">*</span> @endif</label>
+                            <select class="form-select" wire:model="form.academic_year_id">
+                                <option value="">Pilih Tahun Akademik</option>
                                 @foreach ($academicYears as $academicYear)
                                     <option value="{{ $academicYear['id'] }}">{{ $academicYear['label'] }}</option>
                                 @endforeach
                             </select>
-                            @error('form.academic_year_id') <span class="text-danger">{{ $message }}</span> @enderror
+                            @error('form.academic_year_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Semester @if(($form['invoice_kind'] ?? 'tuition') === 'tuition') <span class="text-danger">*</span> @endif</label>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Semester @if(($form['invoice_kind'] ?? 'tuition') === 'tuition') <span class="text-danger">*</span> @endif</label>
                             <input type="number" min="1" max="14" class="form-control" wire:model="form.semester">
-                            @error('form.semester') <span class="text-danger">{{ $message }}</span> @enderror
+                            @error('form.semester') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Due Date @if(($form['invoice_kind'] ?? 'tuition') === 'custom') <span class="text-danger">*</span> @endif</label>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tanggal Jatuh Tempo @if(($form['invoice_kind'] ?? 'tuition') === 'custom') <span class="text-danger">*</span> @endif</label>
                             <input type="date" class="form-control" wire:model="form.due_date">
-                            @error('form.due_date') <span class="text-danger">{{ $message }}</span> @enderror
+                            @error('form.due_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             @if(($form['invoice_kind'] ?? 'tuition') === 'tuition')
-                                <small class="text-muted">Kosongkan untuk memakai deadline tuition fee.</small>
+                                <div class="small text-secondary mt-1">Kosongkan untuk otomatis menggunakan batas waktu dari template SPP.</div>
                             @endif
                         </div>
 
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-control" rows="2" wire:model="form.notes"></textarea>
-                            @error('form.notes') <span class="text-danger">{{ $message }}</span> @enderror
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Catatan Internal / Referensi</label>
+                            <textarea class="form-control" rows="2" wire:model="form.notes" placeholder="Catatan tambahan untuk bagian keuangan atau mahasiswa..."></textarea>
+                            @error('form.notes') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
                     </div>
 
                     @if (($form['invoice_kind'] ?? 'tuition') === 'custom')
-                        <div class="border rounded p-3 mb-3">
+                        <div class="border rounded-4 p-4 my-4 bg-light bg-opacity-50">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="mb-0">Invoice Items</h5>
-                                <button type="button" class="btn btn-sm btn-outline-primary" wire:click="addItem">
-                                    <i class="fas fa-plus me-1"></i> Add Item
+                                <h5 class="fw-bold mb-0">Rincian Komponen Tagihan (Items)</h5>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" wire:click="addItem">
+                                    <i class="fas fa-plus me-1"></i> Tambah Komponen
                                 </button>
                             </div>
 
                             @foreach ($items as $index => $item)
-                                <div class="row align-items-end mb-2" wire:key="invoice-item-{{ $index }}">
+                                <div class="row align-items-end g-2 mb-2" wire:key="invoice-item-{{ $index }}">
                                     <div class="col-md-3">
-                                        <label class="form-label">Type</label>
-                                        <select class="form-control" wire:model="items.{{ $index }}.item_type">
-                                            <option value="fee">Fee</option>
-                                            <option value="discount">Discount</option>
-                                            <option value="adjustment">Adjustment</option>
-                                            <option value="penalty">Penalty</option>
+                                        <label class="form-label small fw-semibold">Jenis Item</label>
+                                        <select class="form-select" wire:model="items.{{ $index }}.item_type">
+                                            <option value="fee">Biaya Pokok (Fee)</option>
+                                            <option value="discount">Potongan (Discount)</option>
+                                            <option value="adjustment">Penyesuaian (Adjustment)</option>
+                                            <option value="penalty">Denda (Penalty)</option>
                                         </select>
                                     </div>
                                     <div class="col-md-5">
-                                        <label class="form-label">Description</label>
-                                        <input type="text" class="form-control" wire:model="items.{{ $index }}.description" placeholder="Bayar A">
+                                        <label class="form-label small fw-semibold">Keterangan Biaya</label>
+                                        <input type="text" class="form-control" wire:model="items.{{ $index }}.description" placeholder="Contoh: Biaya Praktikum Laboratorium">
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label">Amount</label>
+                                        <label class="form-label small fw-semibold">Nominal (Rp)</label>
                                         <input type="number" min="0" step="1000" class="form-control" wire:model="items.{{ $index }}.amount">
                                     </div>
                                     <div class="col-md-1">
@@ -415,19 +435,19 @@ new class extends Component
                         </div>
                     @endif
 
-                    <div class="mb-3">
-                        <label class="form-check">
-                            <input class="form-check-input" type="checkbox" wire:model="form.issue_immediately">
-                            <span class="form-check-label">Issue immediately and show to student</span>
-                        </label>
-                        <small class="text-muted d-block">Custom invoice biasanya dibuat draft dulu agar bisa direview.</small>
-                    </div>
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <div class="form-check form-switch fs-6">
+                            <input class="form-check-input" type="checkbox" role="switch" id="issueImmediately" wire:model="form.issue_immediately">
+                            <label class="form-check-label fw-semibold ms-2" for="issueImmediately">Otomatis Terbitkan Tagihan Resmi (Issued)</label>
+                            <div class="small text-secondary fw-normal">Jika dimatikan, invoice akan disimpan sebagai draft terlebih dahulu.</div>
+                        </div>
 
-                    <div class="form-footer">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-file-invoice-dollar me-1"></i> Save Invoice
-                        </button>
-                        <a href="{{ route('admin.financial.student-invoices.index') }}" class="btn btn-secondary">Cancel</a>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('admin.financial.student-invoices.index') }}" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">Batal</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+                                <i class="fas fa-file-invoice-dollar me-1"></i> Simpan & Terbitkan
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -435,18 +455,17 @@ new class extends Component
     </div>
 
     <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Rule</h5>
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-white p-4 border-bottom">
+                <h5 class="card-title fw-bold mb-0"><i class="fas fa-circle-info text-primary me-2"></i>Panduan Penerbitan Tagihan</h5>
             </div>
-            <div class="card-body">
-                <ul class="mb-0 ps-3">
-                    <li>Tuition invoice mengambil item dari tuition fee aktif.</li>
-                    <li>Custom invoice memakai item manual dan default draft.</li>
-                    <li>Invoice hanya dibuat untuk mahasiswa yang sudah punya student profile aktif.</li>
-                    <li>Mode bulk memfilter student profile aktif dengan registrasi approved aktif pada tahun akademik/semester yang dipilih.</li>
-                    <li>Draft invoice belum tampil di halaman student.</li>
-                    <li>Invoice yang sudah punya payment nanti tidak diedit langsung, tapi via adjustment.</li>
+            <div class="card-body p-4 text-secondary small">
+                <ul class="mb-0 ps-3 space-y-2">
+                    <li class="mb-2"><strong>Format SPP (Tuition):</strong> Komponen biaya dan nominal otomatis ditarik dari pengaturan Master Tuition Fee yang aktif untuk Program Studi dan Angkatan mahasiswa.</li>
+                    <li class="mb-2"><strong>Format Kustom:</strong> Gunakan opsi ini untuk tagihan insidental di luar SPP (misal: denda, ganti rugi, biaya kegiatan khusus) dengan rincian manual.</li>
+                    <li class="mb-2"><strong>Prasyarat Profil:</strong> Tagihan hanya dapat ditujukan kepada mahasiswa yang telah memiliki <em>Student Profile</em> dan status akademik aktif.</li>
+                    <li class="mb-2"><strong>Penerbitan Massal (Bulk):</strong> Sistem akan otomatis memfilter seluruh mahasiswa yang registrasi semesternya telah berstatus <code>Approved</code>.</li>
+                    <li><strong>Perubahan Nominal:</strong> Tagihan yang telah terbit dan memiliki riwayat pembayaran tidak dapat diubah langsung, melainkan melalui fitur <em>Invoice Adjustment</em>.</li>
                 </ul>
             </div>
         </div>

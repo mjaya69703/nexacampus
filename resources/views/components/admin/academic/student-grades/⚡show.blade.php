@@ -47,166 +47,213 @@ new class extends Component {
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Info Header Nilai</h5>
-                <div>
-                    @can('student-grade.update')
-                        <a href="{{ route('admin.academic.student-grades.edit', ['id' => $studentGrade->id]) }}" class="btn btn-warning">
-                            <i class="fas fa-pencil me-1"></i> Edit
-                        </a>
-                    @endcan
-                    <button class="btn btn-secondary" wire:click="backToIndex">
-                        <i class="fas fa-arrow-left me-1"></i> Kembali
-                    </button>
+<div>
+    <x-alert />
+
+    <x-admin.academic.header
+        title="Detail Nilai Mahasiswa (KHS)"
+        description="Informasi hasil studi, rincian bobot dan skor komponen evaluasi, serta status publikasi penilaian."
+        icon="graduation-cap"
+    >
+        <div class="d-flex align-items-center gap-2">
+            @activecan('student-grade.update')
+                <a href="{{ route('admin.academic.student-grades.edit', ['id' => $studentGrade->id]) }}" class="btn btn-sm btn-light text-warning fw-semibold rounded-pill px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2 border">
+                    <i class="fa fa-edit"></i> <span>Edit Penilaian</span>
+                </a>
+            @endactivecan
+            <button type="button" class="btn btn-sm btn-light text-dark fw-semibold rounded-pill px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2 border" wire:click="backToIndex">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </button>
+        </div>
+    </x-admin.academic.header>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-user-graduate fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-1 text-dark">Informasi Hasil Evaluasi</h4>
+                            <div class="text-muted small">Mahasiswa, program studi, tahun akademik, dan mata kuliah yang dinilai.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Nama Mahasiswa</label>
+                            <div class="fw-bold text-dark fs-6">{{ $studentGrade->studyPlanDetail?->studyPlan?->studentProfile?->user?->name ?? '-' }}</div>
+                            <div class="small text-muted">NIM: {{ $studentGrade->studyPlanDetail?->studyPlan?->studentProfile?->nim ?? '-' }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Program Studi</label>
+                            <div class="fw-semibold text-dark">{{ $studentGrade->studyPlanDetail?->studyPlan?->studentProfile?->studyProgram?->name ?? '-' }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Tahun Akademik</label>
+                            <div class="fw-bold text-primary fs-6">{{ $studentGrade->studyPlanDetail?->studyPlan?->academicYear?->name ?? '-' }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Mata Kuliah</label>
+                            <div class="fw-semibold text-dark">
+                                {{ $studentGrade->studyPlanDetail?->courseOffering?->course?->code ?? '-' }} -
+                                {{ $studentGrade->studyPlanDetail?->courseOffering?->course?->name ?? '-' }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Status Lifecycle</label>
+                            <div>
+                                @php
+                                    $statusBadge = match($studentGrade->grade_status) {
+                                        'Draft' => 'bg-secondary',
+                                        'Finalized' => 'bg-success',
+                                        'Published' => 'bg-primary',
+                                        default => 'bg-secondary',
+                                    };
+                                @endphp
+                                <span class="badge rounded-pill px-3 py-2 {{ $statusBadge }}">{{ $studentGrade->grade_status ?? 'Draft' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="text-muted small d-block mb-1">Status Kelulusan</label>
+                            <div>
+                                @if ($studentGrade->result_status)
+                                    <span class="badge rounded-pill px-3 py-2 bg-info">{{ $studentGrade->result_status }}</span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if($studentGrade->notes)
+                            <div class="col-12 mt-3">
+                                <label class="text-muted small d-block mb-1">Catatan Tambahan</label>
+                                <div class="p-3 bg-light rounded-3 text-dark border">{{ $studentGrade->notes }}</div>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted">Mahasiswa</label>
-                        <div class="h6 mb-0">{{ $studentGrade->studyPlanDetail?->studyPlan?->studentProfile?->user?->name ?? '-' }}</div>
-                        <small class="text-muted">NIM: {{ $studentGrade->studyPlanDetail?->studyPlan?->studentProfile?->nim ?? '-' }}</small>
-                    </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted">Prodi</label>
-                        <div class="h6 mb-0">{{ $studentGrade->studyPlanDetail?->studyPlan?->studentProfile?->studyProgram?->name ?? '-' }}</div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted">Tahun Akademik</label>
-                        <div class="h6 mb-0">{{ $studentGrade->studyPlanDetail?->studyPlan?->academicYear?->name ?? '-' }}</div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted">Mata Kuliah</label>
-                        <div class="h6 mb-0">
-                            {{ $studentGrade->studyPlanDetail?->courseOffering?->course?->code ?? '-' }} -
-                            {{ $studentGrade->studyPlanDetail?->courseOffering?->course?->name ?? '-' }}
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-list-check fs-5"></i>
                         </div>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label text-muted">Status Lifecycle</label>
                         <div>
-                            @php
-                                $statusBadge = match($studentGrade->grade_status) {
-                                    'Draft' => 'bg-secondary',
-                                    'Finalized' => 'bg-success',
-                                    'Published' => 'bg-primary',
-                                    default => 'bg-secondary',
-                                };
-                            @endphp
-                            <span class="badge {{ $statusBadge }}">{{ $studentGrade->grade_status ?? 'Draft' }}</span>
+                            <h4 class="card-title fw-bold mb-1 text-dark">Komponen Penilaian</h4>
+                            <div class="text-muted small">Daftar rincian skor evaluasi mahasiswa pada mata kuliah ini.</div>
                         </div>
                     </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label text-muted">Total Bobot</label>
-                        <div class="h6 mb-0">{{ number_format($this->totalWeight, 2) }}%</div>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label text-muted">Sisa Bobot</label>
-                        <div class="h6 mb-0">{{ number_format($this->remainingWeight, 2) }}%</div>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label text-muted">Final Score</label>
-                        <div class="h6 mb-0">{{ $studentGrade->final_score ?? '-' }}</div>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label text-muted">Letter Grade</label>
-                        <div class="h6 mb-0">{{ $studentGrade->letter_grade ?? '-' }}</div>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label text-muted">Grade Point</label>
-                        <div class="h6 mb-0">{{ $studentGrade->grade_point ?? '-' }}</div>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label text-muted">Result Status</label>
-                        <div>
-                            @if ($studentGrade->result_status)
-                                <span class="badge bg-info">{{ $studentGrade->result_status }}</span>
-                            @else
-                                <span class="text-muted">-</span>
-                            @endif
+                </div>
+                <div class="card-body p-4">
+                    @if($studentGrade->components->count() > 0)
+                        @php
+                            $components = $studentGrade->components->sortBy('sort_order');
+                        @endphp
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="py-3 px-3" style="width: 50px;">No</th>
+                                        <th class="py-3 px-3">Komponen</th>
+                                        <th class="py-3 px-3 text-center">Bobot (%)</th>
+                                        <th class="py-3 px-3 text-center">Skor</th>
+                                        <th class="py-3 px-3 text-center">Urutan</th>
+                                        <th class="py-3 px-3">Catatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($components as $index => $component)
+                                        <tr>
+                                            <td class="px-3 fw-semibold text-muted">{{ $index + 1 }}</td>
+                                            <td class="px-3 fw-bold text-dark">{{ $component->name }}</td>
+                                            <td class="px-3 text-center fw-semibold text-primary">{{ $component->weight_percentage ? number_format($component->weight_percentage, 2).'%' : '-' }}</td>
+                                            <td class="px-3 text-center fw-bold text-success">{{ $component->score ?? '-' }}</td>
+                                            <td class="px-3 text-center">{{ $component->sort_order }}</td>
+                                            <td class="px-3 text-muted small">{{ $component->notes ?? '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="2" class="text-end py-3 px-3 fw-bold">Total Bobot:</th>
+                                        <th class="text-center py-3 px-3 fw-bold text-primary fs-6">{{ number_format($this->totalWeight, 2) }}%</th>
+                                        <th colspan="3" class="py-3 px-3 fw-semibold text-muted">Sisa Bobot: <span class="badge {{ $this->remainingWeight == 0 ? 'bg-success' : 'bg-warning text-dark' }} px-2 py-1">{{ number_format($this->remainingWeight, 2) }}%</span></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted">Graded At</label>
-                        <div class="h6 mb-0">{{ $studentGrade->graded_at ? $studentGrade->graded_at->format('d M Y H:i') : '-' }}</div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted">Graded By</label>
-                        <div class="h6 mb-0">{{ $studentGrade->gradedBy?->name ?? '-' }}</div>
-                    </div>
-
-                    @if($studentGrade->notes)
-                        <div class="col-12 mb-3">
-                            <label class="form-label text-muted">Catatan</label>
-                            <div class="p-2  rounded">{{ $studentGrade->notes }}</div>
+                    @else
+                        <div class="alert alert-info border-0 shadow-sm rounded-4 p-4 mb-0 d-flex align-items-center gap-3">
+                            <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                                <i class="fa fa-info-circle fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Belum Ada Komponen Nilai</h6>
+                                <div class="small">Belum ada rincian komponen penilaian untuk mahasiswa pada mata kuliah ini.</div>
+                            </div>
                         </div>
                     @endif
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Komponen Nilai</h5>
-            </div>
-            <div class="card-body">
-                @if($studentGrade->components->count() > 0)
-                    @php
-                        $components = $studentGrade->components->sortBy('sort_order');
-                    @endphp
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Komponen</th>
-                                    <th>Bobot (%)</th>
-                                    <th>Skor</th>
-                                    <th>Urutan</th>
-                                    <th>Catatan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($components as $index => $component)
-                                    <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>{{ $component->name }}</td>
-                                        <td>{{ $component->weight_percentage ?? '-' }}</td>
-                                        <td>{{ $component->score ?? '-' }}</td>
-                                        <td>{{ $component->sort_order }}</td>
-                                        <td>{{ $component->notes ?? '-' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr>
-                                    <th colspan="2" class="text-end">Total Bobot</th>
-                                    <th>{{ number_format($this->totalWeight, 2) }}%</th>
-                                    <th colspan="3">Sisa {{ number_format($this->remainingWeight, 2) }}%</th>
-                                </tr>
-                            </tfoot>
-                        </table>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-warning bg-opacity-10 text-warning rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-award fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title fw-bold mb-1 text-dark">Ringkasan Nilai Akhir</h5>
+                            <div class="text-muted small">Evaluasi & indeks prestasi.</div>
+                        </div>
                     </div>
-                @else
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-info-circle me-2"></i> Belum ada komponen nilai untuk data ini.
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Final Score</label>
+                        <div class="fw-bold text-dark fs-4">{{ $studentGrade->final_score ?? '-' }}</div>
                     </div>
-                @endif
+
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Nilai Huruf (Letter Grade)</label>
+                        <div class="fw-bold text-success fs-3">{{ $studentGrade->letter_grade ?? '-' }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Bobot Angka (Grade Point)</label>
+                        <div class="fw-bold text-primary fs-4">{{ $studentGrade->grade_point ?? '-' }}</div>
+                    </div>
+
+                    <hr class="text-muted opacity-25 my-3">
+
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Total Bobot Komponen</label>
+                        <div class="fw-semibold text-dark">{{ number_format($this->totalWeight, 2) }}%</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-1">Dinilai Pada (Graded At)</label>
+                        <div class="fw-semibold text-dark small">{{ $studentGrade->graded_at ? $studentGrade->graded_at->format('d F Y H:i') : '-' }}</div>
+                    </div>
+
+                    <div>
+                        <label class="text-muted small d-block mb-1">Dinilai Oleh (Graded By)</label>
+                        <div class="fw-semibold text-dark small">{{ $studentGrade->gradedBy?->name ?? '-' }}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

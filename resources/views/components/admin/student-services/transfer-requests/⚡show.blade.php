@@ -185,19 +185,70 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-lg-8">
-        <x-alert />
+@push('styles')
+    <style>
+        .service-show .soft-card {
+            border: 0;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, .08);
+            margin-bottom: 1.5rem;
+        }
+    </style>
+@endpush
 
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="card-title mb-0">{{ $request->request_number }}</h3>
-                    <small class="text-muted">Pengajuan Pindah Internal</small>
+<div class="w-full service-show" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.student-services.header
+        title="Pengajuan Pindah Internal / Konversi Program"
+        description="Nomor Pengajuan: {{ $request->request_number }} • Mahasiswa: {{ $request->studentProfile?->user?->name ?? '-' }} ({{ $request->studentProfile?->nim ?? '-' }})"
+        icon="exchange-alt"
+    >
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.student-services.transfer-requests.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </a>
+        </div>
+
+        <x-slot:stats>
+            <div class="d-flex flex-wrap gap-2 gap-lg-3">
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-circle-info fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Status Pengajuan</div>
+                        <div class="fw-bold">{{ $this->statusLabel($request->status) }}</div>
+                    </div>
                 </div>
-                <a href="{{ route('admin.student-services.transfer-requests.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-random fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Jenis Pindah</div>
+                        <div class="fw-bold">{{ str($request->transfer_type)->replace('_', ' ')->title() }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-arrow-right fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Tujuan Pindah</div>
+                        <div class="fw-bold">{{ $request->targetStudyProgram?->name ?? ($request->target_class_shift ? str($request->target_class_shift)->title() : '-') }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-school fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Prodi Asal</div>
+                        <div class="fw-bold">{{ $request->studentProfile?->studyProgram?->name ?? '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </x-slot:stats>
+    </x-admin.student-services.header>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Informasi Pindah Program / Kelas</h4>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -214,54 +265,54 @@ new class extends Component
                         <div class="h6 mb-0">{{ $request->studentProfile?->nim ?? '-' }}</div>
                     </div>
                     <div class="col-md-6">
-                        <small class="text-muted">{{ $request->transfer_type === 'class_type' ? 'Kelas Saat Ini' : 'From Program' }}</small>
-                        <div>{{ $request->transfer_type === 'class_type' ? ucfirst($request->from_class_type ?? '-') : ($request->fromStudyProgram?->name ?? '-') }}</div>
+                        <small class="text-muted">{{ $request->transfer_type === 'class_type' ? 'Kelas Saat Ini' : 'Program Asal (From)' }}</small>
+                        <div class="fw-semibold text-danger">{{ $request->transfer_type === 'class_type' ? ucfirst($request->from_class_type ?? '-') : ($request->fromStudyProgram?->name ?? '-') }}</div>
                     </div>
                     <div class="col-md-6">
-                        <small class="text-muted">{{ $request->transfer_type === 'class_type' ? 'Kelas Tujuan' : 'To Program' }}</small>
-                        <div>{{ $request->transfer_type === 'class_type' ? ucfirst($request->to_class_type ?? '-') : ($request->toStudyProgram?->name ?? '-') }}</div>
+                        <small class="text-muted">{{ $request->transfer_type === 'class_type' ? 'Kelas Tujuan' : 'Program Tujuan (To)' }}</small>
+                        <div class="fw-semibold text-success">{{ $request->transfer_type === 'class_type' ? ucfirst($request->to_class_type ?? '-') : ($request->toStudyProgram?->name ?? '-') }}</div>
                     </div>
                     <div class="col-md-4">
-                        <small class="text-muted">Transfer Type</small>
+                        <small class="text-muted">Jenis Perpindahan</small>
                         <div>{{ str($request->transfer_type)->replace('_', ' ')->title() }}</div>
                     </div>
                     <div class="col-md-4">
-                        <small class="text-muted">Current Semester</small>
+                        <small class="text-muted">Semester Saat Ini</small>
                         <div>{{ $request->current_semester ?? '-' }}</div>
                     </div>
                     <div class="col-md-4">
-                        <small class="text-muted">Recommended Semester</small>
+                        <small class="text-muted">Rekomendasi Semester Tujuan</small>
                         <div>{{ $request->recommended_semester ?? '-' }}</div>
                     </div>
                     <div class="col-md-4">
-                        <small class="text-muted">Transfer Fee</small>
+                        <small class="text-muted">Biaya Administrasi Transfer</small>
                         <div>Rp {{ number_format((float) $request->transfer_fee_amount, 0, ',', '.') }}</div>
                     </div>
                     <div class="col-12">
-                        <small class="text-muted">Reason</small>
+                        <small class="text-muted">Alasan Kepindahan</small>
                         <div>{{ $request->reason }}</div>
                     </div>
                     @if ($request->student_notes)
                         <div class="col-12">
-                            <small class="text-muted">Student Notes</small>
+                            <small class="text-muted">Catatan dari Mahasiswa</small>
                             <div>{{ $request->student_notes }}</div>
                         </div>
                     @endif
                     @if ($request->transferFeeInvoice)
                         <div class="col-12">
                             <div class="alert alert-warning mb-0">
-                                Invoice transfer:
-                                <a href="{{ route('admin.financial.student-invoices.show', ['id' => $request->transferFeeInvoice->id]) }}">
+                                Invoice Biaya Transfer:
+                                <a href="{{ route('admin.financial.student-invoices.show', ['id' => $request->transferFeeInvoice->id]) }}" class="fw-bold">
                                     {{ $request->transferFeeInvoice->invoice_number }}
                                 </a>
-                                <span class="badge bg-light text-dark">{{ $request->transferFeeInvoice->status }}</span>
+                                <span class="badge bg-light text-dark ms-2">{{ $request->transferFeeInvoice->status }}</span>
                             </div>
                         </div>
                     @endif
                     @if ($request->attachment_path)
                         <div class="col-12">
                             <a href="{{ $this->fileUrl($request->attachment_path) }}" target="_blank" class="btn btn-outline-primary">
-                                <i class="fas fa-paperclip me-1"></i> Preview Attachment
+                                <i class="fas fa-paperclip me-1"></i> Lihat Lampiran Pengajuan
                             </a>
                         </div>
                     @endif
@@ -269,96 +320,96 @@ new class extends Component
             </div>
         </div>
 
-        <div class="card mb-3">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Evaluation Notes</h3>
+        <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Catatan Evaluasi Akademik & Konversi</h4>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Recommended Semester</label>
+                        <label class="form-label fw-semibold">Rekomendasi Penempatan Semester</label>
                         <input type="number" min="1" max="14" class="form-control" wire:model="evaluation.recommended_semester">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Transfer Fee</label>
+                        <label class="form-label fw-semibold">Biaya Transfer (Rp)</label>
                         <input type="number" min="0" step="0.01" class="form-control" wire:model="transferFeeAmount" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Fee Due Date</label>
+                        <label class="form-label fw-semibold">Batas Pembayaran (Due Date)</label>
                         <input type="date" class="form-control" wire:model="transferFeeDueDate" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Admin Notes</label>
-                        <textarea class="form-control" rows="3" wire:model="evaluation.admin_notes"></textarea>
+                        <label class="form-label fw-semibold">Catatan Umum Admin</label>
+                        <textarea class="form-control" rows="3" wire:model="evaluation.admin_notes" placeholder="Catatan untuk mahasiswa atau internal"></textarea>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Academic Evaluation Notes</label>
-                        <textarea class="form-control" rows="3" wire:model="evaluation.academic_evaluation_notes"></textarea>
+                        <label class="form-label fw-semibold">Evaluasi Akademik (Kaprodi/Dekan)</label>
+                        <textarea class="form-control" rows="3" wire:model="evaluation.academic_evaluation_notes" placeholder="Evaluasi kesesuaian akademik..."></textarea>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Credit Mapping Notes</label>
-                        <textarea class="form-control" rows="3" wire:model="evaluation.credit_mapping_notes"></textarea>
+                        <label class="form-label fw-semibold">Catatan Pemetaan & Konversi SKS</label>
+                        <textarea class="form-control" rows="3" wire:model="evaluation.credit_mapping_notes" placeholder="Daftar mata kuliah yang diakui / dikonversi..."></textarea>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Finance Notes</label>
-                        <textarea class="form-control" rows="3" wire:model="evaluation.finance_notes"></textarea>
+                        <label class="form-label fw-semibold">Catatan Bagian Keuangan</label>
+                        <textarea class="form-control" rows="3" wire:model="evaluation.finance_notes" placeholder="Pengecekan bebas tunggakan biaya kuliah..."></textarea>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Status History</h3>
+        <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Riwayat Perubahan Status</h4>
             </div>
-            <div class="list-group list-group-flush">
+            <div class="list-group list-group-flush pt-2">
                 @forelse ($request->histories as $history)
-                    <div class="list-group-item">
+                    <div class="list-group-item px-4 py-3">
                         <div class="d-flex justify-content-between">
-                            <strong>{{ $this->statusLabel($history->to_status) }}</strong>
-                            <span class="text-muted">{{ $history->created_at?->format('d M Y H:i') }}</span>
+                            <strong class="text-dark">{{ $this->statusLabel($history->to_status) }}</strong>
+                            <span class="text-muted small">{{ $history->created_at?->format('d M Y H:i') }}</span>
                         </div>
-                        <div class="text-muted small">{{ $history->notes ?: '-' }}</div>
-                        <div class="text-muted small">By {{ $history->changedBy?->name ?? 'System' }}</div>
+                        <div class="text-muted small mt-1">{{ $history->notes ?: '-' }}</div>
+                        <div class="text-muted small">Oleh {{ $history->changedBy?->name ?? 'System' }}</div>
                     </div>
                 @empty
-                    <div class="list-group-item text-muted">Belum ada history.</div>
+                    <div class="list-group-item text-muted px-4 py-3">Belum ada riwayat perubahan status.</div>
                 @endforelse
             </div>
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Review Actions</h3>
+        <div class="card soft-card mb-4">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Tindakan Evaluasi (Review)</h4>
             </div>
-            <div class="card-body d-grid gap-2">
-                <button wire:click="markUnderReview" class="btn btn-outline-primary" @disabled(! in_array($request->status, ['submitted', 'revision_requested'], true))>
-                    <i class="fas fa-search me-1"></i> Mark Under Review
+            <div class="card-body p-4 d-grid gap-2">
+                <button wire:click="markUnderReview" class="btn btn-outline-primary fw-bold py-2" @disabled(! in_array($request->status, ['submitted', 'revision_requested'], true))>
+                    <i class="fas fa-search me-1"></i> Tandai Sedang Direview
                 </button>
-                <button wire:click="approve" class="btn btn-success" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                    <i class="fas fa-check me-1"></i> Approve
+                <button wire:click="approve" class="btn btn-success fw-bold py-2" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                    <i class="fas fa-check me-1"></i> Setujui Pengajuan (Approve)
                 </button>
-                <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                    <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan
+                <button wire:click="requestCorrection" class="btn btn-warning fw-bold text-dark py-2" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                    <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan Mahasiswa
                 </button>
-                <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                    <i class="fas fa-times me-1"></i> Reject
+                <button wire:click="reject" class="btn btn-danger fw-bold py-2" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                    <i class="fas fa-times me-1"></i> Tolak Pengajuan
                 </button>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Terapkan Pindah</h3>
+        <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Terapkan Perpindahan (Apply)</h4>
             </div>
-            <div class="card-body d-grid gap-2">
-                <button wire:click="applyTransfer" class="btn btn-primary" @disabled(! in_array($request->status, ['approved', 'approved_pending_payment'], true) || ($request->transferFeeInvoice && $request->transferFeeInvoice->status !== 'paid'))>
-                    <i class="fas fa-right-left me-1"></i> Terapkan Pindah
+            <div class="card-body p-4 d-grid gap-2">
+                <button wire:click="applyTransfer" class="btn btn-primary fw-bold py-2" @disabled(! in_array($request->status, ['approved', 'approved_pending_payment'], true) || ($request->transferFeeInvoice && $request->transferFeeInvoice->status !== 'paid'))>
+                    <i class="fas fa-right-left me-1"></i> Terapkan & Pindahkan Mahasiswa
                 </button>
-                <div class="alert alert-info mb-0">
-                    Terapkan pindah akan mengubah program studi mahasiswa ke target program. Jika ada invoice pindah, invoice harus lunas dulu.
+                <div class="alert alert-info mb-0 mt-2">
+                    <strong>Terapkan Pindah</strong> akan memperbarui profil mahasiswa ke program studi atau kelas tujuan secara permanen.
                 </div>
             </div>
         </div>

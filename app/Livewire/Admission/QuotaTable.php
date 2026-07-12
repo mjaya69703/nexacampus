@@ -3,6 +3,7 @@
 namespace App\Livewire\Admission;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\Faculty;
 use App\Models\Academic\StudyProgram;
 use App\Models\Admission\AdmissionPeriod;
 use App\Models\Admission\AdmissionQuota;
@@ -54,47 +55,54 @@ final class QuotaTable extends BasePowerGridTable
         return PowerGrid::fields()
             ->add('id')
             ->add('period_name', fn (AdmissionQuota $model) => $model->period?->name)
-            ->add('faculty_name', fn (AdmissionQuota $model) => $model->faculty?->name ?? 'All Faculties')
-            ->add('study_program_name', fn (AdmissionQuota $model) => $model->studyProgram?->name ?? 'All Programs')
-            ->add('class_type', fn (AdmissionQuota $model) => $model->class_type ? ucfirst($model->class_type) : 'All Classes')
+            ->add('faculty_name', fn (AdmissionQuota $model) => $model->faculty?->name ?? 'Semua Fakultas')
+            ->add('study_program_name', fn (AdmissionQuota $model) => $model->studyProgram?->name ?? 'Semua Program Studi')
+            ->add('class_type', fn (AdmissionQuota $model) => $model->class_type ? ucfirst($model->class_type) : 'Semua Kelas')
             ->add('quota')
             ->add('accepted_count')
             ->add('remaining', fn (AdmissionQuota $model) => max(0, $model->quota - $model->accepted_count))
-            ->add('usage', fn (AdmissionQuota $model) => $model->quota > 0 ? round(($model->accepted_count / $model->quota) * 100).'%': '0%')
+            ->add('usage', fn (AdmissionQuota $model) => $model->quota > 0 ? round(($model->accepted_count / $model->quota) * 100).'%' : '0%')
             ->add('created_at');
     }
 
     public function columns(): array
     {
         return [
-            Column::make('Period', 'period_name')->sortable()->searchable(),
-            Column::make('Faculty', 'faculty_name')->sortable()->searchable()->hidden(),
-            Column::make('Study Program', 'study_program_name')->sortable()->searchable(),
-            Column::make('Class', 'class_type')->sortable(),
-            Column::make('Quota', 'quota')->sortable(),
-            Column::make('Accepted', 'accepted_count')->sortable(),
-            Column::make('Remaining', 'remaining'),
-            Column::make('Usage', 'usage'),
-            Column::action('Action'),
+            Column::make('Gelombang / Periode', 'period_name')->sortable()->searchable(),
+            Column::make('Fakultas', 'faculty_name')->sortable()->searchable()->hidden(),
+            Column::make('Program Studi', 'study_program_name')->sortable()->searchable(),
+            Column::make('Kelas', 'class_type')->sortable(),
+            Column::make('Total Kuota', 'quota')->sortable(),
+            Column::make('Diterima', 'accepted_count')->sortable(),
+            Column::make('Sisa Kuota', 'remaining'),
+            Column::make('Terisi', 'usage'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('admission_period_id', 'admission_period_id')
+            Filter::select('period_name', 'admission_period_id')
                 ->dataSource(AdmissionPeriod::query()->orderByDesc('created_at')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::select('study_program_id', 'study_program_id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('admission_period_id', $value)),
+            Filter::select('faculty_name', 'faculty_id')
+                ->dataSource(Faculty::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('faculty_id', $value)),
+            Filter::select('study_program_name', 'study_program_id')
                 ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
             Filter::select('class_type', 'class_type')
                 ->dataSource(collect([
-                    ['id' => 'regular', 'name' => 'Regular'],
-                    ['id' => 'evening', 'name' => 'Evening'],
-                    ['id' => 'weekend', 'name' => 'Weekend'],
+                    ['id' => 'regular', 'name' => 'Reguler Pagi'],
+                    ['id' => 'evening', 'name' => 'Kelas Malam'],
+                    ['id' => 'weekend', 'name' => 'Kelas Akhir Pekan (Weekend)'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
@@ -118,8 +126,8 @@ final class QuotaTable extends BasePowerGridTable
 
         $this->js('
             Swal.fire({
-                title: "Hapus quota admission?",
-                text: "Quota ini akan dihapus dari selection dashboard.",
+                title: "Hapus kuota penerimaan?",
+                text: "Kuota ini akan dihapus dari dashboard seleksi.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "Ya hapus",
@@ -135,11 +143,18 @@ final class QuotaTable extends BasePowerGridTable
     #[On('deleteAdmissionQuota')]
     public function deleteItem($id = null): void
     {
-        abort_unless(ActivePermission::check('admission-quota.delete'), 403);
+        if (! ActivePermission::check('admission-quota.delete')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk menghapus kuota admission.');
 
-        AdmissionQuota::findOrFail($id)->delete();
+            return;
+        }
 
-        session()->flash('success', 'Quota admission berhasil dihapus.');
+        $quota = AdmissionQuota::find($id);
+        if ($quota) {
+            $quota->delete();
+        }
+
+        session()->flash('success', 'Kuota admission berhasil dihapus.');
         $this->dispatch('pg:eventRefresh-admissionQuotaTable');
     }
 
@@ -149,15 +164,15 @@ final class QuotaTable extends BasePowerGridTable
 
         if (ActivePermission::check('admission-quota.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('admission-quota.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

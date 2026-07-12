@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -69,6 +70,17 @@ final class WorkUnitTable extends BasePowerGridTable
         ];
     }
 
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name', 'name')->placeholder('Cari nama unit...')->operators(['contains']),
+            Filter::inputText('code', 'code')->placeholder('Cari kode unit...')->operators(['contains']),
+            Filter::inputText('description', 'description')->placeholder('Cari deskripsi...')->operators(['contains']),
+            Filter::boolean('is_active', 'is_active')->label('Aktif', 'Nonaktif'),
+            Filter::datepicker('created_at', 'created_at'),
+        ];
+    }
+
     public function onUpdatedToggleable(string $id, string $field, string $value): void
     {
         if ($field !== 'is_active') {
@@ -110,7 +122,7 @@ final class WorkUnitTable extends BasePowerGridTable
         $this->js('
             Swal.fire({
                 title: "Hapus unit kerja?",
-                text: "'.$unit->name.' akan dipindahkan ke tempat sampah.",
+                text: "'.addslashes($unit->name).' akan dipindahkan ke tempat sampah.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "Ya hapus",
@@ -136,6 +148,12 @@ final class WorkUnitTable extends BasePowerGridTable
 
         if (! $unit) {
             session()->flash('error', 'Unit kerja tidak ditemukan.');
+
+            return;
+        }
+
+        if ($unit->members()->count() > 0 || \App\Models\Organization\OrganizationalPosition::where('work_unit_id', $id)->exists()) {
+            session()->flash('error', 'Unit kerja tidak dapat dihapus karena masih memiliki anggota pegawai atau jabatan organisasi terkait.');
 
             return;
         }

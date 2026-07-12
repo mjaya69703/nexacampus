@@ -64,39 +64,43 @@ final class ExamScheduleTable extends BasePowerGridTable
     public function columns(): array
     {
         return [
-            Column::make('Title', 'title')->sortable()->searchable(),
-            Column::make('Type', 'exam_type')->sortable()->searchable(),
-            Column::make('Period', 'period_name')->sortable()->searchable(),
-            Column::make('Date', 'exam_date')->sortable(),
-            Column::make('Time', 'exam_time')->sortable(),
-            Column::make('Venue', 'venue')->sortable()->searchable(),
-            Column::make('Quota', 'quota')->sortable(),
-            Column::make('Participants', 'participants_count')->sortable(),
-            Column::make('Active', 'is_active')
-                ->toggleable(ActivePermission::check('admission-exam-schedule.update'), 'Active', 'Inactive')
+            Column::make('Judul Ujian', 'title')->sortable()->searchable(),
+            Column::make('Tipe Ujian', 'exam_type')->sortable()->searchable(),
+            Column::make('Periode', 'period_name')->sortable()->searchable(),
+            Column::make('Tanggal', 'exam_date')->sortable(),
+            Column::make('Waktu', 'exam_time')->sortable(),
+            Column::make('Lokasi / Ruangan', 'venue')->sortable()->searchable(),
+            Column::make('Kuota', 'quota')->sortable(),
+            Column::make('Peserta', 'participants_count')->sortable(),
+            Column::make('Aktif', 'is_active')
+                ->toggleable(ActivePermission::check('admission-exam-schedule.update'), 'Aktif', 'Nonaktif')
                 ->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('admission_period_id', 'admission_period_id')
+            Filter::inputText('title')->placeholder('Cari judul / nama ujian...'),
+            Filter::inputText('venue')->placeholder('Cari lokasi / ruangan...'),
+            Filter::select('period_name', 'admission_period_id')
                 ->dataSource(AdmissionPeriod::query()->orderByDesc('created_at')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('admission_period_id', $value)),
             Filter::select('exam_type', 'exam_type')
                 ->dataSource(collect([
-                    ['id' => 'written_test', 'name' => 'Written Test'],
-                    ['id' => 'interview', 'name' => 'Interview'],
-                    ['id' => 'practical', 'name' => 'Practical'],
-                    ['id' => 'portfolio', 'name' => 'Portfolio'],
-                    ['id' => 'other', 'name' => 'Other'],
+                    ['id' => 'written_test', 'name' => 'Tes Tertulis (Written Test)'],
+                    ['id' => 'interview', 'name' => 'Wawancara (Interview)'],
+                    ['id' => 'practical', 'name' => 'Ujian Praktik (Practical)'],
+                    ['id' => 'portfolio', 'name' => 'Penilaian Portofolio'],
+                    ['id' => 'other', 'name' => 'Lainnya (Other)'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
-            Filter::datetimepicker('exam_date', 'exam_date'),
+            Filter::boolean('is_active', 'Aktif', 'Nonaktif'),
+            Filter::datepicker('exam_date', 'exam_date'),
         ];
     }
 
@@ -106,12 +110,22 @@ final class ExamScheduleTable extends BasePowerGridTable
             return;
         }
 
-        abort_unless(ActivePermission::check('admission-exam-schedule.update'), 403);
+        if (! ActivePermission::check('admission-exam-schedule.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk mengubah jadwal seleksi.');
+            $this->dispatch('pg:eventRefresh-admissionExamScheduleTable');
 
-        AdmissionExamSchedule::whereKey($id)->update([
-            'is_active' => (bool) $value,
-            'updated_by' => auth()->id(),
-        ]);
+            return;
+        }
+
+        $schedule = AdmissionExamSchedule::find($id);
+        if ($schedule) {
+            $schedule->update([
+                'is_active' => (bool) $value,
+                'updated_by' => auth()->id(),
+            ]);
+        }
+
+        $this->dispatch('pg:eventRefresh-admissionExamScheduleTable');
     }
 
     #[On('show')]
@@ -154,9 +168,19 @@ final class ExamScheduleTable extends BasePowerGridTable
     #[On('deleteAdmissionExamSchedule')]
     public function deleteItem($id = null): void
     {
-        abort_unless(ActivePermission::check('admission-exam-schedule.delete'), 403);
+        if (! ActivePermission::check('admission-exam-schedule.delete')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk menghapus jadwal seleksi.');
 
-        $schedule = AdmissionExamSchedule::findOrFail($id);
+            return;
+        }
+
+        $schedule = AdmissionExamSchedule::find($id);
+        if (! $schedule) {
+            session()->flash('error', 'Jadwal seleksi tidak ditemukan.');
+
+            return;
+        }
+
         $schedule->update(['deleted_by' => auth()->id()]);
         $schedule->delete();
 
@@ -170,22 +194,22 @@ final class ExamScheduleTable extends BasePowerGridTable
 
         if (ActivePermission::check('admission-exam-schedule.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-info')
+                ->slot('<i class="fa fa-eye"></i> Detail')
+                ->class('btn btn-outline-info rounded-pill px-2.5 py-1 text-info fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('admission-exam-schedule.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('admission-exam-schedule.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

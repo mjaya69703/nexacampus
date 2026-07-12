@@ -33,15 +33,15 @@ new class extends Component
             'is_active' => (bool) $validated['is_active'],
         ]);
 
-        session()->flash('success', 'Clearance policy berhasil dibuat.');
+        session()->flash('success', 'Kebijakan clearance berhasil dibuat.');
         $this->redirectRoute('admin.financial.clearance-policies.index');
     }
 
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Financial',
-            'pages' => 'Create Clearance Policy',
+            'menus' => 'Keuangan',
+            'pages' => 'Buat Kebijakan Clearance',
         ]);
     }
 
@@ -89,21 +89,35 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">Create Clearance Policy</h3>
-                <a href="{{ route('admin.financial.clearance-policies.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
+<div class="w-full" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.financial.header
+        title="Buat Kebijakan Clearance Baru"
+        description="Atur relasi antara jenis tagihan tunggakan dengan layanan akademik yang dibatasi."
+        icon="plus-circle"
+    >
+        <a href="{{ route('admin.financial.clearance-policies.index') }}" class="btn btn-sm btn-light text-secondary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke Daftar</span>
+        </a>
+    </x-admin.financial.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-3 p-md-4 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fa fa-file-shield fs-5"></i>
+                </div>
+                <div>
+                    <h4 class="card-title fw-bold mb-0 text-dark">Formulir Konfigurasi Kebijakan</h4>
+                    <span class="text-muted small">Lengkapi data pemicu tunggakan dan parameter toleransi keterlambatan.</span>
+                </div>
             </div>
-            <div class="card-body">
-                <form wire:submit.prevent="save">
-                    @include('components.admin.financial.clearance-policies._form')
-                </form>
-            </div>
+        </div>
+        <div class="card-body p-3 p-md-4">
+            <form wire:submit.prevent="save">
+                @include('components.admin.financial.clearance-policies._form')
+            </form>
         </div>
     </div>
 </div>

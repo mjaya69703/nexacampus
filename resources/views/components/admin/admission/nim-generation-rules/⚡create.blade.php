@@ -48,7 +48,7 @@ new class extends Component
             'created_by' => auth()->id(),
         ]);
 
-        session()->flash('success', 'NIM generation rule berhasil dibuat.');
+        session()->flash('success', 'Aturan penomoran NIM berhasil dibuat.');
         $this->redirectRoute('admin.admission.nim-generation-rules.index');
     }
 
@@ -56,7 +56,7 @@ new class extends Component
     {
         return $this->view()->layout('layouts.app', [
             'menus' => 'Admission',
-            'pages' => 'Create NIM Rule',
+            'pages' => 'Tambah Aturan NIM',
         ]);
     }
 
@@ -75,21 +75,30 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">Create NIM Rule</h3>
-                <a href="{{ route('admin.admission.nim-generation-rules.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
-            </div>
-            <div class="card-body">
-                <form wire:submit.prevent="save">
-                    @include('components.admin.admission.nim-generation-rules._form')
-                </form>
-            </div>
+<div class="w-full" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.admission.header
+        title="Tambah Aturan Penomoran NIM"
+        description="Rancang pola pembuatan Nomor Induk Mahasiswa (NIM) otomatis menggunakan kombinasi token tahun, program studi, dan nomor urut."
+        icon="barcode"
+    >
+        <a href="{{ route('admin.admission.nim-generation-rules.index') }}" class="btn btn-light rounded-pill px-4 py-2 text-dark fw-bold shadow-sm d-inline-flex align-items-center gap-2 border-0">
+            <i class="fas fa-arrow-left"></i> Kembali ke Daftar
+        </a>
+    </x-admin.admission.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white border-bottom p-4">
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="fas fa-magic text-primary"></i> Formulir Pola NIM Baru
+            </h4>
+            <p class="text-muted fs-7 mb-0">Tentukan format string pola serta kaidah reset urutan sequence untuk calon mahasiswa yang lulus.</p>
+        </div>
+        <div class="card-body p-4">
+            <form wire:submit.prevent="save">
+                @include('components.admin.admission.nim-generation-rules._form')
+            </form>
         </div>
     </div>
 </div>

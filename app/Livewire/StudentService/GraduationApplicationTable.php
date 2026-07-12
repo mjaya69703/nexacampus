@@ -3,7 +3,9 @@
 namespace App\Livewire\StudentService;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\StudyProgram;
 use App\Models\StudentService\GraduationApplication;
+use App\Models\StudentService\GraduationBatch;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
@@ -62,8 +64,8 @@ final class GraduationApplicationTable extends BasePowerGridTable
             Column::make('Program Studi', 'study_program')->sortable()->searchable(),
             Column::make('Batch', 'batch_label')->sortable()->searchable(),
             Column::make('Periode', 'graduation_period')->sortable()->searchable(),
-            Column::make('Status', 'status_badge'),
-            Column::make('Submitted', 'created_at_label')->sortable(),
+            Column::make('Status', 'status_badge', 'status'),
+            Column::make('Submitted', 'created_at_label', 'created_at')->sortable(),
             Column::action('Action'),
         ];
     }
@@ -71,7 +73,18 @@ final class GraduationApplicationTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::select('status', 'status')
+            Filter::inputText('application_number')->placeholder('Cari No Yudisium...'),
+            Filter::select('batch_label', 'graduation_batch_id')
+                ->dataSource(GraduationBatch::query()->orderByDesc('id')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('graduation_batch_id', $value)),
+            Filter::select('study_program', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studentProfile', fn (Builder $student) => $student->where('study_program_id', $value))),
+            Filter::select('status_badge', 'status')
                 ->dataSource(collect([
                     ['id' => 'submitted', 'name' => 'Submitted'],
                     ['id' => 'in_approval', 'name' => 'Menunggu Approval'],
@@ -82,7 +95,9 @@ final class GraduationApplicationTable extends BasePowerGridTable
                     ['id' => 'finalized', 'name' => 'Finalized'],
                 ]))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('status', $value)),
+            Filter::datepicker('created_at_label', 'created_at'),
         ];
     }
 

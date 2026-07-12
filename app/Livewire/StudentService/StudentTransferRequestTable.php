@@ -66,12 +66,12 @@ final class StudentTransferRequestTable extends BasePowerGridTable
             Column::make('Request No', 'request_number')->sortable()->searchable(),
             Column::make('Mahasiswa', 'student_name')->sortable()->searchable(),
             Column::make('NIM', 'nim')->sortable()->searchable(),
-            Column::make('Type', 'transfer_type_label')->sortable(),
-            Column::make('From', 'from_program')->sortable()->searchable(),
-            Column::make('To', 'to_program')->sortable()->searchable(),
+            Column::make('Type', 'transfer_type_label', 'transfer_type')->sortable(),
+            Column::make('From', 'from_program', 'from_study_program_id')->sortable()->searchable(),
+            Column::make('To', 'to_program', 'to_study_program_id')->sortable()->searchable(),
             Column::make('Recommended Semester', 'recommended_semester')->sortable(),
-            Column::make('Status', 'status_badge'),
-            Column::make('Submitted', 'created_at_label')->sortable(),
+            Column::make('Status', 'status_badge', 'status'),
+            Column::make('Submitted', 'created_at_label', 'created_at')->sortable(),
             Column::action('Action'),
         ];
     }
@@ -79,11 +79,27 @@ final class StudentTransferRequestTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::select('to_study_program_id', 'to_study_program_id')
+            Filter::inputText('request_number')->placeholder('Cari No Pindah...'),
+            Filter::select('transfer_type_label', 'transfer_type')
+                ->dataSource(collect([
+                    ['id' => 'internal_transfer', 'name' => 'Internal Transfer'],
+                    ['id' => 'class_type', 'name' => 'Class Type Transfer'],
+                    ['id' => 'external_transfer', 'name' => 'External Transfer Out'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('transfer_type', $value)),
+            Filter::select('from_program', 'from_study_program_id')
                 ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::select('status', 'status')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('from_study_program_id', $value)->orWhereHas('studentProfile', fn ($s) => $s->where('study_program_id', $value))),
+            Filter::select('to_program', 'to_study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('to_study_program_id', $value)),
+            Filter::select('status_badge', 'status')
                 ->dataSource(collect([
                     ['id' => 'submitted', 'name' => 'Submitted'],
                     ['id' => 'in_approval', 'name' => 'Menunggu Approval'],
@@ -95,7 +111,9 @@ final class StudentTransferRequestTable extends BasePowerGridTable
                     ['id' => 'applied', 'name' => 'Applied'],
                 ]))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('status', $value)),
+            Filter::datepicker('created_at_label', 'created_at'),
         ];
     }
 

@@ -150,19 +150,70 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-lg-8">
-        <x-alert />
+@push('styles')
+    <style>
+        .service-show .soft-card {
+            border: 0;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, .08);
+            margin-bottom: 1.5rem;
+        }
+    </style>
+@endpush
 
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="card-title mb-0">{{ $request->request_number }}</h3>
-                    <small class="text-muted">{{ $request->letterType?->name }}</small>
+<div class="w-full service-show" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.student-services.header
+        title="{{ $request->letterType?->name ?? 'Layanan Permohonan Surat' }}"
+        description="Nomor Pengajuan: {{ $request->request_number }} • Mahasiswa: {{ $request->studentProfile?->user?->name ?? '-' }} ({{ $request->studentProfile?->nim ?? '-' }})"
+        icon="file-signature"
+    >
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.student-services.letter-requests.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </a>
+        </div>
+
+        <x-slot:stats>
+            <div class="d-flex flex-wrap gap-2 gap-lg-3">
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-circle-info fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Status Permohonan</div>
+                        <div class="fw-bold">{{ $this->statusLabel($request->status) }}</div>
+                    </div>
                 </div>
-                <a href="{{ route('admin.student-services.letter-requests.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-file-contract fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Mode Penerbitan</div>
+                        <div class="fw-bold">{{ str($request->letterType?->fulfillment_mode)->replace('_', ' ')->title() }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-calendar-check fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Tanggal Diajukan</div>
+                        <div class="fw-bold">{{ $request->created_at?->format('d M Y H:i') ?? '-' }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-school fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Program Studi</div>
+                        <div class="fw-bold">{{ $request->studentProfile?->studyProgram?->name ?? '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </x-slot:stats>
+    </x-admin.student-services.header>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Informasi Permohonan Surat</h4>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -187,20 +238,20 @@ new class extends Component
                         <div>{{ $request->created_at?->format('d M Y H:i') }}</div>
                     </div>
                     <div class="col-md-4">
-                        <small class="text-muted">Mode</small>
+                        <small class="text-muted">Mode Penerbitan</small>
                         <div>{{ str($request->letterType?->fulfillment_mode)->replace('_', ' ')->title() }}</div>
                     </div>
                     <div class="col-12">
-                        <small class="text-muted">Purpose</small>
+                        <small class="text-muted">Keperluan (Purpose)</small>
                         <div>{{ $request->purpose }}</div>
                     </div>
                     @if ($request->request_data)
                         <div class="col-12">
-                            <small class="text-muted">Request Data</small>
-                            <div class="border rounded p-3 bg-light">
+                            <small class="text-muted">Data Tambahan Permohonan</small>
+                            <div class="border rounded p-3 bg-light mt-1">
                                 @foreach ($request->request_data as $key => $value)
                                     <div class="d-flex justify-content-between border-bottom py-1">
-                                        <span>{{ str($key)->replace('_', ' ')->title() }}</span>
+                                        <span class="text-muted">{{ str($key)->replace('_', ' ')->title() }}</span>
                                         <strong>{{ is_array($value) ? json_encode($value) : $value }}</strong>
                                     </div>
                                 @endforeach
@@ -210,7 +261,7 @@ new class extends Component
                     @if ($request->attachment_path)
                         <div class="col-12">
                             <a href="{{ $this->fileUrl($request->attachment_path) }}" target="_blank" class="btn btn-outline-primary">
-                                <i class="fas fa-paperclip me-1"></i> Preview Attachment
+                                <i class="fas fa-paperclip me-1"></i> Lihat Lampiran Permohonan
                             </a>
                         </div>
                     @endif
@@ -218,82 +269,82 @@ new class extends Component
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Status History</h3>
+        <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Riwayat Perubahan Status</h4>
             </div>
-            <div class="list-group list-group-flush">
+            <div class="list-group list-group-flush pt-2">
                 @forelse ($request->histories as $history)
-                    <div class="list-group-item">
+                    <div class="list-group-item px-4 py-3">
                         <div class="d-flex justify-content-between">
-                            <strong>{{ $this->statusLabel($history->to_status) }}</strong>
-                            <span class="text-muted">{{ $history->created_at?->format('d M Y H:i') }}</span>
+                            <strong class="text-dark">{{ $this->statusLabel($history->to_status) }}</strong>
+                            <span class="text-muted small">{{ $history->created_at?->format('d M Y H:i') }}</span>
                         </div>
-                        <div class="text-muted small">{{ $history->notes ?: '-' }}</div>
-                        <div class="text-muted small">By {{ $history->changedBy?->name ?? 'System' }}</div>
+                        <div class="text-muted small mt-1">{{ $history->notes ?: '-' }}</div>
+                        <div class="text-muted small">Oleh {{ $history->changedBy?->name ?? 'System' }}</div>
                     </div>
                 @empty
-                    <div class="list-group-item text-muted">Belum ada history.</div>
+                    <div class="list-group-item text-muted px-4 py-3">Belum ada riwayat perubahan status.</div>
                 @endforelse
             </div>
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Review Actions</h3>
+        <div class="card soft-card mb-4">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Tindakan Evaluasi (Review)</h4>
             </div>
-            <div class="card-body">
-                <label class="form-label">Admin Notes</label>
-                <textarea wire:model="adminNotes" class="form-control mb-3" rows="4" placeholder="Catatan untuk mahasiswa"></textarea>
+            <div class="card-body p-4">
+                <label class="form-label fw-semibold">Catatan Admin / Operator</label>
+                <textarea wire:model="adminNotes" class="form-control mb-3" rows="4" placeholder="Tuliskan catatan untuk mahasiswa..."></textarea>
 
                 <div class="d-grid gap-2">
-                    <button wire:click="markUnderReview" class="btn btn-outline-primary" @disabled(! in_array($request->status, ['submitted', 'revision_requested'], true))>
-                        <i class="fas fa-search me-1"></i> Mark Under Review
+                    <button wire:click="markUnderReview" class="btn btn-outline-primary fw-bold" @disabled(! in_array($request->status, ['submitted', 'revision_requested'], true))>
+                        <i class="fas fa-search me-1"></i> Tandai Sedang Direview
                     </button>
-                    <button wire:click="approve" class="btn btn-success" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                        <i class="fas fa-check me-1"></i> Approve
+                    <button wire:click="approve" class="btn btn-success fw-bold" @disabled(! in_array($request->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                        <i class="fas fa-check me-1"></i> Setujui Permohonan (Approve)
                     </button>
-                    <button wire:click="requestRevision" class="btn btn-warning" @disabled(in_array($request->status, ['issued', 'rejected', 'cancelled'], true))>
-                        <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan
+                    <button wire:click="requestRevision" class="btn btn-warning fw-bold text-dark" @disabled(in_array($request->status, ['issued', 'rejected', 'cancelled'], true))>
+                        <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan Mahasiswa
                     </button>
-                    <button wire:click="reject" class="btn btn-danger" @disabled(in_array($request->status, ['issued', 'rejected', 'cancelled'], true))>
-                        <i class="fas fa-times me-1"></i> Reject
+                    <button wire:click="reject" class="btn btn-danger fw-bold" @disabled(in_array($request->status, ['issued', 'rejected', 'cancelled'], true))>
+                        <i class="fas fa-times me-1"></i> Tolak Permohonan
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Issue Letter</h3>
+        <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Penerbitan Surat (Issue)</h4>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 @if ($request->isDownloadable())
-                    <a href="{{ route('admin.student-services.letter-requests.download', ['request' => $request->id]) }}" target="_blank" class="btn btn-success w-100 mb-3">
-                        <i class="fas fa-download me-1"></i> Download Issued Letter
+                    <a href="{{ route('admin.student-services.letter-requests.download', ['request' => $request->id]) }}" target="_blank" class="btn btn-success fw-bold w-100 mb-3 py-2">
+                        <i class="fas fa-download me-1"></i> Download Surat Terbit
                     </a>
                 @endif
 
-                <label class="form-label">Issue Method</label>
+                <label class="form-label fw-semibold">Metode Penerbitan</label>
                 <select wire:model.live="issueMethod" class="form-select mb-3">
                     @if (in_array($request->letterType?->fulfillment_mode, ['auto_generate', 'hybrid'], true))
-                        <option value="auto_generate">Auto Generate PDF</option>
+                        <option value="auto_generate">Auto Generate PDF (Otomatis)</option>
                     @endif
                     @if (in_array($request->letterType?->fulfillment_mode, ['manual_upload', 'hybrid'], true))
-                        <option value="manual_upload">Manual Upload</option>
+                        <option value="manual_upload">Manual Upload (Unggah Mandiri)</option>
                     @endif
                 </select>
 
                 @if ($issueMethod === 'manual_upload')
-                    <label class="form-label">Final File</label>
+                    <label class="form-label fw-semibold">Berkas Surat Final (PDF/Gambar)</label>
                     <input type="file" wire:model="finalFile" class="form-control mb-2">
                     @error('finalFile') <div class="text-danger small mb-2">{{ $message }}</div> @enderror
                 @endif
 
-                <button wire:click="issue" class="btn btn-primary w-100" @disabled($request->status !== 'approved')>
-                    <i class="fas fa-paper-plane me-1"></i> Issue Letter
+                <button wire:click="issue" class="btn btn-primary fw-bold w-100 py-2" @disabled($request->status !== 'approved')>
+                    <i class="fas fa-paper-plane me-1"></i> Terbitkan & Kirim Surat
                 </button>
             </div>
         </div>

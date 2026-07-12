@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -82,6 +83,42 @@ final class UserDevelopmentRecordTable extends BasePowerGridTable
             Column::make('Dibuat Pada', 'created_at_formatted', 'created_at')
                 ->sortable(),
             Column::action('Aksi'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('user_name', 'user_name')
+                ->placeholder('Cari nama / email pegawai...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('user', function (Builder $sub) use ($value) {
+                            $sub->where(function (Builder $q) use ($value) {
+                                $q->where('first_name', 'like', '%' . $value . '%')
+                                    ->orWhere('last_name', 'like', '%' . $value . '%')
+                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhere('username', 'like', '%' . $value . '%')
+                                    ->orWhere('email', 'like', '%' . $value . '%');
+                            });
+                        });
+                    }
+                }),
+            Filter::inputText('title', 'title')->placeholder('Cari judul pelatihan / sertifikasi...')->operators(['contains']),
+            Filter::inputText('organizer', 'organizer')->placeholder('Cari penyelenggara / instansi...')->operators(['contains']),
+            Filter::select('type', 'type')
+                ->dataSource(collect([
+                    ['id' => 'certification', 'name' => 'Certification'],
+                    ['id' => 'training', 'name' => 'Training'],
+                    ['id' => 'workshop', 'name' => 'Workshop'],
+                    ['id' => 'seminar', 'name' => 'Seminar'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::datepicker('start_date', 'start_date'),
+            Filter::boolean('is_verified', 'is_verified')->label('Terverifikasi', 'Menunggu'),
         ];
     }
 

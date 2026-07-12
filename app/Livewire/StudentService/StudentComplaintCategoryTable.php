@@ -3,12 +3,14 @@
 namespace App\Livewire\StudentService;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Organization\WorkUnit;
 use App\Models\StudentService\StudentComplaintCategory;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -48,11 +50,25 @@ final class StudentComplaintCategoryTable extends BasePowerGridTable
         return [
             Column::make('Nama', 'name')->sortable()->searchable(),
             Column::make('Kode', 'code')->sortable()->searchable(),
-            Column::make('Unit Default', 'default_work_unit'),
+            Column::make('Unit Default', 'default_work_unit', 'default_work_unit_id'),
             Column::make('SLA (Jam)', 'default_sla_hours')->sortable(),
             Column::make('Tiket', 'complaints_count')->sortable(),
             Column::make('Aktif', 'is_active')->toggleable(ActivePermission::check('student-complaint-category.update'), 'Aktif', 'Nonaktif')->sortable(),
             Column::action('Aksi'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name')->placeholder('Cari kategori...'),
+            Filter::inputText('code')->placeholder('Cari kode...'),
+            Filter::select('default_work_unit', 'default_work_unit_id')
+                ->dataSource(WorkUnit::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('default_work_unit_id', $value)),
+            Filter::boolean('is_active', 'is_active'),
         ];
     }
 

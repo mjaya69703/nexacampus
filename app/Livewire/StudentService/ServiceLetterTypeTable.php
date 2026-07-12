@@ -54,9 +54,9 @@ final class ServiceLetterTypeTable extends BasePowerGridTable
         return [
             Column::make('Name', 'name')->sortable()->searchable(),
             Column::make('Code', 'code')->sortable()->searchable(),
-            Column::make('Mode', 'fulfillment_mode_label')->sortable(),
-            Column::make('Clearance', 'clearance_label'),
-            Column::make('Status', 'is_active_label')->sortable(),
+            Column::make('Mode', 'fulfillment_mode_label', 'fulfillment_mode')->sortable(),
+            Column::make('Clearance', 'clearance_label', 'requires_financial_clearance'),
+            Column::make('Status', 'is_active_label', 'is_active')->sortable(),
             Column::action('Action'),
         ];
     }
@@ -64,13 +64,33 @@ final class ServiceLetterTypeTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::select('is_active', 'is_active')
+            Filter::inputText('name')->placeholder('Cari nama jenis surat...'),
+            Filter::inputText('code')->placeholder('Cari kode...'),
+            Filter::select('fulfillment_mode_label', 'fulfillment_mode')
+                ->dataSource(collect([
+                    ['id' => 'auto_generate', 'name' => 'Auto Generate'],
+                    ['id' => 'manual_upload', 'name' => 'Manual Upload'],
+                    ['id' => 'hybrid', 'name' => 'Hybrid'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('fulfillment_mode', $value)),
+            Filter::select('clearance_label', 'requires_financial_clearance')
+                ->dataSource(collect([
+                    ['id' => 1, 'name' => 'Requires Clearance'],
+                    ['id' => 0, 'name' => 'No Clearance Required'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('requires_financial_clearance', $value)),
+            Filter::select('is_active_label', 'is_active')
                 ->dataSource(collect([
                     ['id' => 1, 'name' => 'Active'],
                     ['id' => 0, 'name' => 'Inactive'],
                 ]))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('is_active', $value)),
         ];
     }
 

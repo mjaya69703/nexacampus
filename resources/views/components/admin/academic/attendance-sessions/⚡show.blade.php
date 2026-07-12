@@ -199,140 +199,171 @@ new class extends Component {
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
+<div>
+    <x-alert />
 
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Detail Attendance Session</h5>
-                <button class="btn btn-secondary" wire:click="goBack">
-                    <i class="fas fa-arrow-left me-1"></i> Kembali ke Course Offering
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <strong>{{ $session->courseOffering?->course?->code }} - {{ $session->courseOffering?->course?->name }}</strong>
-                    <div class="text-muted small">{{ $session->courseOffering?->studyProgram?->name ?? '-' }}</div>
+    <x-admin.academic.header
+        title="Detail & Absensi Pertemuan Ke-{{ $session->meeting_no ?? '-' }}"
+        description="Perbarui informasi sesi pertemuan perkuliahan serta catat status kehadiran mahasiswa secara individu maupun massal."
+        icon="calendar-check"
+    >
+        <button type="button" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2" wire:click="goBack">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke Course Offering</span>
+        </button>
+    </x-admin.academic.header>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-clock fs-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="card-title fw-bold mb-1 text-dark">Informasi Sesi Pertemuan</h4>
+                                <div class="text-muted small">
+                                    <strong>{{ $session->courseOffering?->course?->code }} - {{ $session->courseOffering?->course?->name }}</strong>
+                                    | {{ $session->courseOffering?->studyProgram?->name ?? '-' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                <div class="card-body p-4">
+                    <form wire:submit.prevent="saveSession">
+                        <div class="row g-3">
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <label class="form-label fw-semibold">Pertemuan Ke <span class="text-danger">*</span></label>
+                                <input type="number" min="1" max="64" class="form-control" wire:model.defer="sessionForm.meeting_no">
+                                @error('sessionForm.meeting_no') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-lg-3 col-md-4 col-sm-6">
+                                <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" wire:model.defer="sessionForm.meeting_date">
+                                @error('sessionForm.meeting_date') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <label class="form-label fw-semibold">Jam Mulai</label>
+                                <input type="time" class="form-control" wire:model.defer="sessionForm.start_time">
+                                @error('sessionForm.start_time') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <label class="form-label fw-semibold">Jam Selesai</label>
+                                <input type="time" class="form-control" wire:model.defer="sessionForm.end_time">
+                                @error('sessionForm.end_time') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-lg-3 col-md-8 col-sm-12">
+                                <label class="form-label fw-semibold">Status Session <span class="text-danger">*</span></label>
+                                <select class="form-select" wire:model.defer="sessionForm.status">
+                                    <option value="Draft">Draft</option>
+                                    <option value="Opened">Opened</option>
+                                    <option value="Closed">Closed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                                @error('sessionForm.status') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-lg-4 col-md-6 col-sm-12">
+                                <label class="form-label fw-semibold">Dosen Pengajar</label>
+                                <select class="form-select" wire:model.defer="sessionForm.lecturer_profile_id">
+                                    <option value="">- Pilih Dosen -</option>
+                                    @foreach ($lecturerOptions as $lecturer)
+                                        <option value="{{ $lecturer['id'] }}">{{ $lecturer['name'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('sessionForm.lecturer_profile_id') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-lg-8 col-md-6 col-sm-12">
+                                <label class="form-label fw-semibold">Topik Perkuliahan</label>
+                                <input type="text" class="form-control" wire:model.defer="sessionForm.topic" placeholder="Contoh: Pengantar Konsep Basis Data">
+                                @error('sessionForm.topic') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Catatan Sesi</label>
+                                <textarea rows="2" class="form-control" wire:model.defer="sessionForm.notes" placeholder="Catatan tambahan mengenai jalannya sesi..."></textarea>
+                                @error('sessionForm.notes') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-12 border-top pt-3 mt-4 d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm">
+                                    <i class="fa fa-save me-1"></i> Simpan Perubahan Sesi
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-                <form wire:submit.prevent="saveSession">
-                    <div class="row">
-                        <div class="form-group col-lg-2 col-md-4 col-sm-6">
-                            <label>Pertemuan Ke</label>
-                            <input type="number" min="1" max="64" class="form-control" wire:model.defer="sessionForm.meeting_no">
-                            @error('sessionForm.meeting_no') <span class="text-danger">{{ $message }}</span> @enderror
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-users fs-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="card-title fw-bold mb-1 text-dark">Daftar Kehadiran Mahasiswa</h4>
+                                <div class="text-muted small">Catat kehadiran mahasiswa secara individu atau klik Simpan Semua Kehadiran sekaligus.</div>
+                            </div>
                         </div>
-                        <div class="form-group col-lg-3 col-md-4 col-sm-6">
-                            <label>Tanggal</label>
-                            <input type="date" class="form-control" wire:model.defer="sessionForm.meeting_date">
-                            @error('sessionForm.meeting_date') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="form-group col-lg-2 col-md-4 col-sm-6">
-                            <label>Jam Mulai</label>
-                            <input type="time" class="form-control" wire:model.defer="sessionForm.start_time">
-                            @error('sessionForm.start_time') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="form-group col-lg-2 col-md-4 col-sm-6">
-                            <label>Jam Selesai</label>
-                            <input type="time" class="form-control" wire:model.defer="sessionForm.end_time">
-                            @error('sessionForm.end_time') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="form-group col-lg-3 col-md-8 col-sm-12">
-                            <label>Dosen Pengajar</label>
-                            <select class="form-control" wire:model.defer="sessionForm.lecturer_profile_id">
-                                <option value="">- Pilih Dosen -</option>
-                                @foreach ($lecturerOptions as $lecturer)
-                                    <option value="{{ $lecturer['id'] }}">{{ $lecturer['name'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('sessionForm.lecturer_profile_id') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="form-group col-lg-3 col-md-4 col-sm-6">
-                            <label>Status Session</label>
-                            <select class="form-control" wire:model.defer="sessionForm.status">
-                                <option value="Draft">Draft</option>
-                                <option value="Opened">Opened</option>
-                                <option value="Closed">Closed</option>
-                                <option value="Cancelled">Cancelled</option>
-                            </select>
-                            @error('sessionForm.status') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="form-group col-lg-9 col-md-8 col-sm-12">
-                            <label>Topik</label>
-                            <input type="text" class="form-control" wire:model.defer="sessionForm.topic">
-                            @error('sessionForm.topic') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="form-group col-12">
-                            <label>Catatan</label>
-                            <textarea rows="2" class="form-control" wire:model.defer="sessionForm.notes"></textarea>
-                            @error('sessionForm.notes') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="form-group col-12 mt-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i> Simpan Session
-                            </button>
-                        </div>
+                        <button type="button" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-semibold d-inline-flex align-items-center gap-2" wire:click="saveAllRecords">
+                            <i class="fa fa-save"></i> <span>Simpan Semua Kehadiran</span>
+                        </button>
                     </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Attendance Records</h5>
-                <button class="btn btn-success" wire:click="saveAllRecords">
-                    <i class="fas fa-save me-1"></i> Simpan Semua
-                </button>
-            </div>
-            <div class="card-body">
-                @if (count($students) > 0)
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 40px;">No</th>
-                                    <th>Mahasiswa</th>
-                                    <th style="width: 180px;">Status</th>
-                                    <th>Catatan</th>
-                                    <th style="width: 120px;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($students as $index => $student)
+                </div>
+                <div class="card-body p-4">
+                    @if (count($students) > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>
-                                            <div class="fw-semibold">{{ $student['name'] }}</div>
-                                            <small class="text-muted">NIM: {{ $student['nim'] ?? '-' }}</small>
-                                        </td>
-                                        <td>
-                                            <select class="form-control form-control-sm" wire:model.defer="recordForms.{{ $student['id'] }}.status">
-                                                <option value="Present">Present</option>
-                                                <option value="Absent">Absent</option>
-                                                <option value="Excused">Excused</option>
-                                                <option value="Sick">Sick</option>
-                                                <option value="Late">Late</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <input type="text" class="form-control form-control-sm" wire:model.defer="recordForms.{{ $student['id'] }}.notes" placeholder="Catatan absensi">
-                                        </td>
-                                        <td>
-                                            <button class="btn  btn-primary" wire:click="saveRecord({{ $student['id'] }})">
-                                                Simpan
-                                            </button>
-                                        </td>
+                                        <th style="width: 50px;">No</th>
+                                        <th>Mahasiswa</th>
+                                        <th style="width: 200px;">Status Kehadiran</th>
+                                        <th>Catatan / Keterangan</th>
+                                        <th style="width: 140px; text-align: right;">Action</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="alert alert-warning mb-0">
-                        Belum ada mahasiswa terdaftar di course offering ini.
-                    </div>
-                @endif
+                                </thead>
+                                <tbody>
+                                    @foreach ($students as $index => $student)
+                                        <tr>
+                                            <td class="text-muted">{{ $index + 1 }}</td>
+                                            <td>
+                                                <div class="fw-bold text-dark">{{ $student['name'] }}</div>
+                                                <div class="text-muted small">NIM: {{ $student['nim'] ?? '-' }}</div>
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm shadow-sm" wire:model.defer="recordForms.{{ $student['id'] }}.status">
+                                                    <option value="Present">Present (Hadir)</option>
+                                                    <option value="Absent">Absent (Alpa)</option>
+                                                    <option value="Excused">Excused (Izin)</option>
+                                                    <option value="Sick">Sick (Sakit)</option>
+                                                    <option value="Late">Late (Terlambat)</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm shadow-sm" wire:model.defer="recordForms.{{ $student['id'] }}.notes" placeholder="Catatan absensi...">
+                                            </td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" wire:click="saveRecord({{ $student['id'] }})">
+                                                    <i class="fa fa-check me-1"></i> Simpan
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-warning border-0 rounded-3 mb-0 d-flex align-items-center gap-3">
+                            <i class="fa fa-exclamation-triangle fs-4 text-warning"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Belum Ada Mahasiswa Terdaftar</h6>
+                                <div class="small">Belum ada mahasiswa yang mengambil mata kuliah pada penawaran kelas ini (atau KRS belum disetujui).</div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

@@ -73,6 +73,36 @@ final class EmployeeLeaveRequestTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('request_number', 'request_number')->placeholder('Cari nomor pengajuan...')->operators(['contains']),
+            Filter::inputText('employee_name', 'employee_name')
+                ->placeholder('Cari nama / email pegawai...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('employeeProfile.user', function (Builder $sub) use ($value) {
+                            $sub->where(function (Builder $q) use ($value) {
+                                $q->where('first_name', 'like', '%' . $value . '%')
+                                    ->orWhere('last_name', 'like', '%' . $value . '%')
+                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhere('username', 'like', '%' . $value . '%')
+                                    ->orWhere('email', 'like', '%' . $value . '%');
+                            });
+                        });
+                    }
+                }),
+            Filter::inputText('leave_type_name', 'leave_type_name')
+                ->placeholder('Cari jenis cuti...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('leaveType', function (Builder $sub) use ($value) {
+                            $sub->where('name', 'like', '%' . $value . '%')
+                                ->orWhere('code', 'like', '%' . $value . '%');
+                        });
+                    }
+                }),
             Filter::select('status', 'status')
                 ->dataSource(collect([
                     ['id' => 'draft', 'name' => 'Draft'],
@@ -84,6 +114,7 @@ final class EmployeeLeaveRequestTable extends BasePowerGridTable
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -93,18 +124,71 @@ final class EmployeeLeaveRequestTable extends BasePowerGridTable
         $this->redirectRoute('admin.organization.employee-leave-requests.show', ['id' => $rowId]);
     }
 
-    public function actions(EmployeeLeaveRequest $row): array
+    #[On('delete')]
+    public function delete($id): void
     {
-        if (! ActivePermission::check('employee-leave-request.view')) {
-            return [];
+        $req = EmployeeLeaveRequest::with('employeeProfile.user')->find($id);
+
+        if (! $req) {
+            return;
         }
 
-        return [
-            Button::add('show')
+        $this->js('
+            Swal.fire({
+                title: "Hapus pengajuan cuti?",
+                text: "Pengajuan cuti nomor '.addslashes($req->request_number).' atas nama '.addslashes($req->employeeProfile?->user?->name ?: 'Pegawai').' akan dipindahkan ke tempat sampah.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Ya hapus",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.dispatch("deleteItem", {id: '.$id.'})
+                }
+            });
+        ');
+    }
+
+    #[On('deleteItem')]
+    public function deleteItem($id = null): void
+    {
+        if (! ActivePermission::check('employee-leave-request.delete')) {
+            session()->flash('error', 'Anda tidak memiliki izin menghapus pengajuan cuti.');
+            return;
+        }
+
+        $req = EmployeeLeaveRequest::find($id);
+
+        if (! $req) {
+            session()->flash('error', 'Pengajuan cuti tidak ditemukan.');
+            return;
+        }
+
+        $req->update(['deleted_by' => auth()->id()]);
+        $req->delete();
+
+        session()->flash('success', 'Pengajuan cuti berhasil dihapus.');
+        $this->dispatch('pg:eventRefresh-employeeLeaveRequestTable');
+    }
+
+    public function actions(EmployeeLeaveRequest $row): array
+    {
+        $actions = [];
+        if (ActivePermission::check('employee-leave-request.view')) {
+            $actions[] = Button::add('show')
                 ->slot('<i class="fa fa-eye"></i>')
                 ->class('btn btn-primary')
-                ->dispatch('show', ['rowId' => $row->id]),
-        ];
+                ->dispatch('show', ['rowId' => $row->id]);
+        }
+
+        if (ActivePermission::check('employee-leave-request.delete')) {
+            $actions[] = Button::add('delete')
+                ->slot('<i class="fa fa-trash"></i>')
+                ->class('btn btn-danger')
+                ->dispatch('delete', ['id' => $row->id]);
+        }
+
+        return $actions;
     }
 
     private function statusBadge(string $status): string

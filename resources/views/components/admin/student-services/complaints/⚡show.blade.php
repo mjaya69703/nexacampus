@@ -200,50 +200,78 @@ new class extends Component
 
 @include('components.student.student-services.service-styles')
 
-<div wire:poll.5s="refreshComplaint">
+<div class="w-full" style="width: 100% !important" wire:poll.5s="refreshComplaint">
     <x-alert />
 
-    <div class="card service-card hero-gradient mb-4">
-        <div class="card-body p-4 p-lg-5" style="position: relative;">
-            <div class="d-flex justify-content-between align-items-start gap-4 flex-wrap">
-                <div class="d-flex align-items-start gap-3">
-                    <div style="width: 72px; height: 72px; background: rgba(255,255,255,.2); border-radius: 18px; display:flex; align-items:center; justify-content:center; font-size:2rem; backdrop-filter: blur(10px);">
-                        <i class="fas fa-headset"></i>
-                    </div>
+    <x-admin.student-services.header
+        title="{{ $complaint->subject }}"
+        description="Tiket #{{ $complaint->ticket_number }} • Mahasiswa: {{ $complaint->studentProfile?->user?->name ?? '-' }} ({{ $complaint->studentProfile?->nim ?? '-' }})"
+        icon="headset"
+    >
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-25 px-3 py-2 rounded-pill shadow-sm">
+                <i class="fa fa-rotate me-1"></i> Auto Refresh 5s
+            </span>
+            <a href="{{ route('admin.student-services.complaints.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </a>
+        </div>
+
+        <x-slot:stats>
+            <div class="d-flex flex-wrap gap-2 gap-lg-3">
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-circle-info fs-6"></i>
                     <div>
-                        <div style="font-size:.9rem; opacity:.88;">{{ $complaint->ticket_number }}</div>
-                        <h1 class="h2 mb-2" style="font-weight:800;">{{ $complaint->subject }}</h1>
-                        <div class="d-flex flex-wrap gap-2">
-                            <span class="info-badge"><i class="fas fa-circle-info me-2"></i>{{ $this->statusLabel($complaint->status) }}</span>
-                            <span class="info-badge"><i class="fas fa-tag me-2"></i>{{ $complaint->category?->name ?? '-' }}</span>
-                            <span class="info-badge"><i class="fas fa-building me-2"></i>{{ $complaint->assignedWorkUnit?->name ?? 'Belum diarahkan' }}</span>
+                        <div class="small text-white text-opacity-75">Status Tiket</div>
+                        <div class="fw-bold">{{ $this->statusLabel($complaint->status) }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-tag fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Kategori</div>
+                        <div class="fw-bold">{{ $complaint->category?->name ?? '-' }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-building fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Unit Tujuan</div>
+                        <div class="fw-bold">{{ $complaint->assignedWorkUnit?->name ?? 'Belum diarahkan' }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-triangle-exclamation fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Prioritas & SLA</div>
+                        <div class="fw-bold">{{ $this->priorityLabel($complaint->priority) }} • {{ $this->slaLabel() }}</div>
+                    </div>
+                </div>
+            </div>
+        </x-slot:stats>
+    </x-admin.student-services.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-body p-3 p-md-4">
+            <div class="row g-3">
+                @foreach ([
+                    ['label' => 'Mahasiswa Pengadu', 'value' => $complaint->studentProfile?->user?->name ?? '-', 'icon' => 'fa-user-graduate', 'color' => 'primary'],
+                    ['label' => 'Prioritas Tiket', 'value' => $this->priorityLabel($complaint->priority), 'icon' => 'fa-triangle-exclamation', 'color' => 'warning'],
+                    ['label' => 'Target Resolusi (SLA)', 'value' => $this->slaLabel(), 'icon' => 'fa-clock', 'color' => $complaint->due_at && $complaint->due_at->isPast() && ! in_array($complaint->status, ['resolved','closed','rejected'], true) ? 'danger' : 'success'],
+                    ['label' => 'Pesan Terakhir', 'value' => $complaint->last_message_at?->format('d M Y H:i') ?? '-', 'icon' => 'fa-comments', 'color' => 'info'],
+                ] as $stat)
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-50">
+                            <div class="text-muted small mb-1">{{ $stat['label'] }}</div>
+                            <div class="d-flex align-items-end justify-content-between">
+                                <div class="fs-6 fw-bold text-dark lh-1">{{ $stat['value'] }}</div>
+                                <i class="fa {{ $stat['icon'] }} fs-4 text-{{ $stat['color'] }} opacity-75"></i>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <a href="{{ route('admin.student-services.complaints.index') }}" class="action-btn" style="background: rgba(255,255,255,.94); color:#4f46e5;">
-                    <i class="fas fa-arrow-left"></i> Kembali
-                </a>
+                @endforeach
             </div>
         </div>
-    </div>
-
-    <div class="row g-3 mb-4">
-        @foreach ([
-            ['label' => 'Mahasiswa', 'value' => $complaint->studentProfile?->user?->name ?? '-', 'icon' => 'fa-user-graduate', 'color' => '#4f46e5'],
-            ['label' => 'Prioritas', 'value' => $this->priorityLabel($complaint->priority), 'icon' => 'fa-triangle-exclamation', 'color' => '#f59e0b'],
-            ['label' => 'SLA', 'value' => $this->slaLabel(), 'icon' => 'fa-clock', 'color' => $complaint->due_at && $complaint->due_at->isPast() && ! in_array($complaint->status, ['resolved','closed','rejected'], true) ? '#ef4444' : '#10b981'],
-            ['label' => 'Last Message', 'value' => $complaint->last_message_at?->format('d M Y H:i') ?? '-', 'icon' => 'fa-comments', 'color' => '#3b82f6'],
-        ] as $stat)
-            <div class="col-xl-3 col-md-6">
-                <div class="ticket-stat d-flex align-items-center gap-3">
-                    <span class="metric-icon" style="background: {{ $stat['color'] }}22; color: {{ $stat['color'] }};"><i class="fas {{ $stat['icon'] }}"></i></span>
-                    <div>
-                        <div class="text-muted small">{{ $stat['label'] }}</div>
-                        <div class="fw-bold" style="color:#111827;">{{ $stat['value'] }}</div>
-                    </div>
-                </div>
-            </div>
-        @endforeach
     </div>
 
     <div class="row g-4">

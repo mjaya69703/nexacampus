@@ -185,19 +185,70 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-lg-8">
-        <x-alert />
+@push('styles')
+    <style>
+        .service-show .soft-card {
+            border: 0;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, .08);
+            margin-bottom: 1.5rem;
+        }
+    </style>
+@endpush
 
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="card-title mb-0">{{ $application->application_number }}</h3>
-                    <small class="text-muted">Pengajuan Cuti</small>
+<div class="w-full service-show" style="width: 100% !important">
+    <x-alert />
+
+    <x-admin.student-services.header
+        title="Pengajuan Cuti Akademik"
+        description="Nomor Pengajuan: {{ $application->application_number }} • Mahasiswa: {{ $application->studentProfile?->user?->name ?? '-' }} ({{ $application->studentProfile?->nim ?? '-' }})"
+        icon="calendar-minus"
+    >
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.student-services.leave-applications.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </a>
+        </div>
+
+        <x-slot:stats>
+            <div class="d-flex flex-wrap gap-2 gap-lg-3">
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-circle-info fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Status Pengajuan</div>
+                        <div class="fw-bold">{{ $this->statusLabel($application->status) }}</div>
+                    </div>
                 </div>
-                <a href="{{ route('admin.student-services.leave-applications.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-calendar fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Tahun Akademik</div>
+                        <div class="fw-bold">{{ $application->academicYear?->name ?? '-' }} ({{ $application->semester ?? '-' }})</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-clock fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Durasi Cuti</div>
+                        <div class="fw-bold">{{ $application->duration_semesters }} Semester</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-school fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Program Studi</div>
+                        <div class="fw-bold">{{ $application->studentProfile?->studyProgram?->name ?? '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </x-slot:stats>
+    </x-admin.student-services.header>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Informasi Mahasiswa & Cuti</h4>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -271,83 +322,83 @@ new class extends Component
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Status History</h3>
+        <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Riwayat Status & Evaluasi</h4>
             </div>
-            <div class="list-group list-group-flush">
+            <div class="list-group list-group-flush pt-2">
                 @forelse ($application->histories as $history)
-                    <div class="list-group-item">
+                    <div class="list-group-item px-4 py-3">
                         <div class="d-flex justify-content-between">
-                            <strong>{{ $this->statusLabel($history->to_status) }}</strong>
-                            <span class="text-muted">{{ $history->created_at?->format('d M Y H:i') }}</span>
+                            <strong class="text-dark">{{ $this->statusLabel($history->to_status) }}</strong>
+                            <span class="text-muted small">{{ $history->created_at?->format('d M Y H:i') }}</span>
                         </div>
-                        <div class="text-muted small">{{ $history->notes ?: '-' }}</div>
-                        <div class="text-muted small">By {{ $history->changedBy?->name ?? 'System' }}</div>
+                        <div class="text-muted small mt-1">{{ $history->notes ?: '-' }}</div>
+                        <div class="text-muted small">Oleh {{ $history->changedBy?->name ?? 'System' }}</div>
                     </div>
                 @empty
-                    <div class="list-group-item text-muted">Belum ada history.</div>
+                    <div class="list-group-item text-muted px-4 py-3">Belum ada riwayat perubahan status.</div>
                 @endforelse
             </div>
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Review Actions</h3>
+        <div class="card soft-card mb-4">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Tindakan Evaluasi (Review)</h4>
             </div>
-            <div class="card-body">
-                <label class="form-label">Admin Notes</label>
-                <textarea wire:model="adminNotes" class="form-control mb-3" rows="4" placeholder="Catatan untuk mahasiswa"></textarea>
+            <div class="card-body p-4">
+                <label class="form-label fw-semibold">Catatan Admin / Operator</label>
+                <textarea wire:model="adminNotes" class="form-control mb-3" rows="4" placeholder="Tuliskan catatan atau instruksi perbaikan untuk mahasiswa..."></textarea>
 
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label class="form-label">Biaya Cuti</label>
+                        <label class="form-label fw-semibold">Biaya Cuti (Rp)</label>
                         <input type="number" min="0" step="0.01" class="form-control" wire:model="leaveFeeAmount" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         @error('leaveFeeAmount') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
                     <div class="col-6">
-                        <label class="form-label">Due Date</label>
+                        <label class="form-label fw-semibold">Batas Bayar (Due Date)</label>
                         <input type="date" class="form-control" wire:model="leaveFeeDueDate" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
                         @error('leaveFeeDueDate') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
                     <div class="col-12">
-                        <small class="text-muted">Isi 0 kalau cuti tidak dikenakan biaya. Jika ada biaya, invoice langsung diterbitkan dan cuti baru bisa diaktifkan setelah lunas.</small>
+                        <small class="text-muted">Isi 0 jika cuti tidak dikenakan biaya tagihan. Jika ada biaya, invoice langsung diterbitkan secara otomatis dan cuti baru bisa diaktifkan setelah lunas.</small>
                     </div>
                 </div>
 
                 <div class="d-grid gap-2">
-                    <button wire:click="markUnderReview" class="btn btn-outline-primary" @disabled(! in_array($application->status, ['submitted', 'revision_requested'], true))>
-                        <i class="fas fa-search me-1"></i> Mark Under Review
+                    <button wire:click="markUnderReview" class="btn btn-outline-primary fw-bold" @disabled(! in_array($application->status, ['submitted', 'revision_requested'], true))>
+                        <i class="fas fa-search me-1"></i> Tandai Sedang Direview
                     </button>
-                    <button wire:click="approve" class="btn btn-success" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                        <i class="fas fa-check me-1"></i> Approve
+                    <button wire:click="approve" class="btn btn-success fw-bold" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                        <i class="fas fa-check me-1"></i> Setujui Pengajuan (Approve)
                     </button>
-                    <button wire:click="requestCorrection" class="btn btn-warning" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                        <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan
+                    <button wire:click="requestCorrection" class="btn btn-warning fw-bold text-dark" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                        <i class="fas fa-rotate-left me-1"></i> Minta Perbaikan Mahasiswa
                     </button>
-                    <button wire:click="reject" class="btn btn-danger" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
-                        <i class="fas fa-times me-1"></i> Reject
+                    <button wire:click="reject" class="btn btn-danger fw-bold" @disabled(! in_array($application->status, ['submitted', 'under_review', 'revision_requested', 'in_approval'], true))>
+                        <i class="fas fa-times me-1"></i> Tolak Pengajuan
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Status Actions</h3>
+        <div class="card soft-card">
+            <div class="card-header border-bottom-0 pt-4 px-4 pb-0">
+                <h4 class="card-title fw-bold mb-0">Status & Pengaktifan Cuti</h4>
             </div>
-            <div class="card-body d-grid gap-2">
-                <button wire:click="activate" class="btn btn-primary" @disabled(! in_array($application->status, ['approved', 'approved_pending_payment'], true) || ($application->leaveFeeInvoice && $application->leaveFeeInvoice->status !== 'paid'))
+            <div class="card-body p-4 d-grid gap-2">
+                <button wire:click="activate" class="btn btn-primary fw-bold py-2" @disabled(! in_array($application->status, ['approved', 'approved_pending_payment'], true) || ($application->leaveFeeInvoice && $application->leaveFeeInvoice->status !== 'paid'))
                     title="{{ $application->leaveFeeInvoice && $application->leaveFeeInvoice->status !== 'paid' ? 'Biaya cuti harus lunas dulu.' : '' }}">
-                    <i class="fas fa-calendar-minus me-1"></i> Activate Leave
+                    <i class="fas fa-calendar-minus me-1"></i> Aktifkan Status Cuti Mahasiswa
                 </button>
-                <button wire:click="returnToActive" class="btn btn-success" @disabled($application->status !== 'activated')>
-                    <i class="fas fa-user-check me-1"></i> Return To Active
+                <button wire:click="returnToActive" class="btn btn-success fw-bold py-2" @disabled($application->status !== 'activated')>
+                    <i class="fas fa-user-check me-1"></i> Kembalikan Ke Status Aktif
                 </button>
-                <div class="alert alert-info mb-0">
-                    Activate Leave akan mengubah student profile menjadi <strong>Cuti</strong>. Return To Active akan mengembalikan status menjadi <strong>Aktif</strong>.
+                <div class="alert alert-info mb-0 mt-2">
+                    <strong>Aktifkan Status Cuti</strong> akan otomatis mengubah status profil akademik mahasiswa menjadi <strong>Cuti</strong> pada masa perkuliahan ini.
                 </div>
             </div>
         </div>

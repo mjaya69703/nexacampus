@@ -3,7 +3,10 @@
 namespace App\Livewire\Alumni;
 
 use App\Enums\EmploymentStatus;
+use App\Enums\JobRelevance;
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\StudyProgram;
+use App\Models\Alumni\AlumniProfile;
 use App\Models\Alumni\TracerStudyResponse;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -76,21 +79,66 @@ final class TracerStudyResponseTable extends BasePowerGridTable
             Column::make('Status Kerja', 'employment_status_label')->sortable()->searchable(),
             Column::make('Relevansi', 'job_relevance_label')->sortable(),
             Column::make('Submitted', 'submitted_at_label')->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('employment_status', 'employment_status')
+            Filter::inputText('alumni_name')->placeholder('Cari nama alumni...')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('alumniProfile', fn ($q) => $q->where('full_name', 'like', '%'.$value.'%'))),
+            Filter::inputText('nim')->placeholder('Cari NIM alumni...')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('alumniProfile', fn ($q) => $q->where('nim', 'like', '%'.$value.'%'))),
+            Filter::select('study_program_name', 'study_program_id')
+                ->dataSource(
+                    StudyProgram::query()
+                        ->orderBy('name')
+                        ->get(['id', 'name'])
+                        ->map(fn (StudyProgram $sp) => [
+                            'id' => $sp->id,
+                            'name' => $sp->name,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('alumniProfile', fn ($q) => $q->where('study_program_id', $value))),
+            Filter::select('graduation_year', 'graduation_year')
+                ->dataSource(
+                    AlumniProfile::query()
+                        ->select('graduation_year')
+                        ->whereNotNull('graduation_year')
+                        ->distinct()
+                        ->orderByDesc('graduation_year')
+                        ->pluck('graduation_year')
+                        ->filter()
+                        ->map(fn ($year) => [
+                            'id' => (string) $year,
+                            'name' => (string) $year,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('alumniProfile', fn ($q) => $q->where('graduation_year', $value))),
+            Filter::select('employment_status_label', 'employment_status')
                 ->dataSource(collect(EmploymentStatus::options())
                     ->map(fn ($label, $value) => ['id' => $value, 'name' => $label])
                     ->values()
                     ->toArray()
                 )
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('employment_status', $value)),
+            Filter::select('job_relevance_label', 'job_relevance')
+                ->dataSource(collect(JobRelevance::options())
+                    ->map(fn ($label, $value) => ['id' => $value, 'name' => $label])
+                    ->values()
+                    ->toArray()
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('job_relevance', $value)),
+            Filter::datepicker('submitted_at_label', 'submitted_at'),
         ];
     }
 
@@ -100,7 +148,7 @@ final class TracerStudyResponseTable extends BasePowerGridTable
         $response = TracerStudyResponse::find($rowId);
 
         if ($response) {
-            $this->redirectRoute('admin.alumni.tracer-study.show', ['id' => $response->tracer_study_campaign_id]);
+            $this->redirectRoute('admin.alumni.tracer-study-responses.show', ['id' => $response->id]);
         }
     }
 
@@ -112,8 +160,8 @@ final class TracerStudyResponseTable extends BasePowerGridTable
 
         return [
             Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-eye"></i> Detail')
+                ->class('btn btn-outline-info rounded-pill px-2.5 py-1 text-info fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]),
         ];
     }

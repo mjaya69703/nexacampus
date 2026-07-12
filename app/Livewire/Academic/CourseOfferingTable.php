@@ -73,12 +73,9 @@ final class CourseOfferingTable extends BasePowerGridTable
         return [
             Column::make('Id', 'id')
                 ->sortable(),
-            Column::make('Academic Year', 'academic_year_name')
-                ->searchable(),
-            Column::make('Study Program', 'study_program_name')
-                ->searchable(),
-            Column::make('Course', 'course_name')
-                ->searchable(),
+            Column::make('Academic Year', 'academic_year_name'),
+            Column::make('Study Program', 'study_program_name'),
+            Column::make('Course', 'course_name'),
             Column::make('Label', 'label')
                 ->sortable()
                 ->searchable(),
@@ -104,6 +101,12 @@ final class CourseOfferingTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('label', 'label')
+                ->placeholder('Cari nama/label kelas...')
+                ->operators(['contains']),
+            Filter::inputText('code', 'code')
+                ->placeholder('Cari kode kelas...')
+                ->operators(['contains']),
             Filter::select('academic_year_name', 'academic_year_id')
                 ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
                 ->optionValue('id')
@@ -134,6 +137,7 @@ final class CourseOfferingTable extends BasePowerGridTable
                 ->dataSource(CourseOffering::query()->select('status')->distinct()->orderBy('status')->pluck('status')->filter()->map(fn (string $status) => ['id' => $status, 'name' => $status]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -189,21 +193,41 @@ final class CourseOfferingTable extends BasePowerGridTable
 
         $offering = CourseOffering::find($id);
 
-        if ($offering) {
-            $offeringLabel = $offering->course?->code.' - '.$offering->label;
-            $offering->delete();
-
+        if (! $offering) {
+            session()->flash('error', 'Course offering tidak ditemukan!');
             $this->dispatch('pg:eventRefresh-courseOfferingTable');
-            $this->js('
-                Swal.fire({
-                    title: "Course offering dihapus",
-                    text: "'.$offeringLabel.' berhasil dihapus!",
-                    icon: "success",
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            ');
+
+            return;
         }
+
+        if ($offering->courseSchedules()->exists()) {
+            session()->flash('error', 'Kelas penawaran tidak dapat dihapus karena sudah memiliki jadwal perkuliahan.');
+            $this->dispatch('pg:eventRefresh-courseOfferingTable');
+
+            return;
+        }
+
+        if ($offering->attendanceSessions()->exists() || $offering->assignments()->exists()) {
+            session()->flash('error', 'Kelas penawaran tidak dapat dihapus karena sudah memiliki data absensi atau tugas.');
+            $this->dispatch('pg:eventRefresh-courseOfferingTable');
+
+            return;
+        }
+
+        $offeringLabel = $offering->course?->code.' - '.$offering->label;
+        $offering->lecturers()->delete();
+        $offering->delete();
+
+        $this->dispatch('pg:eventRefresh-courseOfferingTable');
+        $this->js('
+            Swal.fire({
+                title: "Course offering dihapus",
+                text: "'.$offeringLabel.' berhasil dihapus!",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false
+            });
+        ');
     }
 
     public function actions(CourseOffering $row): array

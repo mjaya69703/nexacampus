@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -72,6 +73,17 @@ final class OrganizationalPositionTable extends BasePowerGridTable
         ];
     }
 
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name', 'name')->placeholder('Cari nama jabatan...')->operators(['contains']),
+            Filter::inputText('code', 'code')->placeholder('Cari kode...')->operators(['contains']),
+            Filter::inputText('category', 'category')->placeholder('Cari kategori...')->operators(['contains']),
+            Filter::inputText('scope_type', 'scope_type')->placeholder('Cari scope...')->operators(['contains']),
+            Filter::boolean('is_active', 'is_active')->label('Aktif', 'Nonaktif'),
+        ];
+    }
+
     public function onUpdatedToggleable(string $id, string $field, string $value): void
     {
         if ($field !== 'is_active') {
@@ -111,7 +123,7 @@ final class OrganizationalPositionTable extends BasePowerGridTable
         $this->js('
             Swal.fire({
                 title: "Hapus jabatan?",
-                text: "'.$position->name.' akan dipindahkan ke tempat sampah.",
+                text: "'.addslashes($position->name).' akan dipindahkan ke tempat sampah.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "Ya hapus",

@@ -4,6 +4,7 @@ namespace App\Livewire\Alumni;
 
 use App\Enums\EmploymentStatus;
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\StudyProgram;
 use App\Models\Alumni\AlumniProfile;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -77,21 +78,57 @@ final class AlumniProfileTable extends BasePowerGridTable
                 )
                 ->sortable(),
             Column::make('Dibuat', 'created_at_label')->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('employment_status', 'employment_status')
+            Filter::inputText('nim')->placeholder('Cari NIM alumni...'),
+            Filter::inputText('full_name')->placeholder('Cari nama lengkap alumni...'),
+            Filter::select('study_program_name', 'study_program_id')
+                ->dataSource(
+                    StudyProgram::query()
+                        ->orderBy('name')
+                        ->get(['id', 'name'])
+                        ->map(fn (StudyProgram $sp) => [
+                            'id' => $sp->id,
+                            'name' => $sp->name,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
+            Filter::select('graduation_year', 'graduation_year')
+                ->dataSource(
+                    AlumniProfile::query()
+                        ->select('graduation_year')
+                        ->whereNotNull('graduation_year')
+                        ->distinct()
+                        ->orderByDesc('graduation_year')
+                        ->pluck('graduation_year')
+                        ->filter()
+                        ->map(fn ($year) => [
+                            'id' => (string) $year,
+                            'name' => (string) $year,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('graduation_year', $value)),
+            Filter::select('employment_status_label', 'employment_status')
                 ->dataSource(collect(EmploymentStatus::options())
                     ->map(fn ($label, $value) => ['id' => $value, 'name' => $label])
                     ->values()
                     ->toArray()
                 )
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('employment_status', $value)),
+            Filter::inputText('current_city')->placeholder('Cari kota domisili...'),
+            Filter::boolean('is_active', 'Aktif', 'Nonaktif'),
+            Filter::datepicker('created_at_label', 'created_at'),
         ];
     }
 
@@ -195,23 +232,22 @@ final class AlumniProfileTable extends BasePowerGridTable
 
         if (ActivePermission::check('alumni-profile.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-eye"></i> Detail')
+                ->class('btn btn-outline-info rounded-pill px-2.5 py-1 text-info fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('alumni-profile.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->id()
-                ->class('btn btn-warning')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('alumni-profile.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

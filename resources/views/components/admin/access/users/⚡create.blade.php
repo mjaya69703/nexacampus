@@ -47,7 +47,7 @@ new class extends Component {
             'fst_setup' => false,
             'tfa_setup' => false,
         ];
-        $this->availableRoles = Role::query()->pluck('name')->toArray();
+        $this->availableRoles = Role::query()->pluck('name', 'id')->toArray();
     }
 
     public function createUser()
@@ -77,7 +77,7 @@ new class extends Component {
             'userForm.fst_setup' => 'boolean',
             'userForm.tfa_setup' => 'boolean',
             'selectedRoles' => 'nullable|array',
-            'selectedRoles.*' => 'string|exists:roles,name',
+            'selectedRoles.*' => 'exists:roles,id',
         ]);
 
         DB::beginTransaction();
@@ -116,7 +116,9 @@ new class extends Component {
             'tfa_setup' => $validatedData['userForm']['tfa_setup'],
         ]);
 
-        $user->syncRoles($validatedData['selectedRoles'] ?? []);
+        if (! empty($validatedData['selectedRoles'])) {
+            $user->syncRoles(Role::whereIn('id', $validatedData['selectedRoles'])->get());
+        }
 
         DB::commit();
 
@@ -127,11 +129,10 @@ new class extends Component {
     public function render()
     {
         $data = [
-            'menus' => 'User Management', // Data menu
-            'pages' => 'Buat User Baru', // Data halaman
+            'menus' => 'Manajemen Akses',
+            'pages' => 'Buat User Baru',
         ];
 
-        // Kirim data ke view dan layout secara langsung
         return $this->view($data)->layout('layouts.app', $data);
     }
 };
@@ -140,9 +141,9 @@ new class extends Component {
 @push('styles')
     <style>
         .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 55%, #111827 100%);
             padding: 2rem;
-            border-radius: 10px;
+            border-radius: 1rem;
             color: white;
             margin-bottom: 2rem;
         }
@@ -150,30 +151,42 @@ new class extends Component {
         .profile-photo {
             width: 150px;
             height: 150px;
-            border-radius: 50%;
-            border: 5px solid white;
+            border-radius: 1rem;
+            border: 5px solid rgba(255, 255, 255, 0.2);
             object-fit: cover;
         }
 
         .nav-tabs .nav-link.active {
-            background-color: #667eea;
+            background-color: #1e3a8a;
             color: white;
-            border-color: #667eea;
+            border-color: #1e3a8a;
         }
 
         .form-section {
             padding: 1.5rem;
-            border-radius: 8px;
+            border-radius: 1rem;
+            background-color: #f8fafc;
             margin-bottom: 1.5rem;
         }
     </style>
 @endpush
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
-        <div class="card">
-            <div class="card-body">
+<div class="w-100">
+    <x-alert />
+
+    <x-admin.access.header
+        title="Buat User Baru"
+        description="Tambahkan akun pengguna baru, atur identitas dasar, lalu tentukan role dan status keamanan yang dibutuhkan."
+        icon="users"
+    >
+        <a href="{{ route('admin.access.users.index') }}" class="btn btn-sm btn-light text-primary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i>
+            <span>Kembali ke Daftar</span>
+        </a>
+    </x-admin.access.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
                 <!-- Profile Header -->
                 <div class="profile-header">
                     <div class="row align-items-center">
@@ -185,14 +198,14 @@ new class extends Component {
                             @endif
                         </div>
                         <div class="col-md-10">
-                            <h2 class="mb-0">User Baru</h2>
-                            <p class="mb-1">Buat akun pengguna baru</p>
-                            <p class="mb-0"><i class="fas fa-info-circle"></i> Isi semua field yang wajib diisi</p>
+                            <div class="text-uppercase text-white text-opacity-75 fw-bold small mb-1">Manajemen Akses</div>
+                            <h2 class="mb-1 fw-bold">User Baru</h2>
+                            <p class="mb-0 text-white text-opacity-85">Buat akun pengguna baru dengan akses yang terstruktur dan mudah dipelihara.</p>
                         </div>
                     </div>
                 </div>
                 <!-- Form Create User -->
-                <form wire:submit.prevent="createUser" enctype="multipart/form-data">
+                <form wire:submit.prevent="createUser" enctype="multipart/form-data" class="p-4">
                     @csrf
 
                     <!-- Nav Tabs -->
@@ -367,8 +380,8 @@ new class extends Component {
                                         <label class="form-label">Pilih Role</label>
                                         <div wire:ignore>
                                             <select id="roles-select" class="form-select" multiple>
-                                                @foreach($availableRoles as $roleName)
-                                                    <option value="{{ $roleName }}" @selected(in_array($roleName, $selectedRoles, true))>
+                                                @foreach($availableRoles as $roleId => $roleName)
+                                                    <option value="{{ $roleId }}">
                                                         {{ ucfirst($roleName) }}
                                                     </option>
                                                 @endforeach
@@ -415,7 +428,6 @@ new class extends Component {
                         </button>
                     </div>
                 </form>
-            </div>
         </div>
     </div>
 </div>

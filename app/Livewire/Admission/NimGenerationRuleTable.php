@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -49,16 +50,35 @@ final class NimGenerationRuleTable extends BasePowerGridTable
     public function columns(): array
     {
         return [
-            Column::make('Name', 'name')->sortable()->searchable(),
-            Column::make('Pattern', 'pattern')->sortable()->searchable(),
-            Column::make('Scope', 'sequence_scope')->sortable(),
+            Column::make('No', 'id')->sortable(),
+            Column::make('Nama Aturan', 'name')->sortable()->searchable(),
+            Column::make('Pola NIM', 'pattern')->sortable()->searchable(),
+            Column::make('Ruang Lingkup (Scope)', 'sequence_scope')->sortable(),
             Column::make('Padding', 'sequence_padding')->sortable(),
-            Column::make('Start', 'sequence_start')->sortable(),
-            Column::make('Counters', 'counters_count')->sortable(),
-            Column::make('Active', 'is_active')
-                ->toggleable(ActivePermission::check('nim-generation-rule.update'), 'Active', 'Inactive')
+            Column::make('Mulai Dari', 'sequence_start')->sortable(),
+            Column::make('Counter Terpakai', 'counters_count')->sortable(),
+            Column::make('Aktif', 'is_active')
+                ->toggleable(ActivePermission::check('nim-generation-rule.update'), 'Aktif', 'Nonaktif')
                 ->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name')->placeholder('Cari nama aturan NIM...'),
+            Filter::inputText('pattern')->placeholder('Cari pola NIM (contoh: {YEAR}{FACULTY})...'),
+            Filter::select('sequence_scope', 'sequence_scope')
+                ->dataSource(collect([
+                    ['id' => 'global', 'name' => 'Global (Seluruh Kampus)'],
+                    ['id' => 'faculty', 'name' => 'Per Fakultas'],
+                    ['id' => 'study_program', 'name' => 'Per Program Studi'],
+                    ['id' => 'period', 'name' => 'Per Gelombang / Periode'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::boolean('is_active', 'Aktif', 'Nonaktif'),
         ];
     }
 
@@ -68,7 +88,12 @@ final class NimGenerationRuleTable extends BasePowerGridTable
             return;
         }
 
-        abort_unless(ActivePermission::check('nim-generation-rule.update'), 403);
+        if (! ActivePermission::check('nim-generation-rule.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk mengubah status aturan NIM.');
+            $this->dispatch('pg:eventRefresh-nimGenerationRuleTable');
+
+            return;
+        }
 
         if ((bool) $value) {
             NimGenerationRule::query()->whereKeyNot($id)->update(['is_active' => false]);
@@ -93,8 +118,8 @@ final class NimGenerationRuleTable extends BasePowerGridTable
     {
         $this->js('
             Swal.fire({
-                title: "Hapus NIM rule?",
-                text: "Rule yang sudah memiliki counter sebaiknya tidak dihapus jika sudah dipakai.",
+                title: "Hapus aturan NIM?",
+                text: "Aturan yang sudah memiliki counter sebaiknya tidak dihapus jika sudah dipakai.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "Ya hapus",
@@ -110,9 +135,17 @@ final class NimGenerationRuleTable extends BasePowerGridTable
     #[On('deleteNimGenerationRule')]
     public function deleteItem($id = null): void
     {
-        abort_unless(ActivePermission::check('nim-generation-rule.delete'), 403);
+        if (! ActivePermission::check('nim-generation-rule.delete')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk menghapus aturan NIM.');
 
-        NimGenerationRule::findOrFail($id)->delete();
+            return;
+        }
+
+        $rule = NimGenerationRule::find($id);
+        if ($rule) {
+            $rule->delete();
+        }
+
         session()->flash('success', 'NIM generation rule berhasil dihapus.');
         $this->dispatch('pg:eventRefresh-nimGenerationRuleTable');
     }
@@ -123,15 +156,15 @@ final class NimGenerationRuleTable extends BasePowerGridTable
 
         if (ActivePermission::check('nim-generation-rule.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('nim-generation-rule.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

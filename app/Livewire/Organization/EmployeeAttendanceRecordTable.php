@@ -82,7 +82,47 @@ final class EmployeeAttendanceRecordTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::datepicker('attendance_date'),
+            Filter::inputText('employee_name', 'employee_name')
+                ->placeholder('Cari nama / email...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('employeeProfile.user', function (Builder $sub) use ($value) {
+                            $sub->where(function (Builder $q) use ($value) {
+                                $q->where('first_name', 'like', '%' . $value . '%')
+                                    ->orWhere('last_name', 'like', '%' . $value . '%')
+                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhere('username', 'like', '%' . $value . '%')
+                                    ->orWhere('email', 'like', '%' . $value . '%');
+                            });
+                        });
+                    }
+                }),
+            Filter::inputText('work_unit_name', 'work_unit_name')
+                ->placeholder('Cari unit kerja...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('workUnit', function (Builder $sub) use ($value) {
+                            $sub->where('name', 'like', '%' . $value . '%')
+                                ->orWhere('code', 'like', '%' . $value . '%');
+                        });
+                    }
+                }),
+            Filter::inputText('location_name', 'location_name')
+                ->placeholder('Cari lokasi...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('checkInLocation', function (Builder $sub) use ($value) {
+                            $sub->where('name', 'like', '%' . $value . '%');
+                        });
+                    }
+                }),
+            Filter::datepicker('attendance_date', 'attendance_date'),
             Filter::select('status', 'status')
                 ->dataSource(collect([
                     ['id' => 'present', 'name' => 'Present'],
@@ -100,13 +140,47 @@ final class EmployeeAttendanceRecordTable extends BasePowerGridTable
     #[On('delete')]
     public function delete($id): void
     {
+        $record = EmployeeAttendanceRecord::with('employeeProfile.user')->find($id);
+
+        if (! $record) {
+            return;
+        }
+
+        $this->js('
+            Swal.fire({
+                title: "Hapus catatan absensi?",
+                text: "Catatan absensi untuk '.addslashes($record->employeeProfile?->user?->name ?: 'Pegawai').' pada tanggal '.$record->attendance_date?->format('d/m/Y').' akan dipindahkan ke tempat sampah.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Ya hapus",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.dispatch("deleteItem", {id: '.$id.'})
+                }
+            });
+        ');
+    }
+
+    #[On('deleteItem')]
+    public function deleteItem($id = null): void
+    {
         if (! ActivePermission::check('employee-attendance-record.delete')) {
+            session()->flash('error', 'Anda tidak memiliki izin menghapus catatan absensi.');
             return;
         }
 
         $record = EmployeeAttendanceRecord::find($id);
-        $record?->update(['deleted_by' => auth()->id()]);
-        $record?->delete();
+
+        if (! $record) {
+            session()->flash('error', 'Catatan absensi tidak ditemukan.');
+            return;
+        }
+
+        $record->update(['deleted_by' => auth()->id()]);
+        $record->delete();
+
+        session()->flash('success', 'Catatan absensi berhasil dihapus.');
         $this->dispatch('pg:eventRefresh-employeeAttendanceRecordTable');
     }
 

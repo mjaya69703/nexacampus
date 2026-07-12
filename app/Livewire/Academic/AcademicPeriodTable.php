@@ -99,6 +99,12 @@ final class AcademicPeriodTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('name', 'name')
+                ->placeholder('Cari nama periode...')
+                ->operators(['contains']),
+            Filter::inputText('code', 'code')
+                ->placeholder('Cari kode...')
+                ->operators(['contains']),
             Filter::select('academic_year_name', 'academic_year_id')
                 ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
                 ->optionValue('id')
@@ -111,6 +117,7 @@ final class AcademicPeriodTable extends BasePowerGridTable
             Filter::boolean('is_active', 'is_active'),
             Filter::datepicker('start_at', 'start_at'),
             Filter::datepicker('end_at', 'end_at'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 

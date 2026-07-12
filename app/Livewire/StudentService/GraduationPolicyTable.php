@@ -53,7 +53,7 @@ final class GraduationPolicyTable extends BasePowerGridTable
     {
         return [
             Column::make('Name', 'name')->sortable()->searchable(),
-            Column::make('Scope', 'scope')->sortable()->searchable(),
+            Column::make('Scope', 'scope', 'study_program_id')->sortable()->searchable(),
             Column::make('Min Semester', 'minimum_semester')->sortable(),
             Column::make('Min SKS', 'minimum_passed_credits')->sortable(),
             Column::make('Min GPA', 'minimum_gpa')->sortable(),
@@ -68,10 +68,12 @@ final class GraduationPolicyTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::select('study_program_id', 'study_program_id')
+            Filter::inputText('name')->placeholder('Cari aturan...'),
+            Filter::select('scope', 'study_program_id')
                 ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
             Filter::boolean('is_active', 'is_active'),
         ];
     }

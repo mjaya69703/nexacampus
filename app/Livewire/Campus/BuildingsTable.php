@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -29,7 +30,7 @@ final class BuildingsTable extends BasePowerGridTable
 
     public function datasource(): Builder
     {
-        return Building::query();
+        return Building::query()->orderByDesc('created_at');
     }
 
     public function relationSearch(): array
@@ -81,6 +82,33 @@ final class BuildingsTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name')->placeholder('Cari nama gedung...'),
+            Filter::inputText('code')->placeholder('Cari kode gedung...'),
+            Filter::select('floor_count', 'floor_count')
+                ->dataSource(
+                    Building::query()
+                        ->select('floor_count')
+                        ->whereNotNull('floor_count')
+                        ->distinct()
+                        ->orderBy('floor_count')
+                        ->pluck('floor_count')
+                        ->filter()
+                        ->map(fn ($floorCount) => [
+                            'id' => (string) $floorCount,
+                            'name' => (string) $floorCount,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('floor_count', $value)),
+            Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('created_at'),
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\Livewire\Alumni;
 
 use App\Enums\CampaignStatus;
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\AcademicYear;
 use App\Models\Alumni\TracerStudyCampaign;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,13 +70,27 @@ final class TracerStudyCampaignTable extends BasePowerGridTable
             Column::make('Direspon', 'total_responded')->sortable(),
             Column::make('Response Rate', 'response_rate_label')->sortable(),
             Column::make('Dibuat', 'created_at_label')->sortable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
+            Filter::inputText('title')->placeholder('Cari judul kampanye survei...'),
+            Filter::select('academic_year_name', 'academic_year_id')
+                ->dataSource(
+                    AcademicYear::query()
+                        ->orderByDesc('start_date')
+                        ->get(['id', 'name'])
+                        ->map(fn (AcademicYear $ay) => [
+                            'id' => $ay->id,
+                            'name' => $ay->name,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('academic_year_id', $value)),
             Filter::select('status', 'status')
                 ->dataSource(collect(CampaignStatus::options())
                     ->map(fn ($label, $value) => ['id' => $value, 'name' => $label])
@@ -84,6 +99,7 @@ final class TracerStudyCampaignTable extends BasePowerGridTable
                 )
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::datepicker('created_at_label', 'created_at'),
         ];
     }
 
@@ -162,23 +178,22 @@ final class TracerStudyCampaignTable extends BasePowerGridTable
 
         if (ActivePermission::check('tracer-study-campaign.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-eye"></i> Detail')
+                ->class('btn btn-outline-info rounded-pill px-2.5 py-1 text-info fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('tracer-study-campaign.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->id()
-                ->class('btn btn-warning')
+                ->slot('<i class="fa fa-edit"></i> Edit')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('tracer-study-campaign.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 
@@ -188,14 +203,14 @@ final class TracerStudyCampaignTable extends BasePowerGridTable
     private function statusBadge(string $status): string
     {
         $class = match ($status) {
-            'active' => 'bg-success',
-            'closed' => 'bg-secondary',
-            'draft' => 'bg-warning text-dark',
-            default => 'bg-secondary',
+            'active' => 'bg-success bg-opacity-10 text-success border border-success border-opacity-25',
+            'closed' => 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25',
+            'draft' => 'bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25',
+            default => 'bg-secondary bg-opacity-10 text-secondary',
         };
 
         $label = CampaignStatus::tryFrom($status)?->label() ?? str($status)->replace('_', ' ')->title();
 
-        return '<span class="badge '.$class.'">'.$label.'</span>';
+        return '<span class="badge rounded-pill px-2.5 py-1 '.$class.'">'.$label.'</span>';
     }
 }

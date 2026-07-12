@@ -4,6 +4,7 @@ namespace App\Livewire\Financial;
 
 use App\Livewire\BasePowerGridTable;
 use App\Models\Academic\AcademicYear;
+use App\Models\Financial\Scholarship;
 use App\Models\Financial\StudentScholarship;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,7 +23,7 @@ final class StudentScholarshipTable extends BasePowerGridTable
 
     protected ?string $bulkActionPermissionPrefix = 'student-scholarship';
 
-    protected string $bulkActionItemLabel = 'student scholarship';
+    protected string $bulkActionItemLabel = 'penerima beasiswa';
 
     public function setUp(): array
     {
@@ -55,8 +56,8 @@ final class StudentScholarshipTable extends BasePowerGridTable
             ->add('student_name', fn (StudentScholarship $model) => $model->studentProfile?->user?->name ?? '-')
             ->add('nim', fn (StudentScholarship $model) => $model->studentProfile?->nim ?? '-')
             ->add('scholarship_name', fn (StudentScholarship $model) => $model->scholarship?->name ?? '-')
-            ->add('academic_year', fn (StudentScholarship $model) => $model->academicYear?->name ?? 'All Years')
-            ->add('semester_label', fn (StudentScholarship $model) => $model->semester ? 'Semester '.$model->semester : 'All Semesters')
+            ->add('academic_year', fn (StudentScholarship $model) => $model->academicYear?->name ?? 'Semua Tahun')
+            ->add('semester_label', fn (StudentScholarship $model) => $model->semester ? 'Semester '.$model->semester : 'Semua Semester')
             ->add('status_badge', fn (StudentScholarship $model) => $this->statusBadge($model->status))
             ->add('status');
     }
@@ -64,28 +65,36 @@ final class StudentScholarshipTable extends BasePowerGridTable
     public function columns(): array
     {
         return [
-            Column::make('Mahasiswa', 'student_name')->sortable()->searchable(),
+            Column::make('Nama Mahasiswa', 'student_name')->sortable()->searchable(),
             Column::make('NIM', 'nim')->sortable()->searchable(),
-            Column::make('Scholarship', 'scholarship_name')->sortable()->searchable(),
-            Column::make('Academic Year', 'academic_year')->sortable()->searchable(),
-            Column::make('Semester', 'semester_label')->sortable(),
-            Column::make('Status', 'status_badge'),
-            Column::action('Action'),
+            Column::make('Program Beasiswa', 'scholarship_name', 'scholarship_id')->sortable()->searchable(),
+            Column::make('Tahun Akademik', 'academic_year', 'academic_year_id')->sortable()->searchable(),
+            Column::make('Masa Berlaku', 'semester_label')->sortable(),
+            Column::make('Status Pemberian', 'status_badge', 'status'),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('academic_year_id', 'academic_year_id')
+            Filter::inputText('student_name', 'studentProfile.user.first_name')
+                ->operators(['contains']),
+            Filter::inputText('nim', 'studentProfile.nim')
+                ->operators(['contains']),
+            Filter::select('scholarship_name', 'scholarship_id')
+                ->dataSource(Scholarship::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('academic_year', 'academic_year_id')
                 ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
                 ->optionValue('id')
                 ->optionLabel('name'),
-            Filter::select('status', 'status')
+            Filter::select('status_badge', 'status')
                 ->dataSource(collect([
-                    ['id' => 'active', 'name' => 'Active'],
-                    ['id' => 'completed', 'name' => 'Completed'],
-                    ['id' => 'revoked', 'name' => 'Revoked'],
+                    ['id' => 'active', 'name' => 'Aktif Menerima (Active)'],
+                    ['id' => 'completed', 'name' => 'Selesai / Lulus (Completed)'],
+                    ['id' => 'revoked', 'name' => 'Dicabut / Batal (Revoked)'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
@@ -106,8 +115,8 @@ final class StudentScholarshipTable extends BasePowerGridTable
 
         return [
             Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-edit me-1"></i>Edit Status')
+                ->class('btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]),
         ];
     }
@@ -115,12 +124,19 @@ final class StudentScholarshipTable extends BasePowerGridTable
     private function statusBadge(string $status): string
     {
         $class = match ($status) {
-            'active' => 'bg-success',
-            'completed' => 'bg-info',
-            'revoked' => 'bg-danger',
-            default => 'bg-secondary',
+            'active' => 'bg-success text-white',
+            'completed' => 'bg-info text-white',
+            'revoked' => 'bg-danger text-white',
+            default => 'bg-secondary text-white',
         };
 
-        return '<span class="badge '.$class.'">'.str($status)->replace('_', ' ')->title().'</span>';
+        $label = match ($status) {
+            'active' => 'Aktif',
+            'completed' => 'Selesai',
+            'revoked' => 'Dicabut',
+            default => str($status)->replace('_', ' ')->title()->toString()
+        };
+
+        return '<span class="badge '.$class.' rounded-pill px-3 py-1 fs-8">'.$label.'</span>';
     }
 }

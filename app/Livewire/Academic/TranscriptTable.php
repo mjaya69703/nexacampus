@@ -89,6 +89,26 @@ final class TranscriptTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('student_name', 'student_name')
+                ->placeholder('Cari nama mahasiswa...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('user', fn (Builder $user) => $user->where('first_name', 'like', '%'.$search.'%')->orWhere('last_name', 'like', '%'.$search.'%'));
+                }),
+            Filter::inputText('nim', 'nim')
+                ->placeholder('Cari NIM...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->where('nim', 'like', '%'.$search.'%');
+                }),
             Filter::select('study_program', 'study_program_id')
                 ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
@@ -96,6 +116,7 @@ final class TranscriptTable extends BasePowerGridTable
                 ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
             Filter::number('study_results_count', 'study_results_count'),
             Filter::number('transcript_entries_count', 'transcript_entries_count'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -169,15 +190,15 @@ final class TranscriptTable extends BasePowerGridTable
 
         if (ActivePermission::check('transcript.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-info')
+                ->slot('<i class="fa fa-eye"></i> <span>Detail</span>')
+                ->class('btn btn-sm btn-info d-inline-flex align-items-center gap-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('transcript.update')) {
             $actions[] = Button::add('sync')
-                ->slot('<i class="fa fa-rotate"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-rotate"></i> <span>Sync</span>')
+                ->class('btn btn-sm btn-primary d-inline-flex align-items-center gap-1')
                 ->dispatch('sync', ['rowId' => $row->id]);
         }
 

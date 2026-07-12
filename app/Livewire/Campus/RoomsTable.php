@@ -3,12 +3,14 @@
 namespace App\Livewire\Campus;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Campus\Building;
 use App\Models\Campus\Room;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -29,7 +31,7 @@ final class RoomsTable extends BasePowerGridTable
 
     public function datasource(): Builder
     {
-        return Room::query()->with('building');
+        return Room::query()->with('building')->orderByDesc('created_at');
     }
 
     public function relationSearch(): array
@@ -90,6 +92,62 @@ final class RoomsTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
             Column::action('Action'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name')->placeholder('Cari nama ruangan...'),
+            Filter::inputText('code')->placeholder('Cari kode ruangan...'),
+            Filter::select('building_name', 'building_id')
+                ->dataSource(
+                    Building::query()
+                        ->orderBy('name')
+                        ->get(['id', 'name'])
+                        ->map(fn (Building $building) => [
+                            'id' => $building->id,
+                            'name' => $building->name,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('building_id', $value)),
+            Filter::select('floor', 'floor')
+                ->dataSource(
+                    Room::query()
+                        ->select('floor')
+                        ->whereNotNull('floor')
+                        ->distinct()
+                        ->orderBy('floor')
+                        ->pluck('floor')
+                        ->filter()
+                        ->map(fn ($floor) => [
+                            'id' => (string) $floor,
+                            'name' => (string) $floor,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('floor', $value)),
+            Filter::select('type', 'type')
+                ->dataSource(
+                    Room::query()
+                        ->select('type')
+                        ->distinct()
+                        ->orderBy('type')
+                        ->pluck('type')
+                        ->filter()
+                        ->map(fn (string $type) => [
+                            'id' => $type,
+                            'name' => $type,
+                        ])
+                )
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('type', $value)),
+            Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('created_at'),
         ];
     }
 

@@ -27,30 +27,26 @@ new class extends Component
         ]);
     }
 
-    private function statusBadge(string $status): string
+    public function statusBadge(string $status): string
     {
-        $class = match ($status) {
-            'present' => 'bg-success',
+        return match ($status) {
+            'present' => 'bg-success text-white',
             'late' => 'bg-warning text-dark',
-            'absent' => 'bg-danger',
-            'leave', 'sick' => 'bg-info',
-            'remote' => 'bg-primary',
-            default => 'bg-secondary',
+            'absent' => 'bg-danger text-white',
+            'leave', 'sick' => 'bg-info text-white',
+            'remote' => 'bg-primary text-white',
+            default => 'bg-secondary text-white',
         };
-
-        return '<span class="badge '.$class.'">'.str($status)->title().'</span>';
     }
 
-    private function locationBadge(?string $status): string
+    public function locationBadge(?string $status): string
     {
-        $class = match ($status) {
-            'inside_radius' => 'bg-success',
-            'outside_radius', 'gps_missing' => 'bg-danger',
+        return match ($status) {
+            'inside_radius' => 'bg-success text-white',
+            'outside_radius', 'gps_missing' => 'bg-danger text-white',
             'partial' => 'bg-warning text-dark',
-            default => 'bg-secondary',
+            default => 'bg-secondary text-white',
         };
-
-        return '<span class="badge '.$class.'">'.str($status ?: 'unverified')->replace('_', ' ')->title().'</span>';
     }
 };
 ?>
@@ -59,14 +55,15 @@ new class extends Component
     <style>
         .attendance-photo-card {
             border: 1px solid #e5e7eb;
-            border-radius: 14px;
+            border-radius: 16px;
             overflow: hidden;
             background: #fff;
             height: 100%;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
 
         .attendance-photo-frame {
-            aspect-ratio: 4 / 3;
+            aspect-ratio: 16 / 10;
             background: #111827;
             display: grid;
             place-items: center;
@@ -78,12 +75,17 @@ new class extends Component
             height: 100%;
             object-fit: cover;
             display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .attendance-photo-frame:hover img {
+            transform: scale(1.03);
         }
 
         .attendance-map {
-            height: 420px;
+            height: 450px;
             border: 1px solid #e5e7eb;
-            border-radius: 14px;
+            border-radius: 16px;
             overflow: hidden;
             background: #eef2ff;
         }
@@ -104,100 +106,140 @@ new class extends Component
 <div>
     <x-alert />
 
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="card-title mb-0">Detail Absensi Pegawai</h3>
-                <small class="text-muted">{{ $record->attendance_date->format('d M Y') }} - {{ $record->employeeProfile?->user?->name }}</small>
+    <x-admin.organization.header
+        title="Detail Absensi: {{ $record->employeeProfile?->user?->name }}"
+        description="Presensi pada {{ $record->attendance_date->format('d M Y') }} &bull; No. Pegawai: {{ $record->employeeProfile?->employee_number ?: '-' }}"
+        icon="clock"
+    >
+        <a href="{{ route('admin.organization.employee-attendance-records.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+        </a>
+
+        <x-slot:stats>
+            <div class="d-flex flex-wrap gap-2 gap-lg-3">
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-clock fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Status Kehadiran</div>
+                        <div class="fw-bold">{{ str($record->status)->title() }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-map-marked-alt fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Validasi Radius</div>
+                        <div class="fw-bold">{{ str($record->location_status ?: 'unverified')->replace('_', ' ')->title() }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-stopwatch fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Total Durasi</div>
+                        <div class="fw-bold">{{ $record->work_minutes }} Menit</div>
+                    </div>
+                </div>
             </div>
-            <a href="{{ route('admin.organization.employee-attendance-records.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back
-            </a>
-        </div>
-        <div class="card-body">
-            <div class="row row-cards">
-                <div class="col-lg-8">
-                    <div class="d-flex align-items-center gap-3 mb-4">
-                        <span class="avatar avatar-lg">{{ str($record->employeeProfile?->user?->name ?? 'P')->substr(0, 2)->upper() }}</span>
-                        <div>
-                            <div class="h3 mb-1">{{ $record->employeeProfile?->user?->name }}</div>
-                            <div class="text-secondary">
-                                {{ $record->employeeProfile?->employee_number ?: 'Nomor pegawai belum diisi' }}
-                                @if ($record->employeeProfile?->primaryWorkUnit)
-                                    - {{ $record->employeeProfile->primaryWorkUnit->name }}
+        </x-slot:stats>
+    </x-admin.organization.header>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
+                    <h4 class="card-title fw-bold mb-1 fs-5"><i class="fas fa-user-check text-primary me-2"></i>Informasi Kehadiran</h4>
+                    <p class="text-muted small mb-0">Rincian waktu, sumber presensi, dan unit penugasan pegawai.</p>
+                </div>
+                <div class="card-body p-4 pt-3">
+                    <div class="table-responsive">
+                        <table class="table table-borderless align-middle mb-0">
+                            <tbody>
+                                <tr class="border-bottom">
+                                    <th class="ps-0 py-3 text-secondary w-35">Tanggal Absensi</th>
+                                    <td class="pe-0 py-3 fw-bold text-dark">{{ $record->attendance_date->format('l, d M Y') }}</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th class="ps-0 py-3 text-secondary">Unit Kerja</th>
+                                    <td class="pe-0 py-3 text-dark">{{ $record->workUnit?->name ?? $record->employeeProfile?->primaryWorkUnit?->name ?? '-' }}</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th class="ps-0 py-3 text-secondary">Waktu Check-In</th>
+                                    <td class="pe-0 py-3 font-monospace text-primary fw-bold fs-6">{{ $record->check_in_at?->format('H:i:s (d M Y)') ?? '-' }}</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th class="ps-0 py-3 text-secondary">Waktu Check-Out</th>
+                                    <td class="pe-0 py-3 font-monospace text-danger fw-bold fs-6">{{ $record->check_out_at?->format('H:i:s (d M Y)') ?? '-' }}</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th class="ps-0 py-3 text-secondary">Sumber Absensi</th>
+                                    <td class="pe-0 py-3"><span class="badge bg-light text-dark border px-3 py-1">{{ $record->source?->name ?? 'Manual/System' }}</span></td>
+                                </tr>
+                                @if ($record->notes)
+                                    <tr>
+                                        <th class="ps-0 py-3 text-secondary">Catatan</th>
+                                        <td class="pe-0 py-3 text-dark">{{ $record->notes }}</td>
+                                    </tr>
                                 @endif
-                            </div>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 d-flex flex-column gap-4">
+            <div class="card border-0 shadow-sm rounded-4 flex-fill overflow-hidden bg-light bg-opacity-50">
+                <div class="card-body p-4 d-flex flex-column justify-content-between gap-3">
+                    <div>
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 mb-2"><i class="fas fa-sign-in-alt me-1"></i> Check-in Geofence</span>
+                        <h6 class="fw-bold text-dark mb-1 fs-6">{{ $record->checkInLocation?->name ?? 'Lokasi Tidak Terdaftar' }}</h6>
+                        <div class="small font-monospace text-muted mb-2">
+                            {{ $record->check_in_latitude && $record->check_in_longitude ? $record->check_in_latitude.', '.$record->check_in_longitude : 'Koordinat tidak tersedia' }}
                         </div>
                     </div>
-
-                    <dl class="row mb-0">
-                        <dt class="col-sm-3">Tanggal</dt>
-                        <dd class="col-sm-9">{{ $record->attendance_date->format('d M Y') }}</dd>
-                        <dt class="col-sm-3">Status</dt>
-                        <dd class="col-sm-9">{!! $this->statusBadge($record->status) !!}</dd>
-                        <dt class="col-sm-3">Sumber</dt>
-                        <dd class="col-sm-9">{{ $record->source?->name ?? '-' }}</dd>
-                        <dt class="col-sm-3">Unit Kerja</dt>
-                        <dd class="col-sm-9">{{ $record->workUnit?->name ?? $record->employeeProfile?->primaryWorkUnit?->name ?? '-' }}</dd>
-                        <dt class="col-sm-3">Check-in</dt>
-                        <dd class="col-sm-9">{{ $record->check_in_at?->format('d M Y H:i') ?? '-' }}</dd>
-                        <dt class="col-sm-3">Check-out</dt>
-                        <dd class="col-sm-9">{{ $record->check_out_at?->format('d M Y H:i') ?? '-' }}</dd>
-                        <dt class="col-sm-3">Durasi</dt>
-                        <dd class="col-sm-9">{{ $record->work_minutes }} menit</dd>
-                        <dt class="col-sm-3">Status Radius</dt>
-                        <dd class="col-sm-9">{!! $this->locationBadge($record->location_status) !!}</dd>
-                        @if ($record->notes)
-                            <dt class="col-sm-3">Catatan</dt>
-                            <dd class="col-sm-9">{{ $record->notes }}</dd>
+                    <div class="border-top pt-2 d-flex justify-content-between align-items-center small">
+                        <span class="badge bg-primary text-white rounded-pill px-3 py-1">{{ $record->check_in_distance_meters !== null ? $record->check_in_distance_meters.' m dari pusat' : 'Jarak belum dihitung' }}</span>
+                        @if ($record->check_in_accuracy_meters !== null)
+                            <span class="text-muted"><i class="fas fa-crosshairs me-1"></i>Akurasi: {{ $record->check_in_accuracy_meters }} m</span>
                         @endif
-                    </dl>
+                    </div>
                 </div>
+            </div>
 
-                <div class="col-lg-4">
-                    <div class="border rounded p-3 mb-3">
-                        <div class="text-secondary mb-2">Lokasi Check-in</div>
-                        <div class="fw-semibold">{{ $record->checkInLocation?->name ?? '-' }}</div>
-                        <div class="text-secondary">{{ $record->check_in_latitude && $record->check_in_longitude ? $record->check_in_latitude.', '.$record->check_in_longitude : 'Koordinat tidak tersedia' }}</div>
-                        <div class="mt-2">
-                            <span class="badge bg-azure-lt">{{ $record->check_in_distance_meters !== null ? $record->check_in_distance_meters.' m dari kantor' : 'jarak belum ada' }}</span>
-                            @if ($record->check_in_accuracy_meters !== null)
-                                <span class="badge bg-secondary-lt">{{ $record->check_in_accuracy_meters }} m akurasi</span>
-                            @endif
+            <div class="card border-0 shadow-sm rounded-4 flex-fill overflow-hidden bg-light bg-opacity-50">
+                <div class="card-body p-4 d-flex flex-column justify-content-between gap-3">
+                    <div>
+                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 mb-2"><i class="fas fa-sign-out-alt me-1"></i> Check-out Geofence</span>
+                        <h6 class="fw-bold text-dark mb-1 fs-6">{{ $record->checkOutLocation?->name ?? 'Lokasi Tidak Terdaftar' }}</h6>
+                        <div class="small font-monospace text-muted mb-2">
+                            {{ $record->check_out_latitude && $record->check_out_longitude ? $record->check_out_latitude.', '.$record->check_out_longitude : 'Koordinat tidak tersedia' }}
                         </div>
                     </div>
-
-                    <div class="border rounded p-3">
-                        <div class="text-secondary mb-2">Lokasi Check-out</div>
-                        <div class="fw-semibold">{{ $record->checkOutLocation?->name ?? '-' }}</div>
-                        <div class="text-secondary">{{ $record->check_out_latitude && $record->check_out_longitude ? $record->check_out_latitude.', '.$record->check_out_longitude : 'Koordinat tidak tersedia' }}</div>
-                        <div class="mt-2">
-                            <span class="badge bg-azure-lt">{{ $record->check_out_distance_meters !== null ? $record->check_out_distance_meters.' m dari kantor' : 'jarak belum ada' }}</span>
-                            @if ($record->check_out_accuracy_meters !== null)
-                                <span class="badge bg-secondary-lt">{{ $record->check_out_accuracy_meters }} m akurasi</span>
-                            @endif
-                        </div>
+                    <div class="border-top pt-2 d-flex justify-content-between align-items-center small">
+                        <span class="badge bg-danger text-white rounded-pill px-3 py-1">{{ $record->check_out_distance_meters !== null ? $record->check_out_distance_meters.' m dari pusat' : 'Jarak belum dihitung' }}</span>
+                        @if ($record->check_out_accuracy_meters !== null)
+                            <span class="text-muted"><i class="fas fa-crosshairs me-1"></i>Akurasi: {{ $record->check_out_accuracy_meters }} m</span>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h3 class="card-title mb-0">Peta Radius & Posisi Absensi</h3>
-                <small class="text-muted" id="adminAttendanceMapSummary">Radius kantor, posisi pegawai, dan jarak absensi.</small>
+                <h4 class="card-title fw-bold mb-1 fs-5"><i class="fas fa-map-marked-alt text-primary me-2"></i>Peta Posisi & Radius Absensi</h4>
+                <p class="text-muted small mb-0" id="adminAttendanceMapSummary">Memvisualisasikan titik check-in/out terhadap radius toleransi geofence kantor.</p>
             </div>
-            <span class="badge bg-indigo-lt text-indigo">{{ $record->location_status ? str($record->location_status)->replace('_', ' ')->title() : 'Unverified' }}</span>
+            <span class="badge {{ $this->locationBadge($record->location_status) }} rounded-pill px-3 py-1">{{ $record->location_status ? str($record->location_status)->replace('_', ' ')->title() : 'Unverified' }}</span>
         </div>
-        <div class="card-body">
-            <div id="adminAttendanceMap" class="attendance-map" wire:ignore></div>
+        <div class="card-body p-4 pt-2">
+            <div id="adminAttendanceMap" class="attendance-map shadow-inner" wire:ignore></div>
         </div>
     </div>
 
-    <div class="row row-cards">
-        @foreach ([['label' => 'Foto Check-in', 'url' => $record->check_in_photo_url, 'time' => $record->check_in_at?->format('H:i')], ['label' => 'Foto Check-out', 'url' => $record->check_out_photo_url, 'time' => $record->check_out_at?->format('H:i')]] as $photo)
+    <div class="row g-4">
+        @foreach ([['label' => 'Bukti Foto Check-In', 'url' => $record->check_in_photo_url, 'time' => $record->check_in_at?->format('H:i:s WIB'), 'color' => 'success'], ['label' => 'Bukti Foto Check-Out', 'url' => $record->check_out_photo_url, 'time' => $record->check_out_at?->format('H:i:s WIB'), 'color' => 'danger']] as $photo)
             <div class="col-md-6">
                 <div class="attendance-photo-card">
                     <div class="attendance-photo-frame">
@@ -206,18 +248,21 @@ new class extends Component
                                 <img src="{{ $photo['url'] }}" alt="{{ $photo['label'] }}">
                             </a>
                         @else
-                            <div class="text-secondary text-center p-4">
-                                <i class="fas fa-image fa-2x mb-2"></i>
-                                <div>Belum ada foto.</div>
+                            <div class="text-secondary text-center p-5">
+                                <i class="fas fa-camera-slash fa-3x mb-2 text-muted"></i>
+                                <div class="fw-medium text-white">Bukti Foto Tidak Tersedia</div>
+                                <div class="small text-muted">Absensi dicatat tanpa lampiran foto kamera mobile.</div>
                             </div>
                         @endif
                     </div>
-                    <div class="p-3">
-                        <div class="fw-semibold">{{ $photo['label'] }}</div>
-                        <div class="text-secondary">{{ $photo['time'] ?? '-' }}</div>
+                    <div class="p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-{{ $photo['color'] }} bg-opacity-10 text-{{ $photo['color'] }} rounded-pill px-3 py-1 mb-1">{{ $photo['label'] }}</span>
+                            <div class="fw-bold text-dark fs-6">{{ $photo['time'] ?? 'Waktu tidak tercatat' }}</div>
+                        </div>
                         @if ($photo['url'])
-                            <a href="{{ $photo['url'] }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm mt-3">
-                                <i class="fas fa-up-right-from-square me-1"></i>Buka Foto
+                            <a href="{{ $photo['url'] }}" target="_blank" rel="noopener" class="btn btn-outline-primary rounded-pill px-4 shadow-sm fw-medium">
+                                <i class="fas fa-external-link-alt me-2"></i>Lihat Foto Penuh
                             </a>
                         @endif
                     </div>

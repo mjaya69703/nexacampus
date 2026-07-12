@@ -87,8 +87,7 @@ final class CurriculumTable extends BasePowerGridTable
                 )
                 ->sortable(),
             Column::make('Total Courses', 'total_courses')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
             Column::action('Action'),
         ];
     }
@@ -96,6 +95,12 @@ final class CurriculumTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('name', 'name')
+                ->placeholder('Cari nama kurikulum...')
+                ->operators(['contains']),
+            Filter::inputText('code', 'code')
+                ->placeholder('Cari kode...')
+                ->operators(['contains']),
             Filter::select('study_program_name', 'study_program_id')
                 ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
                 ->optionValue('id')
@@ -105,7 +110,12 @@ final class CurriculumTable extends BasePowerGridTable
                 ->dataSource(Curriculum::query()->select('start_year')->distinct()->orderByDesc('start_year')->pluck('start_year')->filter()->map(fn ($year) => ['id' => $year, 'name' => (string) $year]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::select('end_year', 'end_year')
+                ->dataSource(Curriculum::query()->select('end_year')->distinct()->orderByDesc('end_year')->pluck('end_year')->filter()->map(fn ($year) => ['id' => $year, 'name' => (string) $year]))
+                ->optionValue('id')
+                ->optionLabel('name'),
             Filter::boolean('is_active', 'is_active'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -191,21 +201,33 @@ final class CurriculumTable extends BasePowerGridTable
 
         $curriculum = Curriculum::find($id);
 
-        if ($curriculum) {
-            $curriculumName = $curriculum->name;
-            $curriculum->delete();
-
+        if (! $curriculum) {
+            session()->flash('error', 'Kurikulum tidak ditemukan!');
             $this->dispatch('pg:eventRefresh-curriculumTable');
-            $this->js('
-                Swal.fire({
-                    title: "Kurikulum dihapus",
-                    text: "'.$curriculumName.' berhasil dihapus!",
-                    icon: "success",
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            ');
+
+            return;
         }
+
+        if ($curriculum->curriculumCourses()->exists()) {
+            session()->flash('error', 'Kurikulum tidak dapat dihapus karena masih memiliki daftar mata kuliah.');
+            $this->dispatch('pg:eventRefresh-curriculumTable');
+
+            return;
+        }
+
+        $curriculumName = $curriculum->name;
+        $curriculum->delete();
+
+        $this->dispatch('pg:eventRefresh-curriculumTable');
+        $this->js('
+            Swal.fire({
+                title: "Kurikulum dihapus",
+                text: "'.$curriculumName.' berhasil dihapus!",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false
+            });
+        ');
     }
 
     public function actions(Curriculum $row): array

@@ -42,4 +42,14 @@ class EmployeeAttendanceLocation extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
+
+    public function checkInRecords()
+    {
+        return $this->hasMany(EmployeeAttendanceRecord::class, 'check_in_location_id');
+    }
+
+    public function checkOutRecords()
+    {
+        return $this->hasMany(EmployeeAttendanceRecord::class, 'check_out_location_id');
+    }
 }

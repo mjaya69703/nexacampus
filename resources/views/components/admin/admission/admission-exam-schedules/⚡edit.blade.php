@@ -58,7 +58,7 @@ new class extends Component
             'updated_by' => auth()->id(),
         ]);
 
-        session()->flash('success', 'Jadwal seleksi berhasil diperbarui.');
+        session()->flash('success', 'Jadwal seleksi & ujian berhasil diperbarui.');
         $this->redirectRoute('admin.admission.admission-exam-schedules.index');
     }
 
@@ -66,28 +66,36 @@ new class extends Component
     {
         return $this->view()->layout('layouts.app', [
             'menus' => 'Admission',
-            'pages' => 'Edit Exam Schedule',
+            'pages' => 'Edit Jadwal Ujian',
         ]);
     }
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
+<div class="w-full" style="width: 100% !important">
+    <x-alert />
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">Edit Exam Schedule</h3>
-                <a href="{{ route('admin.admission.admission-exam-schedules.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
-            </div>
-            <div class="card-body">
-                <form wire:submit.prevent="save">
-                    @include('components.admin.admission.admission-exam-schedules._form')
-                </form>
-            </div>
+    <x-admin.admission.header
+        title="Edit Jadwal Ujian & Seleksi"
+        description="Perbarui informasi jadwal, kuota peserta, tautan pertemuan, atau catatan khusus pelaksanaan tes seleksi."
+        icon="calendar-check"
+    >
+        <a href="{{ route('admin.admission.admission-exam-schedules.index') }}" class="btn btn-light rounded-pill px-4 py-2 text-dark fw-bold shadow-sm d-inline-flex align-items-center gap-2 border-0">
+            <i class="fas fa-arrow-left"></i> Kembali ke Daftar
+        </a>
+    </x-admin.admission.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white border-bottom p-4">
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="fas fa-edit text-primary"></i> Perbarui Formulir Jadwal Ujian
+            </h4>
+            <p class="text-muted fs-7 mb-0">Sesuaikan data ruangan, tanggal pelaksanaan, dan status aktif sesi ujian ini.</p>
+        </div>
+        <div class="card-body p-4">
+            <form wire:submit.prevent="save">
+                @include('components.admin.admission.admission-exam-schedules._form')
+            </form>
         </div>
     </div>
 </div>

@@ -24,7 +24,10 @@ new class extends Component
 
     public function assignParticipant(): void
     {
-        abort_unless(ActivePermission::check('admission-exam-schedule.update'), 403);
+        if (! ActivePermission::check('admission-exam-schedule.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk mengelola peserta ujian.');
+            return;
+        }
 
         $validated = $this->validate([
             'applicationId' => 'required|exists:admission_applications,id',
@@ -35,12 +38,12 @@ new class extends Component
             ->exists();
 
         if ($exists) {
-            session()->flash('error', 'Applicant sudah terdaftar pada jadwal ini.');
+            session()->flash('error', 'Pendaftar ini sudah terdaftar pada jadwal ujian yang dipilih.');
             return;
         }
 
         if ($this->schedule->quota > 0 && $this->schedule->participants()->count() >= $this->schedule->quota) {
-            session()->flash('error', 'Quota jadwal seleksi sudah penuh.');
+            session()->flash('error', 'Kuota maksimal sesi ujian ini sudah penuh.');
             return;
         }
 
@@ -51,13 +54,16 @@ new class extends Component
 
         $this->syncRegisteredCount();
         $this->applicationId = '';
-        session()->flash('success', 'Applicant berhasil ditambahkan ke jadwal seleksi.');
+        session()->flash('success', 'Peserta baru berhasil ditambahkan ke jadwal ujian.');
         $this->loadSchedule($this->schedule->id);
     }
 
     public function assignAllFromPeriod(): void
     {
-        abort_unless(ActivePermission::check('admission-exam-schedule.update'), 403);
+        if (! ActivePermission::check('admission-exam-schedule.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk mengelola peserta ujian massal.');
+            return;
+        }
 
         $assignedIds = $this->schedule->participants()
             ->pluck('admission_application_id');
@@ -67,7 +73,7 @@ new class extends Component
             : null;
 
         if ($remainingSlots === 0) {
-            session()->flash('error', 'Quota jadwal seleksi sudah penuh.');
+            session()->flash('error', 'Kuota maksimal sesi ujian ini sudah penuh.');
             return;
         }
 
@@ -81,7 +87,7 @@ new class extends Component
             ->get(['id']);
 
         if ($applications->isEmpty()) {
-            session()->flash('error', 'Tidak ada applicant baru dari periode ini yang bisa ditambahkan.');
+            session()->flash('error', 'Tidak ada pendaftar baru dari gelombang ini yang siap ditambahkan.');
             return;
         }
 
@@ -99,13 +105,16 @@ new class extends Component
         AdmissionExamParticipant::insert($rows);
         $this->syncRegisteredCount();
 
-        session()->flash('success', $applications->count().' applicant berhasil ditambahkan dari periode yang sama.');
+        session()->flash('success', $applications->count().' peserta berhasil didaftarkan secara massal dari gelombang yang sama.');
         $this->loadSchedule($this->schedule->id);
     }
 
     public function updateAttendance(int $participantId): void
     {
-        abort_unless(ActivePermission::check('admission-exam-schedule.update'), 403);
+        if (! ActivePermission::check('admission-exam-schedule.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk memperbarui kehadiran.');
+            return;
+        }
 
         $participant = $this->schedule->participants()->whereKey($participantId)->firstOrFail();
         $form = $this->attendanceForms[$participantId] ?? [];
@@ -121,13 +130,16 @@ new class extends Component
             'updated_by' => auth()->id(),
         ]);
 
-        session()->flash('success', 'Attendance berhasil diperbarui.');
+        session()->flash('success', 'Rekap kehadiran peserta berhasil diperbarui.');
         $this->loadSchedule($this->schedule->id);
     }
 
     public function saveScore(int $participantId, AdmissionSelectionService $selectionService): void
     {
-        abort_unless(ActivePermission::check('admission-exam-schedule.update'), 403);
+        if (! ActivePermission::check('admission-exam-schedule.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk menyimpan penilaian.');
+            return;
+        }
 
         $participant = $this->schedule->participants()->with('application')->whereKey($participantId)->firstOrFail();
         $form = $this->scoreForms[$participantId] ?? [];
@@ -154,17 +166,20 @@ new class extends Component
 
         $selectionService->recalculateFinalScore($participant->application);
 
-        session()->flash('success', 'Score berhasil disimpan dan final score dihitung ulang.');
+        session()->flash('success', 'Skor peserta berhasil disimpan dan nilai akhir seleksi diperbarui.');
         $this->loadSchedule($this->schedule->id);
     }
 
     public function removeParticipant(int $participantId): void
     {
-        abort_unless(ActivePermission::check('admission-exam-schedule.update'), 403);
+        if (! ActivePermission::check('admission-exam-schedule.update')) {
+            session()->flash('error', 'Anda tidak memiliki izin untuk menghapus peserta.');
+            return;
+        }
 
         $this->schedule->participants()->whereKey($participantId)->delete();
         $this->syncRegisteredCount();
-        session()->flash('success', 'Participant berhasil dihapus.');
+        session()->flash('success', 'Peserta berhasil dihapus dari jadwal ujian ini.');
         $this->loadSchedule($this->schedule->id);
     }
 
@@ -172,7 +187,7 @@ new class extends Component
     {
         return $this->view()->layout('layouts.app', [
             'menus' => 'Admission',
-            'pages' => 'Exam Schedule Detail',
+            'pages' => 'Detail Jadwal Ujian',
         ]);
     }
 
@@ -233,61 +248,91 @@ new class extends Component
 };
 ?>
 
-<div>
+<div class="w-full" style="width: 100% !important">
     <x-alert />
 
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="card-title mb-0">{{ $schedule->title }}</h3>
-                <small class="text-muted">{{ $schedule->period?->name }} - {{ str($schedule->exam_type)->replace('_', ' ')->title() }}</small>
-            </div>
-            <div class="d-flex gap-2">
-                @activecan('admission-exam-schedule.update')
-                    <a href="{{ route('admin.admission.admission-exam-schedules.edit', ['id' => $schedule->id]) }}" class="btn btn-warning">
-                        <i class="fas fa-edit me-1"></i> Edit
-                    </a>
-                @endactivecan
-                <a href="{{ route('admin.admission.admission-exam-schedules.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back
+    <x-admin.admission.header
+        title="{{ $schedule->title }}"
+        description="Gelombang: {{ $schedule->period?->name ?? '-' }} &bull; Jenis Seleksi: {{ str($schedule->exam_type)->replace('_', ' ')->title() }} &bull; Lokasi: {{ $schedule->venue ?? 'Daring / Online' }}"
+        icon="calendar-check"
+    >
+        <div class="d-flex gap-2 flex-wrap">
+            @activecan('admission-exam-schedule.update')
+                <a href="{{ route('admin.admission.admission-exam-schedules.edit', ['id' => $schedule->id]) }}" class="btn btn-warning rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2 border-0">
+                    <i class="fas fa-edit"></i> Edit Jadwal
                 </a>
-            </div>
+            @endactivecan
+            <a href="{{ route('admin.admission.admission-exam-schedules.index') }}" class="btn btn-outline-light rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Kembali ke Daftar
+            </a>
         </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3"><div class="p-3 bg-light rounded"><small class="text-muted">Date</small><div class="fw-bold">{{ $schedule->exam_date?->format('d F Y') }}</div></div></div>
-                <div class="col-md-3"><div class="p-3 bg-light rounded"><small class="text-muted">Time</small><div class="fw-bold">{{ $schedule->exam_time?->format('H:i') }}</div></div></div>
-                <div class="col-md-3"><div class="p-3 bg-light rounded"><small class="text-muted">Venue</small><div class="fw-bold">{{ $schedule->venue ?? 'Online / TBA' }}</div></div></div>
-                <div class="col-md-3"><div class="p-3 bg-light rounded"><small class="text-muted">Participants</small><div class="fw-bold">{{ $schedule->participants->count() }} / {{ $schedule->quota ?: '∞' }}</div></div></div>
+
+        <x-slot:stats>
+            <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                <i class="fas fa-calendar-day text-warning fs-5"></i>
+                <div>
+                    <div class="text-white text-opacity-75 fs-7 mb-0">Tanggal Ujian</div>
+                    <div class="fw-bold fs-6 mb-0">{{ $schedule->exam_date?->format('d M Y') }}</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                <i class="fas fa-clock text-info fs-5"></i>
+                <div>
+                    <div class="text-white text-opacity-75 fs-7 mb-0">Waktu Mulai</div>
+                    <div class="fw-bold fs-6 mb-0">{{ $schedule->exam_time?->format('H:i') }} WIB</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                <i class="fas fa-users text-success fs-5"></i>
+                <div>
+                    <div class="text-white text-opacity-75 fs-7 mb-0">Kapasitas Peserta</div>
+                    <div class="fw-bold fs-6 mb-0">{{ $schedule->participants->count() }} / {{ $schedule->quota ?: '∞' }} <small class="fs-8 fw-normal">Kursi</small></div>
+                </div>
+            </div>
+        </x-slot:stats>
+    </x-admin.admission.header>
+
+    @if($schedule->meeting_link || $schedule->notes)
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h6 class="fw-bold mb-1 text-dark"><i class="fas fa-info-circle text-primary me-2"></i> Keterangan Pelaksanaan Ujian</h6>
+                    <p class="text-muted fs-7 mb-0">{{ $schedule->notes ?? 'Sesi ujian berlangsung tepat waktu sesuai jadwal tertera.' }}</p>
+                </div>
                 @if($schedule->meeting_link)
-                    <div class="col-12"><a href="{{ $schedule->meeting_link }}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-video me-1"></i> Open Meeting Link</a></div>
+                    <a href="{{ $schedule->meeting_link }}" target="_blank" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2">
+                        <i class="fas fa-video"></i> Buka Tautan Daring (Zoom / GMeet)
+                    </a>
                 @endif
             </div>
         </div>
-    </div>
+    @endif
 
     @activecan('admission-exam-schedule.update')
-        <div class="card mb-4">
-            <div class="card-header"><h4 class="card-title mb-0">Assign Participant</h4></div>
-            <div class="card-body">
-                <div class="row g-2">
-                    <div class="col-md-9">
-                        <select class="form-select" wire:model="applicationId">
-                            <option value="">Choose applicant from this period</option>
+        <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10 border-start border-primary border-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold text-primary mb-3 d-flex align-items-center gap-2">
+                    <i class="fas fa-user-plus"></i> Daftarkan Peserta ke Sesi Ujian Ini
+                </h5>
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-7">
+                        <select class="form-select rounded-3 border-0 shadow-sm" wire:model="applicationId">
+                            <option value="">-- Pilih Pendaftar dari Gelombang yang Sama --</option>
                             @foreach($this->eligibleApplications() as $application)
-                                <option value="{{ $application->id }}">{{ $application->application_number }} - {{ $application->full_name }}</option>
+                                <option value="{{ $application->id }}">{{ $application->application_number }} &bull; {{ $application->full_name }}</option>
                             @endforeach
                         </select>
-                        @error('applicationId') <span class="text-danger">{{ $message }}</span> @enderror
+                        @error('applicationId') <span class="text-danger fs-8 mt-1 d-block">{{ $message }}</span> @enderror
                     </div>
-                    <div class="col-md-3 d-flex gap-2">
-                        <button class="btn btn-primary w-100" wire:click="assignParticipant">
-                            <i class="fas fa-user-plus me-1"></i> Add
+                    <div class="col-md-5 d-flex gap-2">
+                        <button class="btn btn-primary rounded-pill fw-bold px-4 py-2 shadow-sm d-flex align-items-center gap-1" wire:click="assignParticipant">
+                            <i class="fas fa-plus"></i> Tambahkan
                         </button>
-                        <button class="btn btn-outline-primary" wire:click="assignAllFromPeriod" wire:loading.attr="disabled" wire:target="assignAllFromPeriod">
-                            <i class="fas fa-users me-1"></i>
-                            <span wire:loading.remove wire:target="assignAllFromPeriod">Add All From Same Period</span>
-                            <span wire:loading wire:target="assignAllFromPeriod">Adding applicants...</span>
+                        <button class="btn btn-outline-primary rounded-pill fw-bold px-4 py-2 shadow-sm d-flex align-items-center gap-2 flex-grow-1" wire:click="assignAllFromPeriod" wire:loading.attr="disabled" wire:target="assignAllFromPeriod">
+                            <i class="fas fa-users" wire:loading.remove wire:target="assignAllFromPeriod"></i>
+                            <i class="fas fa-spinner fa-spin" wire:loading wire:target="assignAllFromPeriod"></i>
+                            <span wire:loading.remove wire:target="assignAllFromPeriod">Daftarkan Semua Pendaftar Gelombang Ini</span>
+                            <span wire:loading wire:target="assignAllFromPeriod">Mendaftarkan Massal...</span>
                         </button>
                     </div>
                 </div>
@@ -295,55 +340,92 @@ new class extends Component
         </div>
     @endactivecan
 
-    <div class="card">
-        <div class="card-header"><h4 class="card-title mb-0">Participants & Scores</h4></div>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white border-bottom p-4">
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="fas fa-list-ol text-primary"></i> Daftar Hadir & Penilaian Peserta Ujian
+            </h4>
+            <p class="text-muted fs-7 mb-0">Catat kehadiran dan masukkan nilai skor komponen seleksi untuk tiap peserta.</p>
+        </div>
         <div class="table-responsive">
-            <table class="table table-vcenter card-table">
-                <thead>
+            <table class="table table-vcenter card-table table-hover align-middle mb-0">
+                <thead class="bg-light">
                     <tr>
-                        <th>Applicant</th>
-                        <th>Program</th>
-                        <th>Attendance</th>
-                        <th>Score</th>
-                        <th>Final</th>
-                        <th class="text-end">Action</th>
+                        <th class="ps-4 fw-bold text-muted fs-7">PENDAFTAR</th>
+                        <th class="fw-bold text-muted fs-7">PROGRAM STUDI</th>
+                        <th class="fw-bold text-muted fs-7" style="min-width: 220px;">KEHADIRAN & CATATAN</th>
+                        <th class="fw-bold text-muted fs-7" style="min-width: 320px;">KOMPONEN PENILAIAN (SKOR / BOBOT)</th>
+                        <th class="fw-bold text-muted fs-7 text-center">SKOR AKHIR</th>
+                        <th class="pe-4 text-end fw-bold text-muted fs-7">AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($schedule->participants as $participant)
                         <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark fs-6">{{ $participant->application?->full_name }}</div>
+                                <span class="text-muted fs-7">{{ $participant->application?->application_number }}</span>
+                            </td>
                             <td>
-                                <div class="fw-bold">{{ $participant->application?->full_name }}</div>
-                                <small class="text-muted">{{ $participant->application?->application_number }}</small>
+                                <span class="fw-semibold text-dark">{{ $participant->application?->studyProgram?->name ?? '-' }}</span>
                             </td>
-                            <td>{{ $participant->application?->studyProgram?->name ?? '-' }}</td>
-                            <td style="min-width:220px;">
-                                <select class="form-select form-select-sm mb-2" wire:model.defer="attendanceForms.{{ $participant->id }}.attendance_status">
-                                    <option value="registered">Registered</option>
-                                    <option value="present">Present</option>
-                                    <option value="absent">Absent</option>
+                            <td>
+                                <select class="form-select form-select-sm rounded-3 mb-1 border-secondary border-opacity-25" wire:model.defer="attendanceForms.{{ $participant->id }}.attendance_status">
+                                    <option value="registered">Terdaftar (Registered)</option>
+                                    <option value="present">Hadir (Present)</option>
+                                    <option value="absent">Tidak Hadir (Absent)</option>
                                 </select>
-                                <input type="text" class="form-control form-control-sm" placeholder="Attendance notes" wire:model.defer="attendanceForms.{{ $participant->id }}.notes">
+                                <input type="text" class="form-control form-control-sm rounded-3 border-secondary border-opacity-25" placeholder="Catatan kehadiran..." wire:model.defer="attendanceForms.{{ $participant->id }}.notes">
                             </td>
-                            <td style="min-width:280px;">
+                            <td>
                                 <div class="row g-1">
-                                    <div class="col-5"><input class="form-control form-control-sm" wire:model.defer="scoreForms.{{ $participant->id }}.score_type" placeholder="type"></div>
-                                    <div class="col-3"><input type="number" step="0.01" class="form-control form-control-sm" wire:model.defer="scoreForms.{{ $participant->id }}.score" placeholder="score"></div>
-                                    <div class="col-4"><input type="number" step="0.01" class="form-control form-control-sm" wire:model.defer="scoreForms.{{ $participant->id }}.weight" placeholder="weight"></div>
-                                    <div class="col-12"><input class="form-control form-control-sm" wire:model.defer="scoreForms.{{ $participant->id }}.notes" placeholder="score notes"></div>
+                                    <div class="col-5">
+                                        <input class="form-control form-control-sm rounded-3 border-secondary border-opacity-25" wire:model.defer="scoreForms.{{ $participant->id }}.score_type" placeholder="Komponen (Contoh: Wawancara)">
+                                    </div>
+                                    <div class="col-3">
+                                        <input type="number" step="0.01" class="form-control form-control-sm rounded-3 border-secondary border-opacity-25" wire:model.defer="scoreForms.{{ $participant->id }}.score" placeholder="Nilai (0-100)">
+                                    </div>
+                                    <div class="col-4">
+                                        <input type="number" step="0.01" class="form-control form-control-sm rounded-3 border-secondary border-opacity-25" wire:model.defer="scoreForms.{{ $participant->id }}.weight" placeholder="Bobot (Contoh: 30%)">
+                                    </div>
+                                    <div class="col-12 mt-1">
+                                        <input class="form-control form-control-sm rounded-3 border-secondary border-opacity-25" wire:model.defer="scoreForms.{{ $participant->id }}.notes" placeholder="Catatan penilaian penguji...">
+                                    </div>
                                 </div>
                             </td>
-                            <td class="fw-bold">{{ $participant->application?->final_score ?? '-' }}</td>
-                            <td class="text-end">
+                            <td class="text-center">
+                                <span class="badge bg-primary rounded-pill px-3 py-1 fs-6">{{ $participant->application?->final_score ?? '-' }}</span>
+                            </td>
+                            <td class="pe-4 text-end">
                                 @activecan('admission-exam-schedule.update')
-                                    <button class="btn btn-sm btn-outline-primary" wire:click="updateAttendance({{ $participant->id }})">Attendance</button>
-                                    <button class="btn btn-sm btn-success" wire:click="saveScore({{ $participant->id }})">Score</button>
-                                    <button class="btn btn-sm btn-danger" wire:click="removeParticipant({{ $participant->id }})">Remove</button>
+                                    <div class="d-inline-flex flex-column gap-1">
+                                        <div class="d-inline-flex gap-1 justify-content-end">
+                                            <button class="btn btn-outline-info rounded-pill px-2.5 py-1 text-info fw-medium shadow-sm d-inline-flex align-items-center gap-1 fs-8" wire:click="updateAttendance({{ $participant->id }})" title="Simpan Kehadiran">
+                                                <i class="fas fa-clipboard-check"></i> Hadir
+                                            </button>
+                                            <button class="btn btn-outline-success rounded-pill px-2.5 py-1 text-success fw-medium shadow-sm d-inline-flex align-items-center gap-1 fs-8" wire:click="saveScore({{ $participant->id }})" title="Simpan Nilai">
+                                                <i class="fas fa-save"></i> Nilai
+                                            </button>
+                                        </div>
+                                        <div class="d-inline-flex justify-content-end">
+                                            <button class="btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1 fs-8" wire:click="removeParticipant({{ $participant->id }})" title="Hapus dari Sesi">
+                                                <i class="fas fa-trash"></i> Hapus Peserta
+                                            </button>
+                                        </div>
+                                    </div>
                                 @endactivecan
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center text-muted py-4">Belum ada participant.</td></tr>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <div class="py-3">
+                                    <i class="fas fa-user-clock fs-1 text-secondary opacity-50 mb-3"></i>
+                                    <p class="fs-6 fw-medium mb-1">Belum ada peserta yang didaftarkan pada jadwal ujian ini.</p>
+                                    <small class="text-muted">Gunakan form di atas untuk mendaftarkan pendaftar ke sesi ujian ini.</small>
+                                </div>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>

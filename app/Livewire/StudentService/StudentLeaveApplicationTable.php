@@ -4,6 +4,7 @@ namespace App\Livewire\StudentService;
 
 use App\Livewire\BasePowerGridTable;
 use App\Models\Academic\AcademicYear;
+use App\Models\Academic\StudyProgram;
 use App\Models\StudentService\StudentLeaveApplication;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,12 +48,12 @@ final class StudentLeaveApplicationTable extends BasePowerGridTable
             ->add('application_number')
             ->add('student_name', fn (StudentLeaveApplication $model) => $model->studentProfile?->user?->name ?? '-')
             ->add('nim', fn (StudentLeaveApplication $model) => $model->studentProfile?->nim ?? '-')
+            ->add('study_program_name', fn (StudentLeaveApplication $model) => $model->studentProfile?->studyProgram?->name ?? '-')
             ->add('academic_year', fn (StudentLeaveApplication $model) => $model->academicYear?->name ?? '-')
             ->add('semester')
             ->add('duration_semesters')
             ->add('reason_category_label', fn (StudentLeaveApplication $model) => str($model->reason_category)->replace('_', ' ')->title()->toString())
             ->add('status_badge', fn (StudentLeaveApplication $model) => $this->statusBadge($model->status))
-            ->add('status')
             ->add('created_at_label', fn (StudentLeaveApplication $model) => $model->created_at?->format('d M Y H:i'));
     }
 
@@ -62,12 +63,13 @@ final class StudentLeaveApplicationTable extends BasePowerGridTable
             Column::make('Application No', 'application_number')->sortable()->searchable(),
             Column::make('Mahasiswa', 'student_name')->sortable()->searchable(),
             Column::make('NIM', 'nim')->sortable()->searchable(),
+            Column::make('Program Studi', 'study_program_name')->sortable()->searchable(),
             Column::make('Academic Year', 'academic_year')->sortable()->searchable(),
             Column::make('Semester', 'semester')->sortable(),
             Column::make('Duration', 'duration_semesters')->sortable(),
-            Column::make('Reason', 'reason_category_label')->sortable(),
-            Column::make('Status', 'status_badge'),
-            Column::make('Submitted', 'created_at_label')->sortable(),
+            Column::make('Reason', 'reason_category_label', 'reason_category')->sortable(),
+            Column::make('Status', 'status_badge', 'status'),
+            Column::make('Submitted', 'created_at_label', 'created_at')->sortable(),
             Column::action('Action'),
         ];
     }
@@ -75,11 +77,30 @@ final class StudentLeaveApplicationTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::select('academic_year_id', 'academic_year_id')
+            Filter::inputText('application_number')->placeholder('Cari No Cuti...'),
+            Filter::select('academic_year', 'academic_year_id')
                 ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
                 ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::select('status', 'status')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('academic_year_id', $value)),
+            Filter::select('study_program_name', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->whereHas('studentProfile', fn (Builder $student) => $student->where('study_program_id', $value))),
+            Filter::select('reason_category_label', 'reason_category')
+                ->dataSource(collect([
+                    ['id' => 'health', 'name' => 'Kesehatan'],
+                    ['id' => 'financial', 'name' => 'Keuangan'],
+                    ['id' => 'personal', 'name' => 'Pribadi / Keluarga'],
+                    ['id' => 'work', 'name' => 'Pekerjaan'],
+                    ['id' => 'academic', 'name' => 'Akademik'],
+                    ['id' => 'other', 'name' => 'Lainnya'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('reason_category', $value)),
+            Filter::select('status_badge', 'status')
                 ->dataSource(collect([
                     ['id' => 'submitted', 'name' => 'Submitted'],
                     ['id' => 'in_approval', 'name' => 'Menunggu Approval'],
@@ -92,7 +113,9 @@ final class StudentLeaveApplicationTable extends BasePowerGridTable
                     ['id' => 'returned', 'name' => 'Returned'],
                 ]))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('status', $value)),
+            Filter::datepicker('created_at_label', 'created_at'),
         ];
     }
 

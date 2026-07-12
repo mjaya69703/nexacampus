@@ -121,6 +121,19 @@ final class CourseMaterialTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
+            Filter::inputText('title', 'title')
+                ->placeholder('Cari judul materi...')
+                ->operators(['contains']),
+            Filter::inputText('uploaded_by_name', 'uploaded_by_name')
+                ->placeholder('Cari pengupload...')
+                ->builder(function (Builder $query, $value) {
+                    $search = is_array($value) ? ($value['value'] ?? '') : (string) $value;
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('uploadedBy', fn (Builder $user) => $user->where('first_name', 'like', '%'.$search.'%')->orWhere('last_name', 'like', '%'.$search.'%'));
+                }),
             Filter::select('category', 'category')
                 ->dataSource(collect([
                     ['id' => 'syllabus', 'name' => 'Syllabus/RPS'],
@@ -132,6 +145,7 @@ final class CourseMaterialTable extends BasePowerGridTable
                 ->optionLabel('name'),
             Filter::number('meeting_number', 'meeting_number'),
             Filter::boolean('is_published', 'is_published'),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 

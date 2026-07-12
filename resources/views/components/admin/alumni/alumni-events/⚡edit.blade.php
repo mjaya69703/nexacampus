@@ -81,86 +81,159 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Alumni',
+            'menus' => 'Alumni Management',
             'pages' => 'Edit Event Alumni',
         ]);
     }
 };
 ?>
 
-<div>
+<div class="w-full" style="width: 100% !important">
     <x-alert />
-    <div class="card">
-        <div class="card-header"><h3 class="card-title">Edit Event: {{ $form['title'] ?? '' }}</h3></div>
-        <div class="card-body row">
-            <div class="form-group col-lg-8 col-md-6 col-sm-12 mt-2">
-                <label for="title">Judul Event <span class="text-danger">*</span></label>
-                <input type="text" id="title" class="form-control" wire:model.defer="form.title">
-                @error('form.title') <span class="text-danger">{{ $message }}</span> @enderror
-            </div>
-            <div class="form-group col-lg-4 col-md-6 col-sm-12 mt-2">
-                <label for="event_type">Tipe Event <span class="text-danger">*</span></label>
-                <select id="event_type" class="form-control" wire:model.defer="form.event_type">
-                    @foreach ($eventTypes as $val => $label)
-                        <option value="{{ $val }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="form-group col-lg-4 col-md-6 col-sm-12 mt-2">
-                <label for="event_date">Tanggal Mulai <span class="text-danger">*</span></label>
-                <input type="datetime-local" id="event_date" class="form-control" wire:model.defer="form.event_date">
-                @error('form.event_date') <span class="text-danger">{{ $message }}</span> @enderror
-            </div>
-            <div class="form-group col-lg-4 col-md-6 col-sm-12 mt-2">
-                <label for="end_date">Tanggal Selesai</label>
-                <input type="datetime-local" id="end_date" class="form-control" wire:model.defer="form.end_date">
-            </div>
-            <div class="form-group col-lg-4 col-md-6 col-sm-12 mt-2">
-                <label for="registration_deadline">Deadline Pendaftaran</label>
-                <input type="datetime-local" id="registration_deadline" class="form-control" wire:model.defer="form.registration_deadline">
-            </div>
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label for="location">Lokasi</label>
-                <input type="text" id="location" class="form-control" wire:model.defer="form.location">
-            </div>
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label for="max_participants">Maks Peserta</label>
-                <input type="number" id="max_participants" class="form-control" wire:model.defer="form.max_participants">
-            </div>
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label for="meeting_url">URL Meeting</label>
-                <input type="url" id="meeting_url" class="form-control" wire:model.defer="form.meeting_url">
-            </div>
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label for="poster">Poster</label>
-                @if ($existingPoster)
-                    <div class="mb-2"><small class="text-muted">Poster saat ini tersedia</small></div>
-                @endif
-                <input type="file" id="poster" class="form-control" wire:model="poster" accept="image/*">
-            </div>
-            <div class="form-group col-12 mt-2">
-                <label for="description">Deskripsi</label>
-                <textarea id="description" class="form-control" rows="3" wire:model.defer="form.description"></textarea>
-            </div>
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <div class="form-check form-switch mt-2">
-                    <input id="is_online" class="form-check-input" type="checkbox" wire:model.defer="form.is_online">
-                    <label for="is_online" class="form-check-label">Online</label>
+
+    <x-admin.alumni.header
+        title="Edit Event: {{ $form['title'] ?? '' }}"
+        description="Perbarui jadwal kegiatan, informasi pembicara, batas waktu pendaftaran, serta kuota peserta."
+        icon="calendar-check"
+    >
+        <a href="{{ route('admin.alumni.events.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i> <span>Kembali ke Daftar</span>
+        </a>
+    </x-admin.alumni.header>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-edit fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-1 text-dark">Form Perbaruan Event Alumni</h4>
+                            <div class="text-muted small">Pastikan jadwal tidak bentrok dan link meeting online dapat diakses dengan baik.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <h6 class="fw-bold text-dark border-bottom pb-2 mb-2"><i class="fa fa-info-circle me-2 text-primary"></i>Informasi Umum Kegiatan</h6>
+                        </div>
+                        <div class="col-lg-8 col-md-6">
+                            <label for="title" class="form-label fw-semibold">Judul Kegiatan <span class="text-danger">*</span></label>
+                            <input type="text" id="title" class="form-control rounded-3" wire:model.defer="form.title">
+                            @error('form.title') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <label for="event_type" class="form-label fw-semibold">Tipe Kegiatan <span class="text-danger">*</span></label>
+                            <select id="event_type" class="form-control rounded-3" wire:model.defer="form.event_type">
+                                @foreach ($eventTypes as $val => $label)
+                                    <option value="{{ $val }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('form.event_type') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-lg-6 col-md-6">
+                            <label for="poster" class="form-label fw-semibold">Poster / Banner Kegiatan (Maks. 2MB)</label>
+                            @if ($existingPoster)
+                                <div class="mb-2 d-flex align-items-center gap-2">
+                                    <img src="{{ Storage::url($existingPoster) }}" alt="Poster" class="rounded object-fit-cover shadow-sm border" style="width: 50px; height: 50px;">
+                                    <small class="text-success fw-medium"><i class="fa fa-check-circle me-1"></i>Poster saat ini tersimpan</small>
+                                </div>
+                            @endif
+                            <input type="file" id="poster" class="form-control rounded-3" wire:model="poster" accept="image/*">
+                            <div wire:loading wire:target="poster" class="text-muted small mt-1"><i class="fa fa-spinner fa-spin me-1"></i> Mengunggah poster...</div>
+                        </div>
+                        <div class="col-lg-6 col-md-6">
+                            <label for="max_participants" class="form-label fw-semibold">Batas Kuota Peserta (Maksimal)</label>
+                            <input type="number" id="max_participants" class="form-control rounded-3" wire:model.defer="form.max_participants">
+                        </div>
+                        <div class="col-12">
+                            <label for="description" class="form-label fw-semibold">Deskripsi & Agenda Acara</label>
+                            <textarea id="description" class="form-control rounded-3" rows="3" wire:model.defer="form.description"></textarea>
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <h6 class="fw-bold text-dark border-bottom pb-2 mb-2"><i class="fa fa-clock me-2 text-info"></i>Waktu & Pendaftaran</h6>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <label for="event_date" class="form-label fw-semibold">Waktu Mulai <span class="text-danger">*</span></label>
+                            <input type="datetime-local" id="event_date" class="form-control rounded-3" wire:model.defer="form.event_date">
+                            @error('form.event_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <label for="end_date" class="form-label fw-semibold">Waktu Selesai</label>
+                            <input type="datetime-local" id="end_date" class="form-control rounded-3" wire:model.defer="form.end_date">
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <label for="registration_deadline" class="form-label fw-semibold">Batas Pendaftaran</label>
+                            <input type="datetime-local" id="registration_deadline" class="form-control rounded-3" wire:model.defer="form.registration_deadline">
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <h6 class="fw-bold text-dark border-bottom pb-2 mb-2"><i class="fa fa-map-marked-alt me-2 text-success"></i>Lokasi & Pelaksanaan</h6>
+                        </div>
+                        <div class="col-lg-6 col-md-6">
+                            <label for="location" class="form-label fw-semibold">Tempat / Gedung / Kota</label>
+                            <input type="text" id="location" class="form-control rounded-3" wire:model.defer="form.location">
+                        </div>
+                        <div class="col-lg-6 col-md-6">
+                            <label for="meeting_url" class="form-label fw-semibold">Tautan Meeting Virtual (URL)</label>
+                            <input type="url" id="meeting_url" class="form-control rounded-3" wire:model.defer="form.meeting_url">
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded-4 p-3 bg-light bg-opacity-50 d-flex flex-wrap gap-4">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="is_online" wire:model.defer="form.is_online">
+                                    <label class="form-check-label fw-semibold" for="is_online"><i class="fa fa-laptop me-1 text-info"></i> Dilaksanakan Online (Daring)</label>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="is_published" wire:model.defer="form.is_published">
+                                    <label class="form-check-label fw-semibold" for="is_published"><i class="fa fa-globe me-1 text-success"></i> Publikasikan Event Ini</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 justify-content-end mt-4">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" wire:click="cancel">
+                            <i class="fa fa-times me-2"></i> Batal
+                        </button>
+                        <button type="button" class="btn btn-primary rounded-pill px-4" wire:click="updateAlumniEvent">
+                            <i class="fa fa-save me-2"></i> Simpan Perubahan
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <div class="form-check form-switch mt-2">
-                    <input id="is_published" class="form-check-input" type="checkbox" wire:model.defer="form.is_published">
-                    <label for="is_published" class="form-check-label">Published</label>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                <div class="card-body p-4 bg-light bg-opacity-50">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-history fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-1">Riwayat Data</h5>
+                            <div class="text-muted small">Periksa kembali jadwal jika ada perubahan secara mendadak.</div>
+                        </div>
+                    </div>
+
+                    <ul class="list-unstyled mb-0 text-muted small d-grid gap-2.5">
+                        <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Perubahan waktu acara tidak membatalkan peserta yang sudah mendaftar sebelumnya.</span></li>
+                        <li class="d-flex gap-2"><i class="fa fa-check text-success mt-1"></i><span>Pastikan URL meeting diperbarui minimal 1 jam sebelum pelaksanaan kegiatan online.</span></li>
+                    </ul>
                 </div>
             </div>
-            <div class="form-group col-12 mt-4 d-flex align-items-center justify-content-end gap-2">
-                <button class="btn btn-primary" wire:click="updateAlumniEvent">
-                    <i class="fas fa-save me-2"></i> Simpan Perubahan
-                </button>
-                <button class="btn btn-secondary" wire:click="cancel">
-                    <i class="fas fa-times me-2"></i> Batal
-                </button>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="text-muted small mb-1">Status Publikasi</div>
+                    <div class="fw-bold fs-5 {{ $form['is_published'] ? 'text-success' : 'text-secondary' }} mb-2">{{ $form['is_published'] ? 'Dipublikasikan' : 'Draft / Disembunyikan' }}</div>
+                    <p class="text-muted small mb-0">Atur status publikasi untuk menentukan keterlihatan kegiatan ini di portal karir & event alumni.</p>
+                </div>
             </div>
         </div>
     </div>

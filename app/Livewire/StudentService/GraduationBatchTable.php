@@ -3,6 +3,8 @@
 namespace App\Livewire\StudentService;
 
 use App\Livewire\BasePowerGridTable;
+use App\Models\Academic\AcademicPeriod;
+use App\Models\Academic\StudyProgram;
 use App\Models\StudentService\GraduationBatch;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
@@ -73,7 +75,19 @@ final class GraduationBatchTable extends BasePowerGridTable
     public function filters(): array
     {
         return [
-            Filter::select('status', 'status')
+            Filter::inputText('name')->placeholder('Cari nama gelombang...'),
+            Filter::inputText('code')->placeholder('Cari kode...'),
+            Filter::select('period_label', 'academic_period_id')
+                ->dataSource(AcademicPeriod::query()->orderByDesc('start_at')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('academic_period_id', $value)),
+            Filter::select('scope_label', 'study_program_id')
+                ->dataSource(StudyProgram::query()->orderBy('name')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('study_program_id', $value)),
+            Filter::select('status_badge', 'status')
                 ->dataSource(collect([
                     ['id' => 'draft', 'name' => 'Draft'],
                     ['id' => 'open', 'name' => 'Open'],
@@ -82,7 +96,9 @@ final class GraduationBatchTable extends BasePowerGridTable
                     ['id' => 'cancelled', 'name' => 'Cancelled'],
                 ]))
                 ->optionValue('id')
-                ->optionLabel('name'),
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('status', $value)),
+            Filter::datepicker('yudisium_date_label', 'yudisium_date'),
         ];
     }
 

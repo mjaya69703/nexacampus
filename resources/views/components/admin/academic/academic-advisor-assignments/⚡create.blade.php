@@ -265,155 +265,197 @@ new class extends Component
 <div>
     <x-alert />
 
+    <x-admin.academic.header
+        title="Tambah Assignment Dosen PA"
+        description="Pilih mode penugasan single atau bulk untuk menetapkan dosen pembimbing akademik kepada mahasiswa aktif."
+        icon="chalkboard-teacher"
+    >
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-light text-dark fw-semibold rounded-pill px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2 border" wire:click="cancel">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </button>
+        </div>
+    </x-admin.academic.header>
+
     <form wire:submit.prevent="createAssignment">
-        <div class="card mb-4" style="border:0;border-radius:18px;box-shadow:0 12px 30px rgba(15,23,42,.08);">
-            <div class="card-header py-3 d-flex justify-content-between gap-3 flex-wrap align-items-center">
-                <div>
-                    <h3 class="card-title mb-1" style="font-weight:800;">Assignment Dosen PA</h3>
-                    <div class="text-secondary">Pilih satu mahasiswa atau assign beberapa mahasiswa sekaligus ke dosen PA.</div>
-                </div>
-                <button type="button" class="btn btn-light" wire:click="cancel">
-                    <i class="fas fa-arrow-left me-1"></i>Kembali
-                </button>
-            </div>
-            <div class="card-body p-4">
-                <div class="mb-4">
-                    <div class="btn-group" role="group">
-                        <input type="radio" class="btn-check" id="mode-single" value="single" wire:model.live="mode">
-                        <label class="btn btn-outline-primary" for="mode-single"><i class="fas fa-user me-1"></i>Single</label>
-                        <input type="radio" class="btn-check" id="mode-bulk" value="bulk" wire:model.live="mode">
-                        <label class="btn btn-outline-primary" for="mode-bulk"><i class="fas fa-users me-1"></i>Bulk</label>
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom p-4">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa fa-user-plus fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="card-title fw-bold mb-1 text-dark">Form Penugasan Pembimbing Akademik</h4>
+                            <div class="text-muted small">Pilih mode penugasan, tentukan mahasiswa, dosen pembimbing, dan periode aktif bimbingan.</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="btn-group shadow-sm rounded-pill p-1 bg-light border" role="group">
+                            <input type="radio" class="btn-check" id="mode-single" value="single" wire:model.live="mode">
+                            <label class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {{ $mode === 'single' ? 'btn-primary' : 'btn-light border-0 text-dark' }}" for="mode-single"><i class="fas fa-user me-1"></i> Single</label>
+                            <input type="radio" class="btn-check" id="mode-bulk" value="bulk" wire:model.live="mode">
+                            <label class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {{ $mode === 'bulk' ? 'btn-primary' : 'btn-light border-0 text-dark' }}" for="mode-bulk"><i class="fas fa-users me-1"></i> Bulk</label>
+                        </div>
                     </div>
                 </div>
-
+            </div>
+            <div class="card-body p-4">
                 <div class="row g-4">
                     <div class="col-xl-7">
-                        @if ($mode === 'single')
+                        <div class="card border border-light bg-light bg-opacity-50 rounded-4 p-4 h-100">
+                            <h6 class="fw-bold text-dark mb-3"><i class="fa fa-users text-primary me-2"></i>Pilihan Mahasiswa ({{ $mode === 'single' ? 'Single Assignment' : 'Bulk Assignment' }})</h6>
+
+                            @if ($mode === 'single')
+                                <div>
+                                    <label class="form-label fw-semibold small">Cari Mahasiswa <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari nama, NIM, email, atau angkatan...">
+                                    @if ($this->selectedStudentLabel())
+                                        <div class="alert alert-info border-0 shadow-sm rounded-3 mt-3 mb-0 d-flex align-items-center gap-2 p-3">
+                                            <i class="fa fa-check-circle text-info fs-5"></i>
+                                            <div>Terpilih: <strong class="text-dark">{{ $this->selectedStudentLabel() }}</strong></div>
+                                        </div>
+                                    @endif
+                                    <div class="list-group mt-3 shadow-sm rounded-3 overflow-hidden">
+                                        @foreach ($this->studentResults() as $student)
+                                            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start p-3 border-bottom" wire:click="selectStudent({{ $student['id'] }})">
+                                                <span>
+                                                    <strong class="text-dark">{{ $student['label'] }}</strong>
+                                                    <span class="d-block text-muted small mt-1">{{ $student['meta'] }}</span>
+                                                </span>
+                                                <i class="fas fa-check text-primary mt-1"></i>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                    @error('assignmentForm.student_profile_id') <span class="text-danger small mt-2 d-block">{{ $message }}</span> @enderror
+                                </div>
+                            @else
+                                <div>
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-semibold">Program Studi</label>
+                                            <select class="form-select" wire:model.live="bulkFilters.study_program_id">
+                                                <option value="">Semua Prodi</option>
+                                                @foreach ($studyPrograms as $program)
+                                                    <option value="{{ $program['id'] }}">{{ $program['label'] }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-semibold">Angkatan</label>
+                                            <select class="form-select" wire:model.live="bulkFilters.entry_year">
+                                                <option value="">Semua</option>
+                                                @foreach ($entryYears as $year)
+                                                    <option value="{{ $year }}">{{ $year }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">Cari</label>
+                                            <input type="text" class="form-control" wire:model.live.debounce.300ms="bulkFilters.search" placeholder="Nama/NIM/email...">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold" wire:click="selectAllCandidates">
+                                                <i class="fas fa-check-double me-1"></i> Pilih Hasil Tampil
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" wire:click="clearSelectedStudents">
+                                                <i class="fas fa-eraser me-1"></i> Kosongkan
+                                            </button>
+                                        </div>
+                                        <span class="badge rounded-pill bg-primary px-3 py-2">{{ count($selectedStudentIds) }} mahasiswa terpilih</span>
+                                    </div>
+                                    <div class="list-group shadow-sm rounded-3 overflow-auto border bg-white" style="max-height: 380px;">
+                                        @foreach ($this->candidateStudents() as $student)
+                                            <label class="list-group-item list-group-item-action d-flex gap-3 align-items-start p-3 border-bottom mb-0">
+                                                <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" value="{{ $student['id'] }}" wire:model.live="selectedStudentIds">
+                                                <span>
+                                                    <strong class="text-dark">{{ $student['label'] }}</strong>
+                                                    <span class="d-block text-muted small mt-1">{{ $student['meta'] }}</span>
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                    @error('selectedStudentIds') <span class="text-danger small mt-2 d-block">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="col-xl-5">
+                        <div class="card border border-light bg-light bg-opacity-50 rounded-4 p-4 h-100">
+                            <h6 class="fw-bold text-dark mb-3"><i class="fa fa-user-tie text-primary me-2"></i>Dosen PA & Aturan Penugasan</h6>
+
                             <div class="mb-4">
-                                <label class="form-label required">Mahasiswa</label>
-                                <input type="text" class="form-control" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari nama, NIM, email, atau angkatan...">
-                                @if ($this->selectedStudentLabel())
-                                    <div class="alert alert-info mt-2 mb-0">Terpilih: <strong>{{ $this->selectedStudentLabel() }}</strong></div>
+                                <label class="form-label fw-semibold small">Cari Dosen PA <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" wire:model.live.debounce.300ms="lecturerSearch" placeholder="Cari nama, NIDN, NIP, atau email...">
+                                @if ($this->selectedLecturerLabel())
+                                    <div class="alert alert-info border-0 shadow-sm rounded-3 mt-3 mb-0 d-flex align-items-center gap-2 p-3">
+                                        <i class="fa fa-check-circle text-info fs-5"></i>
+                                        <div>Terpilih: <strong class="text-dark">{{ $this->selectedLecturerLabel() }}</strong></div>
+                                    </div>
                                 @endif
-                                <div class="list-group mt-2">
-                                    @foreach ($this->studentResults() as $student)
-                                        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start" wire:click="selectStudent({{ $student['id'] }})">
-                                            <span>
-                                                <strong>{{ $student['label'] }}</strong>
-                                                <span class="d-block text-secondary small">{{ $student['meta'] }}</span>
-                                            </span>
+                                <div class="list-group mt-3 shadow-sm rounded-3 overflow-hidden">
+                                    @foreach ($this->lecturerResults() as $lecturer)
+                                        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 border-bottom" wire:click="selectLecturer({{ $lecturer['id'] }})">
+                                            <strong class="text-dark">{{ $lecturer['label'] }}</strong>
                                             <i class="fas fa-check text-primary"></i>
                                         </button>
                                     @endforeach
                                 </div>
-                                @error('assignmentForm.student_profile_id') <small class="text-danger">{{ $message }}</small> @enderror
+                                @error('assignmentForm.lecturer_profile_id') <span class="text-danger small mt-2 d-block">{{ $message }}</span> @enderror
                             </div>
-                        @else
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-5">
-                                    <label class="form-label">Program Studi</label>
-                                    <select class="form-control" wire:model.live="bulkFilters.study_program_id">
-                                        <option value="">Semua Prodi</option>
-                                        @foreach ($studyPrograms as $program)
-                                            <option value="{{ $program['id'] }}">{{ $program['label'] }}</option>
+
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold small">Tahun Akademik</label>
+                                    <select class="form-select" wire:model.defer="assignmentForm.academic_year_id">
+                                        <option value="">Umum (Semua Tahun / Berlaku Seterusnya)</option>
+                                        @foreach ($academicYears as $year)
+                                            <option value="{{ $year['id'] }}">{{ $year['label'] }}</option>
                                         @endforeach
                                     </select>
+                                    @error('assignmentForm.academic_year_id') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Angkatan</label>
-                                    <select class="form-control" wire:model.live="bulkFilters.entry_year">
-                                        <option value="">Semua</option>
-                                        @foreach ($entryYears as $year)
-                                            <option value="{{ $year }}">{{ $year }}</option>
-                                        @endforeach
-                                    </select>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Tanggal Mulai</label>
+                                    <input type="date" class="form-control" wire:model.defer="assignmentForm.start_date">
+                                    @error('assignmentForm.start_date') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Cari</label>
-                                    <input type="text" class="form-control" wire:model.live.debounce.300ms="bulkFilters.search" placeholder="Nama/NIM/email...">
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Tanggal Selesai</label>
+                                    <input type="date" class="form-control" wire:model.defer="assignmentForm.end_date">
+                                    @error('assignmentForm.end_date') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                                 </div>
-                            </div>
-                            <div class="d-flex gap-2 flex-wrap mb-2">
-                                <button type="button" class="btn btn-outline-primary" wire:click="selectAllCandidates">
-                                    <i class="fas fa-check-double me-1"></i>Pilih hasil tampil
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" wire:click="clearSelectedStudents">
-                                    <i class="fas fa-eraser me-1"></i>Kosongkan
-                                </button>
-                                <span class="badge bg-blue-lt text-blue align-self-center">{{ count($selectedStudentIds) }} terpilih</span>
-                            </div>
-                            <div class="list-group" style="max-height:420px;overflow:auto;">
-                                @foreach ($this->candidateStudents() as $student)
-                                    <label class="list-group-item d-flex gap-3 align-items-start">
-                                        <input type="checkbox" class="form-check-input mt-1" value="{{ $student['id'] }}" wire:model.live="selectedStudentIds">
-                                        <span>
-                                            <strong>{{ $student['label'] }}</strong>
-                                            <span class="d-block text-secondary small">{{ $student['meta'] }}</span>
-                                        </span>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold small">Catatan</label>
+                                    <textarea rows="2" class="form-control" wire:model.defer="assignmentForm.notes" placeholder="Catatan atau keterangan penugasan..."></textarea>
+                                    @error('assignmentForm.notes') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div class="col-12 border-top pt-3">
+                                    <label class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" wire:model.defer="assignmentForm.is_active">
+                                        <span class="form-check-label fw-semibold text-dark">Status Assignment Aktif</span>
                                     </label>
-                                @endforeach
-                            </div>
-                            @error('selectedStudentIds') <small class="text-danger">{{ $message }}</small> @enderror
-                        @endif
-                    </div>
-
-                    <div class="col-xl-5">
-                        <div class="mb-4">
-                            <label class="form-label required">Dosen PA</label>
-                            <input type="text" class="form-control" wire:model.live.debounce.300ms="lecturerSearch" placeholder="Cari nama, NIDN, NIP, atau email...">
-                            @if ($this->selectedLecturerLabel())
-                                <div class="alert alert-info mt-2 mb-0">Terpilih: <strong>{{ $this->selectedLecturerLabel() }}</strong></div>
-                            @endif
-                            <div class="list-group mt-2">
-                                @foreach ($this->lecturerResults() as $lecturer)
-                                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between" wire:click="selectLecturer({{ $lecturer['id'] }})">
-                                        <strong>{{ $lecturer['label'] }}</strong>
-                                        <i class="fas fa-check text-primary"></i>
-                                    </button>
-                                @endforeach
-                            </div>
-                            @error('assignmentForm.lecturer_profile_id') <small class="text-danger">{{ $message }}</small> @enderror
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Tahun Akademik</label>
-                                <select class="form-control" wire:model.defer="assignmentForm.academic_year_id">
-                                    <option value="">Umum (Semua Tahun)</option>
-                                    @foreach ($academicYears as $year)
-                                        <option value="{{ $year['id'] }}">{{ $year['label'] }}</option>
-                                    @endforeach
-                                </select>
-                                @error('assignmentForm.academic_year_id') <small class="text-danger">{{ $message }}</small> @enderror
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Tanggal Mulai</label>
-                                <input type="date" class="form-control" wire:model.defer="assignmentForm.start_date">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Tanggal Selesai</label>
-                                <input type="date" class="form-control" wire:model.defer="assignmentForm.end_date">
-                                @error('assignmentForm.end_date') <small class="text-danger">{{ $message }}</small> @enderror
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Catatan</label>
-                                <textarea rows="3" class="form-control" wire:model.defer="assignmentForm.notes"></textarea>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" wire:model.defer="assignmentForm.is_active">
-                                    <span class="form-check-label">Aktif</span>
-                                </label>
+                                    @error('assignmentForm.is_active') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="card-footer d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-light" wire:click="cancel">Batal</button>
-                <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
-                    <span wire:loading.remove><i class="fas fa-save me-1"></i>Simpan Assignment</span>
-                    <span wire:loading><i class="fas fa-spinner fa-spin me-1"></i>Menyimpan...</span>
+            <div class="card-footer bg-white border-top p-4 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-semibold border" wire:click="cancel">
+                    <i class="fas fa-times me-1"></i> Batal
+                </button>
+                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-semibold" wire:loading.attr="disabled">
+                    <span wire:loading.remove><i class="fas fa-save me-1"></i> Simpan Assignment</span>
+                    <span wire:loading><i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...</span>
                 </button>
             </div>
         </div>

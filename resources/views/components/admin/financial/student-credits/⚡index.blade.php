@@ -68,7 +68,7 @@ new class extends Component
             $this->dispatch('pg:eventRefresh-studentCreditTable');
 
             if ($created > 0) {
-                session()->flash('success', $created.' credit transaction berhasil dicatat.');
+                session()->flash('success', $created.' transaksi deposit berhasil dicatat.');
             }
 
             if (! empty($errors)) {
@@ -110,7 +110,7 @@ new class extends Component
             ->get()
             ->map(fn (StudentProfile $student) => [
                 'id' => $student->id,
-                'label' => ($student->nim ?: '-').' - '.$student->user?->name.' (Credit: '.$this->money($creditBalances[$student->id] ?? 0).')',
+                'label' => ($student->nim ?: '-').' - '.$student->user?->name.' (Saldo: '.$this->money($creditBalances[$student->id] ?? 0).')',
             ])
             ->toArray();
     }
@@ -118,8 +118,8 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Financial',
-            'pages' => 'Student Credits',
+            'menus' => 'Keuangan',
+            'pages' => 'Saldo Deposit & Kredit Mahasiswa',
         ]);
     }
 
@@ -130,65 +130,177 @@ new class extends Component
 };
 ?>
 
-<div>
-    <div class="row row-cards mb-3">
-        <div class="col-sm-6 col-lg-3"><div class="card card-sm"><div class="card-body"><div class="subheader">Students With Credit</div><div class="h1 mb-0">{{ number_format($stats['students']) }}</div></div></div></div>
-        <div class="col-sm-6 col-lg-3"><div class="card card-sm"><div class="card-body"><div class="subheader">Credit Balance</div><div class="h2 mb-0 text-success">{{ $this->money($stats['balance']) }}</div></div></div></div>
-        <div class="col-sm-6 col-lg-3"><div class="card card-sm"><div class="card-body"><div class="subheader">Overpayment</div><div class="h2 mb-0 text-primary">{{ $this->money($stats['overpayment']) }}</div></div></div></div>
-        <div class="col-sm-6 col-lg-3"><div class="card card-sm"><div class="card-body"><div class="subheader">Refund</div><div class="h2 mb-0 text-warning">{{ $this->money($stats['refund']) }}</div></div></div></div>
-    </div>
+<div class="w-full" style="width: 100% !important">
+    <x-alert />
 
-    <div class="card">
-        <div class="card-header">
+    <x-admin.financial.header
+        title="Saldo Deposit & Kredit Mahasiswa"
+        description="Kelola kelebihan pembayaran, saldo deposit, serta pengembalian dana (refund) mahasiswa untuk pemotongan otomatis tagihan berikutnya."
+        icon="wallet"
+    >
+        <x-slot:stats>
+            <div class="d-flex flex-wrap gap-2 gap-lg-3">
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-users fs-6"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Pemilik Saldo</div>
+                        <div class="fw-bold">{{ number_format($stats['students']) }} Mahasiswa</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-wallet fs-6 text-success"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Total Saldo Kredit</div>
+                        <div class="fw-bold">{{ $this->money($stats['balance']) }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-hand-holding-dollar fs-6 text-info"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Total Overpayment</div>
+                        <div class="fw-bold">{{ $this->money($stats['overpayment']) }}</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-rotate-left fs-6 text-warning"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Total Refund</div>
+                        <div class="fw-bold">{{ $this->money($stats['refund']) }}</div>
+                    </div>
+                </div>
+            </div>
+        </x-slot:stats>
+    </x-admin.financial.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white border-bottom p-3 p-md-4 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
             <div>
-                <h3 class="card-title mb-0">Student Credits</h3>
-                <small class="text-muted">Credit balance created from verified overpayment or finance correction.</small>
+                <h4 class="card-title fw-bold mb-1 text-dark">Ringkasan Saldo & Mutasi Deposit</h4>
+                <div class="text-muted small">Akumulasi kelebihan bayar, saldo tersimpan, serta pengembalian ke rekening mahasiswa.</div>
+            </div>
+            <div class="text-muted small">
+                Gunakan formulir di bawah jika ingin mencatat penambahan saldo manual atau pencairan refund.
             </div>
         </div>
-        <div class="card-body border-bottom">
-            <x-alert />
-            <form wire:submit.prevent="record" class="row g-2">
-                <div class="col-md-4">
-                    <label class="form-label">Students</label>
-                    <input type="text" class="form-control mb-2" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari NIM, nama, atau email...">
-                    <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">
-                        @foreach($students as $student)
-                            <label class="form-check mb-2" wire:key="credit-student-{{ $student['id'] }}">
-                                <input class="form-check-input" type="checkbox" wire:model="selectedStudentProfileIds" value="{{ $student['id'] }}">
-                                <span class="form-check-label">{{ $student['label'] }}</span>
-                            </label>
-                        @endforeach
+        <div class="card-body p-3 p-md-4">
+            <div class="row g-3">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-50">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-medium">Mahasiswa Punya Saldo</span>
+                            <i class="fa fa-users fs-4 text-primary opacity-75"></i>
+                        </div>
+                        <div class="fs-2 fw-bold text-dark lh-1">{{ number_format($stats['students']) }}</div>
+                        <div class="text-muted small mt-2">Dapat dipotong otomatis</div>
                     </div>
-                    <small class="text-muted">{{ count($selectedStudentProfileIds) }} mahasiswa dipilih.</small>
-                    @error('selectedStudentProfileIds') <span class="text-danger d-block">{{ $message }}</span> @enderror
-                    @error('selectedStudentProfileIds.*') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-50">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-medium">Total Saldo Tersimpan</span>
+                            <i class="fa fa-wallet fs-4 text-success opacity-75"></i>
+                        </div>
+                        <div class="fs-5 fw-bold text-success lh-1">{{ $this->money($stats['balance']) }}</div>
+                        <div class="text-muted small mt-2">Saldo aktif saat ini</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-50">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-medium">Total Kelebihan Bayar</span>
+                            <i class="fa fa-hand-holding-dollar fs-4 text-info opacity-75"></i>
+                        </div>
+                        <div class="fs-5 fw-bold text-info lh-1">{{ $this->money($stats['overpayment']) }}</div>
+                        <div class="text-muted small mt-2">Akumulasi historis overpayment</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-50">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-medium">Total Pengembalian</span>
+                            <i class="fa fa-rotate-left fs-4 text-warning opacity-75"></i>
+                        </div>
+                        <div class="fs-5 fw-bold text-warning lh-1">{{ $this->money($stats['refund']) }}</div>
+                        <div class="text-muted small mt-2">Pencairan dana yang telah diproses</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white border-bottom p-3 p-md-4 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fa fa-plus-circle fs-5"></i>
+                </div>
+                <div>
+                    <h4 class="card-title fw-bold mb-0 text-dark">Catat Transaksi Deposit / Pencairan Saldo (Refund)</h4>
+                    <span class="text-muted small">Kelola penambahan saldo kredit manual atau pencairan dana pengembalian ke rekening mahasiswa.</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-3 p-md-4 bg-light bg-opacity-50">
+            <form wire:submit.prevent="record" class="row g-3 align-items-start">
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">Pilih Mahasiswa <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control mb-2 rounded-pill px-3" wire:model.live.debounce.300ms="studentSearch" placeholder="Cari berdasarkan NIM, Nama, atau Email...">
+                    <div class="border rounded-3 p-3 bg-white" style="max-height: 180px; overflow-y: auto;">
+                        @forelse($students as $student)
+                            <label class="form-check mb-2 d-block" wire:key="credit-student-{{ $student['id'] }}">
+                                <input class="form-check-input" type="checkbox" wire:model="selectedStudentProfileIds" value="{{ $student['id'] }}">
+                                <span class="form-check-label fw-medium">{{ $student['label'] }}</span>
+                            </label>
+                        @empty
+                            <div class="text-secondary small text-center py-2">Mahasiswa tidak ditemukan.</div>
+                        @endforelse
+                    </div>
+                    <div class="small text-secondary mt-1">
+                        <i class="fas fa-check-circle text-primary me-1"></i> {{ count($selectedStudentProfileIds) }} mahasiswa terpilih.
+                    </div>
+                    @error('selectedStudentProfileIds') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                    @error('selectedStudentProfileIds.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Type</label>
-                    <select class="form-control" wire:model="form.transaction_type">
-                        <option value="refund">Refund</option>
-                        <option value="manual_adjustment">Manual Add Credit</option>
+                    <label class="form-label fw-semibold">Jenis Transaksi <span class="text-danger">*</span></label>
+                    <select class="form-select @error('form.transaction_type') is-invalid @enderror" wire:model="form.transaction_type">
+                        <option value="refund">Pencairan / Refund</option>
+                        <option value="manual_adjustment">Tambah Saldo Manual</option>
                     </select>
-                    @error('form.transaction_type') <span class="text-danger">{{ $message }}</span> @enderror
+                    @error('form.transaction_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Amount</label>
-                    <input type="number" min="1" step="1" class="form-control" wire:model="form.amount">
-                    @error('form.amount') <span class="text-danger">{{ $message }}</span> @enderror
+                    <label class="form-label fw-semibold">Nominal (Rp) <span class="text-danger">*</span></label>
+                    <input type="number" min="1" step="1" class="form-control @error('form.amount') is-invalid @enderror" wire:model="form.amount" placeholder="0">
+                    @error('form.amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Notes</label>
-                    <input type="text" class="form-control" wire:model="form.notes" placeholder="Optional">
-                    @error('form.notes') <span class="text-danger">{{ $message }}</span> @enderror
+                    <label class="form-label fw-semibold">Keterangan / Referensi</label>
+                    <input type="text" class="form-control @error('form.notes') is-invalid @enderror" wire:model="form.notes" placeholder="Contoh: Refund ke Rek BCA 123...">
+                    @error('form.notes') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
-                <div class="col-md-1 d-flex align-items-end">
-                    <button class="btn btn-primary w-100" type="submit">
-                        <i class="fas fa-save"></i>
+                <div class="col-12 d-flex justify-content-end pt-2 border-top">
+                    <button class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm" type="submit">
+                        <i class="fas fa-save me-1"></i> Simpan Transaksi Saldo
                     </button>
                 </div>
             </form>
         </div>
-        <div class="card-body">
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-3 p-md-4 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fa fa-table fs-5"></i>
+                </div>
+                <div>
+                    <h4 class="card-title fw-bold mb-0 text-dark">Riwayat Transaksi Saldo Deposit & Kredit</h4>
+                    <span class="text-muted small">Daftar lengkap mutasi saldo deposit mahasiswa, kelebihan pembayaran, potongan otomatis pada invoice, dan pencairan.</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-3 p-md-4">
             <livewire:financial.student-credit-table />
         </div>
     </div>

@@ -471,224 +471,270 @@ new class extends Component
 };
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
+<div>
+    <x-alert />
 
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Section A - Header Nilai</h5>
-                <a href="{{ route('admin.academic.student-grades.show', ['id' => $studentGrade->id]) }}" class="btn btn-info">
-                    <i class="fas fa-eye me-1"></i> Lihat Detail
-                </a>
-            </div>
-            <div class="card-body">
-                <form wire:submit.prevent="updateGradeHeader">
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Study Plan Detail <span class="text-danger">*</span></label>
-                            <select class="form-select" wire:model="gradeForm.study_plan_detail_id" required>
-                                <option value="">Pilih Study Plan Detail</option>
-                                @foreach($studyPlanDetails as $detail)
-                                    <option value="{{ $detail['id'] }}">{{ $detail['label'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('gradeForm.study_plan_detail_id') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Graded By</label>
-                            <select class="form-select" wire:model="gradeForm.graded_by">
-                                <option value="">Pilih Penilai (Dosen Offering)</option>
-                                @foreach($graders as $grader)
-                                    <option value="{{ $grader['id'] }}">{{ $grader['label'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('gradeForm.graded_by') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Status Lifecycle</label>
-                            <input type="text" class="form-control" value="{{ $studentGrade->grade_status }}" readonly>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Total Bobot</label>
-                            <input type="text" class="form-control" value="{{ number_format($this->totalWeight, 2) }}%" readonly>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Final Score</label>
-                            <input type="text" class="form-control" value="{{ $studentGrade->final_score ?? '-' }}" readonly>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Letter Grade</label>
-                            <input type="text" class="form-control" value="{{ $studentGrade->letter_grade ?? '-' }}" readonly>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Grade Point</label>
-                            <input type="text" class="form-control" value="{{ $studentGrade->grade_point ?? '-' }}" readonly>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Result Status</label>
-                            <input type="text" class="form-control" value="{{ $studentGrade->result_status ?? '-' }}" readonly>
-                        </div>
-
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Catatan</label>
-                            <textarea class="form-control" rows="2" wire:model="gradeForm.notes"></textarea>
-                            @error('gradeForm.notes') <span class="text-danger">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="col-12 mb-3">
-                            @if ($this->canFinalize)
-                                <div class="alert alert-success mb-0">
-                                    <i class="fas fa-check-circle me-2"></i>
-                                    Total bobot sudah tepat 100%. Nilai dapat difinalisasi.
-                                </div>
-                            @else
-                                <div class="alert alert-warning mb-0">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    Total bobot saat ini {{ number_format($this->totalWeight, 2) }}%.
-                                    Sisa bobot menuju 100%: {{ number_format($this->remainingWeight, 2) }}%.
-                                </div>
-                            @endif
-                            @error('finalize') <span class="text-danger d-block mt-2">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i> Simpan Header
-                            </button>
-                            <button type="button" class="btn btn-success" wire:click="finalizeGrade" @disabled(! $this->canFinalize)>
-                                <i class="fas fa-check me-1"></i> Finalize
-                            </button>
-                            <button type="button" class="btn btn-primary" wire:click="publishGrade" @disabled($studentGrade->grade_status !== 'Finalized')>
-                                <i class="fas fa-bullhorn me-1"></i> Publish
-                            </button>
-                            <button type="button" class="btn btn-secondary" wire:click="cancel">
-                                <i class="fas fa-arrow-left me-1"></i> Kembali
-                            </button>
-                            @error('publish') <span class="text-danger d-block mt-2">{{ $message }}</span> @enderror
-                        </div>
-                    </div>
-                </form>
-            </div>
+    <x-admin.academic.header
+        title="Edit & Penilaian Evaluasi (KHS)"
+        description="Kelola informasi header evaluasi, atur bobot persentase, dan masukkan skor untuk setiap komponen penilaian."
+        icon="graduation-cap"
+    >
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.academic.student-grades.show', ['id' => $studentGrade->id]) }}" class="btn btn-sm btn-light text-info fw-semibold rounded-pill px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2 border">
+                <i class="fa fa-eye"></i> <span>Lihat Detail</span>
+            </a>
+            <button type="button" class="btn btn-sm btn-light text-dark fw-semibold rounded-pill px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2 border" wire:click="cancel">
+                <i class="fa fa-arrow-left"></i> <span>Kembali ke daftar</span>
+            </button>
         </div>
+    </x-admin.academic.header>
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Section B - Komponen Nilai</h5>
-                @if (ActivePermission::check('student-grade.update'))
-                    <button class="btn btn-success" wire:click="startCreateComponent">
-                        <i class="fas fa-plus me-1"></i> Tambah Komponen
-                    </button>
-                @endif
-            </div>
-            <div class="card-body">
-                @if ($showComponentForm)
-                    <div class="border rounded p-3 mb-3 ">
-                        <h6 class="mb-3">{{ $editingComponentId ? 'Edit Komponen Nilai' : 'Tambah Komponen Nilai' }}</h6>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-2">
-                                <label class="form-label">Nama Komponen <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" wire:model="componentForm.name" placeholder="Assignment / Quiz / UTS / UAS">
-                                @error('componentForm.name') <span class="text-danger">{{ $message }}</span> @enderror
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-file-signature fs-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="card-title fw-bold mb-1 text-dark">Section A - Header Nilai & Evaluasi Akhir</h4>
+                                <div class="text-muted small">Kelola kaitan mata kuliah (KRS), dosen penilai, dan status finalisasi hasil studi.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-2 shadow-sm fw-semibold d-inline-flex align-items-center gap-2" wire:click="finalizeGrade" @disabled(! $this->canFinalize)>
+                                <i class="fas fa-check"></i> <span>Finalize Nilai</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-2 shadow-sm fw-semibold d-inline-flex align-items-center gap-2" wire:click="publishGrade" @disabled($studentGrade->grade_status !== 'Finalized')>
+                                <i class="fas fa-bullhorn"></i> <span>Publish</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form wire:submit.prevent="updateGradeHeader">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Study Plan Detail (KRS) <span class="text-danger">*</span></label>
+                                <select class="form-select" wire:model="gradeForm.study_plan_detail_id" required>
+                                    <option value="">Pilih Study Plan Detail</option>
+                                    @foreach($studyPlanDetails as $detail)
+                                        <option value="{{ $detail['id'] }}">{{ $detail['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('gradeForm.study_plan_detail_id') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                             </div>
 
-                            <div class="col-md-2 mb-2">
-                                <label class="form-label">Bobot (%)</label>
-                                <input type="number" step="0.01" min="0" max="100" class="form-control form-control-sm" wire:model="componentForm.weight_percentage">
-                                @error('componentForm.weight_percentage') <span class="text-danger">{{ $message }}</span> @enderror
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Dosen Penilai (Graded By)</label>
+                                <select class="form-select" wire:model="gradeForm.graded_by">
+                                    <option value="">Pilih Penilai (Dosen Offering)</option>
+                                    @foreach($graders as $grader)
+                                        <option value="{{ $grader['id'] }}">{{ $grader['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('gradeForm.graded_by') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
                             </div>
 
-                            <div class="col-md-2 mb-2">
-                                <label class="form-label">Skor</label>
-                                <input type="number" step="0.01" min="0" max="100" class="form-control form-control-sm" wire:model="componentForm.score">
-                                @error('componentForm.score') <span class="text-danger">{{ $message }}</span> @enderror
-                            </div>
-
-                            <div class="col-md-2 mb-2">
-                                <label class="form-label">Urutan</label>
-                                <input type="number" min="0" class="form-control form-control-sm" wire:model="componentForm.sort_order">
-                                @error('componentForm.sort_order') <span class="text-danger">{{ $message }}</span> @enderror
-                            </div>
-
-                            <div class="col-md-2 mb-2">
-                                <label class="form-label">Aksi</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Status Lifecycle</label>
                                 <div>
-                                    <button type="button" class="btn btn-primary" wire:click="saveComponent">
-                                        <i class="fas fa-save"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-secondary" wire:click="cancelComponentForm">
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                                    @php
+                                        $statusClass = match($studentGrade->grade_status) {
+                                            'Finalized' => 'bg-success',
+                                            'Published' => 'bg-primary',
+                                            default => 'bg-secondary'
+                                        };
+                                    @endphp
+                                    <span class="badge rounded-pill px-3 py-2 {{ $statusClass }}">{{ $studentGrade->grade_status }}</span>
                                 </div>
                             </div>
 
-                            <div class="col-12 mb-2">
-                                <label class="form-label">Catatan</label>
-                                <input type="text" class="form-control form-control-sm" wire:model="componentForm.notes">
-                                @error('componentForm.notes') <span class="text-danger">{{ $message }}</span> @enderror
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block mb-1">Total Bobot Komponen</label>
+                                <div class="fw-bold fs-5 text-dark">{{ number_format($this->totalWeight, 2) }}%</div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block mb-1">Skor Akhir (Final Score)</label>
+                                <div class="fw-bold fs-5 text-primary">{{ $studentGrade->final_score ?? '-' }}</div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block mb-1">Nilai Huruf (Letter Grade)</label>
+                                <div class="fw-bold fs-5 text-success">{{ $studentGrade->letter_grade ?? '-' }}</div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block mb-1">Indeks Nilai & Status</label>
+                                <div class="fw-semibold text-dark">{{ $studentGrade->grade_point ?? '-' }} <span class="badge bg-light text-dark border ms-2">{{ $studentGrade->result_status ?? '-' }}</span></div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Catatan Evaluasi</label>
+                                <textarea class="form-control" rows="2" wire:model="gradeForm.notes" placeholder="Catatan evaluasi pengajar..."></textarea>
+                                @error('gradeForm.notes') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-12">
+                                @if ($this->canFinalize)
+                                    <div class="alert alert-success border-0 shadow-sm rounded-3 mb-0 d-flex align-items-center gap-3 p-3">
+                                        <i class="fas fa-check-circle fs-5"></i>
+                                        <div>Total bobot komponen sudah tepat <strong>100%</strong>. Nilai dapat difinalisasi dan dikunci.</div>
+                                    </div>
+                                @else
+                                    <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-0 d-flex align-items-center gap-3 p-3">
+                                        <i class="fas fa-exclamation-triangle fs-5"></i>
+                                        <div>Total bobot saat ini <strong>{{ number_format($this->totalWeight, 2) }}%</strong>. Sisa bobot menuju 100%: <strong>{{ number_format($this->remainingWeight, 2) }}%</strong>.</div>
+                                    </div>
+                                @endif
+                                @error('finalize') <span class="text-danger small d-block mt-2">{{ $message }}</span> @enderror
+                                @error('publish') <span class="text-danger small d-block mt-2">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-12 border-top pt-3 d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-light rounded-pill px-3 py-2" wire:click="cancel">
+                                    <i class="fas fa-times me-1"></i> Batal
+                                </button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-semibold">
+                                    <i class="fas fa-save me-1"></i> Simpan Header
+                                </button>
                             </div>
                         </div>
-                    </div>
-                @endif
+                    </form>
+                </div>
+            </div>
 
-                @if ($this->gradeComponents->count() > 0)
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Komponen</th>
-                                    <th>Bobot (%)</th>
-                                    <th>Skor</th>
-                                    <th>Urutan</th>
-                                    <th>Catatan</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($this->gradeComponents as $index => $component)
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="fa fa-list-ol fs-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="card-title fw-bold mb-1 text-dark">Section B - Komponen Penilaian</h4>
+                                <div class="text-muted small">Rincian bobot dan skor evaluasi (Tugas, Kuis, UTS, UAS, Praktikum, dll).</div>
+                            </div>
+                        </div>
+                        @if (ActivePermission::check('student-grade.update'))
+                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-2 shadow-sm fw-semibold d-inline-flex align-items-center gap-2" wire:click="startCreateComponent">
+                                <i class="fas fa-plus"></i> <span>Tambah Komponen</span>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    @if ($showComponentForm)
+                        <div class="card border border-primary bg-light rounded-4 p-4 mb-4">
+                            <h6 class="fw-bold mb-3 text-dark"><i class="fa fa-edit text-primary me-2"></i>{{ $editingComponentId ? 'Edit Komponen Nilai' : 'Tambah Komponen Nilai Baru' }}</h6>
+
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">Nama Komponen <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" wire:model="componentForm.name" placeholder="misal: Tugas 1 / Kuis / UTS / UAS">
+                                    @error('componentForm.name') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-semibold">Bobot (%)</label>
+                                    <input type="number" step="0.01" min="0" max="100" class="form-control" wire:model="componentForm.weight_percentage" placeholder="0 - 100">
+                                    @error('componentForm.weight_percentage') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-semibold">Skor (0-100)</label>
+                                    <input type="number" step="0.01" min="0" max="100" class="form-control" wire:model="componentForm.score" placeholder="Skor">
+                                    @error('componentForm.score') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-semibold">Urutan</label>
+                                    <input type="number" min="0" class="form-control" wire:model="componentForm.sort_order">
+                                    @error('componentForm.sort_order') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <div class="d-flex gap-2 w-100">
+                                        <button type="button" class="btn btn-primary rounded-pill px-3 py-2 flex-grow-1 shadow-sm fw-semibold" wire:click="saveComponent">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-light rounded-pill px-3 py-2 border" wire:click="cancelComponentForm">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Catatan Komponen</label>
+                                    <input type="text" class="form-control" wire:model="componentForm.notes" placeholder="Keterangan opsional mengenai komponen ini...">
+                                    @error('componentForm.notes') <span class="text-danger small mt-1 d-block">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($this->gradeComponents->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>{{ $component->name }}</td>
-                                        <td>{{ $component->weight_percentage ?? '-' }}</td>
-                                        <td>{{ $component->score ?? '-' }}</td>
-                                        <td>{{ $component->sort_order }}</td>
-                                        <td>{{ $component->notes ?? '-' }}</td>
-                                        <td>
-                                            @if (ActivePermission::check('student-grade.update'))
-                                                <button class="btn btn-warning" wire:click="startEditComponent({{ $component->id }})">
-                                                    <i class="fas fa-pencil"></i>
-                                                </button>
-                                                <button class="btn btn-danger" wire:click="confirmDeleteComponent({{ $component->id }})">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            @endif
-                                        </td>
+                                        <th class="py-3 px-3" style="width: 50px;">No</th>
+                                        <th class="py-3 px-3">Komponen</th>
+                                        <th class="py-3 px-3 text-center">Bobot (%)</th>
+                                        <th class="py-3 px-3 text-center">Skor</th>
+                                        <th class="py-3 px-3 text-center">Urutan</th>
+                                        <th class="py-3 px-3">Catatan</th>
+                                        <th class="py-3 px-3 text-end" style="width: 120px;">Aksi</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr>
-                                    <th colspan="2" class="text-end">Total Bobot</th>
-                                    <th>{{ number_format($this->totalWeight, 2) }}%</th>
-                                    <th colspan="4">Sisa {{ number_format($this->remainingWeight, 2) }}%</th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                @else
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-info-circle me-2"></i> Belum ada komponen nilai.
-                    </div>
-                @endif
+                                </thead>
+                                <tbody>
+                                    @foreach($this->gradeComponents as $index => $component)
+                                        <tr>
+                                            <td class="px-3 fw-semibold text-muted">{{ $index + 1 }}</td>
+                                            <td class="px-3 fw-bold text-dark">{{ $component->name }}</td>
+                                            <td class="px-3 text-center fw-semibold text-primary">{{ $component->weight_percentage ? number_format($component->weight_percentage, 2).'%' : '-' }}</td>
+                                            <td class="px-3 text-center fw-bold text-success">{{ $component->score ?? '-' }}</td>
+                                            <td class="px-3 text-center">{{ $component->sort_order }}</td>
+                                            <td class="px-3 text-muted small">{{ $component->notes ?? '-' }}</td>
+                                            <td class="px-3 text-end">
+                                                @if (ActivePermission::check('student-grade.update'))
+                                                    <div class="btn-group">
+                                                        <button type="button" class="btn btn-sm btn-light text-warning border rounded-start-pill px-2 py-1" wire:click="startEditComponent({{ $component->id }})">
+                                                            <i class="fas fa-pencil"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-light text-danger border rounded-end-pill px-2 py-1" wire:click="confirmDeleteComponent({{ $component->id }})">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="2" class="text-end py-3 px-3 fw-bold">Total Bobot:</th>
+                                        <th class="text-center py-3 px-3 fw-bold text-primary fs-6">{{ number_format($this->totalWeight, 2) }}%</th>
+                                        <th colspan="4" class="py-3 px-3 fw-semibold text-muted">Sisa Menuju 100%: <span class="badge {{ $this->canFinalize ? 'bg-success' : 'bg-warning text-dark' }} px-2 py-1">{{ number_format($this->remainingWeight, 2) }}%</span></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-info border-0 shadow-sm rounded-4 p-4 mb-0 d-flex align-items-center gap-3">
+                            <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                                <i class="fa fa-info-circle fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Belum Ada Komponen Nilai</h6>
+                                <div class="small">Silakan klik tombol <strong>"Tambah Komponen"</strong> di atas untuk memasukkan bobot dan skor evaluasi mahasiswa.</div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

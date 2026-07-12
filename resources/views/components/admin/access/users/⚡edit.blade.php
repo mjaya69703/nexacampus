@@ -36,8 +36,8 @@ new class extends Component {
         $this->userForm = $this->user->toArray();
         $this->studentForm = $this->user->studentProfile?->toArray() ?? [];
         $this->lecturerForm = $this->user->lecturerProfile?->toArray() ?? [];
-        $this->availableRoles = Role::query()->pluck('name')->toArray();
-        $this->selectedRoles = $this->user->roles->pluck('name')->toArray();
+        $this->availableRoles = Role::query()->pluck('name', 'id')->toArray();
+        $this->selectedRoles = $this->user->roles->pluck('id')->map(fn ($roleId) => (string) $roleId)->toArray();
         $this->availableFaculties = Faculty::where('is_active', true)->pluck('name', 'id')->toArray();
         $this->availableStudyPrograms = StudyProgram::where('is_active', true)->pluck('name', 'id')->toArray();
         $this->availableAcademicYears = AcademicYear::pluck('name', 'id')->toArray();
@@ -72,7 +72,7 @@ new class extends Component {
             'userForm.tfa_setup' => 'boolean',
 
             'selectedRoles' => 'nullable|array',
-            'selectedRoles.*' => 'string|exists:roles,name',
+            'selectedRoles.*' => 'exists:roles,id',
 
             'studentForm.study_program_id' => 'nullable|exists:study_programs,id',
             'studentForm.entry_academic_year_id' => 'nullable|exists:academic_years,id',
@@ -133,10 +133,16 @@ new class extends Component {
             }
 
             $user->save();
-            $user->syncRoles($validatedData['selectedRoles'] ?? []);
 
-            $isStudent = in_array('student', $this->selectedRoles, true);
-            $isLecturer = in_array('lecturer', $this->selectedRoles, true);
+            if (! empty($validatedData['selectedRoles'])) {
+                $user->syncRoles(Role::whereIn('id', $validatedData['selectedRoles'])->get());
+            } else {
+                $user->syncRoles([]);
+            }
+
+            $roleIdsByName = array_flip($this->availableRoles);
+            $isStudent = isset($roleIdsByName['student']) && in_array((string) $roleIdsByName['student'], $this->selectedRoles, true);
+            $isLecturer = isset($roleIdsByName['lecturer']) && in_array((string) $roleIdsByName['lecturer'], $this->selectedRoles, true);
 
             $studentForm = $validatedData['studentForm'] ?? [];
             $lecturerForm = $validatedData['lecturerForm'] ?? [];
@@ -182,12 +188,11 @@ new class extends Component {
     public function render()
     {
         $data = [
-            'menus' => 'User Management', // Data menu
-            'pages' => 'Edit User', // Data halaman
-            'user' => $this->user, // Data user
+            'menus' => 'Manajemen Akses',
+            'pages' => 'Edit User',
+            'user' => $this->user,
         ];
 
-        // Kirim data ke view dan layout secara langsung
         return $this->view($data)->layout('layouts.app', $data);
     }
 };
@@ -196,9 +201,9 @@ new class extends Component {
 @push('styles')
     <style>
         .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 55%, #111827 100%);
             padding: 2rem;
-            border-radius: 10px;
+            border-radius: 1rem;
             color: white;
             margin-bottom: 2rem;
         }
@@ -206,30 +211,42 @@ new class extends Component {
         .profile-photo {
             width: 150px;
             height: 150px;
-            border-radius: 50%;
-            border: 5px solid white;
+            border-radius: 1rem;
+            border: 5px solid rgba(255, 255, 255, 0.2);
             object-fit: cover;
         }
 
         .nav-tabs .nav-link.active {
-            background-color: #667eea;
+            background-color: #1e3a8a;
             color: white;
-            border-color: #667eea;
+            border-color: #1e3a8a;
         }
 
         .form-section {
             padding: 1.5rem;
-            border-radius: 8px;
+            border-radius: 1rem;
+            background-color: #f8fafc;
             margin-bottom: 1.5rem;
         }
     </style>
 @endpush
 
-<div class="row">
-    <div class="col-12">
-        <x-alert />
-        <div class="card">
-            <div class="card-body">
+<div class="w-100">
+    <x-alert />
+
+    <x-admin.access.header
+        title="Edit User"
+        description="Perbarui identitas, role, dan profil akademik atau kepegawaian dengan struktur yang lebih rapi."
+        icon="users"
+    >
+        <a href="{{ route('admin.access.users.index') }}" class="btn btn-sm btn-light text-primary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <i class="fa fa-arrow-left"></i>
+            <span>Kembali ke Daftar</span>
+        </a>
+    </x-admin.access.header>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
                 <!-- Profile Header -->
                 <div class="profile-header">
                     <div class="row align-items-center">
@@ -241,14 +258,15 @@ new class extends Component {
                             @endif
                         </div>
                         <div class="col-md-10">
-                            <h2 class="mb-0">{{ $user->name }}</h2>
-                            <p class="mb-1">{{ ucfirst($activeRole) }}</p>
-                            <p class="mb-0"><i class="fas fa-envelope"></i> {{ $user->email }} | <i class="fas fa-phone"></i> {{ $user->phone }}</p>
+                            <div class="text-uppercase text-white text-opacity-75 fw-bold small mb-1">Manajemen Akses</div>
+                            <h2 class="mb-1 fw-bold">{{ $user->name }}</h2>
+                            <p class="mb-1 text-white text-opacity-85">{{ ucfirst($activeRole) }}</p>
+                            <p class="mb-0 text-white text-opacity-85"><i class="fas fa-envelope"></i> {{ $user->email }} | <i class="fas fa-phone"></i> {{ $user->phone }}</p>
                         </div>
                     </div>
                 </div>
                 <!-- Form Update Profile -->
-                <form wire:submit.prevent="updateProfile" enctype="multipart/form-data">
+                <form wire:submit.prevent="updateProfile" enctype="multipart/form-data" class="p-4">
                     @csrf
 
                     <!-- Nav Tabs -->
@@ -265,7 +283,7 @@ new class extends Component {
                             </a>
                         </li>
 
-                        @if(session('active_role') === 'student' || in_array('student', $selectedRoles))
+                        @if(session('active_role') === 'student' || in_array((string) ($roleIdsByName['student'] ?? ''), $selectedRoles, true))
                         <li class="nav-item">
                             <a class="nav-link {{ $tab === 'student' ? 'active' : '' }}" wire:click="$set('tab', 'student')" href="#student" role="tab">
                                 <i class="fas fa-book me-2"></i> Profil Mahasiswa
@@ -273,7 +291,7 @@ new class extends Component {
                         </li>
                         @endif
 
-                        @if(session('active_role') === 'lecturer' || in_array('lecturer', $selectedRoles))
+                        @if(session('active_role') === 'lecturer' || in_array((string) ($roleIdsByName['lecturer'] ?? ''), $selectedRoles, true))
                         <li class="nav-item">
                             <a class="nav-link {{ $tab === 'lecturer' ? 'active' : '' }}" wire:click="$set('tab', 'lecturer')" href="#lecturer" role="tab">
                                 <i class="fas fa-chalkboard-user me-2"></i> Profil Dosen
@@ -438,8 +456,8 @@ new class extends Component {
                                         <label class="form-label">Pilih Role</label>
                                         <div wire:ignore>
                                             <select id="roles-select" class="form-select" multiple>
-                                                @foreach($availableRoles as $roleName)
-                                                    <option value="{{ $roleName }}" @selected(in_array($roleName, $selectedRoles, true))>
+                                                @foreach($availableRoles as $roleId => $roleName)
+                                                    <option value="{{ $roleId }}" @selected(in_array((string) $roleId, $selectedRoles, true))>
                                                         {{ ucfirst($roleName) }}
                                                     </option>
                                                 @endforeach
@@ -476,7 +494,7 @@ new class extends Component {
                         </div>
 
                         <!-- Tab Profil Mahasiswa -->
-                        @if(session('active_role') === 'student' || in_array('student', $selectedRoles))
+                        @if(session('active_role') === 'student' || in_array((string) ($roleIdsByName['student'] ?? ''), $selectedRoles, true))
                         <div class="tab-pane {{ $tab === 'student' ? 'active show' : '' }}" id="student" role="tabpanel">
                             <div class="form-section">
                                 <h5 class="mb-3">Data Akademik</h5>
@@ -556,7 +574,7 @@ new class extends Component {
                         @endif
 
                         <!-- Tab Profil Dosen -->
-                        @if(session('active_role') === 'lecturer' || in_array('lecturer', $selectedRoles))
+                        @if(session('active_role') === 'lecturer' || in_array((string) ($roleIdsByName['lecturer'] ?? ''), $selectedRoles, true))
                         <div class="tab-pane {{ $tab === 'lecturer' ? 'active show' : '' }}" id="lecturer" role="tabpanel">
                             <div class="form-section">
                                 <h5 class="mb-3">Data Kepegawaian</h5>

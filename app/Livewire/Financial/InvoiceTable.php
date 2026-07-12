@@ -24,7 +24,7 @@ final class InvoiceTable extends BasePowerGridTable
 
     protected ?string $bulkActionPermissionPrefix = 'student-invoice';
 
-    protected string $bulkActionItemLabel = 'student invoice';
+    protected string $bulkActionItemLabel = 'tagihan mahasiswa';
 
     public function setUp(): array
     {
@@ -59,7 +59,12 @@ final class InvoiceTable extends BasePowerGridTable
         return PowerGrid::fields()
             ->add('id')
             ->add('invoice_number')
-            ->add('invoice_type', fn (StudentInvoice $model) => ucfirst(str_replace('_', ' ', $model->invoice_type)))
+            ->add('invoice_type', fn (StudentInvoice $model) => match($model->invoice_type) {
+                'tuition' => 'SPP / Kuliah',
+                'registration' => 'Pendaftaran',
+                'exam' => 'Ujian Akhir',
+                default => ucfirst(str_replace('_', ' ', $model->invoice_type))
+            })
             ->add('student_name', fn (StudentInvoice $model) => $model->studentProfile?->user?->name ?? '-')
             ->add('nim', fn (StudentInvoice $model) => $model->studentProfile?->nim ?? '-')
             ->add('study_program', fn (StudentInvoice $model) => $model->studentProfile?->studyProgram?->name ?? '-')
@@ -69,56 +74,73 @@ final class InvoiceTable extends BasePowerGridTable
             ->add('outstanding_amount_label', fn (StudentInvoice $model) => $this->money($model->outstanding_amount))
             ->add('status_badge', fn (StudentInvoice $model) => $this->statusBadge($model->status))
             ->add('status')
-            ->add('due_date', fn (StudentInvoice $model) => $model->due_date?->format('d M Y'));
+            ->add('due_date', fn (StudentInvoice $model) => $model->due_date?->format('d M Y') ?? '-');
     }
 
     public function columns(): array
     {
         return [
-            Column::make('Invoice', 'invoice_number')->sortable()->searchable(),
-            Column::make('Type', 'invoice_type')->sortable()->searchable(),
+            Column::make('Nomor Tagihan', 'invoice_number')->sortable()->searchable(),
+            Column::make('Jenis', 'invoice_type', 'invoice_type')->sortable()->searchable(),
             Column::make('Mahasiswa', 'student_name')->sortable()->searchable(),
             Column::make('NIM', 'nim')->sortable()->searchable(),
             Column::make('Program Studi', 'study_program')->sortable()->searchable()->hidden(),
-            Column::make('Academic Year', 'academic_year')->sortable()->searchable(),
+            Column::make('Tahun Akademik', 'academic_year')->sortable()->searchable(),
             Column::make('Semester', 'semester')->sortable(),
-            Column::make('Total', 'total_amount_label'),
-            Column::make('Outstanding', 'outstanding_amount_label'),
-            Column::make('Status', 'status_badge'),
-            Column::make('Due Date', 'due_date')->sortable(),
-            Column::action('Action'),
+            Column::make('Total Tagihan', 'total_amount_label'),
+            Column::make('Sisa Tunggakan', 'outstanding_amount_label'),
+            Column::make('Status Bayar', 'status_badge', 'status'),
+            Column::make('Jatuh Tempo', 'due_date', 'due_date')->sortable(),
+            Column::action('Aksi'),
         ];
     }
 
     public function filters(): array
     {
         return [
-            Filter::select('academic_year_id', 'academic_year_id')
-                ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
-                ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::select('status', 'status')
+            Filter::inputText('invoice_number', 'invoice_number')
+                ->operators(['contains']),
+            Filter::inputText('student_name', 'studentProfile.user.first_name')
+                ->operators(['contains']),
+            Filter::inputText('nim', 'studentProfile.nim')
+                ->operators(['contains']),
+            Filter::select('invoice_type', 'invoice_type')
                 ->dataSource(collect([
-                    ['id' => 'draft', 'name' => 'Draft'],
-                    ['id' => 'issued', 'name' => 'Issued'],
-                    ['id' => 'partially_paid', 'name' => 'Partially Paid'],
-                    ['id' => 'paid', 'name' => 'Paid'],
-                    ['id' => 'overdue', 'name' => 'Overdue'],
-                    ['id' => 'cancelled', 'name' => 'Cancelled'],
+                    ['id' => 'tuition', 'name' => 'SPP / Uang Kuliah'],
+                    ['id' => 'registration', 'name' => 'Biaya Pendaftaran'],
+                    ['id' => 'exam', 'name' => 'Biaya Ujian Akhir'],
                 ]))
                 ->optionValue('id')
                 ->optionLabel('name'),
+            Filter::select('academic_year', 'academic_year_id')
+                ->dataSource(AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name']))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('status_badge', 'status')
+                ->dataSource(collect([
+                    ['id' => 'draft', 'name' => 'Draft Belum Terbit (Draft)'],
+                    ['id' => 'issued', 'name' => 'Aktif / Belum Bayar (Issued)'],
+                    ['id' => 'partially_paid', 'name' => 'Cicilan / Bayar Sebagian (Partially Paid)'],
+                    ['id' => 'paid', 'name' => 'Lunas (Paid)'],
+                    ['id' => 'overdue', 'name' => 'Menunggak / Lewat Tempo (Overdue)'],
+                    ['id' => 'cancelled', 'name' => 'Dibatalkan (Cancelled)'],
+                ]))
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::datepicker('due_date', 'due_date'),
         ];
     }
 
     #[On('issue')]
     public function issue($id): void
     {
-        abort_unless(ActivePermission::check('student-invoice.update'), 403);
+        if (! ActivePermission::check('student-invoice.update')) {
+            return;
+        }
 
         try {
             app(InvoicePublishingService::class)->issue(StudentInvoice::findOrFail($id), auth()->id());
-            session()->flash('success', 'Invoice berhasil diterbitkan.');
+            session()->flash('success', 'Tagihan berhasil diterbitkan ke mahasiswa.');
         } catch (\Throwable $exception) {
             session()->flash('error', $exception->getMessage());
         }
@@ -143,11 +165,11 @@ final class InvoiceTable extends BasePowerGridTable
     {
         $this->js('
             Swal.fire({
-                title: "Batalkan invoice?",
-                text: "Invoice akan ditandai cancelled dan tidak dianggap outstanding.",
+                title: "Batalkan tagihan ini?",
+                text: "Tagihan akan ditandai cancelled dan tidak dianggap sebagai tunggakan mahasiswa.",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonText: "Ya batalkan",
+                confirmButtonText: "Ya, Batalkan",
                 cancelButtonText: "Batal"
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -160,7 +182,9 @@ final class InvoiceTable extends BasePowerGridTable
     #[On('cancelInvoice')]
     public function cancelInvoice($id = null): void
     {
-        abort_unless(ActivePermission::check('student-invoice.delete'), 403);
+        if (! ActivePermission::check('student-invoice.delete')) {
+            return;
+        }
 
         StudentInvoice::findOrFail($id)->update([
             'status' => 'cancelled',
@@ -169,7 +193,7 @@ final class InvoiceTable extends BasePowerGridTable
             'updated_by' => auth()->id(),
         ]);
 
-        session()->flash('success', 'Invoice berhasil dibatalkan.');
+        session()->flash('success', 'Tagihan berhasil dibatalkan.');
         $this->dispatch('pg:eventRefresh-invoiceTable');
     }
 
@@ -179,29 +203,29 @@ final class InvoiceTable extends BasePowerGridTable
 
         if (ActivePermission::check('student-invoice.view')) {
             $actions[] = Button::add('show')
-                ->slot('<i class="fa fa-eye"></i>')
-                ->class('btn btn-primary')
+                ->slot('<i class="fa fa-eye me-1"></i>Detail')
+                ->class('btn btn-sm btn-outline-info rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1 me-1')
                 ->dispatch('show', ['rowId' => $row->id]);
         }
 
         if ($row->status === 'draft' && ActivePermission::check('student-invoice.update')) {
             $actions[] = Button::add('issue')
-                ->slot('<i class="fa fa-paper-plane"></i>')
-                ->class('btn btn-success')
+                ->slot('<i class="fa fa-paper-plane me-1"></i>Terbit')
+                ->class('btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1 me-1')
                 ->dispatch('issue', ['id' => $row->id]);
         }
 
         if ($row->isEditable() && ActivePermission::check('student-invoice.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
-                ->class('btn btn-warning')
+                ->slot('<i class="fa fa-edit me-1"></i>Edit')
+                ->class('btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1 me-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if ($row->status !== 'cancelled' && ActivePermission::check('student-invoice.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-ban"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-ban me-1"></i>Batal')
+                ->class('btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 
@@ -210,21 +234,31 @@ final class InvoiceTable extends BasePowerGridTable
 
     private function money(float|string|null $amount): string
     {
-        return 'Rp '.number_format((float) $amount, 0, ',', '.');
+        return 'Rp ' . number_format((float) $amount, 0, ',', '.');
     }
 
     private function statusBadge(string $status): string
     {
         $class = match ($status) {
-            'paid' => 'bg-success',
-            'partially_paid' => 'bg-info',
-            'overdue' => 'bg-danger',
-            'cancelled' => 'bg-secondary',
-            'issued' => 'bg-primary',
+            'paid' => 'bg-success text-white',
+            'partially_paid' => 'bg-info text-white',
+            'overdue' => 'bg-danger text-white',
+            'cancelled' => 'bg-secondary text-white',
+            'issued' => 'bg-primary text-white',
             'draft' => 'bg-light text-dark',
             default => 'bg-warning text-dark',
         };
 
-        return '<span class="badge '.$class.'">'.str_replace('_', ' ', ucfirst($status)).'</span>';
+        $label = match ($status) {
+            'paid' => 'Lunas',
+            'partially_paid' => 'Cicilan',
+            'overdue' => 'Jatuh Tempo',
+            'cancelled' => 'Dibatalkan',
+            'issued' => 'Aktif',
+            'draft' => 'Draft',
+            default => str_replace('_', ' ', ucfirst($status)),
+        };
+
+        return '<span class="badge '.$class.' rounded-pill px-3 py-1 fs-8">'.$label.'</span>';
     }
 }

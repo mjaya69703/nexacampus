@@ -57,7 +57,15 @@ new class extends Component
             ->orderByRaw("FIELD(status, 'draft', 'issued', 'partially_paid', 'overdue', 'paid', 'cancelled')")
             ->get()
             ->map(fn (StudentInvoice $row) => [
-                'status' => str($row->status)->replace('_', ' ')->title()->toString(),
+                'status' => match($row->status) {
+                    'draft' => 'Draft Belum Terbit',
+                    'issued' => 'Aktif / Belum Bayar',
+                    'partially_paid' => 'Cicilan Sebagian',
+                    'overdue' => 'Jatuh Tempo (Overdue)',
+                    'paid' => 'Lunas (Paid)',
+                    'cancelled' => 'Dibatalkan',
+                    default => str($row->status)->replace('_', ' ')->title()->toString()
+                },
                 'invoice_count' => (int) $row->invoice_count,
                 'total_amount' => (float) $row->total_amount,
                 'outstanding_amount' => (float) $row->outstanding_amount,
@@ -72,7 +80,12 @@ new class extends Component
             ->limit(6)
             ->get()
             ->map(fn (StudentInvoice $row) => [
-                'invoice_type' => str($row->invoice_type)->replace('_', ' ')->title()->toString(),
+                'invoice_type' => match($row->invoice_type) {
+                    'tuition' => 'SPP / Uang Kuliah',
+                    'registration' => 'Biaya Pendaftaran',
+                    'exam' => 'Biaya Ujian Akhir',
+                    default => str($row->invoice_type)->replace('_', ' ')->title()->toString()
+                },
                 'invoice_count' => (int) $row->invoice_count,
                 'total_amount' => (float) $row->total_amount,
                 'paid_amount' => (float) $row->paid_amount,
@@ -135,14 +148,14 @@ new class extends Component
     public function render()
     {
         return $this->view()->layout('layouts.app', [
-            'menus' => 'Financial',
-            'pages' => 'Financial Dashboard',
+            'menus' => 'Keuangan',
+            'pages' => 'Dashboard Operasional Keuangan',
         ]);
     }
 
     public function money(float|string|null $amount): string
     {
-        return 'Rp '.number_format((float) $amount, 0, ',', '.');
+        return 'Rp ' . number_format((float) $amount, 0, ',', '.');
     }
 
     public function statusClass(?string $status): string
@@ -180,11 +193,11 @@ new class extends Component
     private function agingRows(): array
     {
         $buckets = [
-            ['label' => 'Current', 'min' => null, 'max' => 0, 'amount' => 0.0],
-            ['label' => '1-7 days', 'min' => 1, 'max' => 7, 'amount' => 0.0],
-            ['label' => '8-30 days', 'min' => 8, 'max' => 30, 'amount' => 0.0],
-            ['label' => '31-60 days', 'min' => 31, 'max' => 60, 'amount' => 0.0],
-            ['label' => '> 60 days', 'min' => 61, 'max' => null, 'amount' => 0.0],
+            ['label' => 'Belum Jatuh Tempo', 'min' => null, 'max' => 0, 'amount' => 0.0],
+            ['label' => '1-7 Hari', 'min' => 1, 'max' => 7, 'amount' => 0.0],
+            ['label' => '8-30 Hari', 'min' => 8, 'max' => 30, 'amount' => 0.0],
+            ['label' => '31-60 Hari', 'min' => 31, 'max' => 60, 'amount' => 0.0],
+            ['label' => '> 60 Hari', 'min' => 61, 'max' => null, 'amount' => 0.0],
         ];
 
         StudentInvoice::query()
@@ -218,7 +231,13 @@ new class extends Component
             ->orderByDesc('total_amount')
             ->get()
             ->map(fn (Payment $payment) => [
-                'label' => str($payment->payment_method)->replace('_', ' ')->title()->toString(),
+                'label' => match($payment->payment_method) {
+                    'bank_transfer' => 'Transfer Bank',
+                    'virtual_account' => 'Virtual Account',
+                    'credit_card' => 'Kartu Kredit',
+                    'cash' => 'Tunai / Kasir',
+                    default => str($payment->payment_method)->replace('_', ' ')->title()->toString()
+                },
                 'amount' => (float) $payment->total_amount,
             ])
             ->values()
@@ -232,7 +251,7 @@ new class extends Component
             ->whereNotIn('status', ['draft', 'cancelled', 'paid'])
             ->where('outstanding_amount', '>', 0)
             ->get()
-            ->groupBy(fn (StudentInvoice $invoice) => $invoice->studentProfile?->studyProgram?->name ?? 'Unassigned')
+            ->groupBy(fn (StudentInvoice $invoice) => $invoice->studentProfile?->studyProgram?->name ?? 'Tidak Terikat Prodi')
             ->map(fn (Collection $invoices, string $program) => [
                 'label' => $program,
                 'amount' => (float) $invoices->sum('outstanding_amount'),
@@ -471,49 +490,60 @@ new class extends Component
     </style>
 @endpush
 
-<div>
+<div class="w-full" style="width: 100% !important">
     <x-alert />
 
-    <div class="card modern-card hero-gradient mb-4" style="color: white;">
-        <div class="card-body p-4 p-lg-5 hero-content">
-            <div class="row align-items-center g-4">
-                <div class="col-lg-8">
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="hero-icon">
-                            <i class="fas fa-wallet"></i>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Financial Operations</div>
-                            <h1 class="h2 mb-2" style="font-weight: 800;">Financial Dashboard</h1>
-                            <div style="opacity: 0.9; margin-bottom: 1rem;">
-                                Pantau invoice, pembayaran, overdue, hold, schedule, beasiswa, dan credit balance dari satu halaman.
-                            </div>
-                            <div class="d-flex flex-wrap gap-2">
-                                <span class="info-badge"><i class="fas fa-receipt me-2"></i>{{ number_format($stats['pending_payments']) }} pending payment</span>
-                                <span class="info-badge"><i class="fas fa-triangle-exclamation me-2"></i>{{ number_format($stats['overdue_invoices']) }} overdue</span>
-                                <span class="info-badge"><i class="fas fa-clock me-2"></i>{{ number_format($stats['due_schedules']) }} due schedule</span>
-                            </div>
-                        </div>
+    <x-admin.financial.header
+        title="Dashboard Operasional Keuangan"
+        description="Pantau tagihan, verifikasi pembayaran, piutang tertunggak, pemblokiran akademik, jadwal terbit, dan beasiswa dari satu pusat kendali."
+        icon="wallet"
+    >
+        <div class="d-flex flex-wrap gap-2">
+            @activecan('student-invoice.create')
+                <a href="{{ route('admin.financial.student-invoices.create') }}" class="btn btn-sm btn-light text-primary fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                    <i class="fa fa-file-invoice"></i> <span>Buat Tagihan</span>
+                </a>
+            @endactivecan
+            @activecan('invoice-schedule.create')
+                <a href="{{ route('admin.financial.invoice-schedules.create') }}" class="btn btn-sm btn-outline-light fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+                    <i class="fa fa-clock"></i> <span>Buat Jadwal</span>
+                </a>
+            @endactivecan
+        </div>
+
+        <x-slot:stats>
+            <div class="d-flex flex-wrap gap-2 gap-lg-3">
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-receipt fs-6 text-warning"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Menunggu Verifikasi</div>
+                        <div class="fw-bold">{{ number_format($stats['pending_payments']) }} Pembayaran</div>
                     </div>
                 </div>
-
-                <div class="col-lg-4">
-                    <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 14px; padding: 1rem;">
-                        <div style="font-size: 0.82rem; opacity: 0.86; margin-bottom: 0.45rem;">Outstanding balance</div>
-                        <div style="font-size: 2rem; font-weight: 800; line-height: 1.1;">{{ $this->money($stats['outstanding']) }}</div>
-                        <div class="d-flex flex-wrap gap-2 mt-3">
-                            <a href="{{ route('admin.financial.student-invoices.create') }}" class="btn btn-light btn-sm">
-                                <i class="fas fa-file-invoice me-1"></i> Create Invoice
-                            </a>
-                            <a href="{{ route('admin.financial.invoice-schedules.create') }}" class="btn btn-outline-light btn-sm">
-                                <i class="fas fa-clock me-1"></i> Schedule
-                            </a>
-                        </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-triangle-exclamation fs-6 text-danger"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Lewat Jatuh Tempo</div>
+                        <div class="fw-bold">{{ number_format($stats['overdue_invoices']) }} Tagihan</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-clock fs-6 text-info"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Jadwal Siap Terbit</div>
+                        <div class="fw-bold">{{ number_format($stats['due_schedules']) }} Jadwal</div>
+                    </div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-coins fs-6 text-warning"></i>
+                    <div>
+                        <div class="small text-white text-opacity-75">Total Piutang (Outstanding)</div>
+                        <div class="fw-bold">{{ $this->money($stats['outstanding']) }}</div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </x-slot:stats>
+    </x-admin.financial.header>
 
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-xl-3">
@@ -523,7 +553,7 @@ new class extends Component
                         <i class="fas fa-circle-check"></i>
                     </div>
                     <div>
-                        <div class="stat-label">Verified Payments</div>
+                        <div class="stat-label">Total Terverifikasi</div>
                         <div class="stat-value">{{ $this->money($stats['verified_payments']) }}</div>
                     </div>
                 </div>
@@ -536,7 +566,7 @@ new class extends Component
                         <i class="fas fa-coins"></i>
                     </div>
                     <div>
-                        <div class="stat-label">Outstanding</div>
+                        <div class="stat-label">Total Tunggakan</div>
                         <div class="stat-value">{{ $this->money($stats['outstanding']) }}</div>
                     </div>
                 </div>
@@ -549,8 +579,8 @@ new class extends Component
                         <i class="fas fa-hourglass-half"></i>
                     </div>
                     <div>
-                        <div class="stat-label">Pending Payments</div>
-                        <div class="stat-value">{{ number_format($stats['pending_payments']) }}</div>
+                        <div class="stat-label">Menunggu Verifikasi</div>
+                        <div class="stat-value">{{ number_format($stats['pending_payments']) }} Pembayaran</div>
                     </div>
                 </div>
             </a>
@@ -562,8 +592,8 @@ new class extends Component
                         <i class="fas fa-triangle-exclamation"></i>
                     </div>
                     <div>
-                        <div class="stat-label">Overdue Invoices</div>
-                        <div class="stat-value">{{ number_format($stats['overdue_invoices']) }}</div>
+                        <div class="stat-label">Tagihan Overdue</div>
+                        <div class="stat-value">{{ number_format($stats['overdue_invoices']) }} Tagihan</div>
                     </div>
                 </div>
             </a>
@@ -578,8 +608,8 @@ new class extends Component
                         <i class="fas fa-lock"></i>
                     </div>
                     <div>
-                        <div class="stat-label">Active Holds</div>
-                        <div class="stat-value">{{ number_format($stats['active_holds']) }}</div>
+                        <div class="stat-label">Blokir Akademik Aktif</div>
+                        <div class="stat-value">{{ number_format($stats['active_holds']) }} Mahasiswa</div>
                     </div>
                 </div>
             </a>
@@ -591,8 +621,8 @@ new class extends Component
                         <i class="fas fa-clock"></i>
                     </div>
                     <div>
-                        <div class="stat-label">Due Schedules</div>
-                        <div class="stat-value">{{ number_format($stats['due_schedules']) }}</div>
+                        <div class="stat-label">Jadwal Siap Eksekusi</div>
+                        <div class="stat-value">{{ number_format($stats['due_schedules']) }} Jadwal</div>
                     </div>
                 </div>
             </a>
@@ -604,7 +634,7 @@ new class extends Component
                         <i class="fas fa-piggy-bank"></i>
                     </div>
                     <div>
-                        <div class="stat-label">Student Credits</div>
+                        <div class="stat-label">Total Saldo Deposit</div>
                         <div class="stat-value">{{ $this->money($stats['student_credits']) }}</div>
                     </div>
                 </div>
@@ -617,8 +647,8 @@ new class extends Component
                         <i class="fas fa-award"></i>
                     </div>
                     <div>
-                        <div class="stat-label">Active Scholarships</div>
-                        <div class="stat-value">{{ number_format($stats['active_scholarships']) }}</div>
+                        <div class="stat-label">Beasiswa Aktif</div>
+                        <div class="stat-value">{{ number_format($stats['active_scholarships']) }} Penerima</div>
                     </div>
                 </div>
             </a>
@@ -632,8 +662,8 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-chart-line"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Revenue Trend</h3>
-                            <div class="small text-secondary">Penerimaan terverifikasi dalam 6 bulan terakhir</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Tren Penerimaan (Revenue Trend)</h3>
+                            <div class="small text-secondary">Total pembayaran terverifikasi dalam 6 bulan terakhir</div>
                         </div>
                     </div>
                 </div>
@@ -649,8 +679,8 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-chart-pie"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Payment Methods</h3>
-                            <div class="small text-secondary">Komposisi metode pembayaran terverifikasi</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Metode Pembayaran</h3>
+                            <div class="small text-secondary">Komposisi kanal pembayaran terverifikasi</div>
                         </div>
                     </div>
                 </div>
@@ -668,8 +698,8 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-chart-column"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Outstanding Aging</h3>
-                            <div class="small text-secondary">Umur piutang berdasarkan due date</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Analisis Umur Piutang (Outstanding Aging)</h3>
+                            <div class="small text-secondary">Keterlambatan bayar berdasarkan tanggal jatuh tempo</div>
                         </div>
                     </div>
                 </div>
@@ -685,8 +715,8 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-building-columns"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Outstanding By Program</h3>
-                            <div class="small text-secondary">Program studi dengan piutang terbesar</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Tunggakan Per Program Studi</h3>
+                            <div class="small text-secondary">Program studi dengan total piutang terbesar</div>
                         </div>
                     </div>
                 </div>
@@ -704,15 +734,15 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-chart-pie"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Collection Health</h3>
-                            <div class="small text-secondary">Perbandingan paid dan outstanding dari invoice terbit</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Kesehatan Penagihan (Collection Health)</h3>
+                            <div class="small text-secondary">Rasio penerimaan vs tunggakan dari tagihan terbit</div>
                         </div>
                     </div>
                 </div>
                 <div class="card-body p-4">
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold">Total Billed</span>
+                            <span class="fw-bold">Total Diterbitkan (Billed)</span>
                             <span class="fw-bold">{{ $this->money($chartSummary['total_billed']) }}</span>
                         </div>
                         <div class="chart-stack">
@@ -723,20 +753,20 @@ new class extends Component
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="soft-list-item">
-                                <div class="text-secondary small mb-1">Paid</div>
+                                <div class="text-secondary small mb-1">Sudah Dibayar (Paid)</div>
                                 <div class="fw-bold text-success">{{ $this->money($chartSummary['total_paid']) }}</div>
                                 <div class="small text-secondary mt-1">{{ $chartSummary['paid_percent'] }}%</div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="soft-list-item">
-                                <div class="text-secondary small mb-1">Outstanding</div>
+                                <div class="text-secondary small mb-1">Sisa Tunggakan</div>
                                 <div class="fw-bold text-danger">{{ $this->money($chartSummary['total_outstanding']) }}</div>
                                 <div class="small text-secondary mt-1">{{ $chartSummary['outstanding_percent'] }}%</div>
                             </div>
                         </div>
                     </div>
-                    <div class="small text-secondary mt-3">Paid + outstanding dihitung dari invoice non-draft/non-cancelled.</div>
+                    <div class="small text-secondary mt-3">Diperhitungkan dari tagihan berstatus aktif dan belum lunas.</div>
                 </div>
             </div>
         </div>
@@ -747,8 +777,8 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-chart-bar"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Outstanding By Invoice Type</h3>
-                            <div class="small text-secondary">Tipe invoice yang paling perlu perhatian finance</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Tunggakan Berdasarkan Jenis Tagihan</h3>
+                            <div class="small text-secondary">Kategori tagihan yang memerlukan prioritas penagihan</div>
                         </div>
                     </div>
                 </div>
@@ -768,7 +798,7 @@ new class extends Component
                                 <div class="chart-row-value {{ $row['outstanding_amount'] > 0 ? 'text-danger' : 'text-success' }}">{{ $this->money($row['outstanding_amount']) }}</div>
                             </div>
                         @empty
-                            <div class="empty-soft">Belum ada data invoice untuk chart.</div>
+                            <div class="empty-soft">Belum ada data tagihan untuk ditampilkan.</div>
                         @endforelse
                     </div>
                 </div>
@@ -781,10 +811,10 @@ new class extends Component
             <div class="card modern-card h-100">
                 <div class="card-header section-header">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="section-icon"><i class="fas fa-chart-column"></i></span>
+                        <span class="section-icon"><i class="fas fa-layer-group"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Invoice Status Summary</h3>
-                            <div class="small text-secondary">Distribusi status dan nominal outstanding</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Rekapitulasi Status Tagihan</h3>
+                            <div class="small text-secondary">Distribusi jumlah dan nominal tagihan mahasiswa</div>
                         </div>
                     </div>
                 </div>
@@ -792,10 +822,10 @@ new class extends Component
                     <table class="table table-vcenter compact-table mb-0">
                         <thead>
                             <tr>
-                                <th>Status</th>
-                                <th class="text-end">Invoices</th>
-                                <th class="text-end">Total</th>
-                                <th class="text-end">Outstanding</th>
+                                <th>Status Tagihan</th>
+                                <th class="text-end">Jumlah</th>
+                                <th class="text-end">Total Nominal</th>
+                                <th class="text-end">Sisa Tunggakan</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -807,7 +837,7 @@ new class extends Component
                                     <td class="text-end fw-bold {{ $row['outstanding_amount'] > 0 ? 'text-danger' : 'text-success' }}">{{ $this->money($row['outstanding_amount']) }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4"><div class="empty-soft">Belum ada invoice.</div></td></tr>
+                                <tr><td colspan="4"><div class="empty-soft">Belum ada data tagihan.</div></td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -821,11 +851,11 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-calendar-check"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Due Schedules</h3>
-                            <div class="small text-secondary">Jadwal invoice yang siap diproses</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Jadwal Terbit Tertunda / Siap Eksekusi</h3>
+                            <div class="small text-secondary">Jadwal penerbitan tagihan yang sudah memasuki waktu terbit</div>
                         </div>
                     </div>
-                    <a href="{{ route('admin.financial.invoice-schedules.index') }}" class="btn btn-sm btn-outline-primary">Open</a>
+                    <a href="{{ route('admin.financial.invoice-schedules.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Buka</a>
                 </div>
                 <div class="card-body p-4">
                     <div class="d-grid gap-3">
@@ -836,11 +866,11 @@ new class extends Component
                                         <div class="fw-bold">{{ $schedule->name }}</div>
                                         <div class="text-secondary small mt-1">{{ $schedule->academicYear?->name ?? '-' }} / Semester {{ $schedule->semester ?? '-' }}</div>
                                     </div>
-                                    <span class="badge bg-yellow-lt text-yellow align-self-start">{{ $schedule->publish_at?->format('d M H:i') }}</span>
+                                    <span class="badge bg-yellow-lt text-yellow align-self-start rounded-pill px-2 py-1">{{ $schedule->publish_at?->format('d M, H:i') }}</span>
                                 </div>
                             </div>
                         @empty
-                            <div class="empty-soft">Tidak ada schedule yang due.</div>
+                            <div class="empty-soft">Semua jadwal sudah dieksekusi tepat waktu.</div>
                         @endforelse
                     </div>
                 </div>
@@ -855,11 +885,11 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-file-invoice-dollar"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Overdue Invoices</h3>
-                            <div class="small text-secondary">Tagihan yang perlu follow-up</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Tagihan Jatuh Tempo (Overdue)</h3>
+                            <div class="small text-secondary">Tagihan mahasiswa yang memerlukan tindak lanjut</div>
                         </div>
                     </div>
-                    <a href="{{ route('admin.financial.student-invoices.index') }}" class="btn btn-sm btn-outline-danger">Open</a>
+                    <a href="{{ route('admin.financial.student-invoices.index') }}" class="btn btn-sm btn-outline-danger rounded-pill px-3">Buka</a>
                 </div>
                 <div class="card-body p-4">
                     <div class="d-grid gap-3">
@@ -868,13 +898,13 @@ new class extends Component
                                 <div class="d-flex justify-content-between gap-3">
                                     <div>
                                         <div class="fw-bold">{{ $invoice->invoice_number }}</div>
-                                        <div class="text-secondary small mt-1">{{ $invoice->studentProfile?->user?->name ?? '-' }} / Due {{ $invoice->due_date?->format('d M Y') }}</div>
+                                        <div class="text-secondary small mt-1">{{ $invoice->studentProfile?->user?->name ?? '-' }} • Tempo: {{ $invoice->due_date?->format('d M Y') }}</div>
                                     </div>
                                     <div class="text-end fw-bold text-danger">{{ $this->money($invoice->outstanding_amount) }}</div>
                                 </div>
                             </div>
                         @empty
-                            <div class="empty-soft">Tidak ada overdue invoice.</div>
+                            <div class="empty-soft">Tidak ada tagihan yang jatuh tempo.</div>
                         @endforelse
                     </div>
                 </div>
@@ -887,11 +917,11 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-receipt"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Recent Payments</h3>
-                            <div class="small text-secondary">Pembayaran terbaru dari mahasiswa</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Pembayaran Masuk Terbaru</h3>
+                            <div class="small text-secondary">Histori transaksi pembayaran dari mahasiswa</div>
                         </div>
                     </div>
-                    <a href="{{ route('admin.financial.payments.index') }}" class="btn btn-sm btn-outline-primary">Open</a>
+                    <a href="{{ route('admin.financial.payments.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Buka</a>
                 </div>
                 <div class="card-body p-4">
                     <div class="d-grid gap-3">
@@ -900,16 +930,21 @@ new class extends Component
                                 <div class="d-flex justify-content-between gap-3">
                                     <div>
                                         <div class="fw-bold">{{ $payment->payment_number }}</div>
-                                        <div class="text-secondary small mt-1">{{ $payment->studentProfile?->user?->name ?? '-' }} / {{ $payment->invoice?->invoice_number ?? '-' }}</div>
+                                        <div class="text-secondary small mt-1">{{ $payment->studentProfile?->user?->name ?? '-' }} • {{ $payment->invoice?->invoice_number ?? '-' }}</div>
                                     </div>
                                     <div class="text-end">
                                         <div class="fw-bold">{{ $this->money($payment->amount) }}</div>
-                                        <span class="badge {{ $this->statusClass($payment->status) }}">{{ str($payment->status)->title()->toString() }}</span>
+                                        <span class="badge {{ $this->statusClass($payment->status) }} rounded-pill px-2 py-1 fs-8">{{ match($payment->status) {
+                                            'verified' => 'Terverifikasi',
+                                            'pending' => 'Menunggu Review',
+                                            'rejected' => 'Ditolak',
+                                            default => str($payment->status)->title()->toString()
+                                        } }}</span>
                                     </div>
                                 </div>
                             </div>
                         @empty
-                            <div class="empty-soft">Belum ada pembayaran.</div>
+                            <div class="empty-soft">Belum ada transaksi pembayaran masuk.</div>
                         @endforelse
                     </div>
                 </div>
@@ -924,8 +959,8 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-layer-group"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Invoice Type Health</h3>
-                            <div class="small text-secondary">Tipe invoice dengan sisa tagihan terbesar</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Rincian Jenis Tagihan & Sisa Tunggakan</h3>
+                            <div class="small text-secondary">Komposisi penerimaan dan tunggakan per jenis tagihan</div>
                         </div>
                     </div>
                 </div>
@@ -933,10 +968,10 @@ new class extends Component
                     <table class="table table-vcenter compact-table mb-0">
                         <thead>
                             <tr>
-                                <th>Type</th>
-                                <th class="text-end">Invoices</th>
-                                <th class="text-end">Paid</th>
-                                <th class="text-end">Outstanding</th>
+                                <th>Jenis Tagihan</th>
+                                <th class="text-end">Jumlah</th>
+                                <th class="text-end">Sudah Dibayar</th>
+                                <th class="text-end">Sisa Tunggakan</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -948,7 +983,7 @@ new class extends Component
                                     <td class="text-end fw-bold {{ $row['outstanding_amount'] > 0 ? 'text-danger' : 'text-success' }}">{{ $this->money($row['outstanding_amount']) }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4"><div class="empty-soft">Belum ada data.</div></td></tr>
+                                <tr><td colspan="4"><div class="empty-soft">Belum ada data jenis tagihan.</div></td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -962,11 +997,11 @@ new class extends Component
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="fas fa-lock"></i></span>
                         <div>
-                            <h3 class="card-title mb-0" style="font-weight: 700;">Active Holds</h3>
-                            <div class="small text-secondary">Akses akademik yang sedang tertahan</div>
+                            <h3 class="card-title mb-0" style="font-weight: 700;">Daftar Blokir Akademik Aktif</h3>
+                            <div class="small text-secondary">Mahasiswa yang tertahan layanan akademiknya</div>
                         </div>
                     </div>
-                    <a href="{{ route('admin.financial.financial-holds.index') }}" class="btn btn-sm btn-outline-primary">Open</a>
+                    <a href="{{ route('admin.financial.financial-holds.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Buka</a>
                 </div>
                 <div class="card-body p-4">
                     <div class="d-grid gap-3">
@@ -975,13 +1010,18 @@ new class extends Component
                                 <div class="d-flex justify-content-between gap-3">
                                     <div>
                                         <div class="fw-bold">{{ $hold->studentProfile?->user?->name ?? '-' }}</div>
-                                        <div class="text-secondary small mt-1">{{ str($hold->hold_type)->replace('_', ' ')->title()->toString() }} / {{ $hold->invoice?->invoice_number ?? '-' }}</div>
+                                        <div class="text-secondary small mt-1">{{ match($hold->hold_type) {
+                                            'registration' => 'Pendaftaran Ulang / KRS',
+                                            'study_plan' => 'Rencana Studi',
+                                            'exam_card' => 'Kartu Ujian Akhir',
+                                            default => str($hold->hold_type)->replace('_', ' ')->title()->toString()
+                                        } }} • {{ $hold->invoice?->invoice_number ?? '-' }}</div>
                                     </div>
-                                    <span class="badge bg-red-lt text-red align-self-start">Active</span>
+                                    <span class="badge bg-red-lt text-red align-self-start rounded-pill px-2 py-1 fs-8">Diblokir</span>
                                 </div>
                             </div>
                         @empty
-                            <div class="empty-soft">Tidak ada active hold.</div>
+                            <div class="empty-soft">Tidak ada mahasiswa yang diblokir saat ini.</div>
                         @endforelse
                     </div>
                 </div>
@@ -1032,7 +1072,7 @@ new class extends Component
                     fontFamily: 'Inter, sans-serif',
                 },
                 series: [{
-                    name: 'Revenue',
+                    name: 'Penerimaan',
                     data: revenueTrend.map(row => row.amount),
                 }],
                 xaxis: {
@@ -1072,7 +1112,7 @@ new class extends Component
                     height: 255,
                     fontFamily: 'Inter, sans-serif',
                 },
-                labels: paymentMethods.length ? paymentMethods.map(row => row.label) : ['No Payment'],
+                labels: paymentMethods.length ? paymentMethods.map(row => row.label) : ['Belum Ada Pembayaran'],
                 series: paymentMethods.length ? paymentMethods.map(row => row.amount) : [1],
                 colors: [chartColors.primary, chartColors.success, chartColors.warning, chartColors.info, chartColors.danger],
                 legend: {
@@ -1095,7 +1135,7 @@ new class extends Component
                                 show: true,
                                 total: {
                                     show: true,
-                                    label: 'Verified',
+                                    label: 'Terverifikasi',
                                     formatter: () => money.format(paymentMethods.reduce((total, row) => total + Number(row.amount || 0), 0)),
                                 },
                             },
@@ -1112,7 +1152,7 @@ new class extends Component
                     fontFamily: 'Inter, sans-serif',
                 },
                 series: [{
-                    name: 'Outstanding',
+                    name: 'Tunggakan',
                     data: agingRows.map(row => row.amount),
                 }],
                 xaxis: {
@@ -1150,7 +1190,7 @@ new class extends Component
                     fontFamily: 'Inter, sans-serif',
                 },
                 series: [{
-                    name: 'Outstanding',
+                    name: 'Tunggakan',
                     data: programOutstanding.map(row => row.amount),
                 }],
                 xaxis: {

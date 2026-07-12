@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -25,7 +26,7 @@ final class PermissionTable extends BasePowerGridTable
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp();
+        return $this->powerGridSetUp(showToggleColumns: true);
     }
 
     public function datasource(): Builder
@@ -53,20 +54,36 @@ final class PermissionTable extends BasePowerGridTable
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id')
+            Column::make('No', 'id')
                 ->sortable(),
-            Column::make('Name', 'name')
+            Column::make('Nama Hak Akses', 'name')
                 ->sortable()
                 ->searchable(),
             Column::make('Guard Name', 'guard_name')
                 ->sortable()
                 ->searchable(),
-            Column::make('Role Count', 'role_count')
+            Column::make('Digunakan Role', 'role_count')
                 ->sortable(),
-            Column::make('Created at', 'created_at')
+            Column::make('Tanggal Dibuat', 'created_at')
                 ->sortable()
                 ->searchable(),
-            Column::action('Action'),
+            Column::action('Aksi'),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('name')->placeholder('Cari nama / kode permission (contoh: user.create)...'),
+            Filter::select('guard_name', 'guard_name')
+                ->dataSource([
+                    ['id' => 'web', 'name' => 'web'],
+                    ['id' => 'api', 'name' => 'api'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(fn (Builder $query, $value) => $query->where('guard_name', $value)),
+            Filter::datepicker('created_at', 'created_at'),
         ];
     }
 
@@ -152,16 +169,16 @@ final class PermissionTable extends BasePowerGridTable
 
         if (ActivePermission::check('permission.update')) {
             $actions[] = Button::add('edit')
-                ->slot('<i class="fa fa-edit"></i>')
+                ->slot('<i class="fa fa-edit"></i> Edit')
                 ->id()
-                ->class('btn btn-primary')
+                ->class('btn btn-outline-primary rounded-pill px-2.5 py-1 text-primary fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('edit', ['rowId' => $row->id]);
         }
 
         if (ActivePermission::check('permission.delete')) {
             $actions[] = Button::add('delete')
-                ->slot('<i class="fa fa-trash"></i>')
-                ->class('btn btn-danger')
+                ->slot('<i class="fa fa-trash"></i> Hapus')
+                ->class('btn btn-outline-danger rounded-pill px-2.5 py-1 text-danger fw-medium shadow-sm d-inline-flex align-items-center gap-1')
                 ->dispatch('delete', ['id' => $row->id]);
         }
 

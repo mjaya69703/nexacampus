@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
@@ -86,6 +87,56 @@ final class EmployeePositionAssignmentTable extends BasePowerGridTable
         ];
     }
 
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('employee_name', 'employee_name')
+                ->placeholder('Cari nama pegawai...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('employeeProfile.user', function (Builder $sub) use ($value) {
+                            $sub->where(function (Builder $q) use ($value) {
+                                $q->where('first_name', 'like', '%' . $value . '%')
+                                    ->orWhere('last_name', 'like', '%' . $value . '%')
+                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhere('username', 'like', '%' . $value . '%');
+                            });
+                        });
+                    }
+                }),
+            Filter::inputText('position_name', 'position_name')
+                ->placeholder('Cari nama jabatan...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->whereHas('position', function (Builder $sub) use ($value) {
+                            $sub->where('name', 'like', '%' . $value . '%')
+                                ->orWhere('code', 'like', '%' . $value . '%');
+                        });
+                    }
+                }),
+            Filter::inputText('scope_name', 'scope_name')
+                ->placeholder('Cari scope...')
+                ->operators(['contains'])
+                ->builder(function (Builder $query, array $values) {
+                    $value = $values['value'] ?? null;
+                    if (! empty($value)) {
+                        $query->where(function (Builder $q) use ($value) {
+                            $q->whereHas('faculty', fn ($sub) => $sub->where('name', 'like', '%' . $value . '%'))
+                              ->orWhereHas('studyProgram', fn ($sub) => $sub->where('name', 'like', '%' . $value . '%'))
+                              ->orWhereHas('workUnit', fn ($sub) => $sub->where('name', 'like', '%' . $value . '%'));
+                        });
+                    }
+                }),
+            Filter::datepicker('starts_at', 'starts_at'),
+            Filter::boolean('is_primary', 'is_primary')->label('Ya', 'Tidak'),
+            Filter::boolean('is_active', 'is_active')->label('Aktif', 'Nonaktif'),
+        ];
+    }
+
     public function onUpdatedToggleable(string $id, string $field, string $value): void
     {
         if (! in_array($field, ['is_active', 'is_primary'], true)) {
@@ -133,7 +184,7 @@ final class EmployeePositionAssignmentTable extends BasePowerGridTable
         $this->js('
             Swal.fire({
                 title: "Hapus penugasan jabatan?",
-                text: "'.$assignment->employeeProfile?->user?->name.' - '.$assignment->position?->name.' akan dipindahkan ke tempat sampah.",
+                text: "'.addslashes(($assignment->employeeProfile?->user?->name ?? 'Pegawai').' - '.($assignment->position?->name ?? 'Jabatan')).' akan dipindahkan ke tempat sampah.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "Ya hapus",
