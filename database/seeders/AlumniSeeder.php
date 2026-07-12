@@ -158,8 +158,8 @@ class AlumniSeeder extends Seeder
                 array_merge($data, [
                     'study_program_id' => $this->studyProgram?->id,
                     'faculty_id' => $this->faculty->id,
-                    'birth_date' => fake()->dateTimeBetween('1995-01-01', '2002-12-31')->format('Y-m-d'),
-                    'address' => fake()->address(),
+                    'birth_date' => $data['birth_date'] ?? '1998-05-20',
+                    'address' => $data['address'] ?? ('Jl. Merdeka No. 10, ' . ($data['current_city'] ?? 'Jakarta')),
                     'is_active' => true,
                     'created_by' => $this->admin->id,
                     'updated_by' => $this->admin->id,
@@ -212,7 +212,7 @@ class AlumniSeeder extends Seeder
             $employer = EmployerPartner::updateOrCreate(
                 ['name' => $item['name']],
                 array_merge($item, [
-                    'address' => fake()->address(),
+                    'address' => $item['address'] ?? ('Jl. Bisnis Utama No. 45, ' . ($item['city'] ?? 'Jakarta')),
                     'is_active' => true,
                     'created_by' => $this->admin->id,
                     'updated_by' => $this->admin->id,
