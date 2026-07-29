@@ -668,13 +668,23 @@ Used by: Employee leaves, financial adjustments, student service requests.
 <i class="fa fa-edit"></i>      <!-- Regular -->
 ```
 
-### Button Styles:
+### Button Styles & Sizing Rules (MANDATORY):
 ```html
 <button class="btn btn-primary">Primary Action</button>
 <a class="btn btn-ghost-primary">Ghost/Outline</a>
 <button class="btn btn-secondary">Cancel</button>
 <button class="btn btn-danger">Delete</button>
 ```
+> [!IMPORTANT]
+> **ATURAN PROPORSI & UKURAN ELEMEN (ANTI-OVERSIZE & ANTI-MINI):**
+> 1. **DILARANG OVERSIZE:** Jangan pernah menggunakan ukuran besar/oversize (`btn-lg`, `form-control-lg`, padding raksasa `-lg`, font super besar). User sangat tidak menyukai desain yang gembrot/oversized.
+> 2. **DILARANG BTN-SM SEMBARANGAN:** Jangan sembarangan memakai `btn-sm` atau tombol mini pada navbar/toggle/action utama yang merusak estetika dan keterbacaan. Gunakan ukuran standar (`btn`, `form-control`) yang proporsional, compact, dan elegan.
+
+### Dark Mode & Background Architecture Rules (MANDATORY):
+> [!WARNING]
+> **ATURAN TEMA & DARK MODE GLOBAL:**
+> 1. **DILARANG HARDCODED BG-WHITE/BG-LIGHT:** Hindari penggunaan `bg-white`, `bg-light`, atau `style="background: #ffffff"` pada container/card di file Blade. Karena di Tabler/Bootstrap class tersebut memaksa `#ffffff !important` dan membuat tampilan bocor/putih menyilaukan saat mode gelap (`[data-bs-theme=dark]`). Gunakan class `card`, `var(--tblr-bg-surface)`, atau biarkan mengikuti styling tema global.
+> 2. **GLOBAL FIRST:** Pengaturan warna latar dan border untuk dark mode diatur secara terpusat dan global melalui `resources/css/app.css` (`[data-bs-theme=dark]`). Jangan membuat custom blok CSS dark mode di setiap komponen blade yang membebani maintainability.
 
 ### Confirmation Dialog: SweetAlert2 (via Livewire `$this->js()`)
 ```php
@@ -866,4 +876,44 @@ tests/Feature/
 - `.notes/PATTERN-QUICK-REFERENCE.md` → Quick reference untuk pola kode (created for Grade Book feature)
 - `.notes/has-been-implemented.md` → Catatan fitur yang sudah diimplementasi
 - `.notes/will-be-implemented.md` → Catatan fitur yang akan diimplementasi
+
+---
+
+## 14. Arsitektur & Aturan Ketat Dark Mode (Global Dark Mode & Mandatory UI Rules)
+
+**NexaCampus menggunakan sistem Global Dark Mode Interceptor (`[data-bs-theme=dark]`) di `resources/css/app.css` (Section 1 - 5). Untuk menjaga konsistensi visual modern & premium di seluruh portal (Admin, Lecturer, Student, Alumni), seluruh developer & AI WAJIB mematuhi aturan berikut:**
+
+### 14.1 Larangan Keras (Strict Prohibitions)
+1. ❌ **DILARANG KERAS** menggunakan *hardcoded background* terang (`background: white;`, `background: #fff;`, `background: #ffffff;`, `background: #f8fafc;`, `background: #f9fafb;`) di dalam blok `<style>` atau `@push('styles')` tanpa disertai override `[data-bs-theme=dark]` yang sesuai.
+2. ❌ **DILARANG KERAS** menulis *inline style* statis berwarna terang pada container/panel, contoh: `<div style="background: white; color: #1f2937">` atau `<div style="background: linear-gradient(...)">` yang tidak memiliki override dark mode di `app.css`.
+
+### 14.2 Standard UI Component Classes
+Gunakan class card yang telah terdaftar & ter-normalize secara otomatis di `app.css` agar langsung beradaptasi dengan Dark Mode secara sempurna:
+- **Kartu Utama:** `.card`, `.modern-card`, `.stat-card`, `.course-card`, `.material-card`, `.grade-card`, `.advisor-card`, `.service-card`, `.finance-widget`
+- **Sub-Panel & Inner Items:** `.section-header`, `.soft-list-item`, `.stat-item`, `.info-item`, `.score-display`, `.advisor-metric`, `.note-preview`, `.selected-file-chip`, `.upload-panel`, `.form-section`
+
+### 14.3 Pola Pembuatan Custom Style Baru (Mandatory Pattern)
+Jika Anda perlu membuat class custom baru di dalam `@push('styles')` pada file Blade tertentu, **WAJIB** menyertakan blok override dark mode langsung di bawahnya:
+
+```css
+.my-custom-panel {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #1f2937;
+}
+
+/* WAJIB diserahkan untuk adaptasi Dark Mode */
+[data-bs-theme=dark] .my-custom-panel,
+body[data-bs-theme=dark] .my-custom-panel {
+    background: rgba(43, 28, 67, 0.85) !important;
+    border-color: rgba(167, 139, 255, 0.22) !important;
+    color: #f3edff !important;
+}
+```
+
+### 14.4 Kompilasi Asset (`npm run build`)
+Setiap kali melakukan perubahan pada `resources/css/app.css` atau aset frontend global, selalu jalankan perintah berikut agar bundle CSS terperbarui di seluruh environment:
+```bash
+npm run build
+```
 

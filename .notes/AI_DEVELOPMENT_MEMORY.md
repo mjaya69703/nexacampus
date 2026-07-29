@@ -54,3 +54,11 @@
 - **Run Single Domain Test:** `php artisan test --filter=[TestName]`
 - **Sync CRUD Resource Menu:** `php artisan app:sync-resources`
 - **Check Migrations Status:** `php artisan migrate:status`
+
+---
+
+## 5. Arsitektur Global Dark Mode & UI Styling Rules
+1. **Source of Truth Dark Mode:** `resources/css/app.css` (Section 1 - 5) menangani normalisasi otomatis dark mode untuk atribut `[data-bs-theme=dark]`.
+2. **Standard UI Card Classes:** Gunakan `.card`, `.modern-card`, `.stat-card`, `.course-card`, `.material-card`, `.grade-card`, `.advisor-card`, `.service-card` untuk elemen kontainer agar otomatis mengikuti aturan CSS global.
+3. **Larangan Keras:** **DILARANG KERAS** menggunakan *hardcoded background* terang (`background: white;`, `#fff`, `#f8fafc`) pada `<style>` atau `@push('styles')` di dalam komponen Blade tanpa menambahkan aturan override `[data-bs-theme=dark]` dengan `!important`.
+4. **Asset Build:** Setiap modifikasi CSS/UI wajib dikompilasi dengan `npm run build`.
