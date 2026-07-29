@@ -18,7 +18,7 @@ new class extends Component
         $this->activeCount = PublicationCategory::where('is_active', true)->count();
         $this->totalNews = \App\Models\Publication\News::count();
         $this->totalAgendas = \App\Models\Publication\Agenda::count();
-        $this->totalGalleries = \App\Models\Publication\Gallery::count();
+        $this->totalGalleries = \App\Models\Publication\GalleryAlbum::count();
         $this->totalKonten = $this->totalNews + $this->totalAgendas + $this->totalGalleries;
     }
 

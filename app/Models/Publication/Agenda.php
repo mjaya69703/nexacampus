@@ -36,6 +36,7 @@ class Agenda extends Model
             'is_published' => 'boolean',
             'event_date' => 'date',
             'event_end_date' => 'date',
+            'published_at' => 'datetime',
         ];
     }
 

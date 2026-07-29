@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
             PublicationCategorySeeder::class,
             NewsSeeder::class,
             AgendaSeeder::class,
-            GallerySeeder::class,
+            GalleryAlbumSeeder::class,
         ]);
     }
 }

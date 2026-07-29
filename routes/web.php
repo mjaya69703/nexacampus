@@ -72,7 +72,9 @@ Route::middleware('is_installed')->group(function () {
         Route::livewire('/pengumuman', 'root.publication.announcements')->name('root.publication.announcements');
         Route::livewire('/faq', 'root.faq')->name('root.faq');
         Route::livewire('/berita', 'root.publication.news')->name('root.publication.news');
+        Route::livewire('/berita/{slug}', 'root.publication.news-show')->name('root.publication.news-show');
         Route::livewire('/agenda', 'root.publication.agenda')->name('root.publication.agenda');
+        Route::livewire('/agenda/{slug}', 'root.publication.agenda-show')->name('root.publication.agenda-show');
         Route::livewire('/galeri', 'root.publication.galeri')->name('root.publication.galeri');
 
         // Kontak
@@ -111,7 +113,8 @@ Route::middleware('is_installed')->group(function () {
                     $resource['plural'],
                     $resource['component'],
                     $resource['actions'],
-                    $resource['area']
+                    $resource['area'],
+                    $resource['resource']
                 );
             }
 

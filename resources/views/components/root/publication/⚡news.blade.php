@@ -1,134 +1,273 @@
 <?php
 
 use Livewire\Component;
-use App\Models\Publication\Announcement;
-use App\Enums\AnnouncementTargetType;
+use Livewire\WithPagination;
+use App\Models\Publication\News;
+use App\Models\Publication\PublicationCategory;
 use Illuminate\Support\Str;
 
 new class extends Component
 {
-    public array $news = [];
-    public int $total = 0;
+    use WithPagination;
 
-    public function mount(): void
+    public string $search = '';
+    public string $sort = 'terbaru';
+    public string $filterCategory = '';
+
+    protected $queryString = ['search', 'sort', 'filterCategory'];
+
+    public function updatingSearch(): void { $this->resetPage(); }
+    public function updatingSort(): void { $this->resetPage(); }
+    public function updatingFilterCategory(): void { $this->resetPage(); }
+
+    public function clearFilters(): void
     {
-        // Berita = global announcements with high/urgent priority
-        $items = Announcement::published()
-            ->where('target_type', AnnouncementTargetType::GLOBAL)
-            ->whereIn('priority', ['high', 'urgent'])
-            ->orderByDesc('published_at')
-            ->limit(24)
-            ->get();
+        $this->search = '';
+        $this->sort = 'terbaru';
+        $this->filterCategory = '';
+        $this->resetPage();
+    }
 
-        $this->total = $items->count();
+    public function readingTime(string $content): string
+    {
+        $chars = mb_strlen(strip_tags($content));
+        $minutes = max(1, (int) ceil($chars / 1000));
 
-        $this->news = $items->map(fn($a) => [
-            'id'          => $a->id,
-            'title'       => $a->title,
-            'excerpt'     => Str::limit(strip_tags($a->content), 200),
-            'content'     => $a->content,
-            'priority'    => $a->priority?->value ?? 'normal',
-            'published_at'=> $a->published_at?->format('d M Y'),
-            'is_pinned'   => $a->is_pinned,
-            'has_attachment' => filled($a->attachment_path),
-        ])->toArray();
+        return $minutes . ' menit';
     }
 
     public function render()
     {
-        return $this->view()->layout('layouts.home', [
-            'menus' => 'Publikasi',
-            'pages' => 'Berita Kampus',
-        ]);
+        $featuredNews = News::published()
+            ->with('category')
+            ->orderByDesc('published_at')
+            ->first();
+
+        $query = News::published()->with('category');
+
+        if ($featuredNews) {
+            $query->where('id', '!=', $featuredNews->id);
+        }
+
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('title', 'like', '%' . $this->search . '%')
+                    ->orWhere('content', 'like', '%' . $this->search . '%');
+            });
+        }
+
+        if ($this->filterCategory) {
+            $query->whereHas('category', fn ($q) => $q->where('slug', $this->filterCategory));
+        }
+
+        $this->sort === 'terlama'
+            ? $query->orderBy('published_at')
+            : $query->orderByDesc('published_at');
+
+        $news = $query->paginate(9);
+
+        $categories = PublicationCategory::withCount(['news' => fn ($q) => $q->published()])
+            ->whereHas('news', fn ($q) => $q->published())
+            ->orderBy('name')
+            ->get();
+
+        $totalNews = News::published()->count();
+        $latestNews = News::published()->orderByDesc('published_at')->limit(5)->get(['title', 'slug', 'published_at']);
+
+        return $this->view()
+            ->layout('layouts.home', [
+                'menus' => 'Publikasi',
+                'pages' => 'Berita Kampus',
+            ])
+            ->with([
+                'news' => $news,
+                'categories' => $categories,
+                'totalNews' => $totalNews,
+                'latestNews' => $latestNews,
+                'featuredNews' => $featuredNews,
+            ]);
     }
 };
 ?>
 
-<div class="admission-public">
-    <div class="container-xl py-4 py-lg-5">
-        <div class="row justify-content-center">
-            <div class="col-12">
+@include('components.root.publication.partials.editorial-styles')
 
-                {{-- Hero --}}
-                <div class="admission-hero mb-5">
-                    <div class="row align-items-center g-4">
-                        <div class="col-lg-7">
-                            <div class="admission-kicker d-flex align-items-center gap-2 mb-2">
-                                <span class="badge-pulse"></span>
-                                <span>Liputan Terkini</span>
-                            </div>
-                            <h1 class="admission-title mb-3">Berita &<br><span style="opacity:.8">Kabar Terbaru Kampus</span></h1>
-                            <p class="admission-subtitle mb-0">
-                                Ikuti perkembangan terkini dari NexaCampus — kegiatan akademik, prestasi, dan informasi penting lainnya.
-                            </p>
-                        </div>
-                        <div class="col-lg-5">
-                            <div class="admission-hero-panel shadow">
-                                <div class="mb-3 pb-2 border-bottom border-light border-opacity-10">
-                                    <div class="text-white-50 small fw-bold text-uppercase">Total Berita</div>
-                                    <div class="h3 text-white mb-0 fw-bolder">{{ $total }} Artikel</div>
-                                </div>
-                                <div class="d-flex align-items-center gap-2 mt-2">
-                                    <i class="fas fa-newspaper text-white-50"></i>
-                                    <small class="text-white-50">Diperbarui setiap hari kerja oleh tim humas kampus</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<div class="admission-public pub-shell">
+    <div class="pub-wrap">
+        {{-- Hero Banner Section --}}
+        <section class="pub-hero mb-4">
+            <div>
+                <div class="pub-kicker">
+                    <span>Portal Berita & Kabar Kampus</span>
                 </div>
-
-                @if(count($news) > 0)
-                {{-- Featured (first item) --}}
-                @php $featured = $news[0]; $rest = array_slice($news, 1); @endphp
-                <div class="admission-card border-0 rounded-4 shadow-sm overflow-hidden mb-4">
-                    <div class="row g-0">
-                        <div class="col-lg-5 d-flex align-items-center justify-content-center p-5" style="background:linear-gradient(135deg,#1e293b,#0f172a);min-height:240px;">
-                            <div class="text-center">
-                                <div style="width:72px;height:72px;border-radius:24px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;box-shadow:0 12px 32px rgba(59,130,246,.4);">
-                                    <i class="fas fa-newspaper"></i>
-                                </div>
-                                <span class="badge bg-primary text-white fw-bold px-3 py-2">Berita Utama</span>
-                            </div>
-                        </div>
-                        <div class="col-lg-7 p-5">
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <span class="badge bg-warning-lt text-warning fw-semibold">Prioritas Tinggi</span>
-                                @if($featured['is_pinned'])<span class="badge bg-danger text-white fw-semibold"><i class="fas fa-thumbtack me-1"></i>Disematkan</span>@endif
-                            </div>
-                            <h2 class="fw-bolder text-body mb-3" style="font-size:1.3rem;line-height:1.4;">{{ $featured['title'] }}</h2>
-                            <p class="text-muted mb-4" style="font-size:.9rem;line-height:1.7;">{{ $featured['excerpt'] }}</p>
-                            <div class="text-muted" style="font-size:.8rem;"><i class="fas fa-calendar-days me-1"></i>{{ $featured['published_at'] }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                @if(count($rest) > 0)
-                <div class="row g-3">
-                    @foreach($rest as $item)
-                    <div class="col-lg-4 col-sm-6">
-                        <div class="admission-card border-0 rounded-3 shadow-sm p-4 h-100" style="transition:transform .2s ease;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <span class="badge bg-primary-lt text-primary fw-semibold" style="font-size:.7rem;">Berita</span>
-                                @if($item['has_attachment'])<span class="badge bg-secondary-lt text-secondary" style="font-size:.7rem;"><i class="fas fa-paperclip me-1"></i>Lampiran</span>@endif
-                            </div>
-                            <h5 class="fw-bolder text-body mb-2" style="font-size:.9rem;line-height:1.4;">{{ $item['title'] }}</h5>
-                            <p class="text-muted mb-3" style="font-size:.8rem;line-height:1.6;">{{ Str::limit($item['excerpt'], 120) }}</p>
-                            <div class="text-muted" style="font-size:.73rem;"><i class="fas fa-calendar-days me-1"></i>{{ $item['published_at'] }}</div>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-                @endif
-
-                @else
-                <div class="admission-card border-0 rounded-4 shadow-sm p-5 text-center">
-                    <div style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);margin:0 auto 1.5rem;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;"><i class="fas fa-newspaper"></i></div>
-                    <h4 class="fw-bolder text-body mb-2">Belum Ada Berita</h4>
-                    <p class="text-muted mb-0">Artikel berita akan muncul di sini segera setelah dipublikasikan oleh tim humas.</p>
-                </div>
-                @endif
-
+                <h1 class="pub-title">
+                    Informasi & Prestasi <span class="text-accent">NexaCampus</span>
+                </h1>
+                <p class="pub-lede">
+                    Ikuti kabar terkini seputar akademis, pencapaian mahasiswa, berita riset, kegiatan institusi, dan liputan khusus lingkungan civitas akademika.
+                </p>
             </div>
+            <aside class="pub-hero-panel">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="pub-hero-panel__label">Total Artikel Terbit</div>
+                    <span class="badge bg-primary bg-opacity-20 text-white rounded-pill px-2.5 py-1 small fw-bold"><i class="fas fa-newspaper me-1"></i> Warta</span>
+                </div>
+                <div class="pub-hero-panel__number">{{ $totalNews }}</div>
+                <p class="pub-hero-panel__note">Artikel tersusun rapi dari yang terbaru, dapat dikelompokkan berdasarkan kategori atau kata kunci.</p>
+            </aside>
+        </section>
+
+        {{-- Featured News Hero Showcase (If on first page with no search/filter) --}}
+        @if($featuredNews && request()->page <= 1 && !$search && !$filterCategory)
+            <a href="{{ route('root.publication.news-show', ['slug' => $featuredNews->slug]) }}" class="pub-card pub-feature mb-4">
+                <div class="pub-feature__body">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-primary text-white rounded-pill px-3 py-1 fw-bold small">
+                            <i class="fas fa-bolt me-1"></i> Berita Utama
+                        </span>
+                        @if($featuredNews->category)
+                            <span class="pub-badge">{{ $featuredNews->category->name }}</span>
+                        @endif
+                    </div>
+                    <h2>{{ $featuredNews->title }}</h2>
+                    <p class="pub-card__excerpt pub-line-clamp-3">
+                        {{ $featuredNews->excerpt ? strip_tags($featuredNews->excerpt) : Str::limit(strip_tags($featuredNews->content), 220) }}
+                    </p>
+                    <div class="pub-meta mt-3">
+                        <span><i class="fas fa-calendar-day text-primary me-1"></i>{{ $featuredNews->published_at?->translatedFormat('d M Y') }}</span>
+                        <span><i class="fas fa-clock text-info me-1"></i>{{ $this->readingTime($featuredNews->content) }}</span>
+                        <span class="pub-button pub-button--accent ms-lg-auto py-2 px-4 shadow-sm">
+                            <span>Baca Selengkapnya</span>
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="pub-feature__media">
+                    @if($featuredNews->featured_image)
+                        <img src="{{ Storage::url($featuredNews->featured_image) }}" alt="{{ $featuredNews->title }}" loading="lazy">
+                    @else
+                        <div class="pub-feature__placeholder">
+                            <i class="fas fa-newspaper fa-3x opacity-50"></i>
+                        </div>
+                    @endif
+                </div>
+            </a>
+        @endif
+
+        {{-- Main Layout Grid --}}
+        <div class="pub-layout">
+            <main class="pub-main">
+                @if($news->isNotEmpty())
+                    <div class="pub-grid">
+                        @foreach($news as $item)
+                            <a href="{{ route('root.publication.news-show', ['slug' => $item->slug]) }}" class="pub-card">
+                                <div class="pub-thumb">
+                                    @if($item->featured_image)
+                                        <img src="{{ Storage::url($item->featured_image) }}" alt="{{ $item->title }}" loading="lazy">
+                                    @else
+                                        <div class="pub-thumb__placeholder">
+                                            <i class="fas fa-newspaper fa-2x opacity-40"></i>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="pub-card__body">
+                                    @if($item->category)
+                                        <span class="pub-badge">{{ $item->category->name }}</span>
+                                    @endif
+                                    <h3 class="pub-card__title pub-line-clamp-2">{{ $item->title }}</h3>
+                                    <p class="pub-card__excerpt pub-line-clamp-3">
+                                        {{ $item->excerpt ? strip_tags($item->excerpt) : Str::limit(strip_tags($item->content), 130) }}
+                                    </p>
+                                    <div class="pub-card__footer pub-meta">
+                                        <span><i class="far fa-calendar text-primary me-1"></i>{{ $item->published_at?->format('d M Y') }}</span>
+                                        <span><i class="far fa-clock text-info me-1"></i>{{ $this->readingTime($item->content) }}</span>
+                                    </div>
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+
+                    {{-- Pagination Links --}}
+                    <div class="mt-4 d-flex justify-content-center">
+                        {{ $news->links() }}
+                    </div>
+                @else
+                    <div class="pub-empty text-center py-5">
+                        <div style="width:64px;height:64px;border-radius:20px;background:rgba(59,130,246,.1);margin:0 auto 1.25rem;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#3b82f6;">
+                            <i class="fas fa-newspaper-slash"></i>
+                        </div>
+                        <h3 class="h4 mb-2 fw-bolder text-body">Tidak Ditemukan Berita</h3>
+                        <p class="pub-muted mb-4" style="max-width: 420px; margin: 0 auto; font-size: .9rem;">
+                            Tidak ada artikel berita yang cocok dengan kata kunci pencarian atau filter kategori yang sedang aktif.
+                        </p>
+                        <button class="pub-button pub-button--accent px-4" wire:click="clearFilters">
+                            <i class="fas fa-rotate-right me-1"></i> Reset Filter
+                        </button>
+                    </div>
+                @endif
+            </main>
+
+            {{-- Sidebar Filter & Latest News --}}
+            <aside class="pub-side">
+                {{-- Search & Sort Filter Box --}}
+                <section class="pub-filter">
+                    <h2 class="pub-section-title"><i class="fas fa-magnifying-glass me-1"></i> Cari & Urutkan</h2>
+                    <div class="pub-form-row">
+                        <div class="position-relative">
+                            <input type="search" class="pub-input ps-5" placeholder="Cari judul atau isi..." wire:model.live.debounce.300ms="search">
+                            <i class="fas fa-magnifying-glass position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        </div>
+                        <select class="pub-select" wire:model.live="sort">
+                            <option value="terbaru">Terbaru Dulu</option>
+                            <option value="terlama">Terlama Dulu</option>
+                        </select>
+                        @if($search || $filterCategory || $sort !== 'terbaru')
+                            <button class="pub-button w-100" type="button" wire:click="clearFilters">
+                                <i class="fas fa-rotate-right me-1 text-danger"></i>
+                                <span>Reset Filter</span>
+                            </button>
+                        @endif
+                    </div>
+                </section>
+
+                {{-- Category Chips --}}
+                @if($categories->isNotEmpty())
+                    <section class="pub-sidebox">
+                        <h2 class="pub-section-title"><i class="fas fa-folder-open me-1"></i> Kategori Berita</h2>
+                        <div class="pub-chip-group">
+                            <button type="button" class="pub-chip {{ $filterCategory === '' ? 'pub-chip--active' : '' }}" wire:click="$set('filterCategory', '')">
+                                Semua Kategori
+                            </button>
+                            @foreach($categories as $category)
+                                <button type="button" class="pub-chip {{ $filterCategory === $category->slug ? 'pub-chip--active' : '' }}" wire:click="$set('filterCategory', '{{ $category->slug }}')">
+                                    {{ $category->name }} ({{ $category->news_count }})
+                                </button>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
+                {{-- Latest News List Widget --}}
+                <section class="pub-sidebox">
+                    <h2 class="pub-section-title"><i class="fas fa-fire me-1"></i> Berita Terkini</h2>
+                    <div class="pub-side-list">
+                        @forelse($latestNews as $latest)
+                            <a href="{{ route('root.publication.news-show', ['slug' => $latest->slug]) }}" class="pub-side-item">
+                                <div class="pub-date-tile">
+                                    <strong>{{ $latest->published_at?->format('d') }}</strong>
+                                    <span>{{ $latest->published_at?->translatedFormat('M') }}</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-body pub-line-clamp-2" style="font-size: .88rem; line-height: 1.35;">{{ $latest->title }}</div>
+                                    <div class="pub-muted small mt-1"><i class="far fa-calendar me-1"></i>{{ $latest->published_at?->format('d M Y') }}</div>
+                                </div>
+                            </a>
+                        @empty
+                            <p class="pub-muted mb-0 small text-center py-2">Belum ada berita terbaru.</p>
+                        @endforelse
+                    </div>
+                </section>
+            </aside>
         </div>
     </div>
 </div>

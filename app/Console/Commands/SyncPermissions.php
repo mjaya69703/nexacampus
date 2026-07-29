@@ -49,6 +49,15 @@ class SyncPermissions extends Command
             Permission::where('guard_name', 'web')->get()
         );
 
+        $adminRole = Role::firstOrCreate([
+            'name' => 'admin',
+            'guard_name' => 'web',
+        ]);
+
+        $adminRole->syncPermissions(
+            Permission::where('guard_name', 'web')->get()
+        );
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->info('Permission sync completed.');

@@ -725,7 +725,7 @@ return [
         'actions' => ['index', 'create', 'edit', 'delete'],
         'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
         'menu' => [
-            'title' => 'Galeri',
+            'title' => 'Album Galeri',
             'icon' => 'fas fa-images',
             'group' => 'Publikasi',
             'group_icon' => 'fas fa-newspaper',

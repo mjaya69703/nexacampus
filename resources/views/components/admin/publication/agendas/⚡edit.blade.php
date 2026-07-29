@@ -38,7 +38,7 @@ new class extends Component
         $this->description = $this->agenda->description ?? '';
         $this->location = $this->agenda->location ?? '';
         $this->eventDate = $this->agenda->event_date->format('Y-m-d');
-        $this->eventTime = $this->agenda->event_time ? $this->agenda->event_time->format('H:i') : '';
+        $this->eventTime = $this->agenda->event_time ? substr($this->agenda->event_time, 0, 5) : '';
         $this->eventEndDate = $this->agenda->event_end_date?->format('Y-m-d') ?? '';
         $this->isPublished = (bool) $this->agenda->is_published;
         $this->publishedAt = $this->agenda->published_at?->format('Y-m-d\TH:i') ?? now()->format('Y-m-d\TH:i');

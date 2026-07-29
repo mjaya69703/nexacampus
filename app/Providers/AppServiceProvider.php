@@ -79,38 +79,39 @@ class AppServiceProvider extends ServiceProvider
             string $resource,
             string $componentPrefix,
             array $only = ['index', 'create', 'edit', 'delete'],
-            string $uriPrefix = '/manage'
+            string $uriPrefix = '/manage',
+            ?string $permissionResource = null
         ) {
-            $singular = Str::singular($resource);
+            $permissionResource ??= Str::singular($resource);
             $baseName = Str::after($componentPrefix, 'admin.');
 
             if (in_array('index', $only)) {
                 Route::livewire("{$uriPrefix}/{$resource}", "{$componentPrefix}.index")
-                    ->middleware("active_permission:{$singular}.viewAny")
+                    ->middleware("active_permission:{$permissionResource}.viewAny")
                     ->name("{$baseName}.index");
             }
 
             if (in_array('create', $only)) {
                 Route::livewire("{$uriPrefix}/{$resource}/create", "{$componentPrefix}.create")
-                    ->middleware("active_permission:{$singular}.create")
+                    ->middleware("active_permission:{$permissionResource}.create")
                     ->name("{$baseName}.create");
             }
 
             if (in_array('edit', $only)) {
                 Route::livewire("{$uriPrefix}/{$resource}/{id}/edit", "{$componentPrefix}.edit")
-                    ->middleware("active_permission:{$singular}.update")
+                    ->middleware("active_permission:{$permissionResource}.update")
                     ->name("{$baseName}.edit");
             }
 
             if (in_array('show', $only)) {
                 Route::livewire("{$uriPrefix}/{$resource}/{id}", "{$componentPrefix}.show")
-                    ->middleware("active_permission:{$singular}.view")
+                    ->middleware("active_permission:{$permissionResource}.view")
                     ->name("{$baseName}.show");
             }
 
             if (in_array('delete', $only)) {
                 Route::livewire("{$uriPrefix}/{$resource}/{id}/delete", "{$componentPrefix}.delete")
-                    ->middleware("active_permission:{$singular}.delete")
+                    ->middleware("active_permission:{$permissionResource}.delete")
                     ->name("{$baseName}.delete");
             }
         });

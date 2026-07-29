@@ -64,6 +64,6 @@ class PublicationCategory extends Model
 
     public function galleries(): HasMany
     {
-        return $this->hasMany(Gallery::class, 'category_id');
+        return $this->hasMany(GalleryAlbum::class, 'category_id');
     }
 }

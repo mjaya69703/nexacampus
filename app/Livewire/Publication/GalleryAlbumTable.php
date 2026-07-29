@@ -3,38 +3,40 @@
 namespace App\Livewire\Publication;
 
 use App\Livewire\BasePowerGridTable;
-use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
-use App\Models\Publication\Gallery;
+use App\Models\Publication\GalleryAlbum;
+use App\Models\Publication\PublicationCategory;
 use App\Support\ActivePermission;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Exportable;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use PowerComponents\LivewirePowerGrid\Traits\WithExport;
 
-final class GalleryTable extends BasePowerGridTable
+final class GalleryAlbumTable extends BasePowerGridTable
 {
-    use ExportsPowerGridWithPhpSpreadsheet;
+    public string $tableName = 'galleryAlbumTable';
 
-    public string $tableName = 'galleryTable';
-
-    protected ?string $bulkActionModel = Gallery::class;
+    protected ?string $bulkActionModel = GalleryAlbum::class;
 
     protected ?string $bulkActionPermissionPrefix = 'gallery';
 
-    protected string $bulkActionItemLabel = 'gambar';
+    protected string $bulkActionItemLabel = 'album';
 
     public function setUp(): array
     {
-        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
+        return $this->powerGridSetUp(showToggleColumns: true);
     }
 
     public function datasource(): Builder
     {
-        return Gallery::query()
+        return GalleryAlbum::query()
             ->with(['creator', 'category'])
+            ->withCount('images')
             ->orderByDesc('id');
     }
 
@@ -42,15 +44,21 @@ final class GalleryTable extends BasePowerGridTable
     {
         return PowerGrid::fields()
             ->add('id')
-            ->add('title', fn (Gallery $model) => \Illuminate\Support\Str::limit($model->title, 50))
-            ->add('image_thumbnail', function (Gallery $model) {
-                $url = \Storage::disk('public')->url($model->image_path);
+            ->add('title', fn (GalleryAlbum $model) => Str::limit($model->title, 50))
+            ->add('slug')
+            ->add('cover_thumbnail', function (GalleryAlbum $model) {
+                if ($model->cover_image_path) {
+                    $url = \Storage::disk('public')->url($model->cover_image_path);
 
-                return '<img src="'.e($url).'" alt="'.e($model->image_alt ?? $model->title).'" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">';
+                    return '<img src="'.e($url).'" alt="Cover" style="width:60px;height:60px;object-fit:cover;border-radius:6px;">';
+                }
+
+                return '<div style="width:60px;height:60px;border-radius:6px;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:18px;color:#adb5bd;"><i class="fa fa-image"></i></div>';
             })
-            ->add('category_name', fn (Gallery $model) => $model->category?->name ?? '-')
-            ->add('is_published', fn (Gallery $model) => $model->is_published)
-            ->add('created_at_formatted', fn (Gallery $model) => $model->created_at?->format('d M Y H:i') ?? '-');
+            ->add('category_name', fn (GalleryAlbum $model) => $model->category?->name ?? '-')
+            ->add('images_count')
+            ->add('is_published', fn (GalleryAlbum $model) => $model->is_published)
+            ->add('created_at_formatted', fn (GalleryAlbum $model) => $model->created_at?->format('d M Y H:i') ?? '-');
     }
 
     public function columns(): array
@@ -63,9 +71,12 @@ final class GalleryTable extends BasePowerGridTable
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Gambar', 'image_thumbnail'),
+            Column::make('Sampul', 'cover_thumbnail'),
 
             Column::make('Kategori', 'category_name')
+                ->sortable(),
+
+            Column::make('Jumlah Foto', 'images_count')
                 ->sortable(),
 
             Column::make('Status', 'is_published')
@@ -87,16 +98,14 @@ final class GalleryTable extends BasePowerGridTable
     {
         return [
             Filter::inputText('title')
-                ->placeholder('Cari judul...'),
+                ->placeholder('Cari album...'),
 
             Filter::boolean('is_published', 'is_published')
                 ->label('Published', 'Draft'),
 
             Filter::select('category_id', 'category_id')
                 ->dataSource(
-                    \App\Models\Publication\PublicationCategory::query()
-                        ->orderBy('name')
-                        ->get()
+                    PublicationCategory::orderBy('name')->get()
                         ->map(fn ($cat) => [
                             'id' => $cat->id,
                             'name' => $cat->name,
@@ -114,22 +123,22 @@ final class GalleryTable extends BasePowerGridTable
         }
 
         if (! ActivePermission::check('gallery.update')) {
-            session()->flash('error', 'Anda tidak memiliki izin untuk mengubah status publikasi!');
+            session()->flash('error', 'Anda tidak memiliki izin untuk mengubah status album!');
             $this->dispatch('pg:eventRefresh-'.$this->tableName);
 
             return;
         }
 
-        $gallery = Gallery::find($id);
+        $album = GalleryAlbum::find($id);
 
-        if (! $gallery) {
-            session()->flash('error', 'Data galeri tidak ditemukan!');
+        if (! $album) {
+            session()->flash('error', 'Data album tidak ditemukan!');
             $this->dispatch('pg:eventRefresh-'.$this->tableName);
 
             return;
         }
 
-        $gallery->update([
+        $album->update([
             'is_published' => (bool) $value,
             'updated_by' => auth()->id(),
         ]);
@@ -146,14 +155,14 @@ final class GalleryTable extends BasePowerGridTable
     #[On('delete')]
     public function delete($id): void
     {
-        $gallery = Gallery::find($id);
+        $album = GalleryAlbum::find($id);
 
-        if ($gallery) {
-            $title = addslashes(\Illuminate\Support\Str::limit($gallery->title, 40));
+        if ($album) {
+            $title = addslashes(Str::limit($album->title, 40));
             $this->js('
                 Swal.fire({
-                    title: "Hapus Gambar?",
-                    text: "'.$title.' - Data tidak bisa dikembalikan!",
+                    title: "Hapus Album?",
+                    text: "'.$title.' - Semua foto dalam album akan ikut terhapus!",
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonText: "Ya hapus",
@@ -171,33 +180,40 @@ final class GalleryTable extends BasePowerGridTable
     public function deleteItem($id = null): void
     {
         if (! ActivePermission::check('gallery.delete')) {
-            session()->flash('error', 'Anda tidak memiliki izin untuk menghapus gambar!');
+            session()->flash('error', 'Anda tidak memiliki izin untuk menghapus album!');
 
             return;
         }
 
         if ($id === null) {
-            session()->flash('error', 'ID galeri tidak ditemukan!');
+            session()->flash('error', 'ID album tidak ditemukan!');
 
             return;
         }
 
-        $gallery = Gallery::find($id);
+        $album = GalleryAlbum::with('images')->find($id);
 
-        if ($gallery) {
-            // Delete image file
-            if ($gallery->image_path && \Storage::disk('public')->exists($gallery->image_path)) {
-                \Storage::disk('public')->delete($gallery->image_path);
+        if ($album) {
+            // Delete all image files from storage
+            foreach ($album->images as $image) {
+                if ($image->image_path && \Storage::disk('public')->exists($image->image_path)) {
+                    \Storage::disk('public')->delete($image->image_path);
+                }
             }
 
-            $gallery->update(['deleted_by' => auth()->id()]);
-            $gallery->delete();
+            // Delete cover image if exists
+            if ($album->cover_image_path && \Storage::disk('public')->exists($album->cover_image_path)) {
+                \Storage::disk('public')->delete($album->cover_image_path);
+            }
+
+            $album->update(['deleted_by' => auth()->id()]);
+            $album->delete();
 
             $this->dispatch('pg:eventRefresh-'.$this->tableName);
             $this->js('
                 Swal.fire({
                     title: "Dihapus",
-                    text: "Gambar berhasil dihapus!",
+                    text: "Album beserta foto berhasil dihapus!",
                     icon: "success",
                     timer: 2000,
                     showConfirmButton: false
@@ -206,7 +222,7 @@ final class GalleryTable extends BasePowerGridTable
         }
     }
 
-    public function actions(Gallery $row): array
+    public function actions(GalleryAlbum $row): array
     {
         $actions = [];
 

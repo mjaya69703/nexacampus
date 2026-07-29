@@ -3,22 +3,24 @@
 namespace App\Models\Publication;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Gallery extends Model
+class GalleryAlbum extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use LogsActivity, SoftDeletes;
+
+    protected $table = 'gallery_albums';
 
     protected $fillable = [
         'title',
+        'slug',
         'description',
-        'image_path',
-        'image_alt',
+        'cover_image_path',
         'category_id',
         'is_published',
         'created_by',
@@ -36,8 +38,8 @@ class Gallery extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->useLogName('gallery')
-            ->logOnly(['title', 'is_published', 'category_id'])
+            ->useLogName('gallery_album')
+            ->logOnly(['title', 'slug', 'is_published'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -57,8 +59,13 @@ class Gallery extends Model
         return $this->belongsTo(PublicationCategory::class, 'category_id');
     }
 
-    public function scopePublished($query)
+    public function images(): HasMany
     {
-        return $query->where('is_published', true);
+        return $this->hasMany(GalleryImage::class, 'gallery_album_id')->orderBy('sort_order');
+    }
+
+    public function scopePublished($q)
+    {
+        return $q->where('is_published', true);
     }
 }
