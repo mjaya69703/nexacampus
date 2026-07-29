@@ -68,7 +68,7 @@ new class extends Component
         description="Unggah gambar baru untuk koleksi galeri publikasi kampus."
         icon="image"
     >
-        <a href="{{ route('admin.publication.galleries.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+        <a href="{{ route('admin.publication.galleries.index') }}" class="btn  btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
             <i class="fa fa-arrow-left"></i>
             <span>Kembali ke daftar</span>
         </a>
@@ -107,7 +107,7 @@ new class extends Component
 
                     <div class="mb-4">
                         <label class="form-label fw-semibold">Upload Gambar <span class="text-danger">*</span></label>
-                        <div class="border rounded-4 p-4 text-center bg-light bg-opacity-50" style="cursor: pointer;" wire:click="$refs.imageInput.click()">
+                        <div class="border rounded-4 p-4 text-center bg-light bg-opacity-50" style="cursor: pointer;" x-on:click="$refs.imageInput.click()">
                             @if ($image_path)
                                 <div class="mb-2">
                                     <img src="{{ $image_path->temporaryUrl() }}" alt="Preview" style="max-height: 200px; border-radius: 8px; object-fit: contain;">

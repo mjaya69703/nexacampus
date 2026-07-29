@@ -52,7 +52,7 @@ final class AgendaTable extends BasePowerGridTable
             ->add('slug')
             ->add('category_name', fn (Agenda $model) => $model->category?->name ?? '-')
             ->add('event_date_formatted', fn (Agenda $model) => $model->event_date?->format('d M Y') ?? '-')
-            ->add('event_time_formatted', fn (Agenda $model) => $model->event_time ? $model->event_time->format('H:i') : '-')
+            ->add('event_time_formatted', fn (Agenda $model) => $model->event_time ? substr($model->event_time, 0, 5) : '-')
             ->add('location')
             ->add('is_published', fn (Agenda $model) => $model->is_published)
             ->add('created_at_formatted', fn (Agenda $model) => $model->created_at?->format('d M Y H:i') ?? '-');

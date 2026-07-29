@@ -76,7 +76,7 @@ new class extends Component
         description="Perbarui pertanyaan, jawaban, tipe modul, kategori, urutan penayangan, dan status aktif FAQ."
         icon="circle-question"
     >
-        <a href="{{ route('admin.publication.faqs.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+        <a href="{{ route('admin.publication.faqs.index') }}" class="btn  btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
             <i class="fa fa-arrow-left"></i>
             <span>Kembali ke daftar</span>
         </a>

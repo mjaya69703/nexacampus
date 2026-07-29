@@ -63,7 +63,7 @@ new class extends Component
         description="Buat kategori publikasi baru untuk mengelompokkan berita, agenda, dan galeri berdasarkan topik atau jenis konten."
         icon="tags"
     >
-        <a href="{{ route('admin.publication.categories.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+        <a href="{{ route('admin.publication.categories.index') }}" class="btn  btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
             <i class="fa fa-arrow-left"></i>
             <span>Kembali ke daftar</span>
         </a>

@@ -41,7 +41,7 @@ new class extends Component
         icon="tags"
     >
         @activecan('publication-category.create')
-            <a href="{{ route('admin.publication.categories.create') }}" class="btn btn-sm btn-light text-success fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+            <a href="{{ route('admin.publication.categories.create') }}" class="btn  btn-light text-success fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
                 <i class="fa fa-plus-circle"></i>
                 <span>Tambah Kategori</span>
             </a>

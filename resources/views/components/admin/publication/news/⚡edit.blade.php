@@ -117,7 +117,7 @@ new class extends Component
         description="Perbarui judul, konten, kategori, dan pengaturan publikasi berita."
         icon="newspaper"
     >
-        <a href="{{ route('admin.publication.news.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+        <a href="{{ route('admin.publication.news.index') }}" class="btn  btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
             <i class="fa fa-arrow-left"></i>
             <span>Kembali ke daftar</span>
         </a>
@@ -227,7 +227,7 @@ new class extends Component
                         @if($featuredImage)
                             <div class="mt-3 position-relative">
                                 <img src="{{ $featuredImage->temporaryUrl() }}" class="img-fluid rounded-3 border" alt="Preview">
-                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle" wire:click="$set('featuredImage', null)">
+                                <button type="button" class="btn  btn-danger position-absolute top-0 end-0 m-2 rounded-circle" wire:click="$set('featuredImage', null)">
                                     <i class="fa fa-times"></i>
                                 </button>
                             </div>

@@ -158,7 +158,7 @@ new class extends Component
         description="Perbarui konten, target penerima, prioritas, dan pengaturan publikasi pengumuman yang sudah ada."
         icon="bullhorn"
     >
-        <a href="{{ route('admin.publication.announcements.index') }}" class="btn btn-sm btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
+        <a href="{{ route('admin.publication.announcements.index') }}" class="btn  btn-light text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3 py-2">
             <i class="fa fa-arrow-left"></i>
             <span>Kembali ke daftar</span>
         </a>
@@ -205,7 +205,7 @@ new class extends Component
                                     <div class="fw-bold">{{ $announcementData['attachment_name'] }}</div>
                                     <div class="text-muted small">{{ strtoupper($announcementData['attachment_type']) }} &middot; {{ $announcementData['attachment_size'] }}</div>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" wire:click="$set('removeAttachment', true)">
+                                <button type="button" class="btn  btn-outline-danger d-inline-flex align-items-center gap-1" wire:click="$set('removeAttachment', true)">
                                     <i class="fa fa-trash"></i>
                                     <span>Hapus</span>
                                 </button>
@@ -227,7 +227,7 @@ new class extends Component
                                 </div>
                             @endif
                             @if($removeAttachment)
-                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2 d-inline-flex align-items-center gap-1" wire:click="$set('removeAttachment', false)">
+                                <button type="button" class="btn  btn-outline-secondary mt-2 d-inline-flex align-items-center gap-1" wire:click="$set('removeAttachment', false)">
                                     <i class="fa fa-undo"></i>
                                     <span>Batalkan Hapus</span>
                                 </button>
