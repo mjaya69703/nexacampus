@@ -214,6 +214,19 @@ new class extends Component
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
+
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .stat-card,
+        body[data-bs-theme=dark] .stat-card,
+        [data-bs-theme=dark] .material-card,
+        body[data-bs-theme=dark] .material-card,
+        [data-bs-theme=dark] .invoice-metric,
+        body[data-bs-theme=dark] .invoice-metric {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
     </style>
 @endpush
 

@@ -61,6 +61,9 @@
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex items-center justify-center p-4">
+    <!-- BEGIN GLOBAL THEME SCRIPT -->
+    <script src="{{ asset('assets') }}/dist/js/tabler-theme.min.js"></script>
+    <!-- END GLOBAL THEME SCRIPT -->
 
     <!-- Main Card -->
     {{  $slot }}

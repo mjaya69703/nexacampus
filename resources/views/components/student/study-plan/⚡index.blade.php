@@ -730,6 +730,44 @@ new class extends Component
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
+
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .sks-counter-inner,
+        body[data-bs-theme=dark] .sks-counter-inner {
+            background: #211632 !important;
+            border-color: rgba(167, 139, 255, 0.18) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .course-card,
+        body[data-bs-theme=dark] .course-card,
+        [data-bs-theme=dark] .selected-course-card,
+        body[data-bs-theme=dark] .selected-course-card {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] [style*="color: #1f2937"],
+        body[data-bs-theme=dark] [style*="color: #1f2937"] {
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] [style*="background: #dbeafe"],
+        body[data-bs-theme=dark] [style*="background: #dbeafe"],
+        [data-bs-theme=dark] [style*="background: #d1fae5"],
+        body[data-bs-theme=dark] [style*="background: #d1fae5"],
+        [data-bs-theme=dark] [style*="background: #fee2e2"],
+        body[data-bs-theme=dark] [style*="background: #fee2e2"],
+        [data-bs-theme=dark] [style*="background: linear-gradient(135deg, #f8fafc"],
+        body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #f8fafc"],
+        [data-bs-theme=dark] [style*="background: linear-gradient(135deg, #dbeafe"],
+        body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #dbeafe"] {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
     </style>
 @endpush
 

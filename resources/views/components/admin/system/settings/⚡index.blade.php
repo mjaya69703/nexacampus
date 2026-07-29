@@ -7,6 +7,7 @@ use App\Models\Settings\NotificationSetting;
 use App\Models\Settings\System;
 use App\Models\User;
 use App\Support\Notifications\NotificationDispatchService;
+use App\Support\Notifications\WebPushNotificationService;
 use App\Support\Notifications\WhatsAppProviderManager;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -199,6 +200,41 @@ new class extends Component
             $log->status === 'sent' ? 'success' : 'warning',
             'Test WhatsApp status: '.$log->status.($log->error_message ? ' - '.$log->error_message : '')
         );
+    }
+
+    public function sendTestWebPush()
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            session()->flash('warning', 'Anda harus login untuk mengirim test push.');
+
+            return;
+        }
+
+        $log = app(WebPushNotificationService::class)->send(
+            user: $user,
+            eventKey: 'system.web_push_test',
+            subject: 'Test Web Push',
+            body: 'Web push notifications are working! 🎉',
+            data: ['url' => route('home.profile-index')]
+        );
+
+        $message = match ($log->status) {
+            'sent' => 'Test push berhasil dikirim ke browser!',
+            'skipped' => $log->error_message ?: 'Web push belum dikonfigurasi.',
+            'failed' => 'Gagal mengirim: '.$log->error_message,
+            default => 'Status tidak diketahui.',
+        };
+
+        $type = match ($log->status) {
+            'sent' => 'success',
+            'skipped' => 'warning',
+            'failed' => 'error',
+            default => 'warning',
+        };
+
+        session()->flash($type, $message);
     }
 
     public function startBundledWhatsappSidecar()
@@ -730,6 +766,7 @@ new class extends Component
                                         </div>
                                         <small class="text-muted">Butuh VAPID key di env dan izin browser dari masing-masing user.</small>
                                     </div>
+
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Provider Aktif</label>
                                         <select class="form-select" wire:model.live="notificationForm.whatsapp_provider">
@@ -873,16 +910,27 @@ new class extends Component
 
                                 <hr>
                                 <h6 class="mb-3">Test Pengiriman</h6>
-                                <div class="row align-items-end">
-                                    <div class="col-md-8 mb-3">
-                                        <label class="form-label">Nomor Tujuan Test</label>
-                                        <input type="text" class="form-control" wire:model="testWhatsappRecipient" placeholder="Contoh: 081234567890">
-                                        @error('testWhatsappRecipient') <span class="text-danger">{{ $message }}</span> @enderror
+                                <div class="row align-items-start">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Test WhatsApp</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" wire:model="testWhatsappRecipient" placeholder="Contoh: 081234567890">
+                                            <button type="button" class="btn btn-success" wire:click="sendTestWhatsapp">
+                                                <i class="fab fa-whatsapp me-2"></i> Kirim Test
+                                            </button>
+                                        </div>
+                                        @error('testWhatsappRecipient') <span class="text-danger mt-1 d-block">{{ $message }}</span> @enderror
                                     </div>
-                                    <div class="col-md-4 mb-3">
-                                        <button type="button" class="btn btn-success w-100" wire:click="sendTestWhatsapp">
-                                            <i class="fab fa-whatsapp me-2"></i> Kirim Test
-                                        </button>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Test Web Push</label>
+                                        <div>
+                                            <button type="button" class="btn btn-info text-white w-100" wire:click="sendTestWebPush">
+                                                <i class="fas fa-bell me-2"></i> Kirim Test Web Push
+                                            </button>
+                                            <small class="text-muted mt-1 d-block">
+                                                <i class="fas fa-info-circle me-1"></i> Notifikasi dikirim ke browser. Pastikan tombol <strong>"Aktifkan notifikasi"</strong> (ikon lonceng) di navbar atas sudah diklik & izin browser diizinkan.
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

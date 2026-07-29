@@ -473,3 +473,554 @@ label {
     font-size: 12px;
     color: var(--app-text-muted);
 }
+
+/* ==========================================================================
+   GLOBAL DARK MODE INTERCEPTOR (Pilar 1: Normalisasi Total Tema Dark Mode)
+   Mengatur agar semua utility class dan inline hex statis otomatis mengikut
+   variabel tema saat [data-bs-theme=dark] aktif tanpa custom class berulang.
+   ========================================================================== */
+
+[data-bs-theme=dark] .nx-home,
+body[data-bs-theme=dark] .nx-home,
+[data-bs-theme=dark] .prodi-landing-container,
+body[data-bs-theme=dark] .prodi-landing-container {
+    background: var(--app-page-bg) !important;
+    color: var(--pg-control-color) !important;
+}
+
+[data-bs-theme=dark] .bg-white,
+body[data-bs-theme=dark] .bg-white,
+[data-bs-theme=dark] main.bg-white,
+body[data-bs-theme=dark] main.bg-white,
+[data-bs-theme=dark] section.bg-white,
+body[data-bs-theme=dark] section.bg-white,
+[data-bs-theme=dark] div.bg-white,
+body[data-bs-theme=dark] div.bg-white,
+[data-bs-theme=dark] [style*="background:#fff"],
+body[data-bs-theme=dark] [style*="background:#fff"],
+[data-bs-theme=dark] [style*="background: #fff"],
+body[data-bs-theme=dark] [style*="background: #fff"],
+[data-bs-theme=dark] [style*="background:#ffffff"],
+body[data-bs-theme=dark] [style*="background:#ffffff"],
+[data-bs-theme=dark] [style*="background: #ffffff"],
+body[data-bs-theme=dark] [style*="background: #ffffff"],
+[data-bs-theme=dark] [style*="background-color:#fff"],
+body[data-bs-theme=dark] [style*="background-color:#fff"],
+[data-bs-theme=dark] [style*="background-color: #fff"],
+body[data-bs-theme=dark] [style*="background-color: #fff"],
+[data-bs-theme=dark] [style*="background-color:#ffffff"],
+body[data-bs-theme=dark] [style*="background-color:#ffffff"],
+[data-bs-theme=dark] [style*="background-color: #ffffff"],
+body[data-bs-theme=dark] [style*="background-color: #ffffff"] {
+    background: var(--app-surface-bg) !important;
+    color: var(--pg-control-color) !important;
+}
+
+[data-bs-theme=dark] [style*="background:#f8f7ff"],
+body[data-bs-theme=dark] [style*="background:#f8f7ff"],
+[data-bs-theme=dark] [style*="background: #f8f7ff"],
+body[data-bs-theme=dark] [style*="background: #f8f7ff"],
+[data-bs-theme=dark] [style*="background:#f8fafc"],
+body[data-bs-theme=dark] [style*="background:#f8fafc"],
+[data-bs-theme=dark] [style*="background: #f8fafc"],
+body[data-bs-theme=dark] [style*="background: #f8fafc"],
+[data-bs-theme=dark] [style*="background:#f9fafb"],
+body[data-bs-theme=dark] [style*="background:#f9fafb"],
+[data-bs-theme=dark] [style*="background: #f9fafb"],
+body[data-bs-theme=dark] [style*="background: #f9fafb"],
+[data-bs-theme=dark] [style*="background:#f1f5f9"],
+body[data-bs-theme=dark] [style*="background:#f1f5f9"],
+[data-bs-theme=dark] [style*="background: #f1f5f9"],
+body[data-bs-theme=dark] [style*="background: #f1f5f9"],
+[data-bs-theme=dark] [style*="background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)"],
+body[data-bs-theme=dark] [style*="background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)"],
+[data-bs-theme=dark] .bg-light,
+body[data-bs-theme=dark] .bg-light,
+[data-bs-theme=dark] .bg-slate-50,
+body[data-bs-theme=dark] .bg-slate-50,
+[data-bs-theme=dark] .bg-gray-50,
+body[data-bs-theme=dark] .bg-gray-50,
+[data-bs-theme=dark] .bg-gray-100,
+body[data-bs-theme=dark] .bg-gray-100 {
+    background: var(--app-page-bg) !important;
+    color: var(--pg-control-color) !important;
+}
+
+[data-bs-theme=dark] .text-dark,
+body[data-bs-theme=dark] .text-dark,
+[data-bs-theme=dark] [style*="color:#0f172a"],
+body[data-bs-theme=dark] [style*="color:#0f172a"],
+[data-bs-theme=dark] [style*="color: #0f172a"],
+body[data-bs-theme=dark] [style*="color: #0f172a"],
+[data-bs-theme=dark] [style*="color:#1e1b4b"],
+body[data-bs-theme=dark] [style*="color:#1e1b4b"],
+[data-bs-theme=dark] [style*="color: #1e1b4b"],
+body[data-bs-theme=dark] [style*="color: #1e1b4b"],
+[data-bs-theme=dark] [style*="color:#111827"],
+body[data-bs-theme=dark] [style*="color:#111827"],
+[data-bs-theme=dark] [style*="color: #111827"],
+body[data-bs-theme=dark] [style*="color: #111827"],
+[data-bs-theme=dark] .text-slate-800,
+body[data-bs-theme=dark] .text-slate-800,
+[data-bs-theme=dark] .text-gray-900,
+body[data-bs-theme=dark] .text-gray-900 {
+    color: #f3edff !important;
+}
+
+[data-bs-theme=dark] .text-muted,
+body[data-bs-theme=dark] .text-muted,
+[data-bs-theme=dark] .text-secondary,
+body[data-bs-theme=dark] .text-secondary,
+[data-bs-theme=dark] .text-slate-600,
+body[data-bs-theme=dark] .text-slate-600 {
+    color: var(--app-text-muted) !important;
+}
+
+/* 1. KARTU & PANEL UTAMA (Cards, Panels, Widgets, Tiles, Boxes, Shells) */
+[data-bs-theme=dark] .card,
+body[data-bs-theme=dark] .card,
+[data-bs-theme=dark] .modern-card,
+body[data-bs-theme=dark] .modern-card,
+[data-bs-theme=dark] .stat-card,
+body[data-bs-theme=dark] .stat-card,
+[data-bs-theme=dark] .quick-action-btn,
+body[data-bs-theme=dark] .quick-action-btn,
+[data-bs-theme=dark] .finance-widget,
+body[data-bs-theme=dark] .finance-widget,
+[data-bs-theme=dark] .service-card,
+body[data-bs-theme=dark] .service-card,
+[data-bs-theme=dark] .ticket-stat,
+body[data-bs-theme=dark] .ticket-stat,
+[data-bs-theme=dark] .ticket-message,
+body[data-bs-theme=dark] .ticket-message,
+[data-bs-theme=dark] .ticket-message.staff,
+body[data-bs-theme=dark] .ticket-message.staff,
+[data-bs-theme=dark] .profile-panel,
+body[data-bs-theme=dark] .profile-panel,
+[data-bs-theme=dark] .result-card,
+body[data-bs-theme=dark] .result-card,
+[data-bs-theme=dark] .course-card,
+body[data-bs-theme=dark] .course-card,
+[data-bs-theme=dark] .hero-mini-card,
+body[data-bs-theme=dark] .hero-mini-card,
+[data-bs-theme=dark] .material-card,
+body[data-bs-theme=dark] .material-card,
+[data-bs-theme=dark] .material-item,
+body[data-bs-theme=dark] .material-item,
+[data-bs-theme=dark] .schedule-item,
+body[data-bs-theme=dark] .schedule-item,
+[data-bs-theme=dark] .grade-card,
+body[data-bs-theme=dark] .grade-card,
+[data-bs-theme=dark] .grade-item,
+body[data-bs-theme=dark] .grade-item,
+[data-bs-theme=dark] .advisor-card,
+body[data-bs-theme=dark] .advisor-card,
+[data-bs-theme=dark] .calendar-day,
+body[data-bs-theme=dark] .calendar-day,
+[data-bs-theme=dark] .calendar-day.is-today,
+body[data-bs-theme=dark] .calendar-day.is-today,
+[data-bs-theme=dark] .upload-panel,
+body[data-bs-theme=dark] .upload-panel,
+[data-bs-theme=dark] .form-section,
+body[data-bs-theme=dark] .form-section,
+[data-bs-theme=dark] .filter-section,
+body[data-bs-theme=dark] .filter-section,
+[data-bs-theme=dark] .table-card,
+body[data-bs-theme=dark] .table-card,
+[data-bs-theme=dark] .detail-card,
+body[data-bs-theme=dark] .detail-card,
+[data-bs-theme=dark] .attendance-card,
+body[data-bs-theme=dark] .attendance-card,
+[data-bs-theme=dark] .session-card,
+body[data-bs-theme=dark] .session-card,
+[data-bs-theme=dark] .item-card,
+body[data-bs-theme=dark] .item-card,
+[data-bs-theme=dark] .comment-card,
+body[data-bs-theme=dark] .comment-card,
+[data-bs-theme=dark] .appeal-card,
+body[data-bs-theme=dark] .appeal-card,
+[data-bs-theme=dark] .workload-card,
+body[data-bs-theme=dark] .workload-card,
+[data-bs-theme=dark] .letter-card,
+body[data-bs-theme=dark] .letter-card,
+[data-bs-theme=dark] .transfer-card,
+body[data-bs-theme=dark] .transfer-card,
+[data-bs-theme=dark] .leave-card,
+body[data-bs-theme=dark] .leave-card,
+[data-bs-theme=dark] .graduation-card,
+body[data-bs-theme=dark] .graduation-card,
+[data-bs-theme=dark] .announcement-card,
+body[data-bs-theme=dark] .announcement-card,
+[data-bs-theme=dark] .invoices-card,
+body[data-bs-theme=dark] .invoices-card,
+[data-bs-theme=dark] .payment-card,
+body[data-bs-theme=dark] .payment-card,
+[data-bs-theme=dark] .attendance-circle-inner,
+body[data-bs-theme=dark] .attendance-circle-inner,
+[data-bs-theme=dark] .sks-counter-inner,
+body[data-bs-theme=dark] .sks-counter-inner,
+[data-bs-theme=dark] .risk-card,
+body[data-bs-theme=dark] .risk-card,
+[data-bs-theme=dark] .nx-card,
+body[data-bs-theme=dark] .nx-card,
+[data-bs-theme=dark] .bea-card,
+body[data-bs-theme=dark] .bea-card,
+[data-bs-theme=dark] .assignment-card,
+body[data-bs-theme=dark] .assignment-card,
+[data-bs-theme=dark] .assignment-list-item,
+body[data-bs-theme=dark] .assignment-list-item,
+[data-bs-theme=dark] .card-header.bg-white,
+body[data-bs-theme=dark] .card-header.bg-white,
+[data-bs-theme=dark] .prodi-landing-container .card,
+body[data-bs-theme=dark] .prodi-landing-container .card {
+    background: var(--app-surface-bg) !important;
+    border-color: rgba(167, 139, 255, 0.18) !important;
+    color: #f3edff !important;
+}
+
+/* 2. SUB-PANEL & LIST ITEMS (Soft cards, request cards, selected items, section headers) */
+[data-bs-theme=dark] .section-header,
+body[data-bs-theme=dark] .section-header,
+[data-bs-theme=dark] .service-section-header,
+body[data-bs-theme=dark] .service-section-header,
+[data-bs-theme=dark] .finance-widget-header,
+body[data-bs-theme=dark] .finance-widget-header,
+[data-bs-theme=dark] .soft-list-item,
+body[data-bs-theme=dark] .soft-list-item,
+[data-bs-theme=dark] .finance-line,
+body[data-bs-theme=dark] .finance-line,
+[data-bs-theme=dark] .invoice-metric,
+body[data-bs-theme=dark] .invoice-metric,
+[data-bs-theme=dark] .stat-item,
+body[data-bs-theme=dark] .stat-item,
+[data-bs-theme=dark] .score-display,
+body[data-bs-theme=dark] .score-display,
+[data-bs-theme=dark] .info-item,
+body[data-bs-theme=dark] .info-item,
+[data-bs-theme=dark] .advisor-metric,
+body[data-bs-theme=dark] .advisor-metric,
+[data-bs-theme=dark] .advisor-stat,
+body[data-bs-theme=dark] .advisor-stat,
+[data-bs-theme=dark] .note-preview,
+body[data-bs-theme=dark] .note-preview,
+[data-bs-theme=dark] .selected-file-chip,
+body[data-bs-theme=dark] .selected-file-chip,
+[data-bs-theme=dark] .course-header,
+body[data-bs-theme=dark] .course-header,
+[data-bs-theme=dark] .grade-header,
+body[data-bs-theme=dark] .grade-header,
+[data-bs-theme=dark] .advisor-card-header,
+body[data-bs-theme=dark] .advisor-card-header,
+[data-bs-theme=dark] .advisor-panel,
+body[data-bs-theme=dark] .advisor-panel,
+[data-bs-theme=dark] .attention-item,
+body[data-bs-theme=dark] .attention-item,
+[data-bs-theme=dark] .advisor-note-item,
+body[data-bs-theme=dark] .advisor-note-item,
+[data-bs-theme=dark] .assignment-panel,
+body[data-bs-theme=dark] .assignment-panel,
+[data-bs-theme=dark] .request-card,
+body[data-bs-theme=dark] .request-card,
+[data-bs-theme=dark] .form-shell,
+body[data-bs-theme=dark] .form-shell,
+[data-bs-theme=dark] .detail-tile,
+body[data-bs-theme=dark] .detail-tile,
+[data-bs-theme=dark] .support-panel,
+body[data-bs-theme=dark] .support-panel,
+[data-bs-theme=dark] .upload-dropzone,
+body[data-bs-theme=dark] .upload-dropzone,
+[data-bs-theme=dark] .assignment-dropzone,
+body[data-bs-theme=dark] .assignment-dropzone,
+[data-bs-theme=dark] .selected-course-card,
+body[data-bs-theme=dark] .selected-course-card {
+    background: rgba(43, 28, 67, 0.85) !important;
+    border-color: rgba(167, 139, 255, 0.22) !important;
+    color: #f3edff !important;
+}
+
+/* 3. PILLS, CHIPS & BADGES (Attachment chips, info badges, ticket pills, category pills) */
+[data-bs-theme=dark] .assignment-pill,
+body[data-bs-theme=dark] .assignment-pill,
+[data-bs-theme=dark] .ticket-pill,
+body[data-bs-theme=dark] .ticket-pill,
+[data-bs-theme=dark] .attachment-chip,
+body[data-bs-theme=dark] .attachment-chip,
+[data-bs-theme=dark] .timeline-dot,
+body[data-bs-theme=dark] .timeline-dot {
+    background: rgba(167, 139, 255, 0.18) !important;
+    border-color: rgba(167, 139, 255, 0.3) !important;
+    color: #ede9fe !important;
+}
+
+[data-bs-theme=dark] .bea-filter-bar,
+body[data-bs-theme=dark] .bea-filter-bar,
+[data-bs-theme=dark] .sticky-top[style*="background:rgba(249,250,251"],
+body[data-bs-theme=dark] .sticky-top[style*="background:rgba(249,250,251"] {
+    background: rgba(33, 22, 50, 0.92) !important;
+    border-bottom-color: rgba(167, 139, 255, 0.16) !important;
+    color: #f3edff !important;
+}
+
+[data-bs-theme=dark] .bea-cat-btn:not(.active),
+body[data-bs-theme=dark] .bea-cat-btn:not(.active) {
+    background: var(--app-surface-bg) !important;
+    color: #c3b6df !important;
+    border-color: rgba(167, 139, 255, 0.28) !important;
+}
+
+[data-bs-theme=dark] .bea-cat-btn:not(.active):hover,
+body[data-bs-theme=dark] .bea-cat-btn:not(.active):hover {
+    color: #ffffff !important;
+    border-color: var(--app-primary-bright) !important;
+}
+
+[data-bs-theme=dark] .nx-btn-outline,
+body[data-bs-theme=dark] .nx-btn-outline {
+    background: var(--app-surface-bg) !important;
+    color: #a78bff !important;
+    border-color: rgba(167, 139, 255, 0.28) !important;
+}
+
+[data-bs-theme=dark] .nx-btn-outline:hover,
+body[data-bs-theme=dark] .nx-btn-outline:hover {
+    background: rgba(167, 139, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+
+[data-bs-theme=dark] .form-control,
+body[data-bs-theme=dark] .form-control,
+[data-bs-theme=dark] .form-select,
+body[data-bs-theme=dark] .form-select,
+[data-bs-theme=dark] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+body[data-bs-theme=dark] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+[data-bs-theme=dark] select,
+body[data-bs-theme=dark] select,
+[data-bs-theme=dark] textarea,
+body[data-bs-theme=dark] textarea {
+    background: var(--pg-control-bg) !important;
+    border-color: var(--pg-control-border) !important;
+    color: var(--pg-control-color) !important;
+}
+
+/* ==========================================================================
+   PERBAIKAN SWITCH BUTTON / CHECKBOX DI DARK MODE (Ga keliatan mana aktif ga aktif)
+   ========================================================================== */
+[data-bs-theme=dark] .form-check-input,
+body[data-bs-theme=dark] .form-check-input,
+[data-bs-theme=dark] input[type="checkbox"],
+body[data-bs-theme=dark] input[type="checkbox"] {
+    background-color: #2b1c43 !important;
+    border: 2px solid #695982 !important;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+}
+
+[data-bs-theme=dark] .form-switch .form-check-input,
+body[data-bs-theme=dark] .form-switch .form-check-input,
+[data-bs-theme=dark] .form-switch input[type="checkbox"],
+body[data-bs-theme=dark] .form-switch input[type="checkbox"] {
+    width: 2.75em !important;
+    height: 1.4em !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23c3b6df'/%3e%3c/svg%3e") !important;
+    background-position: left center !important;
+    border-radius: 2em !important;
+    transition: background-color .15s ease-in-out, border-color .15s ease-in-out, background-position .15s ease-in-out, box-shadow .15s ease-in-out !important;
+}
+
+[data-bs-theme=dark] .form-check-input:checked,
+body[data-bs-theme=dark] .form-check-input:checked,
+[data-bs-theme=dark] input[type="checkbox"]:checked,
+body[data-bs-theme=dark] input[type="checkbox"]:checked {
+    background-color: var(--app-primary) !important;
+    border-color: var(--app-primary-bright) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e") !important;
+    box-shadow: 0 0 0 3px rgba(139, 108, 255, 0.3) !important;
+}
+
+[data-bs-theme=dark] .form-switch .form-check-input:checked,
+body[data-bs-theme=dark] .form-switch .form-check-input:checked,
+[data-bs-theme=dark] .form-switch input[type="checkbox"]:checked,
+body[data-bs-theme=dark] .form-switch input[type="checkbox"]:checked {
+    background-position: right center !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e") !important;
+}
+
+/* Normalisasi Warna Status Pills / Badges (Hijau, Merah, Kuning, Biru pastel) */
+[data-bs-theme=dark] [style*="background:#dcfce7"],
+body[data-bs-theme=dark] [style*="background:#dcfce7"],
+[data-bs-theme=dark] [style*="background: #dcfce7"],
+body[data-bs-theme=dark] [style*="background: #dcfce7"] {
+    background: rgba(34, 197, 94, 0.2) !important;
+    color: #4ade80 !important;
+}
+
+[data-bs-theme=dark] [style*="background:#fee2e2"],
+body[data-bs-theme=dark] [style*="background:#fee2e2"],
+[data-bs-theme=dark] [style*="background: #fee2e2"],
+body[data-bs-theme=dark] [style*="background: #fee2e2"] {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #f87171 !important;
+}
+
+[data-bs-theme=dark] [style*="background:#fef3c7"],
+body[data-bs-theme=dark] [style*="background:#fef3c7"],
+[data-bs-theme=dark] [style*="background: #fef3c7"],
+body[data-bs-theme=dark] [style*="background: #fef3c7"] {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
+}
+
+[data-bs-theme=dark] [style*="background:#eef2ff"],
+body[data-bs-theme=dark] [style*="background:#eef2ff"],
+[data-bs-theme=dark] [style*="background: #eef2ff"],
+body[data-bs-theme=dark] [style*="background: #eef2ff"] {
+    background: rgba(99, 102, 241, 0.2) !important;
+    color: #a5b4fc !important;
+}
+
+/* 4. TEKS & LABEL INTERNAL KARTU (Memastikan tidak ada teks gelap/tersembunyi) */
+[data-bs-theme=dark] .stat-value,
+body[data-bs-theme=dark] .stat-value,
+[data-bs-theme=dark] .chart-row-label,
+body[data-bs-theme=dark] .chart-row-label,
+[data-bs-theme=dark] .fw-bold[style*="color: #1f2937"],
+body[data-bs-theme=dark] .fw-bold[style*="color: #1f2937"],
+[data-bs-theme=dark] .h3[style*="color: #1f2937"],
+body[data-bs-theme=dark] .h3[style*="color: #1f2937"],
+[data-bs-theme=dark] [style*="color: #1f2937"],
+body[data-bs-theme=dark] [style*="color: #1f2937"],
+[data-bs-theme=dark] [style*="color:#1f2937"],
+body[data-bs-theme=dark] [style*="color:#1f2937"],
+[data-bs-theme=dark] [style*="color: #334155"],
+body[data-bs-theme=dark] [style*="color: #334155"],
+[data-bs-theme=dark] [style*="color:#334155"],
+body[data-bs-theme=dark] [style*="color:#334155"],
+[data-bs-theme=dark] [style*="color: #111827"],
+body[data-bs-theme=dark] [style*="color: #111827"],
+[data-bs-theme=dark] [style*="color:#111827"],
+body[data-bs-theme=dark] [style*="color:#111827"],
+[data-bs-theme=dark] [style*="color: #0f172a"],
+body[data-bs-theme=dark] [style*="color: #0f172a"],
+[data-bs-theme=dark] [style*="color:#0f172a"],
+body[data-bs-theme=dark] [style*="color:#0f172a"],
+[data-bs-theme=dark] [style*="color: #1e293b"],
+body[data-bs-theme=dark] [style*="color: #1e293b"],
+[data-bs-theme=dark] [style*="color:#1e293b"],
+body[data-bs-theme=dark] [style*="color:#1e293b"] {
+    color: #f3edff !important;
+}
+
+/* 5. NORMALISASI BANNER & ALERT INLINE (Biru #dbeafe, Hijau #d1fae5, Merah #fee2e2, Kuning #fef3c7, Abu #f8fafc) */
+[data-bs-theme=dark] [style*="background: #dbeafe"],
+body[data-bs-theme=dark] [style*="background: #dbeafe"],
+[data-bs-theme=dark] [style*="background:#dbeafe"],
+body[data-bs-theme=dark] [style*="background:#dbeafe"] {
+    background: rgba(59, 130, 246, 0.2) !important;
+    color: #93c5fd !important;
+}
+
+[data-bs-theme=dark] [style*="background: #d1fae5"],
+body[data-bs-theme=dark] [style*="background: #d1fae5"],
+[data-bs-theme=dark] [style*="background:#d1fae5"],
+body[data-bs-theme=dark] [style*="background:#d1fae5"] {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #6ee7b7 !important;
+}
+
+[data-bs-theme=dark] [style*="background: #f8fafc"],
+body[data-bs-theme=dark] [style*="background: #f8fafc"],
+[data-bs-theme=dark] [style*="background:#f8fafc"],
+body[data-bs-theme=dark] [style*="background:#f8fafc"],
+[data-bs-theme=dark] [style*="background: #f9fafb"],
+body[data-bs-theme=dark] [style*="background: #f9fafb"],
+[data-bs-theme=dark] [style*="background:#f9fafb"],
+body[data-bs-theme=dark] [style*="background:#f9fafb"],
+[data-bs-theme=dark] [style*="background: #ffffff"],
+body[data-bs-theme=dark] [style*="background: #ffffff"],
+[data-bs-theme=dark] [style*="background:#ffffff"],
+body[data-bs-theme=dark] [style*="background:#ffffff"],
+[data-bs-theme=dark] [style*="background: white"],
+body[data-bs-theme=dark] [style*="background: white"],
+[data-bs-theme=dark] [style*="background:white"],
+body[data-bs-theme=dark] [style*="background:white"],
+[data-bs-theme=dark] [style*="rgba(255,255,255,0.82)"],
+body[data-bs-theme=dark] [style*="rgba(255,255,255,0.82)"],
+[data-bs-theme=dark] [style*="rgba(255, 255, 255, 0.82)"],
+body[data-bs-theme=dark] [style*="rgba(255, 255, 255, 0.82)"],
+[data-bs-theme=dark] [style*="rgba(255,255,255,0.8)"],
+body[data-bs-theme=dark] [style*="rgba(255,255,255,0.8)"],
+[data-bs-theme=dark] [style*="rgba(255, 255, 255, 0.8)"],
+body[data-bs-theme=dark] [style*="rgba(255, 255, 255, 0.8)"] {
+    background: rgba(43, 28, 67, 0.85) !important;
+    color: #f3edff !important;
+}
+
+[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)"],
+body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)"],
+[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)"],
+body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)"],
+[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)"],
+body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)"],
+[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)"],
+body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)"] {
+    background: rgba(43, 28, 67, 0.85) !important;
+    border-color: rgba(167, 139, 255, 0.22) !important;
+    color: #f3edff !important;
+}
+
+
+
+
+/* THEME SWITCH PILL BUTTONS */
+.theme-switch-pill {
+    border-color: rgba(148, 163, 184, 0.25) !important;
+}
+.theme-switch-pill .theme-btn-light {
+    background: #ffffff !important;
+    color: #f59e0b !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+.theme-switch-pill .theme-btn-dark {
+    background: transparent !important;
+    color: #64748b !important;
+}
+.theme-switch-pill .theme-btn-dark:hover {
+    color: #3b82f6 !important;
+}
+[data-bs-theme=dark] .theme-switch-pill,
+body[data-bs-theme=dark] .theme-switch-pill {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border-color: rgba(148, 163, 184, 0.25) !important;
+}
+[data-bs-theme=dark] .theme-switch-pill .theme-btn-light,
+body[data-bs-theme=dark] .theme-switch-pill .theme-btn-light {
+    background: transparent !important;
+    color: #64748b !important;
+    box-shadow: none !important;
+}
+[data-bs-theme=dark] .theme-switch-pill .theme-btn-light:hover,
+body[data-bs-theme=dark] .theme-switch-pill .theme-btn-light:hover {
+    color: #f59e0b !important;
+}
+[data-bs-theme=dark] .theme-switch-pill .theme-btn-dark,
+body[data-bs-theme=dark] .theme-switch-pill .theme-btn-dark {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+}
+
+
+/* GLOBAL DARK MODE COMPONENT OVERRIDES */
+[data-bs-theme=dark] .bg-white,
+body[data-bs-theme=dark] .bg-white,
+[data-bs-theme=dark] .bg-light,
+body[data-bs-theme=dark] .bg-light {
+    background-color: var(--tblr-bg-surface, #1e293b) !important;
+    color: var(--tblr-body-color, #cbd5e1) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-bs-theme=dark] .card,
+body[data-bs-theme=dark] .card {
+    background-color: var(--tblr-bg-surface, #1e293b) !important;
+}
+

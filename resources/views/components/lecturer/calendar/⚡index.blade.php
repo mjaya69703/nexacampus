@@ -358,7 +358,7 @@ new class extends Component
 
         .schedule-item {
             border-radius: 12px;
-            background: #ffffff;
+            background: var(--tblr-bg-surface);
             border: 1px solid #e2e8f0;
             padding: 0.85rem;
             margin-top: 0.75rem;
@@ -371,6 +371,21 @@ new class extends Component
             color: #4f46e5;
             text-transform: uppercase;
             letter-spacing: 0;
+        }
+
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .stat-card,
+        body[data-bs-theme=dark] .stat-card,
+        [data-bs-theme=dark] .calendar-day,
+        body[data-bs-theme=dark] .calendar-day,
+        [data-bs-theme=dark] .calendar-day.is-today,
+        body[data-bs-theme=dark] .calendar-day.is-today,
+        [data-bs-theme=dark] .schedule-item,
+        body[data-bs-theme=dark] .schedule-item {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
         }
     </style>
 @endpush

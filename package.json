@@ -1,22 +1,26 @@
 {
-    "$schema": "https://www.schemastore.org/package.json",
-    "private": true,
-    "license": "AGPL-3.0-only",
-    "type": "module",
-    "scripts": {
-        "build": "vite build",
-        "dev": "vite"
-    },
-    "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "axios": "^1.11.0",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^2.0.0",
-        "tailwindcss": "^4.2.1",
-        "vite": "^7.0.7"
-    },
-    "dependencies": {
-        "flatpickr": "^4.6.13",
-        "leaflet": "^1.9.4"
-    }
+  "$schema": "https://www.schemastore.org/package.json",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "axios": "^1.11.0",
+    "concurrently": "^9.0.1",
+    "laravel-vite-plugin": "^2.0.0",
+    "tailwindcss": "^4.2.1",
+    "vite": "^7.0.7"
+  },
+  "dependencies": {
+    "flatpickr": "^4.6.13",
+    "leaflet": "^1.9.4"
+  },
+  "name": "nexacampus",
+  "peerDependencies": {
+    "typescript": "^5"
+  }
 }

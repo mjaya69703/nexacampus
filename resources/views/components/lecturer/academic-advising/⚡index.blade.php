@@ -334,6 +334,20 @@ new class extends Component
             padding: .85rem;
         }
 
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .advisor-card,
+        body[data-bs-theme=dark] .advisor-card,
+        [data-bs-theme=dark] .advisor-card-header,
+        body[data-bs-theme=dark] .advisor-card-header,
+        [data-bs-theme=dark] .advisor-metric,
+        body[data-bs-theme=dark] .advisor-metric,
+        [data-bs-theme=dark] .note-preview,
+        body[data-bs-theme=dark] .note-preview {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
     </style>
 @endpush
 

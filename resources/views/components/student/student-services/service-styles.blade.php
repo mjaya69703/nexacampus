@@ -198,5 +198,45 @@
             margin-bottom: 0;
             padding-bottom: 0;
         }
+
+        [data-bs-theme=dark] .service-card,
+        body[data-bs-theme=dark] .service-card,
+        [data-bs-theme=dark] .ticket-stat,
+        body[data-bs-theme=dark] .ticket-stat,
+        [data-bs-theme=dark] .ticket-message,
+        body[data-bs-theme=dark] .ticket-message,
+        [data-bs-theme=dark] .ticket-message.staff,
+        body[data-bs-theme=dark] .ticket-message.staff,
+        [data-bs-theme=dark] .attachment-chip,
+        body[data-bs-theme=dark] .attachment-chip {
+            background: #211632 !important;
+            border-color: rgba(167, 139, 255, 0.18) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .request-card,
+        body[data-bs-theme=dark] .request-card,
+        [data-bs-theme=dark] .form-shell,
+        body[data-bs-theme=dark] .form-shell,
+        [data-bs-theme=dark] .detail-tile,
+        body[data-bs-theme=dark] .detail-tile,
+        [data-bs-theme=dark] .service-section-header,
+        body[data-bs-theme=dark] .service-section-header,
+        [data-bs-theme=dark] .support-panel,
+        body[data-bs-theme=dark] .support-panel,
+        [data-bs-theme=dark] .upload-dropzone,
+        body[data-bs-theme=dark] .upload-dropzone {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .ticket-pill,
+        body[data-bs-theme=dark] .ticket-pill,
+        [data-bs-theme=dark] .timeline-dot,
+        body[data-bs-theme=dark] .timeline-dot {
+            background: rgba(167, 139, 255, 0.18) !important;
+            color: #ede9fe !important;
+        }
     </style>
 @endpush

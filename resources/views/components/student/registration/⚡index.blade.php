@@ -326,7 +326,7 @@ new class extends Component
             border: none;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             transition: all 0.3s ease;
-            background: white;
+            background: var(--tblr-bg-surface, white);
         }
 
         .hero-gradient {
@@ -378,18 +378,20 @@ new class extends Component
         .form-card {
             border-radius: 16px;
             padding: 2rem;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            background: var(--tblr-bg-surface-secondary, #f8fafc);
         }
 
         .status-box {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            background: rgba(var(--tblr-primary-rgb), 0.08);
+            border: 1px solid rgba(var(--tblr-primary-rgb), 0.15);
             border-radius: 16px;
             padding: 1.5rem;
             margin-bottom: 1rem;
         }
 
         .period-box {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            background: rgba(var(--tblr-success-rgb), 0.08);
+            border: 1px solid rgba(var(--tblr-success-rgb), 0.15);
             border-radius: 16px;
             padding: 1.5rem;
         }
@@ -416,6 +418,7 @@ new class extends Component
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
+            color: var(--tblr-color);
         }
 
         .history-table th {
@@ -436,8 +439,8 @@ new class extends Component
 
         .history-table td {
             padding: 1rem;
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
+            background: var(--tblr-bg-surface, white);
+            border-bottom: 1px solid var(--tblr-border-color, #e5e7eb);
         }
 
         .history-table tr:last-child td:first-child {
@@ -449,7 +452,7 @@ new class extends Component
         }
 
         .history-table tr:hover td {
-            background: #f8fafc;
+            background: var(--tblr-bg-surface-secondary, #f8fafc);
         }
     </style>
 @endpush
@@ -524,7 +527,7 @@ new class extends Component
                 {{-- Form Card --}}
                 <div class="modern-card form-card mb-4">
                     <div style="margin-bottom: 1.5rem;">
-                        <h3 style="font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">
+                        <h3 style="font-weight: 700; margin-bottom: 0.5rem; color: inherit;">
                             <i class="fas fa-edit me-2" style="color: #667eea;"></i>Form Registrasi Semester
                         </h3>
                         <p style="color: #6b7280; font-size: 0.9rem;">Lengkapi form berikut untuk melakukan registrasi semester</p>
@@ -535,8 +538,8 @@ new class extends Component
                         <div style="display: flex; align-items: start; gap: 0.75rem;">
                             <i class="fas {{ $canRegister ? 'fa-check-circle' : 'fa-info-circle' }}" style="font-size: 1.25rem; color: {{ $canRegister ? '#10b981' : '#f59e0b' }};"></i>
                             <div>
-                                <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">Tahun akademik aktif: {{ $activeAcademicYearName }}</div>
-                                <div style="font-size: 0.85rem; color: #6b7280;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">Tahun akademik aktif: {{ $activeAcademicYearName }}</div>
+                                <div style="font-size: 0.85rem; opacity: 0.8;">
                                     @if ($canRegister)
                                         Registrasi dapat diajukan pada periode {{ $activePeriodName }} ({{ $activePeriodRange }}).
                                     @else
@@ -550,7 +553,7 @@ new class extends Component
                     <form wire:submit.prevent="saveDraft">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label" style="font-weight: 600; color: #374151;">
+                                <label class="form-label" style="font-weight: 600;">
                                     <i class="fas fa-layer-group me-2" style="color: #667eea;"></i>Semester
                                 </label>
                                 <input
@@ -568,7 +571,7 @@ new class extends Component
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label" style="font-weight: 600; color: #374151;">
+                                <label class="form-label" style="font-weight: 600;">
                                     <i class="fas fa-user-check me-2" style="color: #667eea;"></i>Status Akademik
                                 </label>
                                 <select class="form-select" wire:model="form.academic_status" @disabled(! $canEditRegistration) style="border-radius: 10px; padding: 0.75rem;">
@@ -593,7 +596,7 @@ new class extends Component
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label" style="font-weight: 600; color: #374151;">
+                            <label class="form-label" style="font-weight: 600;">
                                 <i class="fas fa-sticky-note me-2" style="color: #667eea;"></i>Catatan
                             </label>
                             <textarea
@@ -635,43 +638,43 @@ new class extends Component
             <div class="col-lg-4">
                 {{-- Status Box --}}
                 <div class="status-box">
-                    <div style="font-size: 0.85rem; color: #1e40af; margin-bottom: 1rem; font-weight: 600;">
+                    <div style="font-size: 0.85rem; color: var(--tblr-primary); margin-bottom: 1rem; font-weight: 600;">
                         <i class="fas fa-info-circle me-2"></i>Status Saat Ini
                     </div>
                     
                     <div style="margin-bottom: 1rem;">
-                        <div style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 0.25rem;">Registrasi</div>
+                        <div style="font-size: 0.8rem; color: var(--tblr-primary); margin-bottom: 0.25rem;">Registrasi</div>
                         <span class="badge {{ $this->statusBadgeClass($currentRegistrationStatus) }}" style="padding: 0.5rem 0.75rem;">
                             {{ $currentRegistrationStatus ?? '-' }}
                         </span>
                     </div>
 
                     <div style="margin-bottom: 1rem;">
-                        <div style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 0.25rem;">Status Akademik</div>
-                        <div style="font-weight: 600; color: #1f2937;">{{ $currentAcademicStatus ?? '-' }}</div>
+                        <div style="font-size: 0.8rem; color: var(--tblr-primary); margin-bottom: 0.25rem;">Status Akademik</div>
+                        <div style="font-weight: 600;">{{ $currentAcademicStatus ?? '-' }}</div>
                     </div>
 
                     <div style="margin-bottom: 1rem;">
-                        <div style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 0.25rem;">Diajukan Pada</div>
-                        <div style="font-weight: 600; color: #1f2937;">{{ $submittedAt ?? '-' }}</div>
+                        <div style="font-size: 0.8rem; color: var(--tblr-primary); margin-bottom: 0.25rem;">Diajukan Pada</div>
+                        <div style="font-weight: 600;">{{ $submittedAt ?? '-' }}</div>
                     </div>
 
                     <div>
-                        <div style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 0.25rem;">Disetujui Pada</div>
-                        <div style="font-weight: 600; color: #1f2937;">{{ $approvedAt ?? '-' }}</div>
+                        <div style="font-size: 0.8rem; color: var(--tblr-primary); margin-bottom: 0.25rem;">Disetujui Pada</div>
+                        <div style="font-weight: 600;">{{ $approvedAt ?? '-' }}</div>
                     </div>
                 </div>
 
                 {{-- Period Box --}}
                 <div class="period-box">
-                    <div style="font-size: 0.85rem; color: #065f46; margin-bottom: 0.5rem; font-weight: 600;">
+                    <div style="font-size: 0.85rem; color: var(--tblr-success); margin-bottom: 0.5rem; font-weight: 600;">
                         <i class="fas fa-clock me-2"></i>Periode Aktif
                     </div>
                     @if ($canRegister)
-                        <div style="font-weight: 600; color: #047857; margin-bottom: 0.5rem;">{{ $activePeriodName }}</div>
-                        <div style="font-size: 0.85rem; color: #065f46;">{{ $activePeriodRange }}</div>
+                        <div style="font-weight: 600; color: var(--tblr-success); margin-bottom: 0.5rem;">{{ $activePeriodName }}</div>
+                        <div style="font-size: 0.85rem; color: var(--tblr-success); opacity: 0.9;">{{ $activePeriodRange }}</div>
                     @else
-                        <div style="font-size: 0.85rem; color: #065f46;">Periode registrasi belum aktif atau sudah berakhir.</div>
+                        <div style="font-size: 0.85rem; color: var(--tblr-success); opacity: 0.9;">Periode registrasi belum aktif atau sudah berakhir.</div>
                     @endif
                 </div>
             </div>
@@ -679,8 +682,8 @@ new class extends Component
 
         {{-- History Table --}}
         <div class="modern-card mt-4">
-            <div style="padding: 1.5rem; border-bottom: 1px solid #e5e7eb;">
-                <h3 style="font-weight: 700; color: #1f2937; margin: 0;">
+            <div style="padding: 1.5rem; border-bottom: 1px solid var(--tblr-border-color, #e5e7eb);">
+                <h3 style="font-weight: 700; margin: 0; color: inherit;">
                     <i class="fas fa-history me-2" style="color: #667eea;"></i>Riwayat Registrasi
                 </h3>
             </div>

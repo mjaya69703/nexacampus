@@ -62,7 +62,7 @@ new class extends Component {
             border-radius: 20px;
             border: none;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            background: white;
+            background: var(--tblr-bg-surface);
         }
 
         .hero-gradient {
@@ -283,6 +283,39 @@ new class extends Component {
                 flex-direction: column;
                 align-items: flex-start !important;
             }
+        }
+
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .stat-card,
+        body[data-bs-theme=dark] .stat-card,
+        [data-bs-theme=dark] .risk-card,
+        body[data-bs-theme=dark] .risk-card {
+            background: #211632 !important;
+            border-color: rgba(167, 139, 255, 0.18) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .advisor-panel,
+        body[data-bs-theme=dark] .advisor-panel,
+        [data-bs-theme=dark] .attention-item,
+        body[data-bs-theme=dark] .attention-item,
+        [data-bs-theme=dark] .advisor-note-item,
+        body[data-bs-theme=dark] .advisor-note-item {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .stat-value,
+        body[data-bs-theme=dark] .stat-value,
+        [data-bs-theme=dark] .text-dark,
+        body[data-bs-theme=dark] .text-dark,
+        [data-bs-theme=dark] [style*="color: #0f172a"],
+        body[data-bs-theme=dark] [style*="color: #0f172a"],
+        [data-bs-theme=dark] .section-title,
+        body[data-bs-theme=dark] .section-title {
+            color: #f3edff !important;
         }
     </style>
 @endpush

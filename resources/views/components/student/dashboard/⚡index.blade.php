@@ -519,6 +519,52 @@ new class extends Component
             border-color: #c7d2fe;
             box-shadow: 0 8px 22px rgba(102, 126, 234, 0.12);
         }
+
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .stat-card,
+        body[data-bs-theme=dark] .stat-card,
+        [data-bs-theme=dark] .quick-action-btn,
+        body[data-bs-theme=dark] .quick-action-btn,
+        [data-bs-theme=dark] .finance-widget,
+        body[data-bs-theme=dark] .finance-widget,
+        [data-bs-theme=dark] .attendance-circle-inner,
+        body[data-bs-theme=dark] .attendance-circle-inner {
+            background: #211632 !important;
+            border-color: rgba(167, 139, 255, 0.18) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .schedule-item,
+        body[data-bs-theme=dark] .schedule-item,
+        [data-bs-theme=dark] .grade-item,
+        body[data-bs-theme=dark] .grade-item,
+        [data-bs-theme=dark] .finance-line,
+        body[data-bs-theme=dark] .finance-line,
+        [data-bs-theme=dark] .finance-widget-header,
+        body[data-bs-theme=dark] .finance-widget-header {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .stat-value,
+        body[data-bs-theme=dark] .stat-value,
+        [data-bs-theme=dark] [style*="color: #1f2937"],
+        body[data-bs-theme=dark] [style*="color: #1f2937"] {
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] [style*="background: linear-gradient(135deg, #fef3c7"],
+        body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #fef3c7"],
+        [data-bs-theme=dark] [style*="background: linear-gradient(135deg, #dbeafe"],
+        body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #dbeafe"],
+        [data-bs-theme=dark] [style*="background: linear-gradient(135deg, #f8fafc"],
+        body[data-bs-theme=dark] [style*="background: linear-gradient(135deg, #f8fafc"] {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
     </style>
 @endpush
 

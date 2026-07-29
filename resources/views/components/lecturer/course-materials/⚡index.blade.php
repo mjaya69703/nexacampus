@@ -699,8 +699,25 @@ new class extends Component
                 transform: translateY(0);
             }
         }
-    </style>
 
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .material-item,
+        body[data-bs-theme=dark] .material-item,
+        [data-bs-theme=dark] .form-section,
+        body[data-bs-theme=dark] .form-section,
+        [data-bs-theme=dark] .upload-panel,
+        body[data-bs-theme=dark] .upload-panel,
+        [data-bs-theme=dark] .selected-file-chip,
+        body[data-bs-theme=dark] .selected-file-chip {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
+    </style>
+@endpush
+
+<div>
     {{-- Statistics Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-md-3">

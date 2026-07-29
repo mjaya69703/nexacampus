@@ -122,6 +122,42 @@
                 padding: .45rem .75rem;
                 text-decoration: none;
             }
+
+            /* Dark Mode Overrides for Assignment Component */
+            [data-bs-theme=dark] .assignment-card,
+            body[data-bs-theme=dark] .assignment-card,
+            [data-bs-theme=dark] .assignment-list-item,
+            body[data-bs-theme=dark] .assignment-list-item {
+                background: var(--app-surface-bg, #211632) !important;
+                border-color: rgba(167, 139, 255, 0.18) !important;
+                color: #f3edff !important;
+            }
+
+            [data-bs-theme=dark] .assignment-panel,
+            body[data-bs-theme=dark] .assignment-panel {
+                background: rgba(43, 28, 67, 0.85) !important;
+                border-color: rgba(167, 139, 255, 0.22) !important;
+                color: #f3edff !important;
+            }
+
+            [data-bs-theme=dark] .assignment-pill,
+            body[data-bs-theme=dark] .assignment-pill {
+                background: rgba(167, 139, 255, 0.15) !important;
+                color: #ede9fe !important;
+            }
+
+            [data-bs-theme=dark] .assignment-dropzone,
+            body[data-bs-theme=dark] .assignment-dropzone {
+                background: rgba(33, 22, 50, 0.85) !important;
+                border-color: rgba(167, 139, 255, 0.28) !important;
+                color: #f3edff !important;
+            }
+
+            [data-bs-theme=dark] .assignment-attachment,
+            body[data-bs-theme=dark] .assignment-attachment {
+                background: rgba(139, 92, 246, 0.2) !important;
+                color: #a78bff !important;
+            }
         </style>
     @endpush
 @endonce

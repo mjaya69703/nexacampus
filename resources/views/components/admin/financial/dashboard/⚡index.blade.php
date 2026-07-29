@@ -487,6 +487,38 @@ new class extends Component
                 text-align: left;
             }
         }
+
+        /* Dark Mode Overrides for Financial Dashboard */
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .stat-card,
+        body[data-bs-theme=dark] .stat-card {
+            background: var(--app-surface-bg, #211632) !important;
+            border-color: rgba(167, 139, 255, 0.18) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .stat-value,
+        body[data-bs-theme=dark] .stat-value,
+        [data-bs-theme=dark] .chart-row-label,
+        body[data-bs-theme=dark] .chart-row-label {
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme=dark] .section-header,
+        body[data-bs-theme=dark] .section-header,
+        [data-bs-theme=dark] .soft-list-item,
+        body[data-bs-theme=dark] .soft-list-item {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
+
+        [data-bs-theme=dark] .empty-soft,
+        body[data-bs-theme=dark] .empty-soft {
+            background: var(--app-page-bg, #130b22) !important;
+            color: #c3b6df !important;
+        }
     </style>
 @endpush
 

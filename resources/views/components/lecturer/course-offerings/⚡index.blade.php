@@ -373,6 +373,19 @@ new class extends Component
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
+
+        [data-bs-theme=dark] .modern-card,
+        body[data-bs-theme=dark] .modern-card,
+        [data-bs-theme=dark] .course-card,
+        body[data-bs-theme=dark] .course-card,
+        [data-bs-theme=dark] .course-header,
+        body[data-bs-theme=dark] .course-header,
+        [data-bs-theme=dark] .stat-item,
+        body[data-bs-theme=dark] .stat-item {
+            background: rgba(43, 28, 67, 0.85) !important;
+            border-color: rgba(167, 139, 255, 0.22) !important;
+            color: #f3edff !important;
+        }
     </style>
 @endpush
 

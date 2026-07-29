@@ -97,9 +97,9 @@ new class extends Component {
                         </a>
                         <!-- END NAVBAR LOGO -->
                     </div>
+                    <x-alert />
                     <div class="card card-md">
 
-                        <x-alert />
                         <div class="card-body">
                             <h2 class="h2 text-center mb-4">Pilih Role Anda</h2>
                             <p class="text-center text-muted mb-4">Pilih role yang ingin Anda gunakan untuk masuk.</p>
