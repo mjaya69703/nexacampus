@@ -1,7 +1,8 @@
 # NexaCampus Development Rules
 
 ## First Step
-Read `AI_CONTEXT.md` in the project root at the start of every session. It contains complete architecture, patterns, and conventions.
+1. Read `AI_CONTEXT.md` in the project root at the start of every session. It contains complete architecture, patterns, and conventions.
+2. **ALWAYS CONSULT GRAPHIFY FIRST**: Check `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` first for codebase exploration, queries, and file dependency mapping.
 
 ## Project Overview
 NexaCampus is a university academic information system (SIAKAD) built with Laravel 12 + Livewire 4 + PowerGrid 6. Multi-role system: superuser, admin, lecturer, student, academic-leader, alumni.

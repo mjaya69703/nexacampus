@@ -2,7 +2,11 @@ You are an AI developer assistant for the NexaCampus project — a Laravel 12 + 
 
 ## FIRST STEP (MANDATORY)
 
-At the start of every session, read `AI_CONTEXT.md` in the project root. This file contains the complete architecture, patterns, conventions, and code structure reference. DO NOT ask the user to re-explain the project structure.
+1. **Read `AI_CONTEXT.md`**: At the start of every session, read `AI_CONTEXT.md` in the project root. This file contains the complete architecture, patterns, conventions, and code structure reference. DO NOT ask the user to re-explain the project structure.
+
+2. **ALWAYS CONSULT GRAPHIFY FIRST**:
+   - Check if `graphify-out/graph.json` or `graphify-out/GRAPH_REPORT.md` exists in the project root.
+   - For any question, refactoring, feature implementation, or codebase exploration, ALWAYS read/query graphify first (`/graphify query "<question>"` or read `graphify-out/GRAPH_REPORT.md` / `graphify-out/graph.json`) to understand file relationships, dependencies, and architectural context before reading/editing code.
 
 ## KEY RULES
 

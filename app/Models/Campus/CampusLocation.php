@@ -3,31 +3,34 @@
 namespace App\Models\Campus;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Building extends Model
+class CampusLocation extends Model
 {
     use LogsActivity, SoftDeletes;
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->useLogName('building')
-            ->logOnly(['name', 'code', 'is_active'])
+            ->useLogName('campus_location')
+            ->logOnly(['name', 'code', 'is_main', 'is_active'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
 
     protected $fillable = [
-        'campus_location_id',
         'name',
         'code',
         'address',
-        'floor_count',
+        'phone',
+        'email',
+        'latitude',
+        'longitude',
+        'radius_meters',
+        'is_main',
         'is_active',
         'desc',
         'created_by',
@@ -38,18 +41,16 @@ class Building extends Model
     protected function casts(): array
     {
         return [
+            'is_main' => 'boolean',
             'is_active' => 'boolean',
-            'floor_count' => 'integer',
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'radius_meters' => 'integer',
         ];
     }
 
-    public function campusLocation(): BelongsTo
+    public function buildings(): HasMany
     {
-        return $this->belongsTo(CampusLocation::class);
-    }
-
-    public function rooms(): HasMany
-    {
-        return $this->hasMany(Room::class);
+        return $this->hasMany(Building::class);
     }
 }

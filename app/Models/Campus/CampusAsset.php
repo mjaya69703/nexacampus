@@ -9,27 +9,33 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Building extends Model
+class CampusAsset extends Model
 {
     use LogsActivity, SoftDeletes;
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->useLogName('building')
-            ->logOnly(['name', 'code', 'is_active'])
+            ->useLogName('campus_asset')
+            ->logOnly(['asset_code', 'name', 'condition', 'status'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
 
     protected $fillable = [
-        'campus_location_id',
+        'asset_code',
         'name',
-        'code',
-        'address',
-        'floor_count',
-        'is_active',
-        'desc',
+        'category',
+        'room_id',
+        'brand',
+        'model_number',
+        'serial_number',
+        'condition',
+        'purchase_date',
+        'purchase_cost',
+        'is_borrowable',
+        'status',
+        'notes',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -38,18 +44,19 @@ class Building extends Model
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
-            'floor_count' => 'integer',
+            'purchase_date' => 'date',
+            'purchase_cost' => 'decimal:2',
+            'is_borrowable' => 'boolean',
         ];
     }
 
-    public function campusLocation(): BelongsTo
+    public function room(): BelongsTo
     {
-        return $this->belongsTo(CampusLocation::class);
+        return $this->belongsTo(Room::class);
     }
 
-    public function rooms(): HasMany
+    public function maintenanceTickets(): HasMany
     {
-        return $this->hasMany(Room::class);
+        return $this->hasMany(FacilityMaintenanceTicket::class, 'campus_asset_id');
     }
 }
