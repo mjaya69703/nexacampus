@@ -654,6 +654,22 @@ return [
         ],
     ],
     [
+        'resource' => 'faq',
+        'plural' => 'faqs',
+        'area' => 'publication',
+        'component' => 'admin.publication.faqs',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'FAQ',
+            'icon' => 'fas fa-circle-question',
+            'group' => 'Publikasi',
+            'group_icon' => 'fas fa-newspaper',
+            'group_order' => 50,
+            'order' => 2,
+        ],
+    ],
+    [
         'resource' => 'admission-period',
         'plural' => 'admission-periods',
         'area' => 'admission',

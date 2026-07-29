@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             FinancialSeeder::class,
             StudentServiceSeeder::class,
             AlumniSeeder::class,
+            FaqSeeder::class,
         ]);
     }
 }
