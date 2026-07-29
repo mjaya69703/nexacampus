@@ -28,6 +28,10 @@ class DatabaseSeeder extends Seeder
             StudentServiceSeeder::class,
             AlumniSeeder::class,
             FaqSeeder::class,
+            PublicationCategorySeeder::class,
+            NewsSeeder::class,
+            AgendaSeeder::class,
+            GallerySeeder::class,
         ]);
     }
 }
