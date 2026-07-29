@@ -189,7 +189,7 @@ new class extends Component
         icon="user-check"
     >
         <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ route('admission.portal', ['applicationNumber' => $application->application_number, 'token' => $application->access_token]) }}" target="_blank" class="btn btn-light rounded-pill px-4 py-2 text-primary fw-bold shadow-sm d-inline-flex align-items-center gap-2 border-0">
+            <a href="{{ route('root.admission.portal', ['applicationNumber' => $application->application_number, 'token' => $application->access_token]) }}" target="_blank" class="btn btn-light rounded-pill px-4 py-2 text-primary fw-bold shadow-sm d-inline-flex align-items-center gap-2 border-0">
                 <i class="fas fa-external-link-alt"></i> Portal Pendaftar
             </a>
             <a href="{{ route('admin.admission.admission-applications.index') }}" class="btn btn-outline-light rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2">
@@ -504,7 +504,7 @@ new class extends Component
                 </div>
                 <div class="card-body p-4">
                     <p class="text-muted fs-7 mb-3">Bagikan tautan portal ini kepada pendaftar untuk mengecek status kelulusan, jadwal ujian, atau melengkapi ulang dokumen.</p>
-                    <a href="{{ route('admission.portal', ['applicationNumber' => $application->application_number, 'token' => $application->access_token]) }}" target="_blank" class="btn btn-outline-primary rounded-pill fw-bold py-2 w-100 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                    <a href="{{ route('root.admission.portal', ['applicationNumber' => $application->application_number, 'token' => $application->access_token]) }}" target="_blank" class="btn btn-outline-primary rounded-pill fw-bold py-2 w-100 shadow-sm d-flex align-items-center justify-content-center gap-2">
                         <i class="fas fa-external-link-alt"></i> Buka Halaman Portal
                     </a>
                 </div>

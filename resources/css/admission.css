@@ -1,0 +1,377 @@
+/* ==============================================================
+   ADMISSION MODULE CSS
+   ============================================================== */
+.admission-public {
+    min-height: calc(100vh - 80px);
+}
+
+.admission-hero {
+    background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+    border-radius: 24px;
+    color: #fff;
+    padding: 3rem 2.5rem;
+    box-shadow: 0 20px 50px rgba(24, 40, 72, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.admission-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.badge-pulse {
+    width: 10px;
+    height: 10px;
+    background-color: #4ade80;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+
+.admission-kicker {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.admission-title {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+}
+
+.admission-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 44rem;
+}
+
+.admission-hero-panel {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+    padding: 1.5rem;
+    backdrop-filter: blur(12px);
+}
+
+.hero-mini-stat {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+.hero-mini-stat span {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.admission-stat {
+    background: var(--tblr-bg-surface);
+    border: 1px solid var(--tblr-border-color);
+    border-radius: 18px;
+    padding: 1.25rem;
+    min-height: 100px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admission-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.08) !important;
+}
+
+.stat-icon-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.stat-num {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--tblr-body-color);
+    line-height: 1.1;
+}
+
+.admission-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    background: var(--tblr-bg-surface);
+    border: 1px solid var(--tblr-border-color);
+    overflow: hidden;
+}
+
+.shortcut-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    text-decoration: none;
+    border-right: 1px solid var(--tblr-border-color);
+    transition: background 0.2s ease;
+}
+
+.shortcut-link:last-child {
+    border-right: 0;
+}
+
+.shortcut-link:hover {
+    background: var(--tblr-bg-surface-secondary);
+}
+
+.shortcut-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.admission-card {
+    background: var(--tblr-bg-surface);
+    border: 1px solid var(--tblr-border-color);
+    transition: all 0.3s ease;
+}
+
+.step-badge {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #ffffff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.modern-input {
+    border-radius: 12px;
+    border: 1.5px solid var(--tblr-border-color);
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.modern-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.document-upload {
+    background: var(--tblr-bg-surface-secondary);
+    border: 2px dashed var(--tblr-border-color);
+    transition: all 0.2s ease;
+}
+
+.document-upload:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.application-number-badge {
+    display: inline-block;
+    padding: 1rem 2rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: #4ade80;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Status & Portal additions */
+.check-item { display: flex; align-items: flex-start; gap: 0.75rem; }
+.check-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem; }
+
+.document-row { background: var(--tblr-bg-surface); border: 1px solid var(--tblr-border-color); border-radius: 12px; padding: 1.25rem; transition: all 0.2s ease; display: flex; align-items: flex-start; gap: 1rem; }
+.document-row:hover { border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08); background: var(--tblr-bg-surface-secondary); }
+.document-icon-wrapper { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+.document-preview { display: block; border-radius: 12px; overflow: hidden; border: 1px solid var(--tblr-border-color); background: var(--tblr-bg-surface-secondary); max-height: 180px; }
+.document-preview img { width: 100%; height: 180px; object-fit: cover; display: block; transition: transform 0.3s ease; }
+.document-preview:hover img { transform: scale(1.05); }
+.pdf-preview { border-radius: 12px; overflow: hidden; border: 1px solid var(--tblr-border-color); height: 200px; background: var(--tblr-bg-surface-secondary); }
+.pdf-preview iframe { width: 100%; height: 100%; border: 0; }
+.timeline-row { display: grid; grid-template-columns: 24px 1fr; gap: 1rem; padding-bottom: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--tblr-border-color); position: relative; }
+.timeline-row:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+.timeline-dot { width: 14px; height: 14px; margin-top: 0.35rem; margin-left: 5px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 0 4px #dbeafe; position: relative; z-index: 2; }
+.timeline-row:not(:last-child)::after { content: ''; position: absolute; top: 24px; bottom: -20px; left: 11px; width: 2px; background: var(--tblr-border-color); z-index: 1; }
+
+/* ==============================================================
+   DARK MODE ADAPTIVITY RULES
+   ============================================================== */
+
+
+[data-bs-theme=dark] .admission-card,
+body[data-bs-theme=dark] .admission-card,
+[data-bs-theme=dark] .admission-stat,
+body[data-bs-theme=dark] .admission-stat,
+[data-bs-theme=dark] .admission-shortcuts,
+body[data-bs-theme=dark] .admission-shortcuts {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme=dark] .admission-card-header,
+body[data-bs-theme=dark] .admission-card-header {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+[data-bs-theme=dark] .shortcut-link,
+body[data-bs-theme=dark] .shortcut-link {
+    border-color: #334155 !important;
+}
+
+[data-bs-theme=dark] .shortcut-link:hover,
+body[data-bs-theme=dark] .shortcut-link:hover {
+    background-color: #334155 !important;
+}
+
+[data-bs-theme=dark] .shortcut-link .fw-bold,
+body[data-bs-theme=dark] .shortcut-link .fw-bold,
+[data-bs-theme=dark] .document-upload .text-body,
+body[data-bs-theme=dark] .document-upload .text-body,
+[data-bs-theme=dark] .check-item .text-body,
+body[data-bs-theme=dark] .check-item .text-body,
+[data-bs-theme=dark] .document-row .text-body,
+body[data-bs-theme=dark] .document-row .text-body,
+[data-bs-theme=dark] .timeline-content .text-body,
+body[data-bs-theme=dark] .timeline-content .text-body,
+[data-bs-theme=dark] .admission-card-body .text-body,
+body[data-bs-theme=dark] .admission-card-body .text-body,
+[data-bs-theme=dark] .stat-num,
+body[data-bs-theme=dark] .stat-num {
+    color: #f8fafc !important;
+}
+
+[data-bs-theme=dark] .document-upload,
+body[data-bs-theme=dark] .document-upload {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+[data-bs-theme=dark] .document-upload:hover,
+body[data-bs-theme=dark] .document-upload:hover {
+    background-color: #1e293b !important;
+    border-color: #60a5fa !important;
+}
+
+[data-bs-theme=dark] .alert-light,
+body[data-bs-theme=dark] .alert-light {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #e2e8f0 !important;
+}
+
+[data-bs-theme=dark] .modern-input,
+body[data-bs-theme=dark] .modern-input,
+[data-bs-theme=dark] .input-group-text,
+body[data-bs-theme=dark] .input-group-text {
+    background-color: #0f172a !important;
+    border-color: #475569 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme=dark] .shortcut-icon,
+body[data-bs-theme=dark] .shortcut-icon {
+    background: rgba(59, 130, 246, 0.2) !important;
+    color: #60a5fa !important;
+}
+
+[data-bs-theme=dark] .document-row,
+body[data-bs-theme=dark] .document-row {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+[data-bs-theme=dark] .document-row:hover,
+body[data-bs-theme=dark] .document-row:hover {
+    border-color: #475569 !important;
+    background-color: #1e293b !important;
+}
+
+[data-bs-theme=dark] .document-preview,
+body[data-bs-theme=dark] .document-preview,
+[data-bs-theme=dark] .pdf-preview,
+body[data-bs-theme=dark] .pdf-preview {
+    border-color: #334155 !important;
+    background-color: #0f172a !important;
+}
+
+[data-bs-theme=dark] .timeline-row::after,
+body[data-bs-theme=dark] .timeline-row::after,
+[data-bs-theme=dark] .timeline-row,
+body[data-bs-theme=dark] .timeline-row {
+    border-color: #334155 !important;
+}
+
+[data-bs-theme=dark] .timeline-dot,
+body[data-bs-theme=dark] .timeline-dot {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
+}
+
+@media (max-width: 767.98px) {
+    .admission-hero {
+        padding: 2rem 1.5rem;
+    }
+
+    .admission-shortcuts {
+        grid-template-columns: 1fr;
+    }
+
+    .shortcut-link {
+        border-right: 0;
+        border-bottom: 1px solid var(--tblr-border-color);
+    }
+
+    [data-bs-theme=dark] .shortcut-link {
+        border-bottom-color: #334155 !important;
+    }
+
+    .admission-card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+}

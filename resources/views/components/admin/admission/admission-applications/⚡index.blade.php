@@ -33,7 +33,7 @@ new class extends Component
         description="Pantau seluruh masuknya berkas pendaftar, verifikasi dokumen, nilai seleksi, serta konversi massal calon mahasiswa menjadi mahasiswa aktif."
         icon="user-graduate"
     >
-        <a href="{{ route('admission.apply') }}" class="btn btn-light rounded-pill px-4 py-2 text-primary fw-bold shadow-sm d-inline-flex align-items-center gap-2 border-0" target="_blank">
+        <a href="{{ route('root.admission.apply') }}" class="btn btn-light rounded-pill px-4 py-2 text-primary fw-bold shadow-sm d-inline-flex align-items-center gap-2 border-0" target="_blank">
             <i class="fas fa-external-link-alt"></i> Form Pendaftaran Publik
         </a>
 

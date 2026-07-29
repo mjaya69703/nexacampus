@@ -35,7 +35,7 @@ class AdmissionStatusService
             'changed_by' => $userId,
         ]);
 
-        $portalUrl = route('admission.portal', [
+        $portalUrl = route('root.admission.portal', [
             'applicationNumber' => $application->application_number,
             'token' => $application->access_token,
         ]);

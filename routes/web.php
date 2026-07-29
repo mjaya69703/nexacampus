@@ -18,6 +18,7 @@ use App\Http\Controllers\Organization\AcademicLeaderReportExportController;
 use App\Http\Controllers\Organization\LecturerWorkloadExportController;
 use App\Http\Controllers\Organization\TridharmaAttachmentController;
 use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Student\DigitalStudentIdVerificationController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
@@ -25,23 +26,58 @@ use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome', [
-        'pages' => 'Beranda',
-    ]);
-});
+Route::livewire('/', 'root.welcome')->name('root.home-index');
 
 Route::livewire('/welcome', 'setup-wizard')->name('system.setup-wizard');
 
 Route::middleware('is_installed')->group(function () {
-    Route::redirect('/admission', '/admission/apply')->name('admission.index');
-    Route::livewire('/admission/apply', 'admission.apply')->name('admission.apply');
-    Route::livewire('/admission/status', 'admission.status')->name('admission.status');
-    Route::livewire('/admission/applications/{applicationNumber}/{token}', 'admission.portal')->name('admission.portal');
+    Route::redirect('/admission', '/admission/apply')->name('root.admission.index');
+    Route::livewire('/admission/apply', 'root.admission.apply')->name('root.admission.apply');
+    Route::livewire('/admission/status', 'root.admission.status')->name('root.admission.status');
+    Route::livewire('/admission/applications/{applicationNumber}/{token}', 'root.admission.portal')->name('root.admission.portal');
     Route::get('/admission/applications/{applicationNumber}/{token}/documents/{document}/preview', [AdmissionDocumentController::class, 'portalPreview'])
-        ->name('admission.documents.preview');
+        ->name('root.admission.documents.preview');
+    Route::livewire('/admission/requirements', 'root.admission.requirements')->name('root.admission.requirements');
+    Route::livewire('/admission/tuition', 'root.admission.tuition')->name('root.admission.tuition');
+    Route::livewire('/admission/faq', 'root.admission.faq')->name('root.admission.faq');
     Route::get('/student-id/verify/{studentProfile}/{token}', DigitalStudentIdVerificationController::class)
         ->name('student.digital-id.verify');
+
+    // ─── Landing Pages ─────────────────────────────────────────────────────────
+    Route::prefix('/')->group(function () {
+        // Akademik
+        Route::livewire('/program-studi', 'root.akademik.prodi')->name('landing.prodi');
+        Route::livewire('/akademik/kalender', 'root.akademik.kalender')->name('root.akademik.kalender');
+        Route::livewire('/akademik/jadwal', 'root.akademik.jadwal')->name('root.akademik.jadwal');
+        Route::livewire('/akademik/kurikulum', 'root.akademik.kurikulum')->name('root.akademik.kurikulum');
+        Route::livewire('/akademik/elearning', 'root.akademik.elearning')->name('root.akademik.elearning');
+
+        // Kemahasiswaan
+        Route::livewire('/beasiswa', 'root.kemahasiswaan.beasiswa')->name('landing.beasiswa');
+        Route::livewire('/alumni', 'root.alumni.index')->name('root.alumni.index');
+        Route::livewire('/alumni/karir', 'root.alumni.karir')->name('root.alumni.karir');
+        Route::livewire('/kemahasiswaan/organisasi', 'root.kemahasiswaan.organisasi')->name('root.kemahasiswaan.organisasi');
+        Route::livewire('/kemahasiswaan/prestasi', 'root.kemahasiswaan.prestasi')->name('root.kemahasiswaan.prestasi');
+        Route::livewire('/kemahasiswaan/layanan', 'root.kemahasiswaan.layanan')->name('root.kemahasiswaan.layanan');
+
+        // Institusi
+        Route::livewire('/institusi/profil', 'root.institusi.profil')->name('root.institusi.profil');
+        Route::livewire('/institusi/visi-misi', 'root.institusi.visi-misi')->name('root.institusi.visi-misi');
+        Route::livewire('/institusi/struktur', 'root.institusi.struktur')->name('root.institusi.struktur');
+        Route::livewire('/institusi/fasilitas', 'root.institusi.fasilitas')->name('root.institusi.fasilitas');
+        Route::livewire('/institusi/akreditasi', 'root.institusi.akreditasi')->name('root.institusi.akreditasi');
+        Route::livewire('/institusi/kerjasama', 'root.institusi.kerjasama')->name('root.institusi.kerjasama');
+
+        // Publikasi
+        Route::livewire('/pengumuman', 'root.publication.announcements')->name('root.publication.announcements');
+        Route::livewire('/faq', 'root.faq')->name('root.faq');
+        Route::livewire('/berita', 'root.publication.news')->name('root.publication.news');
+        Route::livewire('/agenda', 'root.publication.agenda')->name('root.publication.agenda');
+        Route::livewire('/galeri', 'root.publication.galeri')->name('root.publication.galeri');
+
+        // Kontak
+        Route::livewire('/kontak', 'root.kontak')->name('root.kontak');
+    });
 
     Route::middleware('guest')->group(function () {
         Route::livewire('/auth/login', 'auth.signin-index')->name('auth.signin-index');
