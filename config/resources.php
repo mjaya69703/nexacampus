@@ -44,14 +44,6 @@ return [
         ],
     ],
     [
-        'resource' => 'dashboard',
-        'plural' => 'dashboards',
-        'area' => 'system',
-        'component' => 'admin.dashboard',
-        'actions' => ['index'],
-        'permissions' => ['viewAny', 'manage'],
-    ],
-    [
         'resource' => 'setting',
         'plural' => 'settings',
         'area' => 'system',
