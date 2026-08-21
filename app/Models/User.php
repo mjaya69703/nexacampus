@@ -99,6 +99,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'dashboard_widget_config' => 'array',
         ];
     }
 

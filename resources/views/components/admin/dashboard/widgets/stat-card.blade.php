@@ -37,7 +37,7 @@
     };
 @endphp
 
-<div class="border rounded-4 p-3 h-100 bg-light bg-opacity-50">
+<div class="border rounded-4 p-3 h-100 card">
     <div class="text-muted small mb-1">{{ $label }}</div>
     <div class="d-flex align-items-end justify-content-between">
         <div>
