@@ -102,7 +102,7 @@
                 </p>
                 <div class="empty-action">
 
-                    <a href="{{ route($user->prefix . 'dashboard.index') }}" class="btn btn-primary btn-4">
+                    <a href="{{ route(($user?->prefix ?? 'admin.') . 'dashboard.index') }}" class="btn btn-primary btn-4">
 
                         <!-- Download SVG icon from http://tabler.io/icons/icon/arrow-left -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
