@@ -52,7 +52,7 @@
 ## 4. Perintah Kilat AI
 - **Run All Tests:** `php artisan test` (Lulus 100% pada 73 test / 242 assertions)
 - **Run Single Domain Test:** `php artisan test --filter=[TestName]`
-- **Sync CRUD Resource Menu:** `php artisan app:sync-resources`
+- **Sync CRUD Resource Menu:** `php artisan resources:sync`
 - **Check Migrations Status:** `php artisan migrate:status`
 
 ---

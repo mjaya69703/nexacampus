@@ -273,7 +273,8 @@ public function mount(): void {
 <!-- Danger action -->
 <button class="btn btn-danger">Delete</button>
 
-<!-- Small button -->
+<!-- Small button — HANYA untuk action sekunder di area sempat (lihat aturan UI di AI_CONTEXT.md §5).
+     DILARANG pada navbar/toggle/action utama. -->
 <button class="btn btn-sm btn-secondary">Edit</button>
 
 <!-- With icon -->

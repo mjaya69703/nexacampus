@@ -422,7 +422,7 @@ new class extends Component {
 
 #### Step 5: Sync permissions & menus
 ```bash
-php artisan app:sync-resources   # Runs SyncPermissions + SyncMenus
+php artisan resources:sync   # Runs SyncPermissions + SyncMenus
 ```
 
 ---
@@ -779,16 +779,33 @@ $this->call([
 
 ## 8. Artisan Commands
 
+> Command signatures menggunakan namespace per-domain (BUKAN `app:*`).
+
 ```bash
-php artisan app:sync-resources          # Sync permissions + menus from config/resources.php
-php artisan app:sync-permissions        # Sync permissions only
-php artisan app:sync-menus              # Sync menus only
-php artisan app:evaluate-financial-holds # Evaluate student financial holds
-php artisan app:refresh-financial-overdue # Mark overdue invoices
-php artisan app:run-invoice-schedules   # Generate invoices from schedules
-php artisan app:send-assignment-reminders # Send assignment due reminders
-php artisan app:prune-notification-logs  # Clean old notification logs
-php artisan app:generate-vapid-keys     # Generate Web Push VAPID keys
+# Resources / Permissions / Menus
+php artisan resources:sync              # Sync permissions + menus dari config/resources.php
+php artisan permissions:sync            # Sync permissions saja ({--prune} = hapus permission web yang tidak terdaftar)
+php artisan menus:sync                  # Sync menus saja
+
+# Financial
+php artisan financial:evaluate-holds    # Evaluate student financial holds
+php artisan financial:refresh-overdue   # Mark overdue invoices
+php artisan financial:run-invoice-schedules {--dry-run} {--limit=}  # Generate invoices dari schedules
+
+# Academic
+php artisan academic:send-assignment-reminders {--hours=24} {--dry-run}  # Reminder deadline tugas
+
+# Notifications
+php artisan notifications:prune-logs    # Bersihkan notification logs lama
+php artisan notifications:web-push-vapid # Generate Web Push VAPID keys
+
+# WhatsApp Sidecar
+php artisan nexacampus:whatsapp-sidecar-start  # Spawn WhatsApp sidecar background
+php artisan whatsapp:health             # Cek health sidecar & Cloud API backends
+php artisan whatsapp:sidecar:status     # Status instalasi/sesi sidecar
+php artisan whatsapp:sidecar:install    # Install Node dependencies sidecar
+php artisan whatsapp:sidecar:stop       # Stop sidecar session
+php artisan whatsapp:web:listen         # Subscribe event stream sidecar → Laravel events
 ```
 
 ---
@@ -801,7 +818,7 @@ php artisan app:generate-vapid-keys     # Generate Web Push VAPID keys
 3. **Config** → Tambah entry di `config/resources.php`
 4. **PowerGrid Table** → `app/Livewire/{Domain}/{Resource}Table.php` extends `BasePowerGridTable`
 5. **Views** → `resources/views/components/admin/{domain}/{resources}/⚡{action}.blade.php`
-6. **Sync** → `php artisan app:sync-resources`
+6. **Sync** → `php artisan resources:sync`
 
 ### Menambah Fitur Student/Lecturer/Alumni:
 1. **Route** → Tambah di `routes/web.php` di group yang sesuai
