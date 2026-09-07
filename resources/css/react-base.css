@@ -1,0 +1,5 @@
+/* Base typography untuk halaman Inertia (React). Font Inter + Source Serif 4
+   di-bundle self-hosted via @fontsource agar tidak tergantung CDN eksternal. */
+body {
+    font-family: 'Inter Variable', Inter, Arial, sans-serif;
+}

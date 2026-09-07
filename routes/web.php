@@ -1,413 +1,42 @@
 <?php
 
-use App\Http\Controllers\Academic\AssignmentFileController;
-use App\Http\Controllers\Academic\AssignmentReportExportController;
-use App\Http\Controllers\Academic\GradeAppealAttachmentController;
-use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
-use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
-use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
-use App\Http\Controllers\Alumni\AlumniConversionController;
-use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Financial\FinancialReportExportController;
-use App\Http\Controllers\Financial\PaymentReceiptController;
-use App\Http\Controllers\Lecturer\CourseMaterialController;
-use App\Http\Controllers\Lecturer\GradeBookExportController;
-use App\Http\Controllers\Notifications\PushSubscriptionController;
-use App\Http\Controllers\Organization\AcademicLeaderReportExportController;
-use App\Http\Controllers\Organization\LecturerWorkloadExportController;
-use App\Http\Controllers\Organization\TridharmaAttachmentController;
-use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
-use App\Http\Controllers\LandingController;
-use App\Http\Controllers\Student\DigitalStudentIdVerificationController;
-use App\Http\Controllers\StudentService\ComplaintAttachmentController;
-use App\Http\Controllers\StudentService\GraduationDocumentController;
-use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
-use App\Support\ResourceRegistry;
+use App\Http\Controllers\Home\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::livewire('/', 'root.welcome')->name('root.home-index');
-
+Route::get('/', WelcomeController::class)->name('root.home-index');
 Route::livewire('/welcome', 'setup-wizard')->name('system.setup-wizard');
 
 Route::middleware('is_installed')->group(function () {
-    Route::redirect('/admission', '/admission/apply')->name('root.admission.index');
-    Route::livewire('/admission/apply', 'root.admission.apply')->name('root.admission.apply');
-    Route::livewire('/admission/status', 'root.admission.status')->name('root.admission.status');
-    Route::livewire('/admission/applications/{applicationNumber}/{token}', 'root.admission.portal')->name('root.admission.portal');
-    Route::get('/admission/applications/{applicationNumber}/{token}/documents/{document}/preview', [AdmissionDocumentController::class, 'portalPreview'])
-        ->name('root.admission.documents.preview');
-    Route::livewire('/admission/requirements', 'root.admission.requirements')->name('root.admission.requirements');
-    Route::livewire('/admission/tuition', 'root.admission.tuition')->name('root.admission.tuition');
-    Route::livewire('/admission/faq', 'root.admission.faq')->name('root.admission.faq');
-    Route::get('/student-id/verify/{studentProfile}/{token}', DigitalStudentIdVerificationController::class)
-        ->name('student.digital-id.verify');
-
-    // ─── Landing Pages ─────────────────────────────────────────────────────────
-    Route::prefix('/')->group(function () {
-        // Akademik
-        Route::livewire('/program-studi', 'root.akademik.prodi')->name('landing.prodi');
-        Route::livewire('/akademik/kalender', 'root.akademik.kalender')->name('root.akademik.kalender');
-        Route::livewire('/akademik/jadwal', 'root.akademik.jadwal')->name('root.akademik.jadwal');
-        Route::livewire('/akademik/kurikulum', 'root.akademik.kurikulum')->name('root.akademik.kurikulum');
-        Route::livewire('/akademik/elearning', 'root.akademik.elearning')->name('root.akademik.elearning');
-
-        // Kemahasiswaan
-        Route::livewire('/beasiswa', 'root.kemahasiswaan.beasiswa')->name('landing.beasiswa');
-        Route::livewire('/alumni', 'root.alumni.index')->name('root.alumni.index');
-        Route::livewire('/alumni/karir', 'root.alumni.karir')->name('root.alumni.karir');
-        Route::livewire('/kemahasiswaan/organisasi', 'root.kemahasiswaan.organisasi')->name('root.kemahasiswaan.organisasi');
-        Route::livewire('/kemahasiswaan/prestasi', 'root.kemahasiswaan.prestasi')->name('root.kemahasiswaan.prestasi');
-        Route::livewire('/kemahasiswaan/layanan', 'root.kemahasiswaan.layanan')->name('root.kemahasiswaan.layanan');
-
-        // Institusi
-        Route::livewire('/institusi/profil', 'root.institusi.profil')->name('root.institusi.profil');
-        Route::livewire('/institusi/visi-misi', 'root.institusi.visi-misi')->name('root.institusi.visi-misi');
-        Route::livewire('/institusi/struktur', 'root.institusi.struktur')->name('root.institusi.struktur');
-        Route::livewire('/institusi/fasilitas', 'root.institusi.fasilitas')->name('root.institusi.fasilitas');
-        Route::livewire('/institusi/akreditasi', 'root.institusi.akreditasi')->name('root.institusi.akreditasi');
-        Route::livewire('/institusi/kerjasama', 'root.institusi.kerjasama')->name('root.institusi.kerjasama');
-
-        // Publikasi
-        Route::livewire('/pengumuman', 'root.publication.announcements')->name('root.publication.announcements');
-        Route::livewire('/faq', 'root.faq')->name('root.faq');
-        Route::livewire('/berita', 'root.publication.news')->name('root.publication.news');
-        Route::livewire('/berita/{slug}', 'root.publication.news-show')->name('root.publication.news-show');
-        Route::livewire('/agenda', 'root.publication.agenda')->name('root.publication.agenda');
-        Route::livewire('/agenda/{slug}', 'root.publication.agenda-show')->name('root.publication.agenda-show');
-        Route::livewire('/galeri', 'root.publication.galeri')->name('root.publication.galeri');
-
-        // Kontak
-        Route::livewire('/kontak', 'root.kontak')->name('root.kontak');
-    });
+    require __DIR__.'/web/public.php';
 
     Route::middleware('guest')->group(function () {
-        Route::livewire('/auth/login', 'auth.signin-index')->name('auth.signin-index');
+        require __DIR__.'/web/guest.php';
     });
 
     Route::middleware('auth')->group(function () {
+        require __DIR__.'/web/shared.php';
 
-        Route::livewire('/auth/select-role', 'auth.select-role')->name('auth.select-role');
-        Route::livewire('/profile', 'profile-index')->name('home.profile-index');
-        Route::get('/profile/development-attachments/{attachment}/preview', [UserDevelopmentAttachmentController::class, 'profilePreview'])
-            ->name('profile.development-attachments.preview');
-        Route::post('/notifications/push-subscriptions', [PushSubscriptionController::class, 'store'])
-            ->name('notifications.push-subscriptions.store');
-        Route::delete('/notifications/push-subscriptions', [PushSubscriptionController::class, 'destroy'])
-            ->name('notifications.push-subscriptions.destroy');
-        Route::get('/tridharma/attachments/{attachment}/preview', [TridharmaAttachmentController::class, 'selfPreview'])
-            ->name('tridharma.attachments.preview');
-        Route::livewire('/employee/attendance', 'employee.attendance.index')->name('employee.attendance.index');
-        Route::livewire('/employee/leaves', 'employee.leaves.index')->name('employee.leaves.index');
-        Route::livewire('/employee/tridharma', 'employee.tridharma.index')->name('employee.tridharma.index');
-        Route::livewire('/employee/tridharma/create', 'employee.tridharma.create')->name('employee.tridharma.create');
-        Route::livewire('/employee/tridharma/{id}', 'employee.tridharma.show')->name('employee.tridharma.show');
-        Route::get('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
-        Route::get('/auth/switch-role', [AuthController::class, 'switchRole'])->name('auth.switch-role');
-        // Route::livewire('/', 'admin.dashboard.index')->name('root.home-index');
-
-        // Admin Routes
         Route::middleware('active_role')->prefix('admin')->as('admin.')->group(function () {
-            foreach (ResourceRegistry::all() as $resource) {
-                Route::crudLivewire(
-                    $resource['plural'],
-                    $resource['component'],
-                    $resource['actions'],
-                    $resource['area'],
-                    $resource['resource']
-                );
-            }
-
-            Route::livewire('/financial/dashboard', 'admin.financial.dashboard.index')
-                ->middleware('active_permission:financial-dashboard.viewAny')
-                ->name('financial.dashboard.index');
-            Route::livewire('/student-services/dashboard', 'admin.student-services.dashboard.index')
-                ->middleware('active_permission:student-service-dashboard.viewAny')
-                ->name('student-services.dashboard.index');
-
-            Route::livewire('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', 'admin.academic.attendance-sessions.show')
-                ->middleware('active_permission:course-offering.view')
-                ->name('academic.attendance-sessions.show');
-
-            Route::get('/academic/{resource}/export/pdf', [AdminAcademicExportController::class, 'pdf'])
-                ->name('academic.exports.pdf');
-            Route::get('/academic/{resource}/imports/template', [AdminAcademicExportController::class, 'importTemplate'])
-                ->name('academic.import-template');
-
-            Route::get('/admission/documents/{document}/preview', [AdmissionDocumentController::class, 'adminPreview'])
-                ->middleware('active_permission:admission-application.view')
-                ->name('admission.documents.preview');
-
-            Route::get('/organization/user-development-attachments/{attachment}/preview', [UserDevelopmentAttachmentController::class, 'adminPreview'])
-                ->middleware('active_permission:user-development-record.view')
-                ->name('organization.user-development-records.attachments.preview');
-
-            Route::get('/organization/tridharma-attachments/{attachment}/preview', [TridharmaAttachmentController::class, 'adminPreview'])
-                ->middleware('active_permission:tridharma-record.view')
-                ->name('organization.tridharma-records.attachments.preview');
-            Route::get('/organization/lecturer-workload-submissions/export/{format}', [LecturerWorkloadExportController::class, 'admin'])
-                ->whereIn('format', ['csv', 'xlsx', 'pdf'])
-                ->name('organization.lecturer-workload-submissions.export');
-
-            Route::get('/admission/applications/{application}/acceptance-letter', [AcceptanceLetterController::class, 'show'])
-                ->middleware('active_permission:admission-application.view')
-                ->name('admission.applications.acceptance-letter');
-
-            Route::livewire('/dashboard', 'admin.dashboard.index')->name('dashboard.index');
-
-            Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'admin'])
-                ->middleware('active_permission:payment.view')
-                ->name('financial.payments.receipt');
-
-            Route::get('/financial/reports/export/csv', [FinancialReportExportController::class, 'csv'])
-                ->middleware('active_permission:financial-report.viewAny')
-                ->name('financial.reports.export.csv');
-            Route::get('/financial/reports/export/xlsx', [FinancialReportExportController::class, 'xlsx'])
-                ->middleware('active_permission:financial-report.viewAny')
-                ->name('financial.reports.export.xlsx');
-            Route::get('/financial/reports/export/pdf', [FinancialReportExportController::class, 'pdf'])
-                ->middleware('active_permission:financial-report.viewAny')
-                ->name('financial.reports.export.pdf');
-
-            Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
-                ->middleware('active_permission:service-letter-request.view')
-                ->name('student-services.letter-requests.download');
-            Route::get('/student-services/graduation-documents/{document}/preview', [GraduationDocumentController::class, 'adminPreview'])
-                ->middleware('active_permission:graduation-application.view')
-                ->name('student-services.graduation-documents.preview');
-            Route::get('/student-services/complaint-attachments/{attachment}/download', [ComplaintAttachmentController::class, 'admin'])
-                ->middleware('active_permission:student-complaint.view')
-                ->name('student-services.complaint-attachments.download');
-
-            // Alumni Admin Routes
-            Route::livewire('/alumni/profiles', 'admin.alumni.alumni-profiles.index')
-                ->middleware('active_permission:alumni-profile.viewAny')
-                ->name('alumni.profiles.index');
-            Route::livewire('/alumni/profiles/create', 'admin.alumni.alumni-profiles.create')
-                ->middleware('active_permission:alumni-profile.create')
-                ->name('alumni.profiles.create');
-            Route::livewire('/alumni/profiles/{id}/edit', 'admin.alumni.alumni-profiles.edit')
-                ->middleware('active_permission:alumni-profile.update')
-                ->name('alumni.profiles.edit');
-            Route::livewire('/alumni/profiles/{id}', 'admin.alumni.alumni-profiles.show')
-                ->middleware('active_permission:alumni-profile.view')
-                ->name('alumni.profiles.show');
-            Route::post('/alumni/profiles/batch-convert', [AlumniConversionController::class, 'batchConvert'])
-                ->middleware('active_permission:alumni-profile.create')
-                ->name('alumni.profiles.batch-convert');
-
-            Route::livewire('/alumni/employer-partners', 'admin.alumni.employer-partners.index')
-                ->middleware('active_permission:employer-partner.viewAny')
-                ->name('alumni.employer-partners.index');
-            Route::livewire('/alumni/employer-partners/create', 'admin.alumni.employer-partners.create')
-                ->middleware('active_permission:employer-partner.create')
-                ->name('alumni.employer-partners.create');
-            Route::livewire('/alumni/employer-partners/{id}/edit', 'admin.alumni.employer-partners.edit')
-                ->middleware('active_permission:employer-partner.update')
-                ->name('alumni.employer-partners.edit');
-
-            Route::livewire('/alumni/job-postings', 'admin.alumni.job-postings.index')
-                ->middleware('active_permission:job-posting.viewAny')
-                ->name('alumni.job-postings.index');
-            Route::livewire('/alumni/job-postings/create', 'admin.alumni.job-postings.create')
-                ->middleware('active_permission:job-posting.create')
-                ->name('alumni.job-postings.create');
-            Route::livewire('/alumni/job-postings/{id}/edit', 'admin.alumni.job-postings.edit')
-                ->middleware('active_permission:job-posting.update')
-                ->name('alumni.job-postings.edit');
-            Route::livewire('/alumni/job-postings/{id}', 'admin.alumni.job-postings.show')
-                ->middleware('active_permission:job-posting.view')
-                ->name('alumni.job-postings.show');
-
-            Route::livewire('/alumni/events', 'admin.alumni.alumni-events.index')
-                ->middleware('active_permission:alumni-event.viewAny')
-                ->name('alumni.events.index');
-            Route::livewire('/alumni/events/create', 'admin.alumni.alumni-events.create')
-                ->middleware('active_permission:alumni-event.create')
-                ->name('alumni.events.create');
-            Route::livewire('/alumni/events/{id}/edit', 'admin.alumni.alumni-events.edit')
-                ->middleware('active_permission:alumni-event.update')
-                ->name('alumni.events.edit');
-            Route::livewire('/alumni/events/{id}', 'admin.alumni.alumni-events.show')
-                ->middleware('active_permission:alumni-event.view')
-                ->name('alumni.events.show');
-
-            Route::livewire('/alumni/tracer-study', 'admin.alumni.tracer-study-campaigns.index')
-                ->middleware('active_permission:tracer-study-campaign.viewAny')
-                ->name('alumni.tracer-study.index');
-            Route::livewire('/alumni/tracer-study/create', 'admin.alumni.tracer-study-campaigns.create')
-                ->middleware('active_permission:tracer-study-campaign.create')
-                ->name('alumni.tracer-study.create');
-            Route::livewire('/alumni/tracer-study/{id}/edit', 'admin.alumni.tracer-study-campaigns.edit')
-                ->middleware('active_permission:tracer-study-campaign.update')
-                ->name('alumni.tracer-study.edit');
-            Route::livewire('/alumni/tracer-study/{id}', 'admin.alumni.tracer-study-campaigns.show')
-                ->middleware('active_permission:tracer-study-campaign.view')
-                ->name('alumni.tracer-study.show');
-            Route::livewire('/alumni/tracer-study/{id}/responses', 'admin.alumni.tracer-study-responses.index')
-                ->middleware('active_permission:tracer-study-response.viewAny')
-                ->name('alumni.tracer-study.responses');
-            Route::livewire('/alumni/tracer-study-responses/{id}', 'admin.alumni.tracer-study-responses.show')
-                ->middleware('active_permission:tracer-study-response.view')
-                ->name('alumni.tracer-study-responses.show');
-            Route::get('/alumni/tracer-study/{id}/analytics', [TracerStudyAnalyticsController::class, 'show'])
-                ->middleware('active_permission:tracer-study-campaign.view')
-                ->name('alumni.tracer-study.analytics');
-            Route::get('/alumni/tracer-study/{id}/export/{format}', [TracerStudyAnalyticsController::class, 'export'])
-                ->middleware('active_permission:tracer-study-campaign.view')
-                ->whereIn('format', ['csv', 'xlsx', 'pdf'])
-                ->name('alumni.tracer-study.export');
+            require __DIR__.'/web/admin.php';
         });
 
-        // Student Routes
-        Route::middleware(['active_role:student', 'financial_clearance'])->prefix('student')->as('student.')->group(function () {
-            Route::livewire('/dashboard', 'student.dashboard.index')->name('dashboard.index');
-            Route::livewire('/registration', 'student.registration.index')->name('registration.index');
-            Route::livewire('/digital-id', 'student.digital-id.index')->name('digital-id.index');
-            Route::livewire('/study-plan', 'student.study-plan.index')->name('study-plan.index');
-            Route::livewire('/study-plan/comparison', 'student.study-plan.comparison')->name('study-plan.comparison');
-            Route::livewire('/progress', 'student.progress.index')->name('progress.index');
-            Route::livewire('/grades', 'student.grades.index')->name('grades.index');
-            Route::livewire('/grade-appeals', 'student.grade-appeals.index')->name('grade-appeals.index');
-            Route::get('/grade-appeal-attachments/{attachment}/preview', [GradeAppealAttachmentController::class, 'studentPreview'])->name('grade-appeal-attachments.preview');
-            Route::livewire('/financial/invoices', 'student.financial.invoices')->name('financial.invoices');
-            Route::livewire('/financial/invoices/{id}', 'student.financial.invoice-detail')->name('financial.invoices.show');
-            Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'student'])->name('financial.payments.receipt');
-            Route::livewire('/transcript', 'student.transcript.index')->name('transcript.index');
-            Route::livewire('/schedule', 'student.schedule.index')->name('schedule.index');
-            Route::livewire('/schedule/{offeringId}/attendance', 'student.schedule.attendance.index')->name('schedule.attendance');
-            Route::livewire('/schedule/attendance/{sessionId}/record', 'student.schedule.attendance.record.index')->name('schedule.attendance.record');
-            Route::livewire('/materials', 'student.course-materials')->name('course-materials.index');
-            Route::livewire('/course-offerings/{offeringId}/materials', 'student.course-materials')->name('course-materials.offering');
-            Route::livewire('/learning/{material}', 'student.learning.show')->name('learning.show');
-            Route::livewire('/assignments', 'student.assignments.index')->name('assignments.index');
-            Route::livewire('/assignments/{id}', 'student.assignments.show')->name('assignments.show');
-            Route::livewire('/consultations', 'student.consultations.index')->name('consultations.index');
-            Route::get('/assignments/instructions/{file}', [AssignmentFileController::class, 'studentInstruction'])->name('assignments.instructions.preview');
-            Route::get('/assignments/submissions/files/{file}', [AssignmentFileController::class, 'studentSubmission'])->name('assignments.submissions.files.preview');
-            Route::get('/learning/{material}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->name('learning.preview');
-            Route::get('/learning/{material}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->name('learning.link');
-            Route::get('/course-materials/{id}/download/{fileId}', [CourseMaterialController::class, 'download'])->name('course-materials.download');
-            Route::livewire('/announcements', 'student.publication.announcements.index')->name('announcements.index');
-            Route::livewire('/announcements/{id}', 'student.publication.announcements.show')->name('announcements.show');
-            Route::livewire('/edom', 'student.edom.index')->name('edom.index');
-            Route::livewire('/edom/{periodId}/{courseOfferingId}/{lecturerProfileId}', 'student.edom.show')->name('edom.show');
-            Route::livewire('/services/letters', 'student.student-services.letters')->name('student-services.letters');
-            Route::livewire('/services/letters/create', 'student.student-services.letter-create')->name('student-services.letters.create');
-            Route::livewire('/services/letters/{id}/edit', 'student.student-services.letter-edit')->name('student-services.letters.edit');
-            Route::livewire('/services/letters/{id}', 'student.student-services.letter-detail')->name('student-services.letters.show');
-            Route::get('/services/letters/{request}/download', [ServiceLetterDownloadController::class, 'student'])->name('student-services.letters.download');
-            Route::livewire('/services/leaves', 'student.student-services.leaves')->name('student-services.leaves');
-            Route::livewire('/services/leaves/create', 'student.student-services.leave-create')->name('student-services.leaves.create');
-            Route::livewire('/services/leaves/{id}/edit', 'student.student-services.leave-edit')->name('student-services.leaves.edit');
-            Route::livewire('/services/leaves/{id}', 'student.student-services.leave-detail')->name('student-services.leaves.show');
-            Route::livewire('/services/transfers', 'student.student-services.transfers')->name('student-services.transfers');
-            Route::livewire('/services/transfers/create', 'student.student-services.transfer-create')->name('student-services.transfers.create');
-            Route::livewire('/services/transfers/{id}/edit', 'student.student-services.transfer-edit')->name('student-services.transfers.edit');
-            Route::livewire('/services/transfers/{id}', 'student.student-services.transfer-detail')->name('student-services.transfers.show');
-            Route::livewire('/services/graduations', 'student.student-services.graduations')->name('student-services.graduations');
-            Route::livewire('/services/graduations/create', 'student.student-services.graduation-create')->name('student-services.graduations.create');
-            Route::livewire('/services/graduations/{id}/edit', 'student.student-services.graduation-edit')->name('student-services.graduations.edit');
-            Route::livewire('/services/graduations/{id}', 'student.student-services.graduation-detail')->name('student-services.graduations.show');
-            Route::get('/services/graduation-documents/{document}/preview', [GraduationDocumentController::class, 'studentPreview'])->name('student-services.graduation-documents.preview');
-            Route::livewire('/services/complaints', 'student.student-services.complaints')->name('student-services.complaints');
-            Route::livewire('/services/complaints/create', 'student.student-services.complaint-create')->name('student-services.complaints.create');
-            Route::livewire('/services/complaints/{id}', 'student.student-services.complaint-detail')->name('student-services.complaints.show');
-            Route::get('/services/complaint-attachments/{attachment}/download', [ComplaintAttachmentController::class, 'student'])->name('student-services.complaint-attachments.download');
-        });
+        Route::middleware(['active_role:student', 'financial_clearance'])
+            ->prefix('student')
+            ->as('student.')
+            ->group(function () {
+                require __DIR__.'/web/student.php';
+            });
 
-        // Lecturer Routes
         Route::middleware('active_role:lecturer')->prefix('lecturer')->as('lecturer.')->group(function () {
-            Route::livewire('/announcements', 'lecturer.publication.announcements.index')->name('announcements.index');
-            Route::livewire('/announcements/create', 'lecturer.publication.announcements.create')->name('announcements.create');
-            Route::livewire('/announcements/{id}/edit', 'lecturer.publication.announcements.edit')->name('announcements.edit');
-            Route::livewire('/announcements/{id}', 'lecturer.publication.announcements.show')->name('announcements.show');
-            Route::livewire('/dashboard', 'lecturer.dashboard.index')->name('dashboard.index');
-            Route::livewire('/course-offerings', 'lecturer.course-offerings.index')->name('course-offerings.index');
-            Route::livewire('/calendar', 'lecturer.calendar.index')->name('calendar.index');
-            Route::livewire('/course-offerings/{id}', 'lecturer.course-offerings.show')->name('course-offerings.show');
-            Route::livewire('/course-offerings/{offeringId}/students', 'lecturer.course-offerings.students')->name('course-offerings.students');
-            Route::livewire('/course-offerings/{offeringId}/attendance', 'lecturer.course-offerings.attendance')->name('course-offerings.attendance');
-            Route::livewire('/course-offerings/{offeringId}/grades', 'lecturer.course-offerings.grades')->name('course-offerings.grades');
-            Route::livewire('/course-offerings/{offeringId}/materials', 'lecturer.course-materials.index')->name('course-materials.index');
-            Route::livewire('/course-materials', 'lecturer.course-materials.list')->name('course-materials.list');
-            Route::livewire('/course-materials/{material}', 'lecturer.course-materials.show')->name('course-materials.show');
-            Route::get('/course-materials/{id}/download', [CourseMaterialController::class, 'download'])->name('course-materials.download');
-            Route::get('/course-materials/{id}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->name('course-materials.preview');
-            Route::get('/course-materials/{id}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->name('course-materials.link');
-            Route::livewire('/assignments', 'lecturer.assignments.index')->name('assignments.index');
-            Route::livewire('/course-offerings/{offeringId}/assignments/create', 'lecturer.assignments.create')->name('assignments.create');
-            Route::livewire('/assignments/{id}/edit', 'lecturer.assignments.edit')->name('assignments.edit');
-            Route::livewire('/assignments/{id}', 'lecturer.assignments.show')->name('assignments.show');
-            Route::livewire('/consultations', 'lecturer.consultations.index')->name('consultations.index');
-            Route::get('/assignments/instructions/{file}', [AssignmentFileController::class, 'lecturerInstruction'])->name('assignments.instructions.preview');
-            Route::get('/assignments/submissions/files/{file}', [AssignmentFileController::class, 'lecturerSubmission'])->name('assignments.submissions.files.preview');
-            Route::get('/assignments/{assignment}/report/csv', [AssignmentReportExportController::class, 'csv'])->name('assignments.report.csv');
-            Route::get('/assignments/{assignment}/report/xlsx', [AssignmentReportExportController::class, 'xlsx'])->name('assignments.report.xlsx');
-            Route::get('/assignments/{assignment}/report/pdf', [AssignmentReportExportController::class, 'pdf'])->name('assignments.report.pdf');
-            Route::livewire('/attendance-sessions/{sessionId}/edit', 'lecturer.attendance-sessions.edit')->name('attendance-sessions.edit');
-            Route::livewire('/student-grades', 'lecturer.student-grades.index')->name('student-grades.index');
-            Route::livewire('/student-grades/grade-book', 'lecturer.student-grades.grade-book')->name('student-grades.grade-book');
-            Route::livewire('/grade-appeals', 'lecturer.grade-appeals.index')->name('grade-appeals.index');
-            Route::get('/grade-appeal-attachments/{attachment}/preview', [GradeAppealAttachmentController::class, 'lecturerPreview'])->name('grade-appeal-attachments.preview');
-            Route::get('/student-grades/grade-book/export/csv', [GradeBookExportController::class, 'csv'])->name('student-grades.grade-book.export.csv');
-            Route::get('/student-grades/grade-book/export/xlsx', [GradeBookExportController::class, 'xlsx'])->name('student-grades.grade-book.export.xlsx');
-            Route::get('/student-grades/grade-book/export/pdf', [GradeBookExportController::class, 'pdf'])->name('student-grades.grade-book.export.pdf');
-            Route::livewire('/edom', 'lecturer.edom.index')->name('edom.index');
-            Route::livewire('/workloads', 'lecturer.workloads.index')->name('workloads.index');
-            Route::livewire('/workloads/{id}', 'lecturer.workloads.show')->name('workloads.show');
-            Route::livewire('/student-grades/{id}/edit', 'lecturer.student-grades.edit')->name('student-grades.edit');
-            Route::livewire('/academic-advising', 'lecturer.academic-advising.index')->name('academic-advising.index');
-            Route::livewire('/academic-advising/{assignmentId}', 'lecturer.academic-advising.show')->name('academic-advising.show');
-            Route::livewire('/students', 'lecturer.students.index')->name('students.index');
-            Route::livewire('/tridharma', 'employee.tridharma.index')->name('tridharma.index');
-            Route::livewire('/tridharma/create', 'employee.tridharma.create')->name('tridharma.create');
-            Route::livewire('/tridharma/{id}', 'employee.tridharma.show')->name('tridharma.show');
+            require __DIR__.'/web/lecturer.php';
         });
 
-        // Academic Leader Routes
         Route::middleware('active_role:academic-leader')->prefix('academic-leader')->as('academic-leader.')->group(function () {
-            Route::livewire('/dashboard', 'academic-leader.dashboard.index')->name('dashboard.index');
-            Route::livewire('/lecturers', 'academic-leader.lecturers.index')->name('lecturers.index');
-            Route::livewire('/workloads', 'academic-leader.workloads.index')->name('workloads.index');
-            Route::get('/workloads/export/{format}', [LecturerWorkloadExportController::class, 'academicLeader'])
-                ->whereIn('format', ['csv', 'xlsx', 'pdf'])
-                ->name('workloads.export');
-            Route::livewire('/classes', 'academic-leader.classes.index')->name('classes.index');
-            Route::livewire('/edom', 'academic-leader.edom.index')->name('edom.index');
-            Route::livewire('/reports', 'academic-leader.reports.index')->name('reports.index');
-            Route::get('/reports/export/{type}/{format}', AcademicLeaderReportExportController::class)
-                ->whereIn('type', ['lecturers', 'classes', 'alerts'])
-                ->whereIn('format', ['csv', 'xlsx', 'pdf'])
-                ->name('reports.export');
-            Route::livewire('/lecturers/{lecturerProfileId}', 'academic-leader.lecturers.show')->name('lecturers.show');
+            require __DIR__.'/web/academic-leader.php';
         });
 
-        // Alumni Role Routes
         Route::middleware('active_role:alumni')->prefix('alumni')->as('alumni.')->group(function () {
-            Route::livewire('/dashboard', 'alumni.dashboard.index')->name('dashboard.index');
-            Route::livewire('/profile', 'alumni.profile.index')->name('profile.index');
-            Route::livewire('/profile/edit', 'alumni.profile.edit')->name('profile.edit');
-            Route::livewire('/jobs', 'alumni.jobs.index')->name('jobs.index');
-            Route::livewire('/jobs/{id}', 'alumni.jobs.show')->name('jobs.show');
-            Route::livewire('/events', 'alumni.events.index')->name('events.index');
-            Route::livewire('/events/{id}', 'alumni.events.show')->name('events.show');
-            Route::livewire('/events/{id}/register', 'alumni.events.register')->name('events.register');
-            Route::livewire('/tracer-study', 'alumni.tracer-study.index')->name('tracer-study.index');
-            Route::livewire('/tracer-study/{id}', 'alumni.tracer-study.show')->name('tracer-study.show');
-            Route::livewire('/tracer-study/{id}/fill', 'alumni.tracer-study.fill')->name('tracer-study.fill');
+            require __DIR__.'/web/alumni.php';
         });
     });
-
 });
-
-// // Access Management
-// Route::crudLivewire('users', 'admin.access.users', ['index', 'create', 'edit', 'delete'], 'access');
-// Route::crudLivewire('permissions', 'admin.access.permissions', ['index', 'create', 'edit', 'delete'], 'access');
-// Route::crudLivewire('roles', 'admin.access.roles', ['index', 'create', 'edit', 'delete'], 'access');
-// // System Management
-// Route::crudLivewire('menus', 'admin.system.menus', ['index', 'create', 'edit', 'delete'], 'system');
-// Route::crudLivewire('settings', 'admin.system.settings', ['index'], 'system');
-// Route::crudLivewire('activity-logs', 'admin.system.activity-logs', ['index', 'show'], 'system');
-// // Academic Management
-// Route::crudLivewire('academic-years', 'admin.academic.academic-years', ['index', 'create', 'edit', 'delete'], 'academic');

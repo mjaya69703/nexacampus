@@ -1,0 +1,21 @@
+/* Shared design tokens & components (Inertia React).
+   Dipakai components/Shared/* lintas area. Semua warna lewat token
+   --shared-* agar netral terhadap tema area mana pun. */
+.shared-flash { display: grid; gap: 8px; margin-block: 18px; }
+.shared-flash-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid transparent; border-radius: 10px; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.shared-flash-item svg { flex: 0 0 auto; }
+.shared-flash-item > button { display: grid; place-items: center; width: 26px; height: 26px; margin-left: auto; border: 0; border-radius: 7px; background: transparent; color: inherit; cursor: pointer; opacity: .7; }
+.shared-flash-item > button:hover { opacity: 1; background: rgba(127, 127, 127, .14); }
+.shared-flash-success { background: #e6f4ec; border-color: #bfe3cf; color: #1e7e4d; }
+.shared-flash-error { background: #fdecea; border-color: #f3c4bb; color: #b3402f; }
+.shared-flash-info { background: #e5eef9; border-color: #bcd3ea; color: #17406f; }
+.shared-flash-warning { background: #f7eeda; border-color: #e8d3a8; color: #8a5f14; }
+
+[data-theme='dark'] .shared-flash-success,
+[data-bs-theme='dark'] .shared-flash-success { background: #16382a; border-color: #245c43; color: #5ed39a; }
+[data-theme='dark'] .shared-flash-error,
+[data-bs-theme='dark'] .shared-flash-error { background: #3d2220; border-color: #6e3530; color: #f08a7d; }
+[data-theme='dark'] .shared-flash-info,
+[data-bs-theme='dark'] .shared-flash-info { background: #22354f; border-color: #35506f; color: #9cc2f5; }
+[data-theme='dark'] .shared-flash-warning,
+[data-bs-theme='dark'] .shared-flash-warning { background: #3a2f1a; border-color: #5c4a26; color: #e9b75c; }

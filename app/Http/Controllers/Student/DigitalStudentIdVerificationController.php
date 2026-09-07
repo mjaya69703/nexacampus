@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Academic\StudentProfile;
+use App\Models\Settings\Campus;
 use App\Support\Student\DigitalStudentIdService;
-use Illuminate\Http\Response;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class DigitalStudentIdVerificationController extends Controller
 {
@@ -18,9 +20,19 @@ class DigitalStudentIdVerificationController extends Controller
 
         $studentProfile->load(['user', 'studyProgram.faculty', 'entryAcademicYear']);
 
-        return response()->view('student.digital-id.verify', [
-            'studentProfile' => $studentProfile,
-            'pages' => 'Verifikasi Kartu Mahasiswa',
+        return Inertia::render('Home/DigitalIdVerify', [
+            'campus' => [
+                'name' => Campus::value('name') ?? config('app.name', 'NexaCampus'),
+                'logo' => Campus::value('logo_horizontal') ?? asset('storage/images/default/logo-horizontal.png'),
+            ],
+            'student' => [
+                'name' => $studentProfile->user?->name ?? '-',
+                'nim' => $studentProfile->nim,
+                'academicStatus' => $studentProfile->academic_status ?? '-',
+                'programName' => $studentProfile->studyProgram?->name ?? '-',
+                'facultyName' => $studentProfile->studyProgram?->faculty?->name ?? '-',
+                'isActive' => (bool) $studentProfile->is_active,
+            ],
         ]);
     }
 }

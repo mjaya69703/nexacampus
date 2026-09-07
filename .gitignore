@@ -18,6 +18,7 @@
 /.zed
 /auth.json
 /node_modules
+/bun.lock
 /graphify-out
 /public/build
 /public/hot

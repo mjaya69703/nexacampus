@@ -1,0 +1,18 @@
+// Public academic programs page.
+import { Link } from '@inertiajs/react';
+import { ArrowRight, Award, Building2, Clock3, CreditCard, GraduationCap } from 'lucide-react';
+import { AcademicBaseProps, AcademicLink, AcademicShell, AcademicStat } from '../../../components/Home/Academic/AcademicShell';
+import type { CSSProperties } from 'react';
+
+type Program = { id: number; name: string; code: string; degree: string; prefixDegree: string | null; suffixDegree: string | null; description: string | null; duration: number; credits: number };
+type Faculty = { id: number; name: string; shortName: string | null; description: string | null; programs: Program[] };
+type Props = AcademicBaseProps & { faculties: Faculty[]; totalPrograms: number; admissionOpen: boolean };
+const colors = ['#2866b5', '#328c70', '#b07b32', '#8759a7', '#b55050'];
+
+export default function Programs({ campus, links, user, faculties, totalPrograms, admissionOpen }: Props) {
+    return <AcademicShell campus={campus} links={links} user={user} activeTab="Program Studi" eyebrow="Program studi" title="Temukan bidang yang ingin Anda dalami." description={`Jelajahi program studi aktif, bidang keilmuan, dan jalur pendidikan yang tersedia di ${campus.name}.`} icon={GraduationCap} action={<Link href={links.admission} className="adm-btn light">{admissionOpen ? 'Daftar sekarang' : 'Lihat penerimaan'} <ArrowRight size={15} /></Link>}>
+        <div className="academic-overview"><div><h2>Pilihan akademik {campus.name}</h2><p>Setiap program dirancang untuk menghubungkan fondasi keilmuan dengan kebutuhan dunia kerja dan masyarakat.</p></div><div className="academic-stats"><AcademicStat value={totalPrograms} label="Program aktif" /><AcademicStat value={faculties.length} label="Fakultas" /><AcademicStat value="S1–D4" label="Jenjang" /></div></div>
+        {faculties.length ? faculties.map((faculty, index) => <section className="program-faculty" key={faculty.id}><div className="faculty-heading"><span className="faculty-mark" style={{ '--faculty-color': colors[index % colors.length] } as CSSProperties}>{faculty.shortName ?? `0${index + 1}`}</span><div><h2>{faculty.name}</h2><p>{faculty.description ?? 'Ruang belajar untuk mengembangkan pengetahuan, keterampilan, dan karakter profesional.'}</p></div><span className="faculty-rule" /></div><div className="program-grid">{faculty.programs.map((program) => <article className="program-card" style={{ '--faculty-color': colors[index % colors.length] } as CSSProperties} key={program.id}><div className="program-meta"><span className="program-code">{program.code}</span><span className="program-degree">{program.degree}</span></div><h3>{program.name}</h3><p>{program.description ?? 'Program studi dengan kurikulum yang relevan, pembelajaran terarah, dan pengalaman akademik yang utuh.'}</p><div className="program-details"><span className="program-detail"><small><Clock3 size={11} /> Lama studi</small><strong>{program.duration} semester</strong></span><span className="program-detail"><small><CreditCard size={11} /> Beban studi</small><strong>{program.credits} SKS</strong></span></div></article>)}</div></section>) : <div className="academic-panel academic-empty"><span className="academic-empty-icon"><Building2 size={25} /></span><h3>Program studi belum tersedia</h3><p>Data program studi aktif belum dipublikasikan oleh bagian akademik.</p></div>}
+        <section className="academic-note"><Award size={18} /><span><strong>Butuh bantuan memilih program?</strong><small>Hubungi layanan penerimaan untuk mendapatkan informasi jalur masuk, biaya, dan konsultasi program studi.</small></span><AcademicLink href={links.contact}>Hubungi kami</AcademicLink></section>
+    </AcademicShell>;
+}

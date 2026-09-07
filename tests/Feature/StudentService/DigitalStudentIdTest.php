@@ -65,8 +65,10 @@ it('verifies a digital student id token', function () {
 
     $this->get($service->verificationUrl($student))
         ->assertOk()
-        ->assertSee('Kartu Mahasiswa Valid')
-        ->assertSee('DIG-2026-001');
+        ->assertInertia(fn ($page) => $page
+            ->component('Home/DigitalIdVerify')
+            ->where('student.nim', 'DIG-2026-001')
+            ->where('student.isActive', true));
 });
 
 it('rejects an invalid digital student id token', function () {
