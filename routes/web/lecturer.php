@@ -5,6 +5,7 @@ use App\Http\Controllers\Academic\AssignmentReportExportController;
 use App\Http\Controllers\Academic\GradeAppealAttachmentController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
+use App\Http\Controllers\Shared\Employee\TridharmaController;
 use Illuminate\Support\Facades\Route;
 
 Route::livewire('/announcements', 'lecturer.publication.announcements.index')->name('announcements.index');
@@ -49,6 +50,15 @@ Route::livewire('/student-grades/{id}/edit', 'lecturer.student-grades.edit')->na
 Route::livewire('/academic-advising', 'lecturer.academic-advising.index')->name('academic-advising.index');
 Route::livewire('/academic-advising/{assignmentId}', 'lecturer.academic-advising.show')->name('academic-advising.show');
 Route::livewire('/students', 'lecturer.students.index')->name('students.index');
-Route::livewire('/tridharma', 'employee.tridharma.index')->name('tridharma.index');
-Route::livewire('/tridharma/create', 'employee.tridharma.create')->name('tridharma.create');
-Route::livewire('/tridharma/{id}', 'employee.tridharma.show')->name('tridharma.show');
+Route::get('/tridharma', [TridharmaController::class, 'index'])->name('tridharma.index');
+Route::get('/tridharma/create', [TridharmaController::class, 'create'])->name('tridharma.create');
+Route::post('/tridharma', [TridharmaController::class, 'store'])->name('tridharma.store');
+Route::get('/tridharma/{record}', [TridharmaController::class, 'show'])->name('tridharma.show');
+Route::post('/tridharma/{record}/submit', [TridharmaController::class, 'submitApproval'])->name('tridharma.submit');
+Route::post('/tridharma/{record}/milestones', [TridharmaController::class, 'storeMilestone'])->name('tridharma.milestones.store');
+Route::patch('/tridharma/{record}/milestones/{milestone}', [TridharmaController::class, 'updateMilestone'])->name('tridharma.milestones.update');
+Route::post('/tridharma/{record}/outputs', [TridharmaController::class, 'storeOutput'])->name('tridharma.outputs.store');
+Route::post('/tridharma/{record}/members', [TridharmaController::class, 'storeMember'])->name('tridharma.members.store');
+Route::delete('/tridharma/{record}/members/{member}', [TridharmaController::class, 'destroyMember'])->name('tridharma.members.destroy');
+Route::post('/tridharma/{record}/attachments', [TridharmaController::class, 'storeAttachment'])->name('tridharma.attachments.store');
+Route::get('/users/search', [TridharmaController::class, 'searchUsers'])->name('users.search');

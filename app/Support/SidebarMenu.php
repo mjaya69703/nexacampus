@@ -127,8 +127,7 @@ class SidebarMenu
         }
 
         $children = [
-            static::makeChildLink('employee.attendance.index', 'Absensi Saya'),
-            static::makeChildLink('employee.leaves.index', 'Cuti Saya'),
+            static::makeChildLink('employee.attendance.index', 'Kehadiran Saya'),
         ];
 
         if ($role !== 'lecturer') {
