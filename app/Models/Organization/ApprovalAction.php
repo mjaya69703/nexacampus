@@ -43,4 +43,15 @@ class ApprovalAction extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * User who performed this approval action.
+     *
+     * The approval timeline uses the domain term "actor", while the
+     * database keeps the foreign key as user_id.
+     */
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }
