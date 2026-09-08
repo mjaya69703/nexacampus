@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\Access\PermissionController;
+use App\Http\Controllers\Admin\Access\RoleController;
+use App\Http\Controllers\Admin\Access\UserController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
@@ -18,6 +21,11 @@ use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
+    // users, permissions & roles dimigrasi ke Inertia React.
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users']) && $resource['area'] === 'access') {
+        continue;
+    }
+
     Route::crudLivewire(
         $resource['plural'],
         $resource['component'],
@@ -26,6 +34,135 @@ foreach (ResourceRegistry::all() as $resource) {
         $resource['resource']
     );
 }
+
+// CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/access/permissions/export', [PermissionController::class, 'export'])
+    ->middleware('active_permission:permission.viewAny')
+    ->name('access.permissions.export');
+Route::post('/access/permissions/bulk-destroy', [PermissionController::class, 'bulkDestroy'])
+    ->middleware('active_permission:permission.delete')
+    ->name('access.permissions.bulk-destroy');
+Route::post('/access/permissions/bulk-restore', [PermissionController::class, 'bulkRestore'])
+    ->middleware('active_permission:permission.update|permission.delete')
+    ->name('access.permissions.bulk-restore');
+Route::post('/access/permissions/bulk-force-destroy', [PermissionController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:permission.update|permission.delete')
+    ->name('access.permissions.bulk-force-destroy');
+Route::post('/access/permissions/{id}/restore', [PermissionController::class, 'restore'])
+    ->middleware('active_permission:permission.update|permission.delete')
+    ->name('access.permissions.restore');
+Route::delete('/access/permissions/{id}/force', [PermissionController::class, 'forceDestroy'])
+    ->middleware('active_permission:permission.update|permission.delete')
+    ->name('access.permissions.force-destroy');
+
+// CRUD Peran (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/access/roles/export', [RoleController::class, 'export'])
+    ->middleware('active_permission:role.viewAny')
+    ->name('access.roles.export');
+Route::get('/access/roles/import/template', [RoleController::class, 'importTemplate'])
+    ->middleware('active_permission:role.create')
+    ->name('access.roles.import-template');
+Route::post('/access/roles/import', [RoleController::class, 'import'])
+    ->middleware('active_permission:role.create')
+    ->name('access.roles.import');
+Route::post('/access/roles/bulk-destroy', [RoleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:role.delete')
+    ->name('access.roles.bulk-destroy');
+Route::post('/access/roles/bulk-restore', [RoleController::class, 'bulkRestore'])
+    ->middleware('active_permission:role.update|role.delete')
+    ->name('access.roles.bulk-restore');
+Route::post('/access/roles/bulk-force-destroy', [RoleController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:role.update|role.delete')
+    ->name('access.roles.bulk-force-destroy');
+Route::post('/access/roles/{id}/restore', [RoleController::class, 'restore'])
+    ->middleware('active_permission:role.update|role.delete')
+    ->name('access.roles.restore');
+Route::delete('/access/roles/{id}/force', [RoleController::class, 'forceDestroy'])
+    ->middleware('active_permission:role.update|role.delete')
+    ->name('access.roles.force-destroy');
+Route::get('/access/roles', [RoleController::class, 'index'])
+    ->middleware('active_permission:role.viewAny')
+    ->name('access.roles.index');
+Route::get('/access/roles/create', [RoleController::class, 'create'])
+    ->middleware('active_permission:role.create')
+    ->name('access.roles.create');
+Route::post('/access/roles', [RoleController::class, 'store'])
+    ->middleware('active_permission:role.create')
+    ->name('access.roles.store');
+Route::get('/access/roles/{role}/edit', [RoleController::class, 'edit'])
+    ->middleware('active_permission:role.update')
+    ->name('access.roles.edit');
+Route::put('/access/roles/{role}', [RoleController::class, 'update'])
+    ->middleware('active_permission:role.update')
+    ->name('access.roles.update');
+Route::delete('/access/roles/{role}', [RoleController::class, 'destroy'])
+    ->middleware('active_permission:role.delete')
+    ->name('access.roles.destroy');
+
+// CRUD Pengguna (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/access/users/export', [UserController::class, 'export'])
+    ->middleware('active_permission:user.viewAny')
+    ->name('access.users.export');
+Route::get('/access/users/import/template', [UserController::class, 'importTemplate'])
+    ->middleware('active_permission:user.create')
+    ->name('access.users.import-template');
+Route::post('/access/users/import', [UserController::class, 'import'])
+    ->middleware('active_permission:user.create')
+    ->name('access.users.import');
+Route::post('/access/users/bulk-destroy', [UserController::class, 'bulkDestroy'])
+    ->middleware('active_permission:user.delete')
+    ->name('access.users.bulk-destroy');
+Route::post('/access/users/bulk-restore', [UserController::class, 'bulkRestore'])
+    ->middleware('active_permission:user.update|user.delete')
+    ->name('access.users.bulk-restore');
+Route::post('/access/users/bulk-force-destroy', [UserController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:user.update|user.delete')
+    ->name('access.users.bulk-force-destroy');
+Route::delete('/access/users/{id}/force', [UserController::class, 'forceDestroy'])
+    ->middleware('active_permission:user.update|user.delete')
+    ->name('access.users.force-destroy');
+Route::post('/access/users/{id}/restore', [UserController::class, 'restore'])
+    ->middleware('active_permission:user.update|user.delete')
+    ->name('access.users.restore');
+Route::post('/access/users/{user}/toggle', [UserController::class, 'toggle'])
+    ->middleware('active_permission:user.update')
+    ->name('access.users.toggle');
+Route::get('/access/users', [UserController::class, 'index'])
+    ->middleware('active_permission:user.viewAny')
+    ->name('access.users.index');
+Route::get('/access/users/create', [UserController::class, 'create'])
+    ->middleware('active_permission:user.create')
+    ->name('access.users.create');
+Route::post('/access/users', [UserController::class, 'store'])
+    ->middleware('active_permission:user.create')
+    ->name('access.users.store');
+Route::get('/access/users/{user}/edit', [UserController::class, 'edit'])
+    ->middleware('active_permission:user.update')
+    ->name('access.users.edit');
+Route::put('/access/users/{user}', [UserController::class, 'update'])
+    ->middleware('active_permission:user.update')
+    ->name('access.users.update');
+Route::delete('/access/users/{user}', [UserController::class, 'destroy'])
+    ->middleware('active_permission:user.delete')
+    ->name('access.users.destroy');
+Route::get('/access/permissions', [PermissionController::class, 'index'])
+    ->middleware('active_permission:permission.viewAny')
+    ->name('access.permissions.index');
+Route::get('/access/permissions/create', [PermissionController::class, 'create'])
+    ->middleware('active_permission:permission.create')
+    ->name('access.permissions.create');
+Route::post('/access/permissions', [PermissionController::class, 'store'])
+    ->middleware('active_permission:permission.create')
+    ->name('access.permissions.store');
+Route::get('/access/permissions/{permission}/edit', [PermissionController::class, 'edit'])
+    ->middleware('active_permission:permission.update')
+    ->name('access.permissions.edit');
+Route::put('/access/permissions/{permission}', [PermissionController::class, 'update'])
+    ->middleware('active_permission:permission.update')
+    ->name('access.permissions.update');
+Route::delete('/access/permissions/{permission}', [PermissionController::class, 'destroy'])
+    ->middleware('active_permission:permission.delete')
+    ->name('access.permissions.destroy');
 
 Route::livewire('/financial/dashboard', 'admin.financial.dashboard.index')
     ->middleware('active_permission:financial-dashboard.viewAny')

@@ -88,10 +88,10 @@ class DashboardController extends Controller
             'icon' => 'fas fa-user-plus',
             'accent' => 'brand',
             'stats' => [
-                ['label' => 'Total pendaftar', 'value' => $total, 'tone' => ''],
-                ['label' => 'Menunggu verifikasi', 'value' => (int) ($stats['pending_verification_count'] ?? 0), 'tone' => 'amber'],
-                ['label' => 'Diterima', 'value' => (int) ($stats['accepted_count'] ?? 0), 'tone' => 'green'],
-                ['label' => 'Jadi mahasiswa', 'value' => (int) ($stats['converted_count'] ?? 0), 'tone' => ''],
+                ['label' => 'Total pendaftar', 'value' => $total, 'tone' => '', 'icon' => 'fas fa-user-plus'],
+                ['label' => 'Menunggu verifikasi', 'value' => (int) ($stats['pending_verification_count'] ?? 0), 'tone' => 'amber', 'icon' => 'fas fa-user-clock'],
+                ['label' => 'Diterima', 'value' => (int) ($stats['accepted_count'] ?? 0), 'tone' => 'green', 'icon' => 'fas fa-user-check'],
+                ['label' => 'Jadi mahasiswa', 'value' => (int) ($stats['converted_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-user-graduate'],
             ],
             'quickLinks' => $this->links([
                 ['Kelola pendaftar', 'admin.admission.admission-applications.index'],
@@ -153,10 +153,10 @@ class DashboardController extends Controller
             'icon' => 'fas fa-wallet',
             'accent' => 'gold',
             'stats' => [
-                ['label' => 'Pemasukan terkonfirmasi', 'value' => $this->rupiahShort((float) ($stats['paid_sum'] ?? 0)), 'tone' => 'green'],
-                ['label' => 'Tagihan belum lunas', 'value' => (int) ($stats['unpaid_invoices_count'] ?? 0), 'tone' => 'red'],
-                ['label' => 'Cicilan menunggu', 'value' => (int) ($stats['pending_installments_count'] ?? 0), 'tone' => 'amber'],
-                ['label' => 'Hold aktif', 'value' => (int) ($stats['holds_count'] ?? 0), 'tone' => $stats['holds_count'] > 0 ? 'red' : ''],
+                ['label' => 'Pemasukan terkonfirmasi', 'value' => $this->rupiahShort((float) ($stats['paid_sum'] ?? 0)), 'tone' => 'green', 'icon' => 'fas fa-money-bill-wave'],
+                ['label' => 'Tagihan belum lunas', 'value' => (int) ($stats['unpaid_invoices_count'] ?? 0), 'tone' => 'red', 'icon' => 'fas fa-file-invoice-dollar'],
+                ['label' => 'Cicilan menunggu', 'value' => (int) ($stats['pending_installments_count'] ?? 0), 'tone' => 'amber', 'icon' => 'fas fa-clock'],
+                ['label' => 'Hold aktif', 'value' => (int) ($stats['holds_count'] ?? 0), 'tone' => $stats['holds_count'] > 0 ? 'red' : '', 'icon' => 'fas fa-lock'],
             ],
             'quickLinks' => $this->links([
                 ['Tagihan', 'admin.financial.student-invoices.index'],
@@ -225,10 +225,10 @@ class DashboardController extends Controller
             'icon' => 'fas fa-graduation-cap',
             'accent' => 'brand',
             'stats' => [
-                ['label' => 'Mahasiswa aktif', 'value' => (int) ($stats['active_students_count'] ?? 0), 'tone' => ''],
-                ['label' => 'Kelas ditawarkan', 'value' => (int) ($stats['course_offerings_count'] ?? 0), 'tone' => ''],
-                ['label' => 'KRS menunggu ACC', 'value' => $pendingKrs, 'tone' => $pendingKrs > 0 ? 'amber' : 'green'],
-                ['label' => 'Rata-rata kehadiran', 'value' => $stats['attendance_rate'] !== null ? $stats['attendance_rate'].'%' : '–', 'tone' => ''],
+                ['label' => 'Mahasiswa aktif', 'value' => (int) ($stats['active_students_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-graduation-cap'],
+                ['label' => 'Kelas ditawarkan', 'value' => (int) ($stats['course_offerings_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-chalkboard-teacher'],
+                ['label' => 'KRS menunggu ACC', 'value' => $pendingKrs, 'tone' => $pendingKrs > 0 ? 'amber' : 'green', 'icon' => 'fas fa-clipboard-list'],
+                ['label' => 'Rata-rata kehadiran', 'value' => $stats['attendance_rate'] !== null ? $stats['attendance_rate'].'%' : '–', 'tone' => '', 'icon' => 'fas fa-calendar-check'],
             ],
             'quickLinks' => $this->links([
                 ['Kelas', 'admin.academic.course-offerings.index'],
@@ -289,10 +289,10 @@ class DashboardController extends Controller
             'icon' => 'fas fa-file-signature',
             'accent' => 'green',
             'stats' => [
-                ['label' => 'Surat pending', 'value' => (int) ($stats['pending_letters_count'] ?? 0), 'tone' => 'amber'],
-                ['label' => 'Cuti menunggu', 'value' => (int) ($stats['pending_leaves_count'] ?? 0), 'tone' => 'amber'],
-                ['label' => 'Pengaduan aktif', 'value' => (int) ($stats['active_complaints_count'] ?? 0), 'tone' => 'red'],
-                ['label' => 'Pendaftar wisuda', 'value' => $totalGrad, 'tone' => ''],
+                ['label' => 'Surat pending', 'value' => (int) ($stats['pending_letters_count'] ?? 0), 'tone' => 'amber', 'icon' => 'fas fa-envelope-open-text'],
+                ['label' => 'Cuti menunggu', 'value' => (int) ($stats['pending_leaves_count'] ?? 0), 'tone' => 'amber', 'icon' => 'fas fa-calendar-minus'],
+                ['label' => 'Pengaduan aktif', 'value' => (int) ($stats['active_complaints_count'] ?? 0), 'tone' => 'red', 'icon' => 'fas fa-comments'],
+                ['label' => 'Pendaftar wisuda', 'value' => $totalGrad, 'tone' => '', 'icon' => 'fas fa-award'],
             ],
             'quickLinks' => $this->links([
                 ['Surat', 'admin.student-services.service-letter-requests.index'],
@@ -342,10 +342,10 @@ class DashboardController extends Controller
             'icon' => 'fas fa-users',
             'accent' => 'brand',
             'stats' => [
-                ['label' => 'Pegawai aktif', 'value' => (int) ($stats['employees_count'] ?? 0), 'tone' => ''],
-                ['label' => 'Presensi hari ini', 'value' => (int) ($stats['attendance_today_count'] ?? 0), 'tone' => ''],
-                ['label' => 'Cuti menunggu', 'value' => $pendingLeave, 'tone' => $pendingLeave > 0 ? 'amber' : 'green'],
-                ['label' => 'Rekaman tridharma', 'value' => (int) ($stats['tridharma_count'] ?? 0), 'tone' => ''],
+                ['label' => 'Pegawai aktif', 'value' => (int) ($stats['employees_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-user-tie'],
+                ['label' => 'Presensi hari ini', 'value' => (int) ($stats['attendance_today_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-id-badge'],
+                ['label' => 'Cuti menunggu', 'value' => $pendingLeave, 'tone' => $pendingLeave > 0 ? 'amber' : 'green', 'icon' => 'fas fa-calendar-minus'],
+                ['label' => 'Rekaman tridharma', 'value' => (int) ($stats['tridharma_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-flask'],
             ],
             'quickLinks' => $this->links([
                 ['Pegawai', 'admin.organization.employee-profiles.index'],
@@ -388,10 +388,10 @@ class DashboardController extends Controller
             'icon' => 'fas fa-bullhorn',
             'accent' => 'gold',
             'stats' => [
-                ['label' => 'Alumni terdaftar', 'value' => (int) ($stats['alumni_count'] ?? 0), 'tone' => ''],
-                ['label' => 'Lowongan aktif', 'value' => (int) ($stats['jobs_count'] ?? 0), 'tone' => 'green'],
-                ['label' => 'Pengumuman terbit', 'value' => (int) ($stats['announcements_count'] ?? 0), 'tone' => ''],
-                ['label' => 'Respons tracer', 'value' => $rate !== null ? $rate.'%' : '–', 'tone' => $rate !== null && $rate >= 50 ? 'green' : 'amber'],
+                ['label' => 'Alumni terdaftar', 'value' => (int) ($stats['alumni_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-users'],
+                ['label' => 'Lowongan aktif', 'value' => (int) ($stats['jobs_count'] ?? 0), 'tone' => 'green', 'icon' => 'fas fa-briefcase'],
+                ['label' => 'Pengumuman terbit', 'value' => (int) ($stats['announcements_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-bullhorn'],
+                ['label' => 'Respons tracer', 'value' => $rate !== null ? $rate.'%' : '–', 'tone' => $rate !== null && $rate >= 50 ? 'green' : 'amber', 'icon' => 'fas fa-chart-line'],
             ],
             'quickLinks' => $this->links([
                 ['Pengumuman', 'admin.publication.announcements.index'],
@@ -441,10 +441,10 @@ class DashboardController extends Controller
             'icon' => 'fas fa-server',
             'accent' => 'red',
             'stats' => [
-                ['label' => 'Pengguna', 'value' => (int) ($stats['users_count'] ?? 0), 'tone' => ''],
-                ['label' => 'Role', 'value' => (int) ($stats['roles_count'] ?? 0), 'tone' => ''],
-                ['label' => 'Permission', 'value' => (int) ($stats['permissions_count'] ?? 0), 'tone' => ''],
-                ['label' => 'Peringatan', 'value' => $total, 'tone' => $total > 0 ? 'red' : 'green'],
+                ['label' => 'Pengguna', 'value' => (int) ($stats['users_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-user'],
+                ['label' => 'Role', 'value' => (int) ($stats['roles_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-user-shield'],
+                ['label' => 'Permission', 'value' => (int) ($stats['permissions_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-key'],
+                ['label' => 'Peringatan', 'value' => $total, 'tone' => $total > 0 ? 'red' : 'green', 'icon' => 'fas fa-bell'],
             ],
             'quickLinks' => $this->links([
                 ['Pengguna', 'admin.system.users.index'],

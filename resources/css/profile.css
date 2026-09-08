@@ -424,6 +424,15 @@
     .pf-grid-2, .pf-grid-3 { grid-template-columns: 1fr; }
 }
 
+/* ── Checkbox baris (dipakai form admin berbasis pf-*) ─────────────── */
+.pf-check {
+    display: inline-flex; align-items: center; gap: 10; cursor: pointer;
+    color: var(--pf-ink); font-size: 13px; font-weight: 600;
+}
+.pf-check input { width: 17px; height: 17px; flex: 0 0 auto; accent-color: var(--pf-brand); cursor: pointer; }
+.pf-check input:disabled { cursor: not-allowed; }
+.pf-check:has(input:disabled) { cursor: not-allowed; opacity: .65; }
+
 @media (max-width: 650px) {
     .pf-cover { min-height: 88px; }
     .pf-head-body { padding: 0 14px 14px; }

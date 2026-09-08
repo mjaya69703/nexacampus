@@ -125,6 +125,7 @@ a.db-stat:hover { background: var(--db-soft); text-decoration: none; }
 .db-stat-icon { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border-radius: 12px; color: var(--db-brand); background: var(--db-brand-soft); }
 .db-stat-icon.gold { color: var(--db-gold); background: var(--db-gold-soft); }
 .db-stat-icon.green { color: var(--db-green); background: var(--db-green-soft); }
+.db-stat-icon.red { color: var(--db-red); background: var(--db-red-soft); }
 .db-stat > div { min-width: 0; }
 .db-stat-num { display: block; color: var(--db-heading); font: 700 22px/1.1 'Source Serif 4', Georgia, serif; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .db-stat-label { display: block; margin-top: 3px; color: var(--db-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

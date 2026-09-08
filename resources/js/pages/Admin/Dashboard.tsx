@@ -9,7 +9,7 @@ import { EmptyState } from '../../components/Shared/EmptyState';
 import { FaIcon } from '../../components/Shared/FaIcon';
 import '../../../css/dashboard.css';
 
-type Stat = { label: string; value: string | number; tone: string };
+type Stat = { label: string; value: string | number; tone: string; icon: string };
 type QuickLink = { label: string; url: string };
 type Bar = { title: string; labels: string[]; series: number[] };
 type Donut = { title: string; labels: string[]; series: number[] };
@@ -144,6 +144,9 @@ function SectionBlock({ section }: { section: Section }) {
                     <div className="db-stats" aria-label={`Statistik ${section.title}`}>
                         {section.stats.map((stat) => (
                             <div className="db-stat" key={stat.label}>
+                                <span className={`db-stat-icon${stat.tone === 'amber' ? ' gold' : stat.tone === 'red' ? ' red' : stat.tone === 'green' ? ' green' : ''}`}>
+                                    <FaIcon name={stat.icon} size={20} />
+                                </span>
                                 <div>
                                     <span className="db-stat-num" style={{ fontSize: 19 }}>{stat.value}</span>
                                     <span className="db-stat-label">{stat.label}</span>
