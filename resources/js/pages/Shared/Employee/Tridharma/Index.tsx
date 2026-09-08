@@ -1,6 +1,6 @@
 // Tridharma saya — employee self-service (Inertia React).
 import { Head } from '@inertiajs/react';
-import { Award, CircleCheck, FileText, FolderOpen, Hourglass, Paperclip, Plus, Sprout, TrendingUp } from 'lucide-react';
+import { Award, CircleCheck, FileText, FolderOpen, Hourglass, Paperclip, Plus, Search, Sprout, TrendingUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { EmptyState } from '../../../../components/Shared/EmptyState';

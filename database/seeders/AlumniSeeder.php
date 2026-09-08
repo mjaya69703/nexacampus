@@ -31,8 +31,9 @@ class AlumniSeeder extends Seeder
             return;
         }
 
-        $alumniUser = $this->seedAlumniUser();
-        $profiles = $this->seedAlumniProfiles($alumniUser);
+        $alumniUsers = $this->seedAlumniUsers();
+        $this->retireLegacyDemoProfiles();
+        $profiles = $this->seedAlumniProfiles($alumniUsers);
         $employers = $this->seedEmployerPartners();
         $this->seedJobPostings($employers);
         $events = $this->seedAlumniEvents();
@@ -50,37 +51,83 @@ class AlumniSeeder extends Seeder
         return (bool) ($this->admin && $this->faculty);
     }
 
-    private function seedAlumniUser(): User
+    private function retireLegacyDemoProfiles(): void
     {
-        $user = User::firstOrCreate(
-            ['email' => 'alumni@example.com'],
-            [
-                'first_name' => 'Alumni',
-                'last_name' => 'Demo',
-                'photo' => 'default.jpg',
-                'username' => 'alumni',
-                'phone' => '0800000099',
-                'code' => Str::random(6),
-                'password' => Hash::make('alumni123'),
-            ]
-        );
-
-        $user->syncRoles(['alumni']);
-
-        return $user;
+        AlumniProfile::query()
+            ->whereIn('nim', ['ALM20190003', 'ALM20210004', 'ALM20210005'])
+            ->whereNull('user_id')
+            ->delete();
     }
 
-    private function seedAlumniProfiles(User $alumniUser): array
+    /**
+     * @return array<string, User>
+     */
+    private function seedAlumniUsers(): array
+    {
+        $accounts = [
+            'budi' => [
+                'email' => 'alumni@example.com',
+                'first_name' => 'Budi',
+                'last_name' => 'Santoso',
+                'username' => 'budi.santoso',
+                'phone' => '081234567801',
+                'linkedin' => 'https://linkedin.com/in/budi-santoso',
+                'gender' => 'Laki-laki',
+            ],
+            'siti' => [
+                'email' => 'siti.rahayu@example.com',
+                'first_name' => 'Siti',
+                'last_name' => 'Rahayu',
+                'username' => 'siti.rahayu',
+                'phone' => '081234567802',
+                'linkedin' => 'https://linkedin.com/in/siti-rahayu',
+                'gender' => 'Perempuan',
+            ],
+        ];
+
+        $users = [];
+
+        foreach ($accounts as $key => $data) {
+            $user = User::updateOrCreate(
+                ['email' => $data['email']],
+                [
+                    'first_name' => $data['first_name'],
+                    'last_name' => $data['last_name'],
+                    'photo' => 'default.jpg',
+                    'username' => $data['username'],
+                    'phone' => $data['phone'],
+                    'linkedin' => $data['linkedin'],
+                    'gender' => $data['gender'],
+                    'citizenship' => 'WNI',
+                    'code' => Str::upper($key).'ALUMNI',
+                    'password' => Hash::make('alumni123'),
+                    'is_active' => true,
+                ]
+            );
+
+            $user->syncRoles(['alumni']);
+            $users[$key] = $user;
+        }
+
+        return $users;
+    }
+
+    /**
+     * @param  array<string, User>  $alumniUsers
+     * @return array<int, AlumniProfile>
+     */
+    private function seedAlumniProfiles(array $alumniUsers): array
     {
         $profiles = [];
 
         $sampleData = [
             [
+                'account' => 'budi',
                 'nim' => 'ALM20200001',
                 'full_name' => 'Budi Santoso',
                 'graduation_year' => 2023,
                 'graduation_date' => '2023-08-15',
-                'email' => 'budi.santoso@example.com',
+                'email' => 'alumni@example.com',
                 'phone' => '081234567801',
                 'employment_status' => 'working',
                 'employer_name' => 'PT Teknologi Nusantara',
@@ -91,9 +138,11 @@ class AlumniSeeder extends Seeder
                 'gpa' => 3.65,
                 'gender' => 'Laki-laki',
                 'linkedin_url' => 'https://linkedin.com/in/budi-santoso',
-                'user_id' => $alumniUser->id,
+                'birth_date' => '1999-02-14',
+                'address' => 'Jl. Kemang Raya No. 18, Jakarta Selatan',
             ],
             [
+                'account' => 'siti',
                 'nim' => 'ALM20200002',
                 'full_name' => 'Siti Rahayu',
                 'graduation_year' => 2023,
@@ -108,37 +157,12 @@ class AlumniSeeder extends Seeder
                 'current_province' => 'Jawa Barat',
                 'gpa' => 3.80,
                 'gender' => 'Perempuan',
+                'linkedin_url' => 'https://linkedin.com/in/siti-rahayu',
+                'birth_date' => '1999-07-22',
+                'address' => 'Jl. Setiabudi No. 27, Bandung',
             ],
             [
-                'nim' => 'ALM20190003',
-                'full_name' => 'Ahmad Fauzi',
-                'graduation_year' => 2022,
-                'graduation_date' => '2022-08-20',
-                'email' => 'ahmad.fauzi@example.com',
-                'phone' => '081234567803',
-                'employment_status' => 'working',
-                'employer_name' => 'Bank Mandiri',
-                'job_title' => 'Data Analyst',
-                'job_industry' => 'Keuangan',
-                'current_city' => 'Surabaya',
-                'current_province' => 'Jawa Timur',
-                'gpa' => 3.55,
-                'gender' => 'Laki-laki',
-            ],
-            [
-                'nim' => 'ALM20210004',
-                'full_name' => 'Dewi Lestari',
-                'graduation_year' => 2024,
-                'graduation_date' => '2024-02-10',
-                'email' => 'dewi.lestari@example.com',
-                'phone' => '081234567804',
-                'employment_status' => 'studying',
-                'current_city' => 'Yogyakarta',
-                'current_province' => 'DI Yogyakarta',
-                'gpa' => 3.90,
-                'gender' => 'Perempuan',
-            ],
-            [
+                'account' => null,
                 'nim' => 'ALM20210005',
                 'full_name' => 'Rizky Pratama',
                 'graduation_year' => 2024,
@@ -153,13 +177,19 @@ class AlumniSeeder extends Seeder
         ];
 
         foreach ($sampleData as $data) {
+            if (! filled($data['account'] ?? null)) {
+                continue;
+            }
+
+            $account = $data['account'];
+            unset($data['account']);
+
             $profile = AlumniProfile::updateOrCreate(
                 ['nim' => $data['nim']],
                 array_merge($data, [
+                    'user_id' => $alumniUsers[$account]->id,
                     'study_program_id' => $this->studyProgram?->id,
                     'faculty_id' => $this->faculty->id,
-                    'birth_date' => $data['birth_date'] ?? '1998-05-20',
-                    'address' => $data['address'] ?? ('Jl. Merdeka No. 10, ' . ($data['current_city'] ?? 'Jakarta')),
                     'is_active' => true,
                     'created_by' => $this->admin->id,
                     'updated_by' => $this->admin->id,
