@@ -6,13 +6,14 @@ use App\Http\Controllers\Academic\GradeAppealAttachmentController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Http\Controllers\Shared\Employee\TridharmaController;
+use App\Http\Controllers\Lecturer\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::livewire('/announcements', 'lecturer.publication.announcements.index')->name('announcements.index');
 Route::livewire('/announcements/create', 'lecturer.publication.announcements.create')->name('announcements.create');
 Route::livewire('/announcements/{id}/edit', 'lecturer.publication.announcements.edit')->name('announcements.edit');
 Route::livewire('/announcements/{id}', 'lecturer.publication.announcements.show')->name('announcements.show');
-Route::livewire('/dashboard', 'lecturer.dashboard.index')->name('dashboard.index');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 Route::livewire('/course-offerings', 'lecturer.course-offerings.index')->name('course-offerings.index');
 Route::livewire('/calendar', 'lecturer.calendar.index')->name('calendar.index');
 Route::livewire('/course-offerings/{id}', 'lecturer.course-offerings.show')->name('course-offerings.show');
@@ -49,7 +50,6 @@ Route::livewire('/workloads/{id}', 'lecturer.workloads.show')->name('workloads.s
 Route::livewire('/student-grades/{id}/edit', 'lecturer.student-grades.edit')->name('student-grades.edit');
 Route::livewire('/academic-advising', 'lecturer.academic-advising.index')->name('academic-advising.index');
 Route::livewire('/academic-advising/{assignmentId}', 'lecturer.academic-advising.show')->name('academic-advising.show');
-Route::livewire('/students', 'lecturer.students.index')->name('students.index');
 Route::get('/tridharma', [TridharmaController::class, 'index'])->name('tridharma.index');
 Route::get('/tridharma/create', [TridharmaController::class, 'create'])->name('tridharma.create');
 Route::post('/tridharma', [TridharmaController::class, 'store'])->name('tridharma.store');
