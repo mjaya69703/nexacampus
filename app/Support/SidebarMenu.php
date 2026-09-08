@@ -295,10 +295,15 @@ class SidebarMenu
 
     protected static function dashboardRouteName(string $role): string
     {
-        return match ($role) {
+        $candidate = match ($role) {
             'superuser' => 'admin.dashboard.index',
             'academic-leader' => 'academic-leader.dashboard.index',
             default => $role.'.dashboard.index',
         };
+
+        // Role baru belum tentu punya dashboard sendiri. Karena kokpit admin
+        // adaptif berbasis izin (bukan berbasis nama role), jadikan ia
+        // fallback agar menu Dashboard tidak pernah mengarah ke '#'.
+        return Route::has($candidate) ? $candidate : 'admin.dashboard.index';
     }
 }
