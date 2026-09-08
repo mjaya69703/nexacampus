@@ -1,8 +1,9 @@
 <?php
 
+use App\Http\Controllers\Alumni\DashboardController;
 use Illuminate\Support\Facades\Route;
 
-Route::livewire('/dashboard', 'alumni.dashboard.index')->name('dashboard.index');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 Route::livewire('/profile', 'alumni.profile.index')->name('profile.index');
 Route::livewire('/profile/edit', 'alumni.profile.edit')->name('profile.edit');
 Route::livewire('/jobs', 'alumni.jobs.index')->name('jobs.index');
