@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
@@ -57,7 +58,7 @@ Route::get('/admission/applications/{application}/acceptance-letter', [Acceptanc
     ->middleware('active_permission:admission-application.view')
     ->name('admission.applications.acceptance-letter');
 
-Route::livewire('/dashboard', 'admin.dashboard.index')->name('dashboard.index');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
 Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'admin'])
     ->middleware('active_permission:payment.view')

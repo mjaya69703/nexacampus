@@ -40,6 +40,7 @@ class UserSeeder extends Seeder
             'setting.viewAny',
             'activity-log.viewAny',
             'activity-log.view',
+            'dashboard.manage',
         ];
 
         foreach ($permissions as $permission) {

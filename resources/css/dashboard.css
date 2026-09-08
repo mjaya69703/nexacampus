@@ -24,6 +24,12 @@
     --db-green-soft: #e2f3ec;
     --db-red: #b3402f;
     --db-red-soft: #fbe9e6;
+    --db-chart-1: #2b67b7;
+    --db-chart-2: #b8862f;
+    --db-chart-3: #23795c;
+    --db-chart-4: #b3402f;
+    --db-chart-5: #6b7a90;
+    --db-chart-6: #6b5ce7;
     --db-shadow: 0 1px 2px rgba(20, 39, 63, .05), 0 10px 30px rgba(20, 39, 63, .07);
     --db-radius: 14px;
     color-scheme: light;
@@ -47,6 +53,12 @@
     --db-green-soft: #14301f;
     --db-red: #e58373;
     --db-red-soft: #371b16;
+    --db-chart-1: #75a7ef;
+    --db-chart-2: #e9b75c;
+    --db-chart-3: #55c19a;
+    --db-chart-4: #e58373;
+    --db-chart-5: #8b9bb4;
+    --db-chart-6: #a78bfa;
     --db-shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 12px 32px rgba(0, 0, 0, .38);
     color-scheme: dark;
 }
@@ -246,8 +258,31 @@ a.db-stat:hover { background: var(--db-soft); text-decoration: none; }
 .db-ann b { display: block; color: var(--db-heading); font-size: 13px; line-height: 1.5; }
 .db-ann small { display: block; color: var(--db-muted); font-size: 11.5px; }
 
+/* ── Kokpit admin (blok generik: bar, donut, progress) ─────────────── */
+.cx-blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cx-block { border: 1px solid var(--db-line); border-radius: 12px; padding: 14px 16px; background: var(--db-card); min-width: 0; }
+.cx-block > h3 { margin: 0 0 12px; color: var(--db-heading); font-size: 12.5px; font-weight: 800; }
+.cx-bars, .cx-progress { display: grid; gap: 10px; }
+.cx-bar-row > div:first-child { margin-bottom: 5px; }
+.cx-bar-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.cx-bar-meta span { color: var(--db-muted); font-size: 11.5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cx-bar-meta b { color: var(--db-heading); font-size: 12.5px; flex: 0 0 auto; }
+.cx-bar-track { height: 8px; border-radius: 999px; background: var(--db-line); overflow: hidden; }
+.cx-bar-track > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--db-brand), var(--db-brand-ink)); }
+.cx-donut-wrap { display: flex; align-items: center; gap: 18px; }
+.cx-donut { display: grid; place-items: center; width: 104px; height: 104px; flex: 0 0 auto; border-radius: 50%; }
+.cx-donut-center { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--db-card); }
+.cx-donut-center b { color: var(--db-heading); font: 700 17px 'Source Serif 4', Georgia, serif; line-height: 1; }
+.cx-donut-center small { color: var(--db-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; }
+.cx-legend { display: grid; gap: 7px; min-width: 0; flex: 1; }
+.cx-legend > div { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cx-legend i { width: 10px; height: 10px; flex: 0 0 auto; border-radius: 3px; }
+.cx-legend span { flex: 1; min-width: 0; color: var(--db-muted); font-size: 11.5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cx-legend b { color: var(--db-heading); font-size: 12px; }
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 960px) {
+    .cx-blocks { grid-template-columns: 1fr; }
     .db-layout { grid-template-columns: 1fr; }
     .db-grid-2 { grid-template-columns: 1fr; }
     .db-stats { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }

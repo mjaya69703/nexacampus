@@ -100,6 +100,16 @@ return [
         ],
     ],
     [
+        // Permission-only: gate section system-health di kokpit admin.
+        // Tanpa 'menu' agar tidak muncul di sidebar (seperti tracer-study-response).
+        'resource' => 'dashboard',
+        'plural' => 'dashboard',
+        'area' => 'system',
+        'component' => 'admin.system.dashboard',
+        'actions' => [],
+        'permissions' => ['manage'],
+    ],
+    [
         'resource' => 'academic-year',
         'plural' => 'academic-years',
         'area' => 'academic',
