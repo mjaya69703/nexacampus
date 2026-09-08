@@ -4,12 +4,13 @@ use App\Http\Controllers\Academic\AssignmentFileController;
 use App\Http\Controllers\Academic\GradeAppealAttachmentController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
+use App\Http\Controllers\Student\DashboardController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
 use Illuminate\Support\Facades\Route;
 
-Route::livewire('/dashboard', 'student.dashboard.index')->name('dashboard.index');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 Route::livewire('/registration', 'student.registration.index')->name('registration.index');
 Route::livewire('/digital-id', 'student.digital-id.index')->name('digital-id.index');
 Route::livewire('/study-plan', 'student.study-plan.index')->name('study-plan.index');
