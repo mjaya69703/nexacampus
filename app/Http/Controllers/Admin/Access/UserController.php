@@ -571,6 +571,10 @@ class UserController extends Controller
 
         $query = User::query()->with('roles:id,name');
 
+        if ($request->filled('ids')) {
+            $query->whereIn('users.id', array_map('intval', (array) $request->query('ids')));
+        }
+
         if ($request->query('mode') === 'trash') {
             $query->onlyTrashed();
         }

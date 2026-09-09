@@ -51,6 +51,7 @@ type Props<T extends { id: number }> = {
     canCreate?: boolean;
     createLabel?: string;
     exportHref?: string;
+    exportExtra?: { label: string; href: string }[];
     extraActions?: ReactNode;
     selectable?: boolean;
     emptyText: string;
@@ -67,12 +68,20 @@ export function CrudTable<T extends { id: number }>({
     canDelete, onBulkDelete, bulkLabel = 'Hapus terpilih',
     canRestore, onBulkRestore, bulkRestoreLabel = 'Pulihkan terpilih',
     canUpdate, editUrl, onRestoreRow, onDeleteRow, customActions, showActions,
-    createUrl, canCreate, createLabel = 'Tambah', exportHref, extraActions,
+    createUrl, canCreate, createLabel = 'Tambah', exportHref, exportExtra = [], extraActions,
     selectable = true,
     emptyText, onPage,
     perPage, perPageOptions = [10, 15, 25, 50, 100], onPerPageChange,
 }: Props<T>) {
     const allSelected = rows.length > 0 && rows.every((row) => selected.includes(row.id));
+
+    const selectedExportHref = (format: 'xlsx' | 'csv') => {
+        if (!exportHref) return '#';
+        const params = new URLSearchParams();
+        selected.forEach((id) => params.append('ids[]', String(id)));
+        params.append('format', format);
+        return `${exportHref}&${params.toString()}`;
+    };
 
     return (
         <div>
@@ -112,8 +121,17 @@ export function CrudTable<T extends { id: number }>({
                             <Download size={14} /> Export
                         </summary>
                         <div className="crud-export-menu">
-                            <a href={`${exportHref}&format=xlsx`}>Excel (.xlsx)</a>
-                            <a href={`${exportHref}&format=csv`}>CSV (.csv)</a>
+                            <a href={`${exportHref}&format=xlsx`}>Semua tersaring (.xlsx)</a>
+                            <a href={`${exportHref}&format=csv`}>Semua tersaring (.csv)</a>
+                            {selectable && selected.length > 0 && (
+                                <>
+                                    <a href={selectedExportHref('xlsx')}>{selected.length} terpilih (.xlsx)</a>
+                                    <a href={selectedExportHref('csv')}>{selected.length} terpilih (.csv)</a>
+                                </>
+                            )}
+                            {exportExtra.map((item) => (
+                                <a key={item.label} href={item.href}>{item.label}</a>
+                            ))}
                         </div>
                     </details>
                 )}

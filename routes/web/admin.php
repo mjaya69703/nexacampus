@@ -9,6 +9,11 @@ use App\Http\Controllers\Admin\System\NotificationLogController;
 use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
+use App\Http\Controllers\Admin\Academic\AcademicPeriodController;
+use App\Http\Controllers\Admin\Academic\AcademicYearController;
+use App\Http\Controllers\Admin\Academic\CourseController;
+use App\Http\Controllers\Admin\Academic\FacultyController;
+use App\Http\Controllers\Admin\Academic\StudyProgramController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
@@ -25,8 +30,8 @@ use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
-    // users, permissions, roles, menus, settings, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system'])) {
+    // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
         continue;
     }
 
@@ -216,6 +221,235 @@ Route::post('/system/settings/sidecar-refresh', [SettingController::class, 'side
 Route::post('/system/settings/use-session', [SettingController::class, 'useSession'])
     ->middleware('active_permission:setting.viewAny')
     ->name('system.settings.use-session');
+
+// CRUD Fakultas (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/academic/faculties/export', [FacultyController::class, 'export'])
+    ->middleware('active_permission:faculty.viewAny')
+    ->name('academic.faculties.export');
+Route::get('/academic/faculties/import/template', [FacultyController::class, 'importTemplate'])
+    ->middleware('active_permission:faculty.create')
+    ->name('academic.faculties.import-template');
+Route::post('/academic/faculties/import', [FacultyController::class, 'import'])
+    ->middleware('active_permission:faculty.create')
+    ->name('academic.faculties.import');
+Route::post('/academic/faculties/bulk-destroy', [FacultyController::class, 'bulkDestroy'])
+    ->middleware('active_permission:faculty.delete')
+    ->name('academic.faculties.bulk-destroy');
+Route::post('/academic/faculties/bulk-restore', [FacultyController::class, 'bulkRestore'])
+    ->middleware('active_permission:faculty.update|faculty.delete')
+    ->name('academic.faculties.bulk-restore');
+Route::post('/academic/faculties/bulk-force-destroy', [FacultyController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:faculty.update|faculty.delete')
+    ->name('academic.faculties.bulk-force-destroy');
+Route::post('/academic/faculties/{id}/restore', [FacultyController::class, 'restore'])
+    ->middleware('active_permission:faculty.update|faculty.delete')
+    ->name('academic.faculties.restore');
+Route::delete('/academic/faculties/{id}/force', [FacultyController::class, 'forceDestroy'])
+    ->middleware('active_permission:faculty.update|faculty.delete')
+    ->name('academic.faculties.force-destroy');
+Route::post('/academic/faculties/{faculty}/toggle', [FacultyController::class, 'toggle'])
+    ->middleware('active_permission:faculty.update')
+    ->name('academic.faculties.toggle');
+Route::get('/academic/faculties', [FacultyController::class, 'index'])
+    ->middleware('active_permission:faculty.viewAny')
+    ->name('academic.faculties.index');
+Route::get('/academic/faculties/create', [FacultyController::class, 'create'])
+    ->middleware('active_permission:faculty.create')
+    ->name('academic.faculties.create');
+Route::post('/academic/faculties', [FacultyController::class, 'store'])
+    ->middleware('active_permission:faculty.create')
+    ->name('academic.faculties.store');
+Route::get('/academic/faculties/{faculty}/edit', [FacultyController::class, 'edit'])
+    ->middleware('active_permission:faculty.update')
+    ->name('academic.faculties.edit');
+Route::put('/academic/faculties/{faculty}', [FacultyController::class, 'update'])
+    ->middleware('active_permission:faculty.update')
+    ->name('academic.faculties.update');
+Route::delete('/academic/faculties/{faculty}', [FacultyController::class, 'destroy'])
+    ->middleware('active_permission:faculty.delete')
+    ->name('academic.faculties.destroy');
+
+// CRUD Program Studi (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/academic/study-programs/export', [StudyProgramController::class, 'export'])
+    ->middleware('active_permission:study-program.viewAny')
+    ->name('academic.study-programs.export');
+Route::get('/academic/study-programs/import/template', [StudyProgramController::class, 'importTemplate'])
+    ->middleware('active_permission:study-program.create')
+    ->name('academic.study-programs.import-template');
+Route::post('/academic/study-programs/import', [StudyProgramController::class, 'import'])
+    ->middleware('active_permission:study-program.create')
+    ->name('academic.study-programs.import');
+Route::post('/academic/study-programs/bulk-destroy', [StudyProgramController::class, 'bulkDestroy'])
+    ->middleware('active_permission:study-program.delete')
+    ->name('academic.study-programs.bulk-destroy');
+Route::post('/academic/study-programs/bulk-restore', [StudyProgramController::class, 'bulkRestore'])
+    ->middleware('active_permission:study-program.update|study-program.delete')
+    ->name('academic.study-programs.bulk-restore');
+Route::post('/academic/study-programs/bulk-force-destroy', [StudyProgramController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:study-program.update|study-program.delete')
+    ->name('academic.study-programs.bulk-force-destroy');
+Route::post('/academic/study-programs/{id}/restore', [StudyProgramController::class, 'restore'])
+    ->middleware('active_permission:study-program.update|study-program.delete')
+    ->name('academic.study-programs.restore');
+Route::delete('/academic/study-programs/{id}/force', [StudyProgramController::class, 'forceDestroy'])
+    ->middleware('active_permission:study-program.update|study-program.delete')
+    ->name('academic.study-programs.force-destroy');
+Route::post('/academic/study-programs/{studyProgram}/toggle', [StudyProgramController::class, 'toggle'])
+    ->middleware('active_permission:study-program.update')
+    ->name('academic.study-programs.toggle');
+Route::get('/academic/study-programs', [StudyProgramController::class, 'index'])
+    ->middleware('active_permission:study-program.viewAny')
+    ->name('academic.study-programs.index');
+Route::get('/academic/study-programs/create', [StudyProgramController::class, 'create'])
+    ->middleware('active_permission:study-program.create')
+    ->name('academic.study-programs.create');
+Route::post('/academic/study-programs', [StudyProgramController::class, 'store'])
+    ->middleware('active_permission:study-program.create')
+    ->name('academic.study-programs.store');
+Route::get('/academic/study-programs/{studyProgram}/edit', [StudyProgramController::class, 'edit'])
+    ->middleware('active_permission:study-program.update')
+    ->name('academic.study-programs.edit');
+Route::put('/academic/study-programs/{studyProgram}', [StudyProgramController::class, 'update'])
+    ->middleware('active_permission:study-program.update')
+    ->name('academic.study-programs.update');
+Route::delete('/academic/study-programs/{studyProgram}', [StudyProgramController::class, 'destroy'])
+    ->middleware('active_permission:study-program.delete')
+    ->name('academic.study-programs.destroy');
+
+// CRUD Mata Kuliah (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/academic/courses/export', [CourseController::class, 'export'])
+    ->middleware('active_permission:course.viewAny')
+    ->name('academic.courses.export');
+Route::get('/academic/courses/import/template', [CourseController::class, 'importTemplate'])
+    ->middleware('active_permission:course.create')
+    ->name('academic.courses.import-template');
+Route::post('/academic/courses/import', [CourseController::class, 'import'])
+    ->middleware('active_permission:course.create')
+    ->name('academic.courses.import');
+Route::post('/academic/courses/bulk-destroy', [CourseController::class, 'bulkDestroy'])
+    ->middleware('active_permission:course.delete')
+    ->name('academic.courses.bulk-destroy');
+Route::post('/academic/courses/bulk-restore', [CourseController::class, 'bulkRestore'])
+    ->middleware('active_permission:course.update|course.delete')
+    ->name('academic.courses.bulk-restore');
+Route::post('/academic/courses/bulk-force-destroy', [CourseController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:course.update|course.delete')
+    ->name('academic.courses.bulk-force-destroy');
+Route::post('/academic/courses/{id}/restore', [CourseController::class, 'restore'])
+    ->middleware('active_permission:course.update|course.delete')
+    ->name('academic.courses.restore');
+Route::delete('/academic/courses/{id}/force', [CourseController::class, 'forceDestroy'])
+    ->middleware('active_permission:course.update|course.delete')
+    ->name('academic.courses.force-destroy');
+Route::post('/academic/courses/{course}/toggle', [CourseController::class, 'toggle'])
+    ->middleware('active_permission:course.update')
+    ->name('academic.courses.toggle');
+Route::get('/academic/courses', [CourseController::class, 'index'])
+    ->middleware('active_permission:course.viewAny')
+    ->name('academic.courses.index');
+Route::get('/academic/courses/create', [CourseController::class, 'create'])
+    ->middleware('active_permission:course.create')
+    ->name('academic.courses.create');
+Route::post('/academic/courses', [CourseController::class, 'store'])
+    ->middleware('active_permission:course.create')
+    ->name('academic.courses.store');
+Route::get('/academic/courses/{course}/edit', [CourseController::class, 'edit'])
+    ->middleware('active_permission:course.update')
+    ->name('academic.courses.edit');
+Route::put('/academic/courses/{course}', [CourseController::class, 'update'])
+    ->middleware('active_permission:course.update')
+    ->name('academic.courses.update');
+Route::delete('/academic/courses/{course}', [CourseController::class, 'destroy'])
+    ->middleware('active_permission:course.delete')
+    ->name('academic.courses.destroy');
+
+// CRUD Tahun Akademik (Inertia React) — paritas Livewire.
+Route::get('/academic/academic-years/export', [AcademicYearController::class, 'export'])
+    ->middleware('active_permission:academic-year.viewAny')
+    ->name('academic.academic-years.export');
+Route::get('/academic/academic-years/import/template', [AcademicYearController::class, 'importTemplate'])
+    ->middleware('active_permission:academic-year.create')
+    ->name('academic.academic-years.import-template');
+Route::post('/academic/academic-years/import', [AcademicYearController::class, 'import'])
+    ->middleware('active_permission:academic-year.create')
+    ->name('academic.academic-years.import');
+Route::post('/academic/academic-years/bulk-destroy', [AcademicYearController::class, 'bulkDestroy'])
+    ->middleware('active_permission:academic-year.delete')
+    ->name('academic.academic-years.bulk-destroy');
+Route::post('/academic/academic-years/bulk-restore', [AcademicYearController::class, 'bulkRestore'])
+    ->middleware('active_permission:academic-year.update|academic-year.delete')
+    ->name('academic.academic-years.bulk-restore');
+Route::post('/academic/academic-years/bulk-force-destroy', [AcademicYearController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:academic-year.update|academic-year.delete')
+    ->name('academic.academic-years.bulk-force-destroy');
+Route::post('/academic/academic-years/{id}/restore', [AcademicYearController::class, 'restore'])
+    ->middleware('active_permission:academic-year.update|academic-year.delete')
+    ->name('academic.academic-years.restore');
+Route::delete('/academic/academic-years/{id}/force', [AcademicYearController::class, 'forceDestroy'])
+    ->middleware('active_permission:academic-year.update|academic-year.delete')
+    ->name('academic.academic-years.force-destroy');
+Route::post('/academic/academic-years/{academicYear}/toggle', [AcademicYearController::class, 'toggle'])
+    ->middleware('active_permission:academic-year.update')
+    ->name('academic.academic-years.toggle');
+Route::get('/academic/academic-years', [AcademicYearController::class, 'index'])
+    ->middleware('active_permission:academic-year.viewAny')
+    ->name('academic.academic-years.index');
+Route::get('/academic/academic-years/create', [AcademicYearController::class, 'create'])
+    ->middleware('active_permission:academic-year.create')
+    ->name('academic.academic-years.create');
+Route::post('/academic/academic-years', [AcademicYearController::class, 'store'])
+    ->middleware('active_permission:academic-year.create')
+    ->name('academic.academic-years.store');
+Route::get('/academic/academic-years/{academicYear}/edit', [AcademicYearController::class, 'edit'])
+    ->middleware('active_permission:academic-year.update')
+    ->name('academic.academic-years.edit');
+Route::put('/academic/academic-years/{academicYear}', [AcademicYearController::class, 'update'])
+    ->middleware('active_permission:academic-year.update')
+    ->name('academic.academic-years.update');
+Route::delete('/academic/academic-years/{academicYear}', [AcademicYearController::class, 'destroy'])
+    ->middleware('active_permission:academic-year.delete')
+    ->name('academic.academic-years.destroy');
+
+// CRUD Periode Akademik (Inertia React) — paritas Livewire.
+Route::get('/academic/academic-periods/export', [AcademicPeriodController::class, 'export'])
+    ->middleware('active_permission:academic-period.viewAny')
+    ->name('academic.academic-periods.export');
+Route::post('/academic/academic-periods/bulk-destroy', [AcademicPeriodController::class, 'bulkDestroy'])
+    ->middleware('active_permission:academic-period.delete')
+    ->name('academic.academic-periods.bulk-destroy');
+Route::post('/academic/academic-periods/bulk-restore', [AcademicPeriodController::class, 'bulkRestore'])
+    ->middleware('active_permission:academic-period.update|academic-period.delete')
+    ->name('academic.academic-periods.bulk-restore');
+Route::post('/academic/academic-periods/bulk-force-destroy', [AcademicPeriodController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:academic-period.update|academic-period.delete')
+    ->name('academic.academic-periods.bulk-force-destroy');
+Route::post('/academic/academic-periods/{id}/restore', [AcademicPeriodController::class, 'restore'])
+    ->middleware('active_permission:academic-period.update|academic-period.delete')
+    ->name('academic.academic-periods.restore');
+Route::delete('/academic/academic-periods/{id}/force', [AcademicPeriodController::class, 'forceDestroy'])
+    ->middleware('active_permission:academic-period.update|academic-period.delete')
+    ->name('academic.academic-periods.force-destroy');
+Route::post('/academic/academic-periods/{academicPeriod}/toggle', [AcademicPeriodController::class, 'toggle'])
+    ->middleware('active_permission:academic-period.update')
+    ->name('academic.academic-periods.toggle');
+Route::get('/academic/academic-periods', [AcademicPeriodController::class, 'index'])
+    ->middleware('active_permission:academic-period.viewAny')
+    ->name('academic.academic-periods.index');
+Route::get('/academic/academic-periods/create', [AcademicPeriodController::class, 'create'])
+    ->middleware('active_permission:academic-period.create')
+    ->name('academic.academic-periods.create');
+Route::post('/academic/academic-periods', [AcademicPeriodController::class, 'store'])
+    ->middleware('active_permission:academic-period.create')
+    ->name('academic.academic-periods.store');
+Route::get('/academic/academic-periods/{academicPeriod}/edit', [AcademicPeriodController::class, 'edit'])
+    ->middleware('active_permission:academic-period.update')
+    ->name('academic.academic-periods.edit');
+Route::put('/academic/academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])
+    ->middleware('active_permission:academic-period.update')
+    ->name('academic.academic-periods.update');
+Route::delete('/academic/academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'destroy'])
+    ->middleware('active_permission:academic-period.delete')
+    ->name('academic.academic-periods.destroy');
 
 // Log Notifikasi (Inertia React, read-only) — paritas Livewire.
 Route::get('/system/notification-logs/export', [NotificationLogController::class, 'export'])

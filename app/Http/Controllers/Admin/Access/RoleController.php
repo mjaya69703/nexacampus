@@ -304,6 +304,10 @@ class RoleController extends Controller
 
         $query = Role::query()->withCount(['users', 'permissions']);
 
+        if ($request->filled('ids')) {
+            $query->whereIn('id', array_map('intval', (array) $request->query('ids')));
+        }
+
         if ($request->query('mode') === 'trash') {
             $query->onlyTrashed();
         }

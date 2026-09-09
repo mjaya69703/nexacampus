@@ -109,6 +109,10 @@ class NotificationLogController extends Controller
 
         $query = NotificationLog::query();
 
+        if ($request->filled('ids')) {
+            $query->whereIn('id', array_map('intval', (array) $request->query('ids')));
+        }
+
         if (filled($request->query('q'))) {
             $q = $request->query('q');
             $query->where(fn ($sub) => $sub

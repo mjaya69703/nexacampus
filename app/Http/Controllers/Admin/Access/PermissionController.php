@@ -300,6 +300,10 @@ class PermissionController extends Controller
 
         $query = Permission::query()->withCount('roles as role_count');
 
+        if ($request->filled('ids')) {
+            $query->whereIn('id', array_map('intval', (array) $request->query('ids')));
+        }
+
         if ($request->query('mode') === 'trash') {
             $query->onlyTrashed();
         }

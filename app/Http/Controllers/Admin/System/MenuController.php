@@ -290,6 +290,10 @@ class MenuController extends Controller
 
         $query = Menu::query()->with('parent:id,title');
 
+        if ($request->filled('ids')) {
+            $query->whereIn('id', array_map('intval', (array) $request->query('ids')));
+        }
+
         if ($request->query('mode') === 'trash') {
             $query->onlyTrashed();
         }
