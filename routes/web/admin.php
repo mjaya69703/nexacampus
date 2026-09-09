@@ -12,7 +12,10 @@ use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Admin\Academic\AcademicPeriodController;
 use App\Http\Controllers\Admin\Academic\AcademicYearController;
 use App\Http\Controllers\Admin\Academic\AcademicAdvisorAssignmentController;
+use App\Http\Controllers\Admin\Academic\AttendanceSessionController;
 use App\Http\Controllers\Admin\Academic\CourseController;
+use App\Http\Controllers\Admin\Academic\CourseOfferingController;
+use App\Http\Controllers\Admin\Academic\CourseScheduleController;
 use App\Http\Controllers\Admin\Academic\CurriculumController;
 use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudyProgramController;
@@ -33,7 +36,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
         continue;
     }
 
@@ -589,6 +592,135 @@ Route::delete('/academic/curriculums/{curriculum}', [CurriculumController::class
     ->middleware('active_permission:curriculum.delete')
     ->name('academic.curriculums.destroy');
 
+// CRUD Penawaran Kelas (Inertia React, workspace) — paritas Livewire.
+Route::get('/academic/course-offerings/export', [CourseOfferingController::class, 'export'])
+    ->middleware('active_permission:course-offering.viewAny')
+    ->name('academic.course-offerings.export');
+Route::get('/academic/course-offerings/import/template', [CourseOfferingController::class, 'importTemplate'])
+    ->middleware('active_permission:course-offering.create')
+    ->name('academic.course-offerings.import-template');
+Route::post('/academic/course-offerings/import', [CourseOfferingController::class, 'import'])
+    ->middleware('active_permission:course-offering.create')
+    ->name('academic.course-offerings.import');
+Route::post('/academic/course-offerings/bulk-destroy', [CourseOfferingController::class, 'bulkDestroy'])
+    ->middleware('active_permission:course-offering.delete')
+    ->name('academic.course-offerings.bulk-destroy');
+Route::post('/academic/course-offerings/bulk-restore', [CourseOfferingController::class, 'bulkRestore'])
+    ->middleware('active_permission:course-offering.update|course-offering.delete')
+    ->name('academic.course-offerings.bulk-restore');
+Route::post('/academic/course-offerings/bulk-force-destroy', [CourseOfferingController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:course-offering.update|course-offering.delete')
+    ->name('academic.course-offerings.bulk-force-destroy');
+Route::post('/academic/course-offerings/{id}/restore', [CourseOfferingController::class, 'restore'])
+    ->middleware('active_permission:course-offering.update|course-offering.delete')
+    ->name('academic.course-offerings.restore');
+Route::delete('/academic/course-offerings/{id}/force', [CourseOfferingController::class, 'forceDestroy'])
+    ->middleware('active_permission:course-offering.update|course-offering.delete')
+    ->name('academic.course-offerings.force-destroy');
+Route::post('/academic/course-offerings/{courseOffering}/generate', [CourseOfferingController::class, 'generate'])
+    ->middleware('active_permission:course-offering.update')
+    ->name('academic.course-offerings.generate');
+Route::get('/academic/course-offerings/search-lecturers', [CourseOfferingController::class, 'searchLecturers'])
+    ->middleware('active_permission:course-offering.viewAny')
+    ->name('academic.course-offerings.search-lecturers');
+Route::post('/academic/course-offerings/{courseOffering}/lecturers', [CourseOfferingController::class, 'lecturerStore'])
+    ->middleware('active_permission:course-offering.update')
+    ->name('academic.course-offerings.lecturers.store');
+Route::put('/academic/course-offerings/{courseOffering}/lecturers/{lecturer}', [CourseOfferingController::class, 'lecturerUpdate'])
+    ->middleware('active_permission:course-offering.update')
+    ->name('academic.course-offerings.lecturers.update');
+Route::delete('/academic/course-offerings/{courseOffering}/lecturers/{lecturer}', [CourseOfferingController::class, 'lecturerDestroy'])
+    ->middleware('active_permission:course-offering.update')
+    ->name('academic.course-offerings.lecturers.destroy');
+Route::get('/academic/course-offerings', [CourseOfferingController::class, 'index'])
+    ->middleware('active_permission:course-offering.viewAny')
+    ->name('academic.course-offerings.index');
+Route::get('/academic/course-offerings/create', [CourseOfferingController::class, 'create'])
+    ->middleware('active_permission:course-offering.create')
+    ->name('academic.course-offerings.create');
+Route::post('/academic/course-offerings', [CourseOfferingController::class, 'store'])
+    ->middleware('active_permission:course-offering.create')
+    ->name('academic.course-offerings.store');
+Route::get('/academic/course-offerings/{courseOffering}/edit', [CourseOfferingController::class, 'edit'])
+    ->middleware('active_permission:course-offering.update')
+    ->name('academic.course-offerings.edit');
+Route::put('/academic/course-offerings/{courseOffering}', [CourseOfferingController::class, 'update'])
+    ->middleware('active_permission:course-offering.update')
+    ->name('academic.course-offerings.update');
+Route::get('/academic/course-offerings/{courseOffering}', [CourseOfferingController::class, 'show'])
+    ->middleware('active_permission:course-offering.view')
+    ->name('academic.course-offerings.show');
+Route::delete('/academic/course-offerings/{courseOffering}', [CourseOfferingController::class, 'destroy'])
+    ->middleware('active_permission:course-offering.delete')
+    ->name('academic.course-offerings.destroy');
+
+// CRUD Jadwal Kuliah (Inertia React) — paritas Livewire + cegah bentrok.
+Route::get('/academic/course-schedules/export', [CourseScheduleController::class, 'export'])
+    ->middleware('active_permission:course-schedule.viewAny')
+    ->name('academic.course-schedules.export');
+Route::get('/academic/course-schedules/import/template', [CourseScheduleController::class, 'importTemplate'])
+    ->middleware('active_permission:course-schedule.create')
+    ->name('academic.course-schedules.import-template');
+Route::post('/academic/course-schedules/import', [CourseScheduleController::class, 'import'])
+    ->middleware('active_permission:course-schedule.create')
+    ->name('academic.course-schedules.import');
+Route::get('/academic/course-schedules/search-offerings', [CourseScheduleController::class, 'searchOfferings'])
+    ->middleware('active_permission:course-schedule.viewAny')
+    ->name('academic.course-schedules.search-offerings');
+Route::get('/academic/course-schedules/offering-lecturers/{courseOffering}', [CourseScheduleController::class, 'offeringLecturers'])
+    ->middleware('active_permission:course-schedule.viewAny')
+    ->name('academic.course-schedules.offering-lecturers');
+Route::post('/academic/course-schedules/bulk-destroy', [CourseScheduleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:course-schedule.delete')
+    ->name('academic.course-schedules.bulk-destroy');
+Route::post('/academic/course-schedules/bulk-restore', [CourseScheduleController::class, 'bulkRestore'])
+    ->middleware('active_permission:course-schedule.update|course-schedule.delete')
+    ->name('academic.course-schedules.bulk-restore');
+Route::post('/academic/course-schedules/bulk-force-destroy', [CourseScheduleController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:course-schedule.update|course-schedule.delete')
+    ->name('academic.course-schedules.bulk-force-destroy');
+Route::post('/academic/course-schedules/{id}/restore', [CourseScheduleController::class, 'restore'])
+    ->middleware('active_permission:course-schedule.update|course-schedule.delete')
+    ->name('academic.course-schedules.restore');
+Route::delete('/academic/course-schedules/{id}/force', [CourseScheduleController::class, 'forceDestroy'])
+    ->middleware('active_permission:course-schedule.update|course-schedule.delete')
+    ->name('academic.course-schedules.force-destroy');
+Route::post('/academic/course-schedules/{courseSchedule}/toggle', [CourseScheduleController::class, 'toggle'])
+    ->middleware('active_permission:course-schedule.update')
+    ->name('academic.course-schedules.toggle');
+Route::get('/academic/course-schedules', [CourseScheduleController::class, 'index'])
+    ->middleware('active_permission:course-schedule.viewAny')
+    ->name('academic.course-schedules.index');
+Route::get('/academic/course-schedules/create', [CourseScheduleController::class, 'create'])
+    ->middleware('active_permission:course-schedule.create')
+    ->name('academic.course-schedules.create');
+Route::post('/academic/course-schedules', [CourseScheduleController::class, 'store'])
+    ->middleware('active_permission:course-schedule.create')
+    ->name('academic.course-schedules.store');
+Route::get('/academic/course-schedules/{courseSchedule}/edit', [CourseScheduleController::class, 'edit'])
+    ->middleware('active_permission:course-schedule.update')
+    ->name('academic.course-schedules.edit');
+Route::put('/academic/course-schedules/{courseSchedule}', [CourseScheduleController::class, 'update'])
+    ->middleware('active_permission:course-schedule.update')
+    ->name('academic.course-schedules.update');
+Route::get('/academic/course-schedules/{courseSchedule}', [CourseScheduleController::class, 'show'])
+    ->middleware('active_permission:course-schedule.view')
+    ->name('academic.course-schedules.show');
+Route::delete('/academic/course-schedules/{courseSchedule}', [CourseScheduleController::class, 'destroy'])
+    ->middleware('active_permission:course-schedule.delete')
+    ->name('academic.course-schedules.destroy');
+
+// Sesi absensi (nested di offering, gate course-offering.view — paritas).
+Route::get('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', [AttendanceSessionController::class, 'show'])
+    ->middleware('active_permission:course-offering.view')
+    ->name('academic.attendance-sessions.show');
+Route::put('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', [AttendanceSessionController::class, 'update'])
+    ->middleware('active_permission:course-offering.update')
+    ->name('academic.attendance-sessions.update');
+Route::post('/academic/course-offerings/{offeringId}/attendance-sessions/{id}/records', [AttendanceSessionController::class, 'saveRecords'])
+    ->middleware('active_permission:course-offering.update')
+    ->name('academic.attendance-sessions.save-records');
+
 // Log Notifikasi (Inertia React, read-only) — paritas Livewire.
 Route::get('/system/notification-logs/export', [NotificationLogController::class, 'export'])
     ->middleware('active_permission:notification-log.viewAny')
@@ -629,10 +761,6 @@ Route::livewire('/financial/dashboard', 'admin.financial.dashboard.index')
 Route::livewire('/student-services/dashboard', 'admin.student-services.dashboard.index')
     ->middleware('active_permission:student-service-dashboard.viewAny')
     ->name('student-services.dashboard.index');
-Route::livewire('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', 'admin.academic.attendance-sessions.show')
-    ->middleware('active_permission:course-offering.view')
-    ->name('academic.attendance-sessions.show');
-
 Route::get('/academic/{resource}/export/pdf', [AdminAcademicExportController::class, 'pdf'])
     ->name('academic.exports.pdf');
 Route::get('/academic/{resource}/imports/template', [AdminAcademicExportController::class, 'importTemplate'])

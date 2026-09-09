@@ -1,6 +1,6 @@
-// Daftar periode akademik — memakai kit CRUD shared.
+// Daftar penawaran kelas — kit CRUD shared.
 import { Head, router } from '@inertiajs/react';
-import { Clock3, Plus, Trash2, Upload } from 'lucide-react';
+import { ClipboardList, Eye, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
@@ -11,27 +11,30 @@ import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
 type Row = {
-    id: number; no: number; name: string; code: string | null; type: string | null;
-    year: string | null; startAt: string | null; endAt: string | null;
-    isActive: boolean; createdAt: string | null;
-    editUrl: string | null; deleteUrl: string;
-    restoreUrl: string; forceUrl: string; toggleUrl: string;
+    id: number; no: number; course: string; label: string | null;
+    year: string | null; program: string | null; semester: number | null;
+    capacity: number | null; mode: string | null; status: string | null;
+    statusTone: string; lecturers: string[]; lecturerCount: number;
+    createdAt: string | null;
+    showUrl: string; editUrl: string | null; deleteUrl: string;
+    restoreUrl: string; forceUrl: string;
 };
 
 type Props = {
     shell: ShellProps;
-    can: { create: boolean; update: boolean; delete: boolean; restore: boolean; toggle: boolean };
-    stats: { total: number; active: number; regular: number; trashed: number };
+    can: { create: boolean; update: boolean; delete: boolean; view: boolean; restore: boolean };
+    stats: { total: number; open: number; draft: number; capacity: number; trashed: number };
     data: {
         rows: Row[];
         currentPage: number; lastPage: number; perPage: number; total: number;
     };
     filters: {
-        q: string; year: string; type: string; is_active: string;
+        q: string; year: string; program: string; course: string; status: string;
         sort: string; direction: 'asc' | 'desc'; mode: 'all' | 'trash'; perPage: number;
     };
     yearOptions: { id: number; name: string }[];
-    typeOptions: string[];
+    programOptions: { id: number; name: string }[];
+    statuses: string[];
     importResult: ImportResult;
     urls: {
         index: string; create: string; export: string; exportPdf: string; importTemplate: string; importSubmit: string;
@@ -51,46 +54,7 @@ function buildQuery(filters: Props['filters'], search: string, overrides: Record
     );
 }
 
-const MODAL_COPY: Record<Exclude<Pending, null>['kind'], { title: (n: string) => string; message: (n: string) => string; confirm: string; danger: boolean }> = {
-    delete: {
-        title: () => 'Hapus periode?',
-        message: (n) => `"${n}" dipindah ke sampah dan bisa dipulihkan.`,
-        confirm: 'Ya, hapus',
-        danger: true,
-    },
-    restore: {
-        title: () => 'Pulihkan periode?',
-        message: (n) => `"${n}" kembali aktif.`,
-        confirm: 'Ya, pulihkan',
-        danger: false,
-    },
-    force: {
-        title: () => 'Hapus permanen?',
-        message: (n) => `"${n}" dihapus selamanya dan tidak bisa dipulihkan.`,
-        confirm: 'Ya, hapus permanen',
-        danger: true,
-    },
-    'bulk-delete': {
-        title: () => 'Hapus periode terpilih?',
-        message: (n) => `${n} periode dipindah ke sampah.`,
-        confirm: 'Ya, hapus',
-        danger: true,
-    },
-    'bulk-restore': {
-        title: () => 'Pulihkan periode terpilih?',
-        message: (n) => `${n} periode kembali aktif.`,
-        confirm: 'Ya, pulihkan',
-        danger: false,
-    },
-    'bulk-force': {
-        title: () => 'Hapus permanen periode terpilih?',
-        message: (n) => `${n} periode dihapus selamanya.`,
-        confirm: 'Ya, hapus permanen',
-        danger: true,
-    },
-};
-
-export default function AcademicPeriodIndex({ shell, can, stats, data, filters, yearOptions, typeOptions, importResult, urls }: Props) {
+export default function CourseOfferingIndex({ shell, can, stats, data, filters, yearOptions, programOptions, statuses, importResult, urls }: Props) {
     const [search, setSearch] = useState(filters.q);
     const [selected, setSelected] = useState<number[]>([]);
     const [pending, setPending] = useState<Pending>(null);
@@ -123,10 +87,6 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
     const toggleAll = () => {
         const ids = data.rows.map((row) => row.id);
         setSelected((prev) => (ids.every((id) => prev.includes(id)) ? prev.filter((id) => !ids.includes(id)) : [...new Set([...prev, ...ids])]));
-    };
-
-    const toggleActive = (row: Row) => {
-        router.post(row.toggleUrl, { is_active: !row.isActive }, { preserveScroll: true });
     };
 
     const confirmPending = () => {
@@ -176,42 +136,59 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
         });
     };
 
-    const copy = pending ? MODAL_COPY[pending.kind] : null;
-    const copyName = pending && 'row' in pending ? pending.row.name : String(selected.length);
+    const modal = (() => {
+        if (!pending) return { title: '', message: '', confirm: 'Ya', danger: true };
+        if (pending.kind === 'restore') {
+            return { title: 'Pulihkan kelas?', message: `"${pending.row.course}" kembali aktif.`, confirm: 'Ya, pulihkan', danger: false };
+        }
+        if (pending.kind === 'bulk-restore') {
+            return { title: 'Pulihkan terpilih?', message: `${selected.length} kelas kembali aktif.`, confirm: 'Ya, pulihkan', danger: false };
+        }
+        if (pending.kind === 'force') {
+            return { title: 'Hapus permanen?', message: `"${pending.row.course}" dihapus selamanya.`, confirm: 'Ya, hapus permanen', danger: true };
+        }
+        if (pending.kind === 'bulk-force') {
+            return { title: 'Hapus permanen terpilih?', message: `${selected.length} kelas dihapus selamanya.`, confirm: 'Ya, hapus permanen', danger: true };
+        }
+        if (pending.kind === 'bulk-delete') {
+            return { title: 'Hapus terpilih?', message: `${selected.length} kelas dipindah ke sampah. Yang sudah punya jadwal/absensi/tugas akan dilewati.`, confirm: 'Ya, hapus', danger: true };
+        }
+        return { title: 'Hapus kelas?', message: `"${pending.row.course}" dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+    })();
 
     return (
         <AdminShell shell={shell}>
-            <Head title={`Daftar Periode Akademik · ${shell.appName}`} />
+            <Head title={`Daftar Penawaran Kelas · ${shell.appName}`} />
             <div className="db-root">
                 <div className="db-stack">
                     <CrudHero
-                        icon={Clock3}
+                        icon={ClipboardList}
                         eyebrow="Akademik"
-                        title="Periode Akademik"
-                        description="Jendela waktu kegiatan: pendaftaran, KRS, penilaian, ujian, hingga yudisium."
+                        title="Penawaran Kelas"
+                        description="Kelas dibuka per tahun, prodi, dan MK — lalu tugaskan dosen, susun jadwal, dan generate sesi absensi dari workspace."
                         actions={can.create ? (
-                            <a className="db-btn light" href={urls.create}><Plus size={15} /> Tambah Periode</a>
+                            <a className="db-btn light" href={urls.create}><Plus size={15} /> Buka Kelas</a>
                         ) : undefined}
                     />
 
                     <ImportResultBanner
                         result={importResult}
-                        successText={(n) => `${n} periode berhasil diimpor.`}
+                        successText={(n) => `${n} kelas berhasil dibuka. Tugaskan dosen dan susun jadwal dari workspace masing-masing.`}
                         failText={(n) => `Impor dibatalkan — ${n} baris bermasalah, tidak ada data yang disimpan.`}
                     />
 
-                    <section className="db-stats" aria-label="Statistik periode">
+                    <section className="db-stats" aria-label="Statistik kelas">
                         <div className="db-stat">
-                            <span className="db-stat-icon"><Clock3 size={20} /></span>
-                            <div><span className="db-stat-num">{stats.total}</span><span className="db-stat-label">Total periode</span></div>
+                            <span className="db-stat-icon"><ClipboardList size={20} /></span>
+                            <div><span className="db-stat-num">{stats.total}</span><span className="db-stat-label">Total kelas</span></div>
                         </div>
                         <div className="db-stat">
-                            <span className="db-stat-icon green"><Clock3 size={20} /></span>
-                            <div><span className="db-stat-num">{stats.active}</span><span className="db-stat-label">Aktif</span></div>
+                            <span className="db-stat-icon green"><ClipboardList size={20} /></span>
+                            <div><span className="db-stat-num">{stats.open}</span><span className="db-stat-label">Terbuka</span></div>
                         </div>
                         <div className="db-stat">
-                            <span className="db-stat-icon gold"><Clock3 size={20} /></span>
-                            <div><span className="db-stat-num">{stats.regular}</span><span className="db-stat-label">Reguler</span></div>
+                            <span className="db-stat-icon gold"><ClipboardList size={20} /></span>
+                            <div><span className="db-stat-num">{stats.draft}</span><span className="db-stat-label">Draft</span></div>
                         </div>
                         <div className="db-stat">
                             <span className="db-stat-icon red"><Trash2 size={20} /></span>
@@ -221,7 +198,7 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
 
                     <section className="db-card">
                         <div className="db-card-head">
-                            <h2 className="db-card-title">Tabel Periode Akademik</h2>
+                            <h2 className="db-card-title">Tabel Penawaran Kelas</h2>
                             <div className="crud-tabs" role="tablist" aria-label="Mode data">
                                 <button
                                     type="button"
@@ -248,36 +225,27 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
                                 columns={[
                                     { key: 'id', label: 'No', sortable: true, render: (row) => row.no },
                                     {
-                                        key: 'name', label: 'Periode', sortable: true,
+                                        key: 'course', label: 'Kelas', sortable: false,
                                         render: (row) => (
                                             <span>
-                                                <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>{row.name}</b>
-                                                <small className="db-hint">{row.year ?? '-'} · {row.type ?? '-'}</small>
+                                                <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>{row.course}</b>
+                                                <small className="db-hint">{row.label ?? '-'} · {row.year ?? '-'} · {row.program ?? '-'}</small>
                                             </span>
                                         ),
                                     },
                                     {
-                                        key: 'start_at', label: 'Rentang', sortable: true,
-                                        render: (row) => `${row.startAt ?? '-'} → ${row.endAt ?? '-'}`,
+                                        key: 'status', label: 'Status',
+                                        render: (row) => <span className={`db-badge ${row.statusTone}`}>{row.status ?? '-'}</span>,
                                     },
                                     {
-                                        key: 'is_active', label: 'Status',
+                                        key: 'lecturers', label: 'Dosen',
                                         render: (row) => (
-                                            can.toggle && !isTrash ? (
-                                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} title="Ubah status">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={row.isActive}
-                                                        onChange={() => toggleActive(row)}
-                                                        style={{ width: 17, height: 17, accentColor: 'var(--db-brand)', cursor: 'pointer' }}
-                                                    />
-                                                    <span className={`db-badge ${row.isActive ? 'green' : 'gray'}`}>{row.isActive ? 'Aktif' : 'Nonaktif'}</span>
-                                                </label>
-                                            ) : (
-                                                <span className={`db-badge ${row.isActive ? 'green' : 'gray'}`}>{row.isActive ? 'Aktif' : 'Nonaktif'}</span>
-                                            )
+                                            row.lecturers.length > 0
+                                                ? <small className="db-hint">{row.lecturers.slice(0, 2).join(', ')}{row.lecturerCount > 2 ? ` +${row.lecturerCount - 2}` : ''}</small>
+                                                : <span className="db-badge amber">Tanpa dosen</span>
                                         ),
                                     },
+                                    { key: 'capacity', label: 'Kap.', align: 'right', render: (row) => row.capacity ?? '-' },
                                     { key: 'created_at', label: 'Dibuat', sortable: true, render: (row) => row.createdAt ?? '-' },
                                 ]}
                                 rows={data.rows}
@@ -288,7 +256,7 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
                                 search={search}
                                 onSearchChange={setSearch}
                                 onSearchSubmit={() => visit({ page: 1 }, true)}
-                                searchPlaceholder="Cari nama, kode…"
+                                searchPlaceholder="Cari label, kode, MK…"
                                 filterBar={(
                                     <>
                                         <select
@@ -302,22 +270,21 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
                                         </select>
                                         <select
                                             className="db-input"
-                                            value={filters.type}
-                                            onChange={(e) => visit({ type: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter tipe"
+                                            value={filters.program}
+                                            onChange={(e) => visit({ program: e.target.value, page: 1 }, true)}
+                                            aria-label="Filter prodi"
                                         >
-                                            <option value="">Semua tipe</option>
-                                            {typeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
+                                            <option value="">Semua prodi</option>
+                                            {programOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
                                         <select
                                             className="db-input"
-                                            value={filters.is_active}
-                                            onChange={(e) => visit({ is_active: e.target.value, page: 1 }, true)}
+                                            value={filters.status}
+                                            onChange={(e) => visit({ status: e.target.value, page: 1 }, true)}
                                             aria-label="Filter status"
                                         >
                                             <option value="">Semua status</option>
-                                            <option value="1">Aktif</option>
-                                            <option value="0">Nonaktif</option>
+                                            {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                     </>
                                 )}
@@ -329,23 +296,36 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
                                 bulkLabel={isTrash ? 'Hapus permanen terpilih' : 'Hapus terpilih'}
                                 canRestore={isTrash && can.restore}
                                 onBulkRestore={isTrash ? () => setPending({ kind: 'bulk-restore' }) : undefined}
-                                canUpdate={!isTrash && can.update}
-                                editUrl={(row) => row.editUrl ?? urls.index}
+                                canUpdate={false}
                                 onRestoreRow={isTrash && can.restore ? (row) => setPending({ kind: 'restore', row }) : undefined}
                                 onDeleteRow={can.delete ? (row) => setPending({ kind: isTrash ? 'force' : 'delete', row }) : undefined}
-                                showActions={(!isTrash && can.update) || can.restore || can.delete}
+                                showActions
+                                customActions={(row) => (
+                                    <>
+                                        {can.view && (
+                                            <a className="db-btn ghost sm" href={row.showUrl} title="Workspace">
+                                                <Eye size={13} />
+                                            </a>
+                                        )}
+                                        {!isTrash && can.update && row.editUrl && (
+                                            <a className="db-btn ghost sm" href={row.editUrl} title="Ubah">
+                                                <Pencil size={13} />
+                                            </a>
+                                        )}
+                                    </>
+                                )}
                                 canCreate={false}
-                                createLabel="Tambah Periode"
+                                createLabel="Buka Kelas"
                                 exportHref={exportHref}
                                 exportExtra={[
                                     { label: 'PDF laporan', href: urls.exportPdf },
                                 ]}
-                                extraActions={!isTrash && can.create ? (
+                                extraActions={(!isTrash && can.create) ? (
                                     <button className="db-btn ghost sm" type="button" onClick={() => setImportOpen(true)}>
                                         <Upload size={14} /> Import
                                     </button>
                                 ) : undefined}
-                                emptyText={isTrash ? 'Sampah kosong.' : 'Belum ada periode yang cocok dengan filter.'}
+                                emptyText={isTrash ? 'Sampah kosong.' : 'Belum ada kelas yang cocok dengan filter.'}
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}
                                 onPerPageChange={(n) => visit({ perPage: n, page: 1 })}
@@ -356,10 +336,10 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
 
                 <ConfirmModal
                     open={pending !== null}
-                    title={copy ? copy.title(copyName) : ''}
-                    message={copy ? copy.message(copyName) : ''}
-                    confirmLabel={copy?.confirm ?? 'Ya'}
-                    danger={copy?.danger ?? true}
+                    title={modal.title}
+                    message={modal.message}
+                    confirmLabel={modal.confirm}
+                    danger={modal.danger}
                     processing={processing}
                     onConfirm={confirmPending}
                     onCancel={() => setPending(null)}
@@ -367,8 +347,8 @@ export default function AcademicPeriodIndex({ shell, can, stats, data, filters, 
 
                 <ImportModal
                     open={importOpen}
-                    title="Impor Periode Akademik"
-                    description="Tahun ditulis by kode. Format waktu Y-m-d H:i. Satu baris gagal berarti file ditolak."
+                    title="Impor Penawaran Kelas"
+                    description="Tahun, prodi, dan MK ditulis by kode. Dosen dan jadwal diisi menyusul dari workspace. Satu baris gagal berarti file ditolak."
                     templateUrl={urls.importTemplate}
                     templateLabel="Unduh template"
                     processing={processing}
