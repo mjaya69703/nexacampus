@@ -3,6 +3,9 @@
 use App\Models\Academic\AcademicPeriod;
 use App\Models\Academic\AcademicYear;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 use Spatie\Permission\Models\Role as SpatieRole;
 
@@ -126,4 +129,56 @@ it('mengelola sampah periode dan mengekspornya', function () {
         ->assertOk();
 
     expect($response->headers->get('Content-Type'))->toContain('text/csv');
+});
+
+function makeAcademicPeriodImportFile(array $rows): UploadedFile
+{
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->fromArray([['academic_year_code', 'name', 'code', 'type', 'start_at', 'end_at', 'is_active'], ...$rows]);
+
+    $path = tempnam(sys_get_temp_dir(), 'import-periods').'.xlsx';
+    (new Xlsx($spreadsheet))->save($path);
+
+    return new UploadedFile($path, 'periods.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+}
+
+it('mengunduh template dan mengimpor periode by kode tahun', function () {
+    $setup = academicPeriodCrudSetup();
+    giveAcademicPeriodPermissionsToOperator(['academic-period.create']);
+
+    $response = actingAcademicPeriodOperator($setup['operator'])
+        ->get('/admin/academic/academic-periods/import/template')
+        ->assertOk();
+
+    expect($response->headers->get('Content-Disposition'))->toContain('template-import-academic-periods.xlsx');
+
+    actingAcademicPeriodOperator($setup['operator'])
+        ->post('/admin/academic/academic-periods/import', ['file' => makeAcademicPeriodImportFile([
+            ['Y26G', 'KRS Ganjil', 'KRS26G', 'Study Plan', '2026-08-01 00:00', '2026-08-31 23:59', '1'],
+        ])])
+        ->assertRedirect('/admin/academic/academic-periods')
+        ->assertSessionHas('success');
+
+    expect(AcademicPeriod::where('code', 'KRS26G')->firstOrFail()->academic_year_id)->toBe($setup['year']->id);
+});
+
+it('menolak impor periode bertahun siluman atau tanggal terbalik', function () {
+    $setup = academicPeriodCrudSetup();
+    giveAcademicPeriodPermissionsToOperator(['academic-period.create']);
+
+    $response = actingAcademicPeriodOperator($setup['operator'])
+        ->post('/admin/academic/academic-periods/import', ['file' => makeAcademicPeriodImportFile([
+            ['Y26G', 'Valid', '', 'Custom', '2026-08-01 00:00', '2026-08-31 00:00', '1'],
+            ['XX', 'Tahun Siluman', '', 'Custom', '2026-08-01 00:00', '2026-08-31 00:00', '1'],
+            ['Y26G', 'Tanggal Terbalik', '', 'Custom', '2026-09-01 00:00', '2026-08-01 00:00', '1'],
+        ])])
+        ->assertRedirect('/admin/academic/academic-periods');
+
+    expect(AcademicPeriod::where('name', 'Valid')->count())->toBe(0);
+
+    $result = $response->getSession()->get('import_result');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['rejected'])->toBe(2);
 });

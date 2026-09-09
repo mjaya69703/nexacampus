@@ -11,7 +11,9 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Admin\Academic\AcademicPeriodController;
 use App\Http\Controllers\Admin\Academic\AcademicYearController;
+use App\Http\Controllers\Admin\Academic\AcademicAdvisorAssignmentController;
 use App\Http\Controllers\Admin\Academic\CourseController;
+use App\Http\Controllers\Admin\Academic\CurriculumController;
 use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudyProgramController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
@@ -31,7 +33,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
         continue;
     }
 
@@ -414,6 +416,12 @@ Route::delete('/academic/academic-years/{academicYear}', [AcademicYearController
 Route::get('/academic/academic-periods/export', [AcademicPeriodController::class, 'export'])
     ->middleware('active_permission:academic-period.viewAny')
     ->name('academic.academic-periods.export');
+Route::get('/academic/academic-periods/import/template', [AcademicPeriodController::class, 'importTemplate'])
+    ->middleware('active_permission:academic-period.create')
+    ->name('academic.academic-periods.import-template');
+Route::post('/academic/academic-periods/import', [AcademicPeriodController::class, 'import'])
+    ->middleware('active_permission:academic-period.create')
+    ->name('academic.academic-periods.import');
 Route::post('/academic/academic-periods/bulk-destroy', [AcademicPeriodController::class, 'bulkDestroy'])
     ->middleware('active_permission:academic-period.delete')
     ->name('academic.academic-periods.bulk-destroy');
@@ -450,6 +458,136 @@ Route::put('/academic/academic-periods/{academicPeriod}', [AcademicPeriodControl
 Route::delete('/academic/academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'destroy'])
     ->middleware('active_permission:academic-period.delete')
     ->name('academic.academic-periods.destroy');
+
+// CRUD Dosen Wali (Inertia React) — paritas Livewire + transfer massal.
+Route::get('/academic/academic-advisor-assignments/export', [AcademicAdvisorAssignmentController::class, 'export'])
+    ->middleware('active_permission:academic-advisor-assignment.viewAny')
+    ->name('academic.academic-advisor-assignments.export');
+Route::get('/academic/academic-advisor-assignments/import/template', [AcademicAdvisorAssignmentController::class, 'importTemplate'])
+    ->middleware('active_permission:academic-advisor-assignment.create')
+    ->name('academic.academic-advisor-assignments.import-template');
+Route::post('/academic/academic-advisor-assignments/import', [AcademicAdvisorAssignmentController::class, 'import'])
+    ->middleware('active_permission:academic-advisor-assignment.create')
+    ->name('academic.academic-advisor-assignments.import');
+Route::get('/academic/academic-advisor-assignments/search-students', [AcademicAdvisorAssignmentController::class, 'searchStudents'])
+    ->middleware('active_permission:academic-advisor-assignment.viewAny')
+    ->name('academic.academic-advisor-assignments.search-students');
+Route::get('/academic/academic-advisor-assignments/search-lecturers', [AcademicAdvisorAssignmentController::class, 'searchLecturers'])
+    ->middleware('active_permission:academic-advisor-assignment.viewAny')
+    ->name('academic.academic-advisor-assignments.search-lecturers');
+Route::get('/academic/academic-advisor-assignments/browse-students', [AcademicAdvisorAssignmentController::class, 'browseStudents'])
+    ->middleware('active_permission:academic-advisor-assignment.viewAny')
+    ->name('academic.academic-advisor-assignments.browse-students');
+Route::post('/academic/academic-advisor-assignments/bulk-destroy', [AcademicAdvisorAssignmentController::class, 'bulkDestroy'])
+    ->middleware('active_permission:academic-advisor-assignment.delete')
+    ->name('academic.academic-advisor-assignments.bulk-destroy');
+Route::post('/academic/academic-advisor-assignments/bulk-restore', [AcademicAdvisorAssignmentController::class, 'bulkRestore'])
+    ->middleware('active_permission:academic-advisor-assignment.update|academic-advisor-assignment.delete')
+    ->name('academic.academic-advisor-assignments.bulk-restore');
+Route::post('/academic/academic-advisor-assignments/bulk-force-destroy', [AcademicAdvisorAssignmentController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:academic-advisor-assignment.update|academic-advisor-assignment.delete')
+    ->name('academic.academic-advisor-assignments.bulk-force-destroy');
+Route::post('/academic/academic-advisor-assignments/transfer', [AcademicAdvisorAssignmentController::class, 'transfer'])
+    ->middleware('active_permission:academic-advisor-assignment.update')
+    ->name('academic.academic-advisor-assignments.transfer');
+Route::post('/academic/academic-advisor-assignments/{id}/restore', [AcademicAdvisorAssignmentController::class, 'restore'])
+    ->middleware('active_permission:academic-advisor-assignment.update|academic-advisor-assignment.delete')
+    ->name('academic.academic-advisor-assignments.restore');
+Route::delete('/academic/academic-advisor-assignments/{id}/force', [AcademicAdvisorAssignmentController::class, 'forceDestroy'])
+    ->middleware('active_permission:academic-advisor-assignment.update|academic-advisor-assignment.delete')
+    ->name('academic.academic-advisor-assignments.force-destroy');
+Route::post('/academic/academic-advisor-assignments/{academicAdvisorAssignment}/toggle', [AcademicAdvisorAssignmentController::class, 'toggle'])
+    ->middleware('active_permission:academic-advisor-assignment.update')
+    ->name('academic.academic-advisor-assignments.toggle');
+Route::get('/academic/academic-advisor-assignments', [AcademicAdvisorAssignmentController::class, 'index'])
+    ->middleware('active_permission:academic-advisor-assignment.viewAny')
+    ->name('academic.academic-advisor-assignments.index');
+Route::get('/academic/academic-advisor-assignments/create', [AcademicAdvisorAssignmentController::class, 'create'])
+    ->middleware('active_permission:academic-advisor-assignment.create')
+    ->name('academic.academic-advisor-assignments.create');
+Route::post('/academic/academic-advisor-assignments', [AcademicAdvisorAssignmentController::class, 'store'])
+    ->middleware('active_permission:academic-advisor-assignment.create')
+    ->name('academic.academic-advisor-assignments.store');
+Route::get('/academic/academic-advisor-assignments/{academicAdvisorAssignment}/edit', [AcademicAdvisorAssignmentController::class, 'edit'])
+    ->middleware('active_permission:academic-advisor-assignment.update')
+    ->name('academic.academic-advisor-assignments.edit');
+Route::put('/academic/academic-advisor-assignments/{academicAdvisorAssignment}', [AcademicAdvisorAssignmentController::class, 'update'])
+    ->middleware('active_permission:academic-advisor-assignment.update')
+    ->name('academic.academic-advisor-assignments.update');
+Route::get('/academic/academic-advisor-assignments/{id}', [AcademicAdvisorAssignmentController::class, 'show'])
+    ->middleware('active_permission:academic-advisor-assignment.view')
+    ->name('academic.academic-advisor-assignments.show');
+Route::delete('/academic/academic-advisor-assignments/{academicAdvisorAssignment}', [AcademicAdvisorAssignmentController::class, 'destroy'])
+    ->middleware('active_permission:academic-advisor-assignment.delete')
+    ->name('academic.academic-advisor-assignments.destroy');
+
+// CRUD Kurikulum (Inertia React) — paritas Livewire + duplikat.
+Route::get('/academic/curriculums/export', [CurriculumController::class, 'export'])
+    ->middleware('active_permission:curriculum.viewAny')
+    ->name('academic.curriculums.export');
+Route::get('/academic/curriculums/import/template', [CurriculumController::class, 'importTemplate'])
+    ->middleware('active_permission:curriculum.create')
+    ->name('academic.curriculums.import-template');
+Route::post('/academic/curriculums/import', [CurriculumController::class, 'import'])
+    ->middleware('active_permission:curriculum.create')
+    ->name('academic.curriculums.import');
+Route::get('/academic/curriculums/search-courses', [CurriculumController::class, 'searchCourses'])
+    ->middleware('active_permission:curriculum.viewAny')
+    ->name('academic.curriculums.search-courses');
+Route::post('/academic/curriculums/bulk-destroy', [CurriculumController::class, 'bulkDestroy'])
+    ->middleware('active_permission:curriculum.delete')
+    ->name('academic.curriculums.bulk-destroy');
+Route::post('/academic/curriculums/bulk-restore', [CurriculumController::class, 'bulkRestore'])
+    ->middleware('active_permission:curriculum.update|curriculum.delete')
+    ->name('academic.curriculums.bulk-restore');
+Route::post('/academic/curriculums/bulk-force-destroy', [CurriculumController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:curriculum.update|curriculum.delete')
+    ->name('academic.curriculums.bulk-force-destroy');
+Route::post('/academic/curriculums/{id}/restore', [CurriculumController::class, 'restore'])
+    ->middleware('active_permission:curriculum.update|curriculum.delete')
+    ->name('academic.curriculums.restore');
+Route::delete('/academic/curriculums/{id}/force', [CurriculumController::class, 'forceDestroy'])
+    ->middleware('active_permission:curriculum.update|curriculum.delete')
+    ->name('academic.curriculums.force-destroy');
+Route::post('/academic/curriculums/{curriculum}/toggle', [CurriculumController::class, 'toggle'])
+    ->middleware('active_permission:curriculum.update')
+    ->name('academic.curriculums.toggle');
+Route::post('/academic/curriculums/{curriculum}/duplicate', [CurriculumController::class, 'duplicate'])
+    ->middleware('active_permission:curriculum.create')
+    ->name('academic.curriculums.duplicate');
+Route::post('/academic/curriculums/{curriculum}/courses', [CurriculumController::class, 'courseStore'])
+    ->middleware('active_permission:curriculum.update')
+    ->name('academic.curriculums.courses.store');
+Route::post('/academic/curriculums/{curriculum}/courses/bulk-destroy', [CurriculumController::class, 'courseBulkDestroy'])
+    ->middleware('active_permission:curriculum.update')
+    ->name('academic.curriculums.courses.bulk-destroy');
+Route::put('/academic/curriculums/{curriculum}/courses/{row}', [CurriculumController::class, 'courseUpdate'])
+    ->middleware('active_permission:curriculum.update')
+    ->name('academic.curriculums.courses.update');
+Route::delete('/academic/curriculums/{curriculum}/courses/{row}', [CurriculumController::class, 'courseDestroy'])
+    ->middleware('active_permission:curriculum.update')
+    ->name('academic.curriculums.courses.destroy');
+Route::get('/academic/curriculums', [CurriculumController::class, 'index'])
+    ->middleware('active_permission:curriculum.viewAny')
+    ->name('academic.curriculums.index');
+Route::get('/academic/curriculums/create', [CurriculumController::class, 'create'])
+    ->middleware('active_permission:curriculum.create')
+    ->name('academic.curriculums.create');
+Route::post('/academic/curriculums', [CurriculumController::class, 'store'])
+    ->middleware('active_permission:curriculum.create')
+    ->name('academic.curriculums.store');
+Route::get('/academic/curriculums/{curriculum}/edit', [CurriculumController::class, 'edit'])
+    ->middleware('active_permission:curriculum.update')
+    ->name('academic.curriculums.edit');
+Route::put('/academic/curriculums/{curriculum}', [CurriculumController::class, 'update'])
+    ->middleware('active_permission:curriculum.update')
+    ->name('academic.curriculums.update');
+Route::get('/academic/curriculums/{curriculum}', [CurriculumController::class, 'show'])
+    ->middleware('active_permission:curriculum.view')
+    ->name('academic.curriculums.show');
+Route::delete('/academic/curriculums/{curriculum}', [CurriculumController::class, 'destroy'])
+    ->middleware('active_permission:curriculum.delete')
+    ->name('academic.curriculums.destroy');
 
 // Log Notifikasi (Inertia React, read-only) — paritas Livewire.
 Route::get('/system/notification-logs/export', [NotificationLogController::class, 'export'])

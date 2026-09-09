@@ -74,6 +74,13 @@ table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .crud-check-item input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--db-brand); cursor: pointer; }
 .crud-check-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--db-line); color: var(--db-muted); font-size: 11.5px; }
 
+/* ── Split form berdampingan (edit dengan panel samping) ─────────── */
+.cx-form-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 18px; align-items: start; }
+.cx-sticky { position: sticky; top: 16px; }
+
+/* ── Grid kartu 6-6 (mis. kartu semester) ─────────────────────────── */
+.cx-cards-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+
 /* ── Tabs (Semua / Sampah) ─────────────────────────────────────────── */
 .crud-tabs { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--db-line); border-radius: 12px; background: var(--db-card); }
 .crud-tab {
@@ -88,6 +95,12 @@ table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
 /* ── Form actions ────────────────────────────────────────────────── */
 .crud-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--db-line); }
+
+@media (max-width: 960px) {
+    .cx-form-split { grid-template-columns: 1fr; }
+    .cx-sticky { position: static; }
+    .cx-cards-2 { grid-template-columns: 1fr; }
+}
 
 @media (max-width: 650px) {
     .crud-grid { grid-template-columns: 1fr; }
