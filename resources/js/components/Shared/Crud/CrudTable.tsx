@@ -45,12 +45,14 @@ type Props<T extends { id: number }> = {
     editUrl?: (row: T) => string;
     onRestoreRow?: (row: T) => void;
     onDeleteRow?: (row: T) => void;
+    customActions?: (row: T) => ReactNode;
     showActions: boolean;
     createUrl?: string;
     canCreate?: boolean;
     createLabel?: string;
     exportHref?: string;
     extraActions?: ReactNode;
+    selectable?: boolean;
     emptyText: string;
     onPage: (page: number) => void;
     perPage: number;
@@ -64,8 +66,9 @@ export function CrudTable<T extends { id: number }>({
     selected, onToggle, onToggleAll,
     canDelete, onBulkDelete, bulkLabel = 'Hapus terpilih',
     canRestore, onBulkRestore, bulkRestoreLabel = 'Pulihkan terpilih',
-    canUpdate, editUrl, onRestoreRow, onDeleteRow, showActions,
+    canUpdate, editUrl, onRestoreRow, onDeleteRow, customActions, showActions,
     createUrl, canCreate, createLabel = 'Tambah', exportHref, extraActions,
+    selectable = true,
     emptyText, onPage,
     perPage, perPageOptions = [10, 15, 25, 50, 100], onPerPageChange,
 }: Props<T>) {
@@ -121,7 +124,7 @@ export function CrudTable<T extends { id: number }>({
                 )}
             </div>
 
-            {selected.length > 0 && (
+            {selectable && selected.length > 0 && (
                 <div className="crud-bulkbar">
                     <span>{selected.length} baris dipilih</span>
                     {canRestore && onBulkRestore && (
@@ -141,14 +144,16 @@ export function CrudTable<T extends { id: number }>({
                 <table className="crud-table">
                     <thead>
                         <tr>
-                            <th style={{ width: 36 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={allSelected}
-                                    onChange={onToggleAll}
-                                    aria-label="Pilih semua di halaman ini"
-                                />
-                            </th>
+                            {selectable && (
+                                <th style={{ width: 36 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={allSelected}
+                                        onChange={onToggleAll}
+                                        aria-label="Pilih semua di halaman ini"
+                                    />
+                                </th>
+                            )}
                             {columns.map((column) => (
                                 <th key={column.key} style={column.align === 'right' ? { textAlign: 'right' } : undefined}>
                                     {column.sortable ? (
@@ -168,14 +173,16 @@ export function CrudTable<T extends { id: number }>({
                         )}
                         {rows.map((row) => (
                             <tr key={row.id}>
-                                <td>
-                                    <input
-                                        type="checkbox"
-                                        checked={selected.includes(row.id)}
-                                        onChange={() => onToggle(row.id)}
-                                        aria-label={`Pilih baris ${row.id}`}
-                                    />
-                                </td>
+                                {selectable && (
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            checked={selected.includes(row.id)}
+                                            onChange={() => onToggle(row.id)}
+                                            aria-label={`Pilih baris ${row.id}`}
+                                        />
+                                    </td>
+                                )}
                                 {columns.map((column) => (
                                     <td key={column.key} style={column.align === 'right' ? { textAlign: 'right' } : undefined}>
                                         {column.render(row)}
@@ -184,6 +191,7 @@ export function CrudTable<T extends { id: number }>({
                                 {showActions && (
                                     <td>
                                         <div className="crud-row-actions">
+                                            {customActions?.(row)}
                                             {canUpdate && editUrl && (
                                                 <a className="db-btn ghost sm" href={editUrl(row)} title="Ubah">
                                                     <Pencil size={13} />

@@ -3,6 +3,10 @@
 use App\Http\Controllers\Admin\Access\PermissionController;
 use App\Http\Controllers\Admin\Access\RoleController;
 use App\Http\Controllers\Admin\Access\UserController;
+use App\Http\Controllers\Admin\System\ActivityLogController;
+use App\Http\Controllers\Admin\System\MenuController;
+use App\Http\Controllers\Admin\System\NotificationLogController;
+use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
@@ -21,8 +25,8 @@ use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
-    // users, permissions & roles dimigrasi ke Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users']) && $resource['area'] === 'access') {
+    // users, permissions, roles, menus, settings, notification-logs & activity-logs → Inertia React.
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system'])) {
         continue;
     }
 
@@ -145,6 +149,89 @@ Route::put('/access/users/{user}', [UserController::class, 'update'])
 Route::delete('/access/users/{user}', [UserController::class, 'destroy'])
     ->middleware('active_permission:user.delete')
     ->name('access.users.destroy');
+
+// CRUD Menu (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/system/menus/export', [MenuController::class, 'export'])
+    ->middleware('active_permission:menu.viewAny')
+    ->name('system.menus.export');
+Route::post('/system/menus/bulk-destroy', [MenuController::class, 'bulkDestroy'])
+    ->middleware('active_permission:menu.delete')
+    ->name('system.menus.bulk-destroy');
+Route::post('/system/menus/bulk-restore', [MenuController::class, 'bulkRestore'])
+    ->middleware('active_permission:menu.update|menu.delete')
+    ->name('system.menus.bulk-restore');
+Route::post('/system/menus/bulk-force-destroy', [MenuController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:menu.update|menu.delete')
+    ->name('system.menus.bulk-force-destroy');
+Route::post('/system/menus/{id}/restore', [MenuController::class, 'restore'])
+    ->middleware('active_permission:menu.update|menu.delete')
+    ->name('system.menus.restore');
+Route::delete('/system/menus/{id}/force', [MenuController::class, 'forceDestroy'])
+    ->middleware('active_permission:menu.update|menu.delete')
+    ->name('system.menus.force-destroy');
+Route::get('/system/menus', [MenuController::class, 'index'])
+    ->middleware('active_permission:menu.viewAny')
+    ->name('system.menus.index');
+Route::get('/system/menus/create', [MenuController::class, 'create'])
+    ->middleware('active_permission:menu.create')
+    ->name('system.menus.create');
+Route::post('/system/menus', [MenuController::class, 'store'])
+    ->middleware('active_permission:menu.create')
+    ->name('system.menus.store');
+Route::get('/system/menus/{menu}/edit', [MenuController::class, 'edit'])
+    ->middleware('active_permission:menu.update')
+    ->name('system.menus.edit');
+Route::put('/system/menus/{menu}', [MenuController::class, 'update'])
+    ->middleware('active_permission:menu.update')
+    ->name('system.menus.update');
+Route::delete('/system/menus/{menu}', [MenuController::class, 'destroy'])
+    ->middleware('active_permission:menu.delete')
+    ->name('system.menus.destroy');
+
+// Pengaturan Sistem (Inertia React, singleton) — paritas Livewire.
+Route::get('/system/settings', [SettingController::class, 'index'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.index');
+Route::put('/system/settings', [SettingController::class, 'update'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.update');
+Route::post('/system/settings/check-health', [SettingController::class, 'checkHealth'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.check-health');
+Route::post('/system/settings/test-whatsapp', [SettingController::class, 'sendTestWhatsapp'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.test-whatsapp');
+Route::post('/system/settings/test-push', [SettingController::class, 'sendTestPush'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.test-push');
+Route::post('/system/settings/sidecar-start', [SettingController::class, 'sidecarStart'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.sidecar-start');
+Route::post('/system/settings/sidecar-stop', [SettingController::class, 'sidecarStop'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.sidecar-stop');
+Route::post('/system/settings/sidecar-refresh', [SettingController::class, 'sidecarRefresh'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.sidecar-refresh');
+Route::post('/system/settings/use-session', [SettingController::class, 'useSession'])
+    ->middleware('active_permission:setting.viewAny')
+    ->name('system.settings.use-session');
+
+// Log Notifikasi (Inertia React, read-only) — paritas Livewire.
+Route::get('/system/notification-logs/export', [NotificationLogController::class, 'export'])
+    ->middleware('active_permission:notification-log.viewAny')
+    ->name('system.notification-logs.export');
+Route::get('/system/notification-logs', [NotificationLogController::class, 'index'])
+    ->middleware('active_permission:notification-log.viewAny')
+    ->name('system.notification-logs.index');
+
+// Log Aktivitas (Inertia React, read-only + detail) — paritas Livewire.
+Route::get('/system/activity-logs', [ActivityLogController::class, 'index'])
+    ->middleware('active_permission:activity-log.viewAny')
+    ->name('system.activity-logs.index');
+Route::get('/system/activity-logs/{id}', [ActivityLogController::class, 'show'])
+    ->middleware('active_permission:activity-log.view')
+    ->name('system.activity-logs.show');
 Route::get('/access/permissions', [PermissionController::class, 'index'])
     ->middleware('active_permission:permission.viewAny')
     ->name('access.permissions.index');
