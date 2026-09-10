@@ -154,6 +154,19 @@ new class extends Component
             return;
         }
 
+        if ($this->gradeForm['grade_status'] === 'Finalized') {
+            $missingScores = collect($this->components)
+                ->filter(fn (array $component) => $component['score'] === null || $component['score'] === '')
+                ->values();
+
+            if ($missingScores->isNotEmpty()) {
+                $names = $missingScores->map(fn (array $component) => $component['name'] !== '' ? $component['name'] : '(tanpa nama)')->implode(', ');
+                $this->addError('gradeForm.grade_status', "Untuk status Finalized, semua skor wajib terisi. Masih kosong: {$names}.");
+
+                return;
+            }
+        }
+
         DB::transaction(function () {
             $this->studentGrade->update([
                 'notes' => $this->gradeForm['notes'] ?: null,
@@ -212,6 +225,16 @@ new class extends Component
 
         $this->studentGrade->refresh();
         $this->studentGrade->load('components');
+
+        if ($this->studentGrade->grade_status === 'Finalized') {
+            $studentProfileId = (int) ($this->studentGrade->studyPlanDetail?->studyPlan?->student_profile_id ?? 0);
+            $academicYearId = (int) ($this->studentGrade->studyPlanDetail?->studyPlan?->academic_year_id ?? 0);
+
+            if ($studentProfileId > 0) {
+                app(\App\Support\TranscriptSyncService::class)->syncStudent($studentProfileId, $academicYearId > 0 ? $academicYearId : null);
+            }
+        }
+
         $this->allowedGradeStatuses = $this->resolveAllowedGradeStatuses($this->studentGrade->grade_status);
         $this->gradeForm['grade_status'] = $this->studentGrade->grade_status;
 

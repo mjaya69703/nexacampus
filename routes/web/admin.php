@@ -17,6 +17,9 @@ use App\Http\Controllers\Admin\Academic\CourseController;
 use App\Http\Controllers\Admin\Academic\CourseOfferingController;
 use App\Http\Controllers\Admin\Academic\CourseScheduleController;
 use App\Http\Controllers\Admin\Academic\CurriculumController;
+use App\Http\Controllers\Admin\Academic\StudentGradeController;
+use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
+use App\Http\Controllers\Admin\Academic\StudyPlanController;
 use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudyProgramController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
@@ -36,7 +39,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
         continue;
     }
 
@@ -709,6 +712,162 @@ Route::get('/academic/course-schedules/{courseSchedule}', [CourseScheduleControl
 Route::delete('/academic/course-schedules/{courseSchedule}', [CourseScheduleController::class, 'destroy'])
     ->middleware('active_permission:course-schedule.delete')
     ->name('academic.course-schedules.destroy');
+
+// CRUD Registrasi Mahasiswa (Inertia React) — paritas Livewire + approval.
+Route::get('/academic/student-registrations/export', [StudentRegistrationController::class, 'export'])
+    ->middleware('active_permission:student-registration.viewAny')
+    ->name('academic.student-registrations.export');
+Route::get('/academic/student-registrations/search-students', [StudentRegistrationController::class, 'searchStudents'])
+    ->middleware('active_permission:student-registration.viewAny')
+    ->name('academic.student-registrations.search-students');
+Route::post('/academic/student-registrations/bulk-destroy', [StudentRegistrationController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-registration.delete')
+    ->name('academic.student-registrations.bulk-destroy');
+Route::post('/academic/student-registrations/bulk-restore', [StudentRegistrationController::class, 'bulkRestore'])
+    ->middleware('active_permission:student-registration.update|student-registration.delete')
+    ->name('academic.student-registrations.bulk-restore');
+Route::post('/academic/student-registrations/bulk-force-destroy', [StudentRegistrationController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:student-registration.update|student-registration.delete')
+    ->name('academic.student-registrations.bulk-force-destroy');
+Route::post('/academic/student-registrations/{id}/restore', [StudentRegistrationController::class, 'restore'])
+    ->middleware('active_permission:student-registration.update|student-registration.delete')
+    ->name('academic.student-registrations.restore');
+Route::delete('/academic/student-registrations/{id}/force', [StudentRegistrationController::class, 'forceDestroy'])
+    ->middleware('active_permission:student-registration.update|student-registration.delete')
+    ->name('academic.student-registrations.force-destroy');
+Route::post('/academic/student-registrations/{studentRegistration}/toggle', [StudentRegistrationController::class, 'toggle'])
+    ->middleware('active_permission:student-registration.update')
+    ->name('academic.student-registrations.toggle');
+Route::post('/academic/student-registrations/{studentRegistration}/approve', [StudentRegistrationController::class, 'approve'])
+    ->middleware('active_permission:student-registration.update')
+    ->name('academic.student-registrations.approve');
+Route::get('/academic/student-registrations', [StudentRegistrationController::class, 'index'])
+    ->middleware('active_permission:student-registration.viewAny')
+    ->name('academic.student-registrations.index');
+Route::get('/academic/student-registrations/create', [StudentRegistrationController::class, 'create'])
+    ->middleware('active_permission:student-registration.create')
+    ->name('academic.student-registrations.create');
+Route::post('/academic/student-registrations', [StudentRegistrationController::class, 'store'])
+    ->middleware('active_permission:student-registration.create')
+    ->name('academic.student-registrations.store');
+Route::get('/academic/student-registrations/{studentRegistration}/edit', [StudentRegistrationController::class, 'edit'])
+    ->middleware('active_permission:student-registration.update')
+    ->name('academic.student-registrations.edit');
+Route::put('/academic/student-registrations/{studentRegistration}', [StudentRegistrationController::class, 'update'])
+    ->middleware('active_permission:student-registration.update')
+    ->name('academic.student-registrations.update');
+Route::get('/academic/student-registrations/{studentRegistration}', [StudentRegistrationController::class, 'show'])
+    ->middleware('active_permission:student-registration.view')
+    ->name('academic.student-registrations.show');
+Route::delete('/academic/student-registrations/{studentRegistration}', [StudentRegistrationController::class, 'destroy'])
+    ->middleware('active_permission:student-registration.delete')
+    ->name('academic.student-registrations.destroy');
+
+// CRUD KRS (Inertia React, hapus permanen) — paritas Livewire.
+Route::get('/academic/study-plans/export', [StudyPlanController::class, 'export'])
+    ->middleware('active_permission:study-plan.viewAny')
+    ->name('academic.study-plans.export');
+Route::get('/academic/study-plans/search-students', [StudyPlanController::class, 'searchStudents'])
+    ->middleware('active_permission:study-plan.viewAny')
+    ->name('academic.study-plans.search-students');
+Route::get('/academic/study-plans/registration-options', [StudyPlanController::class, 'registrationOptions'])
+    ->middleware('active_permission:study-plan.viewAny')
+    ->name('academic.study-plans.registration-options');
+Route::get('/academic/study-plans/offering-options', [StudyPlanController::class, 'offeringOptions'])
+    ->middleware('active_permission:study-plan.viewAny')
+    ->name('academic.study-plans.offering-options');
+Route::post('/academic/study-plans/bulk-destroy', [StudyPlanController::class, 'bulkDestroy'])
+    ->middleware('active_permission:study-plan.delete')
+    ->name('academic.study-plans.bulk-destroy');
+Route::post('/academic/study-plans/{studyPlan}/details', [StudyPlanController::class, 'detailStore'])
+    ->middleware('active_permission:study-plan.update')
+    ->name('academic.study-plans.details.store');
+Route::post('/academic/study-plans/{studyPlan}/details/bulk-destroy', [StudyPlanController::class, 'detailBulkDestroy'])
+    ->middleware('active_permission:study-plan.update')
+    ->name('academic.study-plans.details.bulk-destroy');
+Route::put('/academic/study-plans/{studyPlan}/details/{detail}', [StudyPlanController::class, 'detailUpdate'])
+    ->middleware('active_permission:study-plan.update')
+    ->name('academic.study-plans.details.update');
+Route::delete('/academic/study-plans/{studyPlan}/details/{detail}', [StudyPlanController::class, 'detailDestroy'])
+    ->middleware('active_permission:study-plan.update')
+    ->name('academic.study-plans.details.destroy');
+Route::get('/academic/study-plans', [StudyPlanController::class, 'index'])
+    ->middleware('active_permission:study-plan.viewAny')
+    ->name('academic.study-plans.index');
+Route::get('/academic/study-plans/create', [StudyPlanController::class, 'create'])
+    ->middleware('active_permission:study-plan.create')
+    ->name('academic.study-plans.create');
+Route::post('/academic/study-plans', [StudyPlanController::class, 'store'])
+    ->middleware('active_permission:study-plan.create')
+    ->name('academic.study-plans.store');
+Route::get('/academic/study-plans/{studyPlan}/edit', [StudyPlanController::class, 'edit'])
+    ->middleware('active_permission:study-plan.update')
+    ->name('academic.study-plans.edit');
+Route::put('/academic/study-plans/{studyPlan}', [StudyPlanController::class, 'update'])
+    ->middleware('active_permission:study-plan.update')
+    ->name('academic.study-plans.update');
+Route::get('/academic/study-plans/{studyPlan}', [StudyPlanController::class, 'show'])
+    ->middleware('active_permission:study-plan.view')
+    ->name('academic.study-plans.show');
+Route::delete('/academic/study-plans/{studyPlan}', [StudyPlanController::class, 'destroy'])
+    ->middleware('active_permission:study-plan.delete')
+    ->name('academic.study-plans.destroy');
+
+// CRUD nilai mahasiswa (Inertia React) — paritas Livewire + kunci Published.
+Route::get('/academic/student-grades/export', [StudentGradeController::class, 'export'])
+    ->middleware('active_permission:student-grade.viewAny')
+    ->name('academic.student-grades.export');
+Route::get('/academic/student-grades/search-details', [StudentGradeController::class, 'searchDetails'])
+    ->middleware('active_permission:student-grade.viewAny')
+    ->name('academic.student-grades.search-details');
+Route::get('/academic/student-grades/grader-options', [StudentGradeController::class, 'graderOptions'])
+    ->middleware('active_permission:student-grade.viewAny')
+    ->name('academic.student-grades.grader-options');
+Route::get('/academic/student-grades/offering-options', [StudentGradeController::class, 'offeringOptions'])
+    ->middleware('active_permission:student-grade.viewAny')
+    ->name('academic.student-grades.offering-options');
+Route::post('/academic/student-grades/bulk-publish', [StudentGradeController::class, 'bulkPublish'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.bulk-publish');
+Route::post('/academic/student-grades/{studentGrade}/components', [StudentGradeController::class, 'componentStore'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.components.store');
+Route::put('/academic/student-grades/{studentGrade}/components/{component}', [StudentGradeController::class, 'componentUpdate'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.components.update');
+Route::delete('/academic/student-grades/{studentGrade}/components/{component}', [StudentGradeController::class, 'componentDestroy'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.components.destroy');
+Route::post('/academic/student-grades/{studentGrade}/finalize', [StudentGradeController::class, 'finalize'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.finalize');
+Route::post('/academic/student-grades/{studentGrade}/publish', [StudentGradeController::class, 'publish'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.publish');
+Route::post('/academic/student-grades/{studentGrade}/unpublish', [StudentGradeController::class, 'unpublish'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.unpublish');
+Route::get('/academic/student-grades', [StudentGradeController::class, 'index'])
+    ->middleware('active_permission:student-grade.viewAny')
+    ->name('academic.student-grades.index');
+Route::get('/academic/student-grades/create', [StudentGradeController::class, 'create'])
+    ->middleware('active_permission:student-grade.create')
+    ->name('academic.student-grades.create');
+Route::post('/academic/student-grades', [StudentGradeController::class, 'store'])
+    ->middleware('active_permission:student-grade.create')
+    ->name('academic.student-grades.store');
+Route::get('/academic/student-grades/{studentGrade}/edit', [StudentGradeController::class, 'edit'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.edit');
+Route::put('/academic/student-grades/{studentGrade}', [StudentGradeController::class, 'update'])
+    ->middleware('active_permission:student-grade.update')
+    ->name('academic.student-grades.update');
+Route::get('/academic/student-grades/{studentGrade}', [StudentGradeController::class, 'show'])
+    ->middleware('active_permission:student-grade.view')
+    ->name('academic.student-grades.show');
+Route::delete('/academic/student-grades/{studentGrade}', [StudentGradeController::class, 'destroy'])
+    ->middleware('active_permission:student-grade.delete')
+    ->name('academic.student-grades.destroy');
 
 // Sesi absensi (nested di offering, gate course-offering.view — paritas).
 Route::get('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', [AttendanceSessionController::class, 'show'])
