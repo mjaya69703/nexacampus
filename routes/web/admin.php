@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\Academic\CurriculumController;
 use App\Http\Controllers\Admin\Academic\StudentGradeController;
 use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
+use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
 use App\Http\Controllers\Admin\Financial\ScholarshipController;
 use App\Http\Controllers\Admin\Financial\TuitionFeeController;
 use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
@@ -43,7 +44,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
         continue;
     }
 
@@ -1083,6 +1084,38 @@ Route::post('/financial/scholarships/{scholarship}/toggle', [ScholarshipControll
 Route::delete('/financial/scholarships/{scholarship}', [ScholarshipController::class, 'destroy'])
     ->middleware('active_permission:scholarship.delete')
     ->name('financial.scholarships.destroy');
+
+// CRUD Jadwal Penerbitan Tagihan (Inertia React) — paritas Livewire.
+Route::get('/financial/invoice-schedules/export', [InvoiceScheduleController::class, 'export'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.export');
+Route::get('/financial/invoice-schedules/search-students', [InvoiceScheduleController::class, 'searchStudents'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.search-students');
+Route::post('/financial/invoice-schedules/bulk-destroy', [InvoiceScheduleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:invoice-schedule.delete')
+    ->name('financial.invoice-schedules.bulk-destroy');
+Route::get('/financial/invoice-schedules', [InvoiceScheduleController::class, 'index'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.index');
+Route::get('/financial/invoice-schedules/create', [InvoiceScheduleController::class, 'create'])
+    ->middleware('active_permission:invoice-schedule.create')
+    ->name('financial.invoice-schedules.create');
+Route::post('/financial/invoice-schedules', [InvoiceScheduleController::class, 'store'])
+    ->middleware('active_permission:invoice-schedule.create')
+    ->name('financial.invoice-schedules.store');
+Route::get('/financial/invoice-schedules/{invoiceSchedule}/edit', [InvoiceScheduleController::class, 'edit'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.edit');
+Route::put('/financial/invoice-schedules/{invoiceSchedule}', [InvoiceScheduleController::class, 'update'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.update');
+Route::post('/financial/invoice-schedules/{invoiceSchedule}/run', [InvoiceScheduleController::class, 'run'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.run');
+Route::delete('/financial/invoice-schedules/{invoiceSchedule}', [InvoiceScheduleController::class, 'destroy'])
+    ->middleware('active_permission:invoice-schedule.delete')
+    ->name('financial.invoice-schedules.destroy');
 
 Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
     ->middleware('active_permission:service-letter-request.view')
