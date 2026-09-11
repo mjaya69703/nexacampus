@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\Academic\StudentGradeController;
 use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
 use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
+use App\Http\Controllers\Admin\Financial\StudentInvoiceController;
 use App\Http\Controllers\Admin\Financial\ScholarshipController;
 use App\Http\Controllers\Admin\Financial\TuitionFeeController;
 use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
@@ -44,7 +45,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
         continue;
     }
 
@@ -1116,6 +1117,50 @@ Route::post('/financial/invoice-schedules/{invoiceSchedule}/run', [InvoiceSchedu
 Route::delete('/financial/invoice-schedules/{invoiceSchedule}', [InvoiceScheduleController::class, 'destroy'])
     ->middleware('active_permission:invoice-schedule.delete')
     ->name('financial.invoice-schedules.destroy');
+
+// CRUD Tagihan Mahasiswa (Inertia React) — paritas Livewire.
+Route::get('/financial/student-invoices/export', [StudentInvoiceController::class, 'export'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.export');
+Route::get('/financial/student-invoices/search-students', [StudentInvoiceController::class, 'searchStudents'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.search-students');
+Route::post('/financial/student-invoices/bulk-cancel', [StudentInvoiceController::class, 'bulkCancel'])
+    ->middleware('active_permission:student-invoice.delete')
+    ->name('financial.student-invoices.bulk-cancel');
+Route::get('/financial/student-invoices', [StudentInvoiceController::class, 'index'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.index');
+Route::get('/financial/student-invoices/create', [StudentInvoiceController::class, 'create'])
+    ->middleware('active_permission:student-invoice.create')
+    ->name('financial.student-invoices.create');
+Route::post('/financial/student-invoices', [StudentInvoiceController::class, 'store'])
+    ->middleware('active_permission:student-invoice.create')
+    ->name('financial.student-invoices.store');
+Route::get('/financial/student-invoices/{studentInvoice}/edit', [StudentInvoiceController::class, 'edit'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.edit');
+Route::put('/financial/student-invoices/{studentInvoice}', [StudentInvoiceController::class, 'update'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.update');
+Route::get('/financial/student-invoices/{studentInvoice}', [StudentInvoiceController::class, 'show'])
+    ->middleware('active_permission:student-invoice.view')
+    ->name('financial.student-invoices.show');
+Route::post('/financial/student-invoices/{studentInvoice}/issue', [StudentInvoiceController::class, 'issue'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.issue');
+Route::post('/financial/student-invoices/{studentInvoice}/cancel', [StudentInvoiceController::class, 'cancel'])
+    ->middleware('active_permission:student-invoice.delete')
+    ->name('financial.student-invoices.cancel');
+Route::get('/financial/student-invoices/{studentInvoice}/pdf', [StudentInvoiceController::class, 'pdf'])
+    ->middleware('active_permission:student-invoice.view')
+    ->name('financial.student-invoices.pdf');
+Route::post('/financial/student-invoices/{studentInvoice}/adjust', [StudentInvoiceController::class, 'adjust'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.adjust');
+Route::post('/financial/student-invoices/{studentInvoice}/apply-scholarship', [StudentInvoiceController::class, 'applyScholarship'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.apply-scholarship');
 
 Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
     ->middleware('active_permission:service-letter-request.view')
