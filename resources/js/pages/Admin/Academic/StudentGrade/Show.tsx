@@ -125,7 +125,7 @@ export default function StudentGradeShow({ shell, grade, can, urls }: Props) {
                             {grade.components.length === 0 ? (
                                 <p className="db-hint">Belum ada komponen.</p>
                             ) : (
-                                <table className="db-table">
+                                <div className="db-table-wrap"><table className="db-table">
                                     <thead>
                                         <tr><th>No</th><th>Komponen</th><th style={{ textAlign: 'center' }}>Bobot</th><th style={{ textAlign: 'center' }}>Skor</th><th>Catatan</th></tr>
                                     </thead>
@@ -140,7 +140,7 @@ export default function StudentGradeShow({ shell, grade, can, urls }: Props) {
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
+                                </table></div>
                             )}
                         </div>
                     </section>

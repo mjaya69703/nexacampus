@@ -127,7 +127,7 @@ export default function TranscriptShow({ shell, can, student, results, entries, 
                             {entries.length === 0 ? (
                                 <p className="db-hint">Belum ada entri transkrip.</p>
                             ) : (
-                                <table className="db-table">
+                                <div className="db-table-wrap"><table className="db-table">
                                     <thead>
                                         <tr><th>Mata Kuliah</th><th>Tahun / Sem</th><th style={{ textAlign: 'center' }}>SKS</th><th style={{ textAlign: 'center' }}>Skor</th><th style={{ textAlign: 'center' }}>Huruf</th><th style={{ textAlign: 'center' }}>Hasil</th></tr>
                                     </thead>
@@ -147,7 +147,7 @@ export default function TranscriptShow({ shell, can, student, results, entries, 
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
+                                </table></div>
                             )}
                         </div>
                     </section>
