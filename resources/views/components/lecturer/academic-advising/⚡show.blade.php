@@ -13,6 +13,8 @@ new class extends Component
     public array $assignment = [];
     public array $progress = [];
     public array $notes = [];
+    public array $pendingPlans = [];
+    public string $approvalNotes = '';
     public array $noteForm = [
         'topic' => '',
         'notes' => '',
@@ -55,7 +57,55 @@ new class extends Component
         ];
 
         $this->progress = $analytics->summarize($student);
+        $this->pendingPlans = $advisorService->pendingPlansForStudent($student->id)
+            ->map(fn ($plan) => [
+                'id' => $plan->id,
+                'year' => $plan->academicYear?->name ?? '-',
+                'semester' => $plan->semester_no ?? '-',
+                'courses' => (int) $plan->details_count,
+                'credits' => (int) $plan->total_credits,
+                'submitted_at' => $plan->submitted_at?->format('d M Y H:i') ?? '-',
+            ])
+            ->values()
+            ->all();
         $this->loadNotes($lecturerProfileId);
+    }
+
+    public function approvePlan(int $planId): void
+    {
+        $this->decidePlan($planId, 'Approved');
+    }
+
+    public function rejectPlan(int $planId): void
+    {
+        $this->decidePlan($planId, 'Rejected');
+    }
+
+    private function decidePlan(int $planId, string $decision): void
+    {
+        $lecturerProfileId = auth()->user()?->lecturerProfile?->id;
+        abort_unless($lecturerProfileId, 403);
+
+        $plan = \App\Models\Academic\StudyPlan::findOrFail($planId);
+
+        try {
+            if ($decision === 'Approved') {
+                app(AcademicAdvisorService::class)->approveStudyPlanAsAdvisor(
+                    $lecturerProfileId, $plan, $this->approvalNotes ?: null, auth()->id()
+                );
+                session()->flash('success', 'KRS berhasil disetujui.');
+            } else {
+                app(AcademicAdvisorService::class)->rejectStudyPlanAsAdvisor(
+                    $lecturerProfileId, $plan, $this->approvalNotes ?: null, auth()->id()
+                );
+                session()->flash('success', 'KRS berhasil ditolak.');
+            }
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            session()->flash('error', $exception->validator->errors()->first() ?: 'Keputusan gagal diproses.');
+        }
+
+        $this->approvalNotes = '';
+        $this->loadPage(app(AcademicAdvisorService::class), app(StudentProgressAnalyticsService::class));
     }
 
     public function saveAdvisorNote(): void
@@ -332,6 +382,39 @@ new class extends Component
             <i class="fas fa-arrow-left me-2"></i>Kembali ke Daftar
         </a>
     </div>
+
+    @if (count($pendingPlans) > 0)
+        <div class="card modern-card mb-4">
+            <div class="card-body p-4">
+                <div class="fw-bold mb-1" style="font-size:1.1rem;">KRS Menunggu Persetujuan</div>
+                <div class="text-secondary mb-4">Setujui atau tolak sebagai Dosen PA. Keputusan tercatat atas nama Anda.</div>
+
+                @foreach ($pendingPlans as $pendingPlan)
+                    <div class="note-item mb-3">
+                        <div class="d-flex justify-content-between gap-3 flex-wrap align-items-center">
+                            <div>
+                                <div class="fw-bold text-dark">{{ $pendingPlan['year'] }} &middot; Semester {{ $pendingPlan['semester'] }}</div>
+                                <div class="text-secondary small">{{ $pendingPlan['courses'] }} MK &middot; {{ $pendingPlan['credits'] }} SKS &middot; diajukan {{ $pendingPlan['submitted_at'] }}</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-success advisor-action" wire:click="approvePlan({{ $pendingPlan['id'] }})">
+                                    <i class="fas fa-check me-2"></i>Setujui
+                                </button>
+                                <button type="button" class="btn btn-outline-danger advisor-action" wire:click="rejectPlan({{ $pendingPlan['id'] }})">
+                                    <i class="fas fa-times me-2"></i>Tolak
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+
+                <div>
+                    <label class="form-label fw-bold">Catatan keputusan (opsional, dipakai untuk aksi berikutnya)</label>
+                    <input type="text" class="form-control filter-input" wire:model.defer="approvalNotes" placeholder="Contoh: Kurangi 1 MK, SKS berlebih.">
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="row g-4 mb-4">
         <div class="col-lg-3 col-md-6">
