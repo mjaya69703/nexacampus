@@ -1,6 +1,6 @@
 // Daftar program beasiswa — kit CRUD (sampah/restore, toggle aktif, paritas Blade).
 import { Head, router } from '@inertiajs/react';
-import { Award, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Award, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
@@ -315,11 +315,6 @@ export default function ScholarshipIndex({ shell, can, stats, data, filters, typ
                                 onRestoreRow={isTrash && can.restore ? (row) => setPending({ kind: 'restore', row }) : undefined}
                                 onDeleteRow={can.delete ? (row) => setPending({ kind: isTrash ? 'force' : 'delete', row }) : undefined}
                                 showActions={(!isTrash && can.update) || can.restore || can.delete}
-                                customActions={(!isTrash && can.update) ? (row) => (
-                                    <a className="db-btn ghost sm" href={row.editUrl} title="Ubah">
-                                        <Pencil size={13} />
-                                    </a>
-                                ) : undefined}
                                 canCreate={false}
                                 createLabel="Tambah Beasiswa"
                                 exportHref={exportHref}
