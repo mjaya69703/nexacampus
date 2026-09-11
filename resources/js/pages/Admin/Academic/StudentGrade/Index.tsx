@@ -1,6 +1,6 @@
 // Daftar nilai mahasiswa — kit CRUD (publish massal, hapus lunak, paritas Blade).
 import { Head, router } from '@inertiajs/react';
-import { Award, Eye, Megaphone, Pencil, Plus } from 'lucide-react';
+import { Award, Eye, Megaphone, Pencil, Plus, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { AsyncSelect, AsyncOption } from '../../../../components/Shared/Crud/AsyncSelect';
@@ -70,6 +70,15 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
                 if (clearSelection) setSelected([]);
             },
         });
+    };
+
+    const activeFilterCount = [nim, filters.year, filters.program, offering?.id, filters.letter, filters.lifecycle, filters.result]
+        .filter((v) => v !== '' && v !== undefined && v !== null).length;
+
+    const resetFilters = () => {
+        setNim('');
+        setOffering(null);
+        visit({ nim: '', year: '', program: '', offering: '', letter: '', lifecycle: '', result: '', page: 1 }, true);
     };
 
     const toggleSort = (key: string) => {
@@ -209,74 +218,86 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
                                 onSearchSubmit={() => visit({ page: 1 }, true)}
                                 searchPlaceholder="Cari nama, email…"
                                 filterBar={(
-                                    <>
-                                        <input
-                                            className="db-input"
-                                            style={{ maxWidth: 130 }}
-                                            value={nim}
-                                            placeholder="NIM…"
-                                            onChange={(e) => setNim(e.target.value)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); visit({ nim, page: 1 }, true); } }}
-                                            aria-label="Filter NIM"
-                                        />
-                                        <select
-                                            className="db-input"
-                                            value={filters.year}
-                                            onChange={(e) => visit({ year: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter tahun"
-                                        >
-                                            <option value="">Semua tahun</option>
-                                            {yearOptions.map((y) => <option key={y.id} value={y.id}>{y.name}</option>)}
-                                        </select>
-                                        <select
-                                            className="db-input"
-                                            value={filters.program}
-                                            onChange={(e) => visit({ program: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter prodi"
-                                        >
-                                            <option value="">Semua prodi</option>
-                                            {programOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                        </select>
-                                        <select
-                                            className="db-input"
-                                            value={filters.letter}
-                                            onChange={(e) => visit({ letter: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter huruf"
-                                        >
-                                            <option value="">Semua huruf</option>
-                                            {letters.map((l) => <option key={l} value={l}>{l}</option>)}
-                                        </select>
-                                        <select
-                                            className="db-input"
-                                            value={filters.lifecycle}
-                                            onChange={(e) => visit({ lifecycle: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter lifecycle"
-                                        >
-                                            <option value="">Semua lifecycle</option>
-                                            {lifecycles.map((s) => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                        <select
-                                            className="db-input"
-                                            value={filters.result}
-                                            onChange={(e) => visit({ result: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter hasil"
-                                        >
-                                            <option value="">Semua hasil</option>
-                                            {results.map((s) => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                        <div style={{ minWidth: 220 }}>
-                                            <AsyncSelect
-                                                label=""
-                                                fetchUrl={urls.offeringOptions}
-                                                value={offering}
-                                                placeholder="Filter offering…"
-                                                onChange={(option) => {
-                                                    setOffering(option);
-                                                    visit({ offering: option ? String(option.id) : '', page: 1 }, true);
-                                                }}
-                                            />
+                                    <details className="crud-filter">
+                                        <summary className="db-btn ghost sm" title="Filter lanjutan">
+                                            <SlidersHorizontal size={13} /> Filter
+                                            {activeFilterCount > 0 && <span className="db-badge green">{activeFilterCount}</span>}
+                                        </summary>
+                                        <div className="crud-filter-menu">
+                                            <div className="crud-filter-grid">
+                                                <input
+                                                    className="db-input"
+                                                    value={nim}
+                                                    placeholder="NIM…"
+                                                    onChange={(e) => setNim(e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); visit({ nim, page: 1 }, true); } }}
+                                                    aria-label="Filter NIM"
+                                                />
+                                                <select
+                                                    className="db-input"
+                                                    value={filters.year}
+                                                    onChange={(e) => visit({ year: e.target.value, page: 1 }, true)}
+                                                    aria-label="Filter tahun"
+                                                >
+                                                    <option value="">Semua tahun</option>
+                                                    {yearOptions.map((y) => <option key={y.id} value={y.id}>{y.name}</option>)}
+                                                </select>
+                                                <select
+                                                    className="db-input"
+                                                    value={filters.program}
+                                                    onChange={(e) => visit({ program: e.target.value, page: 1 }, true)}
+                                                    aria-label="Filter prodi"
+                                                >
+                                                    <option value="">Semua prodi</option>
+                                                    {programOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                </select>
+                                                <select
+                                                    className="db-input"
+                                                    value={filters.letter}
+                                                    onChange={(e) => visit({ letter: e.target.value, page: 1 }, true)}
+                                                    aria-label="Filter huruf"
+                                                >
+                                                    <option value="">Semua huruf</option>
+                                                    {letters.map((l) => <option key={l} value={l}>{l}</option>)}
+                                                </select>
+                                                <select
+                                                    className="db-input"
+                                                    value={filters.lifecycle}
+                                                    onChange={(e) => visit({ lifecycle: e.target.value, page: 1 }, true)}
+                                                    aria-label="Filter lifecycle"
+                                                >
+                                                    <option value="">Semua lifecycle</option>
+                                                    {lifecycles.map((s) => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <select
+                                                    className="db-input"
+                                                    value={filters.result}
+                                                    onChange={(e) => visit({ result: e.target.value, page: 1 }, true)}
+                                                    aria-label="Filter hasil"
+                                                >
+                                                    <option value="">Semua hasil</option>
+                                                    {results.map((s) => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <div style={{ gridColumn: '1 / -1' }}>
+                                                    <AsyncSelect
+                                                        label=""
+                                                        fetchUrl={urls.offeringOptions}
+                                                        value={offering}
+                                                        placeholder="Filter offering…"
+                                                        onChange={(option) => {
+                                                            setOffering(option);
+                                                            visit({ offering: option ? String(option.id) : '', page: 1 }, true);
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="crud-filter-foot">
+                                                <button type="button" className="db-btn ghost sm" onClick={resetFilters}>
+                                                    Reset filter
+                                                </button>
+                                            </div>
                                         </div>
-                                    </>
+                                    </details>
                                 )}
                                 selected={selected}
                                 onToggle={toggle}
