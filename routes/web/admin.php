@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\Academic\CourseOfferingController;
 use App\Http\Controllers\Admin\Academic\CourseScheduleController;
 use App\Http\Controllers\Admin\Academic\CurriculumController;
 use App\Http\Controllers\Admin\Academic\StudentGradeController;
+use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
 use App\Http\Controllers\Admin\Academic\StudyPlanController;
 use App\Http\Controllers\Admin\Academic\FacultyController;
@@ -39,7 +40,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
         continue;
     }
 
@@ -868,6 +869,23 @@ Route::get('/academic/student-grades/{studentGrade}', [StudentGradeController::c
 Route::delete('/academic/student-grades/{studentGrade}', [StudentGradeController::class, 'destroy'])
     ->middleware('active_permission:student-grade.delete')
     ->name('academic.student-grades.destroy');
+
+// Transkrip (Inertia React, read-only + sync) — paritas Livewire.
+Route::get('/academic/transcripts/export', [TranscriptController::class, 'export'])
+    ->middleware('active_permission:transcript.viewAny')
+    ->name('academic.transcripts.export');
+Route::post('/academic/transcripts/bulk-sync', [TranscriptController::class, 'bulkSync'])
+    ->middleware('active_permission:transcript.update')
+    ->name('academic.transcripts.bulk-sync');
+Route::get('/academic/transcripts', [TranscriptController::class, 'index'])
+    ->middleware('active_permission:transcript.viewAny')
+    ->name('academic.transcripts.index');
+Route::get('/academic/transcripts/{transcript}', [TranscriptController::class, 'show'])
+    ->middleware('active_permission:transcript.view')
+    ->name('academic.transcripts.show');
+Route::post('/academic/transcripts/{transcript}/sync', [TranscriptController::class, 'sync'])
+    ->middleware('active_permission:transcript.update')
+    ->name('academic.transcripts.sync');
 
 // Sesi absensi (nested di offering, gate course-offering.view — paritas).
 Route::get('/academic/course-offerings/{offeringId}/attendance-sessions/{id}', [AttendanceSessionController::class, 'show'])
