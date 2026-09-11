@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
+import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
@@ -45,6 +46,13 @@ export default function NotificationLogIndex({ shell, stats, data, filters, urls
             preserveState: true,
             replace: true,
         });
+    };
+
+    const activeFilterCount = [filters.channel, filters.status]
+        .filter((v) => v !== '' && v !== undefined && v !== null).length;
+
+    const resetFilters = () => {
+        visit({ channel: '', status: '', page: 1 });
     };
 
     const toggleSort = (key: string) => {
@@ -126,7 +134,7 @@ export default function NotificationLogIndex({ shell, stats, data, filters, urls
                                 onSearchSubmit={() => visit({ page: 1 })}
                                 searchPlaceholder="Cari event, subject, penerima…"
                                 filterBar={(
-                                    <>
+                                    <FilterPanel count={activeFilterCount} onReset={resetFilters}>
                                         <select
                                             className="db-input"
                                             value={filters.channel}
@@ -145,7 +153,7 @@ export default function NotificationLogIndex({ shell, stats, data, filters, urls
                                             <option value="">Semua status</option>
                                             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                                         </select>
-                                    </>
+                                    </FilterPanel>
                                 )}
                                 selected={[]}
                                 onToggle={() => undefined}

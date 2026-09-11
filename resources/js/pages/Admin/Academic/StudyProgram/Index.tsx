@@ -6,6 +6,7 @@ import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
+import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
 import { ImportModal, ImportResult, ImportResultBanner } from '../../../../components/Shared/Crud/ImportModal';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
@@ -105,6 +106,13 @@ export default function StudyProgramIndex({ shell, can, stats, data, filters, fa
                 if (clearSelection) setSelected([]);
             },
         });
+    };
+
+    const activeFilterCount = [filters.faculty, filters.degree, filters.is_active]
+        .filter((v) => v !== '' && v !== undefined && v !== null).length;
+
+    const resetFilters = () => {
+        visit({ faculty: '', degree: '', is_active: '', page: 1 }, true);
     };
 
     const toggleSort = (key: string) => {
@@ -296,7 +304,7 @@ export default function StudyProgramIndex({ shell, can, stats, data, filters, fa
                                 onSearchSubmit={() => visit({ page: 1 }, true)}
                                 searchPlaceholder="Cari nama, kode, singkatan…"
                                 filterBar={(
-                                    <>
+                                    <FilterPanel count={activeFilterCount} onReset={resetFilters}>
                                         <select
                                             className="db-input"
                                             value={filters.faculty}
@@ -325,7 +333,7 @@ export default function StudyProgramIndex({ shell, can, stats, data, filters, fa
                                             <option value="1">Aktif</option>
                                             <option value="0">Nonaktif</option>
                                         </select>
-                                    </>
+                                    </FilterPanel>
                                 )}
                                 selected={selected}
                                 onToggle={toggle}

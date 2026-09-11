@@ -7,6 +7,7 @@ import { AsyncSelect, AsyncOption } from '../../../../components/Shared/Crud/Asy
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
+import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
 import { ImportModal, ImportResult, ImportResultBanner } from '../../../../components/Shared/Crud/ImportModal';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
@@ -75,6 +76,14 @@ export default function AdvisorAssignmentIndex({ shell, can, stats, data, filter
     };
 
     const visitNim = () => visit({ nim, page: 1 }, true);
+
+    const activeFilterCount = [nim, filters.year, filters.program, filters.lecturer, filters.is_active]
+        .filter((v) => v !== '' && v !== undefined && v !== null).length;
+
+    const resetFilters = () => {
+        setNim('');
+        visit({ nim: '', year: '', program: '', lecturer: '', is_active: '', page: 1 }, true);
+    };
 
     const toggleSort = (key: string) => {
         visit({
@@ -291,10 +300,9 @@ export default function AdvisorAssignmentIndex({ shell, can, stats, data, filter
                                 onSearchSubmit={() => visit({ page: 1 }, true)}
                                 searchPlaceholder="Cari nama mahasiswa…"
                                 filterBar={(
-                                    <>
+                                    <FilterPanel count={activeFilterCount} onReset={resetFilters}>
                                         <input
                                             className="db-input"
-                                            style={{ maxWidth: 150 }}
                                             value={nim}
                                             placeholder="NIM…"
                                             onChange={(e) => setNim(e.target.value)}
@@ -329,7 +337,7 @@ export default function AdvisorAssignmentIndex({ shell, can, stats, data, filter
                                             <option value="1">Aktif</option>
                                             <option value="0">Nonaktif</option>
                                         </select>
-                                    </>
+                                    </FilterPanel>
                                 )}
                                 selected={selected}
                                 onToggle={toggle}

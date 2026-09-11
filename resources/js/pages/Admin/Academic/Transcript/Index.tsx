@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
+import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
@@ -51,6 +52,14 @@ export default function TranscriptIndex({ shell, can, stats, data, filters, prog
                 if (clearSelection) setSelected([]);
             },
         });
+    };
+
+    const activeFilterCount = [nim, filters.program]
+        .filter((v) => v !== '' && v !== undefined && v !== null).length;
+
+    const resetFilters = () => {
+        setNim('');
+        visit({ nim: '', program: '', page: 1 }, true);
     };
 
     const toggleSort = (key: string) => {
@@ -159,10 +168,9 @@ export default function TranscriptIndex({ shell, can, stats, data, filters, prog
                                 onSearchSubmit={() => visit({ page: 1 }, true)}
                                 searchPlaceholder="Cari nama, email…"
                                 filterBar={(
-                                    <>
+                                    <FilterPanel count={activeFilterCount} onReset={resetFilters}>
                                         <input
                                             className="db-input"
-                                            style={{ maxWidth: 140 }}
                                             value={nim}
                                             placeholder="NIM…"
                                             onChange={(e) => setNim(e.target.value)}
@@ -178,7 +186,7 @@ export default function TranscriptIndex({ shell, can, stats, data, filters, prog
                                             <option value="">Semua prodi</option>
                                             {programOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
-                                    </>
+                                    </FilterPanel>
                                 )}
                                 selected={selected}
                                 onToggle={toggle}

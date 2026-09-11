@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
+import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
@@ -40,6 +41,13 @@ export default function ActivityLogIndex({ shell, stats, data, filters, urls }: 
             preserveState: true,
             replace: true,
         });
+    };
+
+    const activeFilterCount = [filters.log, filters.event]
+        .filter((v) => v !== '' && v !== undefined && v !== null).length;
+
+    const resetFilters = () => {
+        visit({ log: '', event: '', page: 1 });
     };
 
     const toggleSort = (key: string) => {
@@ -109,7 +117,7 @@ export default function ActivityLogIndex({ shell, stats, data, filters, urls }: 
                                 onSearchSubmit={() => visit({ page: 1 })}
                                 searchPlaceholder="Cari log, aksi, event…"
                                 filterBar={(
-                                    <>
+                                    <FilterPanel count={activeFilterCount} onReset={resetFilters}>
                                         <input
                                             className="db-input"
                                             value={filters.log}
@@ -124,7 +132,7 @@ export default function ActivityLogIndex({ shell, stats, data, filters, urls }: 
                                             onChange={(e) => visit({ event: e.target.value, page: 1 })}
                                             aria-label="Filter event"
                                         />
-                                    </>
+                                    </FilterPanel>
                                 )}
                                 selected={[]}
                                 onToggle={() => undefined}

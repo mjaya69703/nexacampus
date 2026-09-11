@@ -57,14 +57,16 @@ table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .crud-export-menu a:hover { background: var(--db-soft); text-decoration: none; }
 
 /* ── Dropdown filter (toolbar ramping, filter lanjut lipat) ────────── */
+/* Panel in-flow (bukan overlay) agar tidak kepotong .db-card yang
+   overflow:hidden saat isi tabel sedikit. */
 .crud-filter { position: relative; }
 .crud-filter > summary { list-style: none; cursor: pointer; }
 .crud-filter > summary::-webkit-details-marker { display: none; }
+.crud-filter[open] { flex-basis: 100%; }
 .crud-filter-menu {
-    position: absolute; top: calc(100% + 6px); left: 0; z-index: 40;
-    display: grid; gap: 12px; min-width: 320px; max-width: min(92vw, 560px); padding: 14px;
+    display: grid; gap: 12px; margin-top: 10px; padding: 14px;
     border: 1px solid var(--db-line); border-radius: 12px;
-    background: var(--db-card); box-shadow: var(--db-shadow);
+    background: var(--db-soft);
 }
 .crud-filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .crud-filter-grid .db-input { width: 100%; }
@@ -118,4 +120,5 @@ table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
 @media (max-width: 650px) {
     .crud-grid { grid-template-columns: 1fr; }
+    .crud-filter-grid { grid-template-columns: 1fr; }
 }

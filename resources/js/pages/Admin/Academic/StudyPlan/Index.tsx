@@ -1,9 +1,8 @@
-// Daftar nilai mahasiswa — kit CRUD (publish massal, hapus lunak, paritas Blade).
+// Daftar KRS — kit CRUD (hapus permanen, tanpa sampah, paritas Blade).
 import { Head, router } from '@inertiajs/react';
-import { Award, Eye, Megaphone, Pencil, Plus } from 'lucide-react';
+import { ClipboardList, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
-import { AsyncSelect, AsyncOption } from '../../../../components/Shared/Crud/AsyncSelect';
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
@@ -13,38 +12,33 @@ import '../../../../../css/crud.css';
 
 type Row = {
     id: number; no: number; student: string; nim: string | null; program: string | null;
-    year: string | null; course: string; classLabel: string | null;
-    finalScore: number | null; letter: string | null; point: number | null;
-    lifecycle: string; lifecycleTone: string; result: string | null; resultTone: string;
-    components: number; createdAt: string | null;
+    year: string | null; semester: number | null; status: string; statusTone: string;
+    courses: number; credits: number; createdAt: string | null;
     showUrl: string; editUrl: string; deleteUrl: string;
 };
 
 type Props = {
     shell: ShellProps;
     can: { create: boolean; update: boolean; delete: boolean; view: boolean };
-    stats: { total: number; draft: number; finalized: number; published: number };
+    stats: { total: number; submitted: number; approved: number; draft: number };
     data: {
         rows: Row[];
         currentPage: number; lastPage: number; perPage: number; total: number;
     };
     filters: {
-        q: string; nim: string; year: string; program: string; offering: string;
-        letter: string; lifecycle: string; result: string;
+        q: string; nim: string; year: string; program: string; semester: string; status: string;
         sort: string; direction: 'asc' | 'desc'; perPage: number;
     };
     yearOptions: { id: number; name: string }[];
     programOptions: { id: number; name: string }[];
-    letters: string[];
-    lifecycles: string[];
-    results: string[];
+    statuses: string[];
     urls: {
-        index: string; create: string; store: string; export: string;
-        bulkPublish: string; offeringOptions: string;
+        index: string; create: string; export: string; exportPdf: string; importTemplate: string;
+        bulkDestroy: string;
     };
 };
 
-type Pending = { kind: 'delete'; row: Row } | { kind: 'publish' } | null;
+type Pending = { kind: 'delete' | 'bulk-delete'; row?: Row } | null;
 
 function buildQuery(filters: Props['filters'], search: string, overrides: Record<string, string | number | undefined>) {
     const merged: Record<string, string | number> = { ...filters, q: search, ...overrides };
@@ -53,12 +47,9 @@ function buildQuery(filters: Props['filters'], search: string, overrides: Record
     );
 }
 
-export default function StudentGradeIndex({ shell, can, stats, data, filters, yearOptions, programOptions, letters, lifecycles, results, urls }: Props) {
+export default function StudyPlanIndex({ shell, can, stats, data, filters, yearOptions, programOptions, statuses, urls }: Props) {
     const [search, setSearch] = useState(filters.q);
     const [nim, setNim] = useState(filters.nim);
-    const [offering, setOffering] = useState<AsyncOption | null>(
-        filters.offering ? { id: filters.offering, label: `Offering #${filters.offering}` } : null,
-    );
     const [selected, setSelected] = useState<number[]>([]);
     const [pending, setPending] = useState<Pending>(null);
     const [processing, setProcessing] = useState(false);
@@ -73,13 +64,14 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
         });
     };
 
-    const activeFilterCount = [nim, filters.year, filters.program, offering?.id, filters.letter, filters.lifecycle, filters.result]
+    const visitNim = () => visit({ nim, page: 1 }, true);
+
+    const activeFilterCount = [nim, filters.year, filters.program, filters.semester, filters.status]
         .filter((v) => v !== '' && v !== undefined && v !== null).length;
 
     const resetFilters = () => {
         setNim('');
-        setOffering(null);
-        visit({ nim: '', year: '', program: '', offering: '', letter: '', lifecycle: '', result: '', page: 1 }, true);
+        visit({ nim: '', year: '', program: '', semester: '', status: '', page: 1 }, true);
     };
 
     const toggleSort = (key: string) => {
@@ -108,64 +100,58 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
             setSelected([]);
         };
 
-        if (pending.kind === 'delete') {
+        if (pending.kind === 'delete' && pending.row) {
             router.delete(pending.row.deleteUrl, { preserveScroll: true, onFinish: done });
         } else {
-            router.post(urls.bulkPublish, { ids: selected }, { preserveScroll: true, onFinish: done });
+            router.post(urls.bulkDestroy, { ids: selected }, { preserveScroll: true, onFinish: done });
         }
     };
 
-    const exportHref = (format: string) => {
-        const params = new URLSearchParams(
-            Object.entries(buildQuery(filters, search, { format })).map(([k, v]) => [k, String(v)]),
-        );
-        if (selected.length > 0) {
-            selected.forEach((id) => params.append('ids[]', String(id)));
-        }
-        return `${urls.export}?${params.toString()}`;
-    };
+    const exportHref = `${urls.export}?${new URLSearchParams(
+        Object.entries(buildQuery(filters, search, {})).map(([k, v]) => [k, String(v)]),
+    ).toString()}`;
 
-    const modal = pending?.kind === 'publish'
-        ? { title: 'Publish nilai terpilih?', message: `${selected.length} nilai berstatus Finalized akan dipublish dan masuk transkrip. Yang belum Finalized dilewati.`, confirm: 'Ya, publish' }
-        : { title: 'Hapus nilai?', message: 'Nilai dihapus (lunak) dan transkrip mahasiswa disinkron ulang.', confirm: 'Ya, hapus' };
+    const modal = pending?.kind === 'bulk-delete'
+        ? { title: 'Hapus permanen terpilih?', message: `${selected.length} KRS beserta detailnya dihapus permanen dan tidak bisa dipulihkan.`, confirm: 'Ya, hapus permanen' }
+        : { title: 'Hapus permanen KRS?', message: 'KRS beserta seluruh detail MK-nya dihapus permanen dan tidak bisa dipulihkan.', confirm: 'Ya, hapus permanen' };
 
     return (
         <AdminShell shell={shell}>
-            <Head title={`Daftar Nilai · ${shell.appName}`} />
+            <Head title={`Daftar KRS · ${shell.appName}`} />
             <div className="db-root">
                 <div className="db-stack">
                     <CrudHero
-                        icon={Award}
+                        icon={ClipboardList}
                         eyebrow="Akademik"
-                        title="Nilai Mahasiswa"
-                        description="Header dua tahap: buat, lengkapi komponen di halaman edit, finalize saat bobot 100%, lalu publish."
+                        title="KRS Mahasiswa"
+                        description="Rencana studi per tahun. Hapus bersifat permanen beserta detail MK-nya."
                         actions={can.create ? (
-                            <a className="db-btn light" href={urls.create}><Plus size={15} /> Buat Nilai</a>
+                            <a className="db-btn light" href={urls.create}><Plus size={15} /> Buat KRS</a>
                         ) : undefined}
                     />
 
-                    <section className="db-stats" aria-label="Statistik nilai">
+                    <section className="db-stats" aria-label="Statistik KRS">
                         <div className="db-stat">
-                            <span className="db-stat-icon"><Award size={20} /></span>
-                            <div><span className="db-stat-num">{stats.total}</span><span className="db-stat-label">Total Nilai</span></div>
+                            <span className="db-stat-icon"><ClipboardList size={20} /></span>
+                            <div><span className="db-stat-num">{stats.total}</span><span className="db-stat-label">Total KRS</span></div>
                         </div>
                         <div className="db-stat">
-                            <span className="db-stat-icon"><Award size={20} /></span>
+                            <span className="db-stat-icon gold"><ClipboardList size={20} /></span>
+                            <div><span className="db-stat-num">{stats.submitted}</span><span className="db-stat-label">Diajukan</span></div>
+                        </div>
+                        <div className="db-stat">
+                            <span className="db-stat-icon green"><ClipboardList size={20} /></span>
+                            <div><span className="db-stat-num">{stats.approved}</span><span className="db-stat-label">Disetujui</span></div>
+                        </div>
+                        <div className="db-stat">
+                            <span className="db-stat-icon"><ClipboardList size={20} /></span>
                             <div><span className="db-stat-num">{stats.draft}</span><span className="db-stat-label">Draft</span></div>
-                        </div>
-                        <div className="db-stat">
-                            <span className="db-stat-icon gold"><Award size={20} /></span>
-                            <div><span className="db-stat-num">{stats.finalized}</span><span className="db-stat-label">Finalized</span></div>
-                        </div>
-                        <div className="db-stat">
-                            <span className="db-stat-icon green"><Award size={20} /></span>
-                            <div><span className="db-stat-num">{stats.published}</span><span className="db-stat-label">Published</span></div>
                         </div>
                     </section>
 
                     <section className="db-card">
                         <div className="db-card-head">
-                            <h2 className="db-card-title">Tabel Nilai</h2>
+                            <h2 className="db-card-title">Tabel KRS</h2>
                         </div>
                         <div className="db-card-body">
                             <CrudTable<Row>
@@ -180,34 +166,16 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
                                             </span>
                                         ),
                                     },
+                                    { key: 'year', label: 'Tahun', render: (row) => `${row.year ?? '-'}${row.semester ? ` · Smt ${row.semester}` : ''}` },
                                     {
-                                        key: 'course', label: 'Mata Kuliah', sortable: false,
-                                        render: (row) => (
-                                            <span>
-                                                <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>{row.course}</b>
-                                                <small className="db-hint">{row.year ?? '-'} · Kelas {row.classLabel ?? '-'}</small>
-                                            </span>
-                                        ),
+                                        key: 'status', label: 'Status',
+                                        render: (row) => <span className={`db-badge ${row.statusTone}`}>{row.status}</span>,
                                     },
                                     {
-                                        key: 'final_score', label: 'Skor / Huruf', sortable: true, align: 'right',
-                                        render: (row) => (
-                                            <span>
-                                                <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>
-                                                    {row.finalScore ?? '-'} {row.letter ? `(${row.letter})` : ''}
-                                                </b>
-                                                <small className="db-hint">Indeks {row.point ?? '-'} · {row.components} komponen</small>
-                                            </span>
-                                        ),
+                                        key: 'courses', label: 'MK / SKS', align: 'right',
+                                        render: (row) => <span className="db-badge green">{row.courses} MK · {row.credits} SKS</span>,
                                     },
-                                    {
-                                        key: 'grade_status', label: 'Lifecycle',
-                                        render: (row) => <span className={`db-badge ${row.lifecycleTone}`}>{row.lifecycle}</span>,
-                                    },
-                                    {
-                                        key: 'result_status', label: 'Hasil',
-                                        render: (row) => (row.result ? <span className={`db-badge ${row.resultTone}`}>{row.result}</span> : '-'),
-                                    },
+                                    { key: 'created_at', label: 'Dibuat', sortable: true, render: (row) => row.createdAt ?? '-' },
                                 ]}
                                 rows={data.rows}
                                 page={{ currentPage: data.currentPage, lastPage: data.lastPage, perPage: data.perPage, total: data.total }}
@@ -225,7 +193,7 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
                                             value={nim}
                                             placeholder="NIM…"
                                             onChange={(e) => setNim(e.target.value)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); visit({ nim, page: 1 }, true); } }}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); visitNim(); } }}
                                             aria-label="Filter NIM"
                                         />
                                         <select
@@ -248,50 +216,21 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
                                         </select>
                                         <select
                                             className="db-input"
-                                            value={filters.letter}
-                                            onChange={(e) => visit({ letter: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter huruf"
+                                            value={filters.status}
+                                            onChange={(e) => visit({ status: e.target.value, page: 1 }, true)}
+                                            aria-label="Filter status"
                                         >
-                                            <option value="">Semua huruf</option>
-                                            {letters.map((l) => <option key={l} value={l}>{l}</option>)}
+                                            <option value="">Semua status</option>
+                                            {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                                         </select>
-                                        <select
-                                            className="db-input"
-                                            value={filters.lifecycle}
-                                            onChange={(e) => visit({ lifecycle: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter lifecycle"
-                                        >
-                                            <option value="">Semua lifecycle</option>
-                                            {lifecycles.map((s) => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                        <select
-                                            className="db-input"
-                                            value={filters.result}
-                                            onChange={(e) => visit({ result: e.target.value, page: 1 }, true)}
-                                            aria-label="Filter hasil"
-                                        >
-                                            <option value="">Semua hasil</option>
-                                            {results.map((s) => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                        <div style={{ gridColumn: '1 / -1' }}>
-                                            <AsyncSelect
-                                                label=""
-                                                fetchUrl={urls.offeringOptions}
-                                                value={offering}
-                                                placeholder="Filter offering…"
-                                                onChange={(option) => {
-                                                    setOffering(option);
-                                                    visit({ offering: option ? String(option.id) : '', page: 1 }, true);
-                                                }}
-                                            />
-                                        </div>
                                     </FilterPanel>
                                 )}
                                 selected={selected}
                                 onToggle={toggle}
                                 onToggleAll={toggleAll}
-                                canDelete={false}
-                                onBulkDelete={() => undefined}
+                                canDelete={can.delete}
+                                onBulkDelete={() => setPending({ kind: 'bulk-delete' })}
+                                bulkLabel="Hapus permanen terpilih"
                                 canUpdate={false}
                                 onDeleteRow={can.delete ? (row) => setPending({ kind: 'delete', row }) : undefined}
                                 showActions
@@ -303,29 +242,19 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
                                             </a>
                                         )}
                                         {can.update && (
-                                            <a className="db-btn ghost sm" href={row.editUrl} title="Ubah + komponen">
+                                            <a className="db-btn ghost sm" href={row.editUrl} title="Ubah + kelola MK">
                                                 <Pencil size={13} />
                                             </a>
                                         )}
                                     </>
                                 )}
-                                extraActions={can.update && selected.length > 0 ? (
-                                    <button
-                                        type="button"
-                                        className="db-btn ghost sm"
-                                        onClick={() => setPending({ kind: 'publish' })}
-                                        title="Publish yang terpilih"
-                                    >
-                                        <Megaphone size={13} /> Publish terpilih
-                                    </button>
-                                ) : undefined}
                                 canCreate={false}
-                                createLabel="Buat Nilai"
-                                exportHref={exportHref('xlsx')}
+                                createLabel="Buat KRS"
+                                exportHref={exportHref}
                                 exportExtra={[
-                                    { label: 'CSV', href: exportHref('csv') },
+                                    { label: 'PDF laporan', href: urls.exportPdf },
                                 ]}
-                                emptyText="Belum ada nilai yang cocok dengan filter."
+                                emptyText="Belum ada KRS yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}
                                 onPerPageChange={(n) => visit({ perPage: n, page: 1 })}
@@ -339,7 +268,7 @@ export default function StudentGradeIndex({ shell, can, stats, data, filters, ye
                     title={modal.title}
                     message={modal.message}
                     confirmLabel={modal.confirm}
-                    danger={pending?.kind === 'delete'}
+                    danger
                     processing={processing}
                     onConfirm={confirmPending}
                     onCancel={() => setPending(null)}
