@@ -1,6 +1,6 @@
-// Detail transkrip mahasiswa — profil + snapshot semester + nilai terbaik.
+// Detail transkrip mahasiswa — hero IPK + snapshot per semester + nilai terbaik.
 import { Head, router } from '@inertiajs/react';
-import { ArrowLeft, FileBadge, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, FileBadge, GraduationCap, Layers, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
@@ -37,6 +37,9 @@ export default function TranscriptShow({ shell, can, student, results, entries, 
         router.post(urls.sync, {}, { preserveScroll: true, onFinish: () => setProcessing(false) });
     };
 
+    const latest = results[0] ?? null;
+    const passedCredits = entries.filter((e) => e.result === 'Passed').reduce((sum, e) => sum + e.credits, 0);
+
     return (
         <AdminShell shell={shell}>
             <Head title={`Transkrip ${student.name} · ${shell.appName}`} />
@@ -59,6 +62,25 @@ export default function TranscriptShow({ shell, can, student, results, entries, 
                         }
                     />
 
+                    <section className="db-stats" aria-label="Ringkasan transkrip">
+                        <div className="db-stat">
+                            <span className="db-stat-icon gold"><GraduationCap size={20} /></span>
+                            <div><span className="db-stat-num">{latest?.ipk ?? '-'}</span><span className="db-stat-label">IPK</span></div>
+                        </div>
+                        <div className="db-stat">
+                            <span className="db-stat-icon"><Layers size={20} /></span>
+                            <div><span className="db-stat-num">{results.length}</span><span className="db-stat-label">Semester</span></div>
+                        </div>
+                        <div className="db-stat">
+                            <span className="db-stat-icon green"><BookOpen size={20} /></span>
+                            <div><span className="db-stat-num">{entries.length}</span><span className="db-stat-label">Mata Kuliah</span></div>
+                        </div>
+                        <div className="db-stat">
+                            <span className="db-stat-icon green"><Award size={20} /></span>
+                            <div><span className="db-stat-num">{passedCredits}</span><span className="db-stat-label">SKS Lulus</span></div>
+                        </div>
+                    </section>
+
                     <section className="db-card">
                         <div className="db-card-head">
                             <h2 className="db-card-title">Snapshot Semester ({results.length})</h2>
@@ -68,12 +90,29 @@ export default function TranscriptShow({ shell, can, student, results, entries, 
                                 <p className="db-hint">Belum ada snapshot. Klik Sinkron Ulang untuk menghitung dari nilai yang difinalisasi.</p>
                             ) : (
                                 results.map((r) => (
-                                    <div className="db-summary" key={r.id}>
-                                        <span className="db-hint">{r.year} · Semester {r.semester ?? '-'}</span>
-                                        <span>
-                                            {r.courses} MK · {r.taken} SKS ({r.passed} lulus) · IPS <b>{r.ips ?? '-'}</b> · IPK <b>{r.ipk ?? '-'}</b>
-                                            {r.status ? <span className="db-badge" style={{ marginLeft: 8 }}>{r.status}</span> : null}
-                                        </span>
+                                    <div className="cx-sem" key={r.id}>
+                                        <div className="cx-sem-head">
+                                            <span>{r.year} · Semester {r.semester ?? '-'}</span>
+                                            {r.status ? <span className="db-badge">{r.status}</span> : null}
+                                        </div>
+                                        <div className="cx-sem-grid">
+                                            <div className="cx-sem-cell">
+                                                <span className="cx-sem-num">{r.courses}</span>
+                                                <span className="cx-sem-label">Mata Kuliah</span>
+                                            </div>
+                                            <div className="cx-sem-cell">
+                                                <span className="cx-sem-num">{r.passed}<small className="db-hint"> / {r.taken} SKS</small></span>
+                                                <span className="cx-sem-label">SKS Lulus</span>
+                                            </div>
+                                            <div className="cx-sem-cell">
+                                                <span className="cx-sem-num brand">{r.ips ?? '-'}</span>
+                                                <span className="cx-sem-label">IPS</span>
+                                            </div>
+                                            <div className="cx-sem-cell">
+                                                <span className="cx-sem-num green">{r.ipk ?? '-'}</span>
+                                                <span className="cx-sem-label">IPK</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -100,7 +139,11 @@ export default function TranscriptShow({ shell, can, student, results, entries, 
                                                 <td style={{ textAlign: 'center' }}>{e.credits}</td>
                                                 <td style={{ textAlign: 'center' }}><b>{e.score ?? '-'}</b></td>
                                                 <td style={{ textAlign: 'center' }}><span className="db-badge green">{e.letter ?? '-'}</span></td>
-                                                <td style={{ textAlign: 'center' }}><small className="db-hint">{e.result ?? '-'}</small></td>
+                                                <td style={{ textAlign: 'center' }}>
+                                                    {e.result
+                                                        ? <span className={`db-badge ${e.result === 'Passed' ? 'green' : e.result === 'Failed' ? 'red' : ''}`}>{e.result}</span>
+                                                        : <small className="db-hint">-</small>}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

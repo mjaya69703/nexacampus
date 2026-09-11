@@ -72,6 +72,19 @@ table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .crud-filter-grid .db-input { width: 100%; }
 .crud-filter-foot { display: flex; justify-content: flex-end; }
 
+/* ── Blok semester transkrip ───────────────────────────────────────── */
+.cx-sem { padding: 14px 0; border-bottom: 1px solid var(--db-line); }
+.cx-sem:last-child { border-bottom: 0; padding-bottom: 2px; }
+.cx-sem:first-child { padding-top: 2px; }
+.cx-sem-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; color: var(--db-heading); font-size: 13px; font-weight: 800; }
+.cx-sem-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.cx-sem-cell { border: 1px solid var(--db-line); border-radius: 10px; padding: 10px 12px; background: var(--db-card); }
+.cx-sem-num { display: block; color: var(--db-heading); font-size: 18px; font-weight: 800; }
+.cx-sem-num.brand { color: var(--db-brand); }
+.cx-sem-num.green { color: var(--db-green); }
+.cx-sem-num.gold { color: var(--db-gold); }
+.cx-sem-label { display: block; margin-top: 2px; color: var(--db-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+
 /* ── Bulkbar ─────────────────────────────────────────────────────── */
 .crud-bulkbar {
     display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
@@ -121,4 +134,5 @@ table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 @media (max-width: 650px) {
     .crud-grid { grid-template-columns: 1fr; }
     .crud-filter-grid { grid-template-columns: 1fr; }
+    .cx-sem-grid { grid-template-columns: 1fr 1fr; }
 }
