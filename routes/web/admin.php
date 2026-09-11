@@ -21,6 +21,8 @@ use App\Http\Controllers\Admin\Academic\StudentGradeController;
 use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
 use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
+use App\Http\Controllers\Admin\Financial\PaymentController;
+use App\Http\Controllers\Admin\Financial\InvoiceAdjustmentController;
 use App\Http\Controllers\Admin\Financial\StudentInvoiceController;
 use App\Http\Controllers\Admin\Financial\ScholarshipController;
 use App\Http\Controllers\Admin\Financial\TuitionFeeController;
@@ -45,7 +47,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
         continue;
     }
 
@@ -1161,6 +1163,31 @@ Route::post('/financial/student-invoices/{studentInvoice}/adjust', [StudentInvoi
 Route::post('/financial/student-invoices/{studentInvoice}/apply-scholarship', [StudentInvoiceController::class, 'applyScholarship'])
     ->middleware('active_permission:student-invoice.update')
     ->name('financial.student-invoices.apply-scholarship');
+
+// Pembayaran (Inertia React, read-only + verifikasi) — paritas Livewire.
+Route::get('/financial/payments/export', [PaymentController::class, 'export'])
+    ->middleware('active_permission:payment.viewAny')
+    ->name('financial.payments.export');
+Route::get('/financial/payments', [PaymentController::class, 'index'])
+    ->middleware('active_permission:payment.viewAny')
+    ->name('financial.payments.index');
+Route::get('/financial/payments/{payment}', [PaymentController::class, 'show'])
+    ->middleware('active_permission:payment.view')
+    ->name('financial.payments.show');
+Route::post('/financial/payments/{payment}/verify', [PaymentController::class, 'verify'])
+    ->middleware('active_permission:payment.update')
+    ->name('financial.payments.verify');
+Route::post('/financial/payments/{payment}/reject', [PaymentController::class, 'reject'])
+    ->middleware('active_permission:payment.update')
+    ->name('financial.payments.reject');
+
+// Log Penyesuaian Tagihan (Inertia React, read-only) — paritas Livewire.
+Route::get('/financial/invoice-adjustments/export', [InvoiceAdjustmentController::class, 'export'])
+    ->middleware('active_permission:invoice-adjustment.viewAny')
+    ->name('financial.invoice-adjustments.export');
+Route::get('/financial/invoice-adjustments', [InvoiceAdjustmentController::class, 'index'])
+    ->middleware('active_permission:invoice-adjustment.viewAny')
+    ->name('financial.invoice-adjustments.index');
 
 Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
     ->middleware('active_permission:service-letter-request.view')
