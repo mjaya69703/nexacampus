@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
 use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
 use App\Http\Controllers\Admin\Financial\InstallmentRequestController;
+use App\Http\Controllers\Admin\Financial\StudentScholarshipController;
 use App\Http\Controllers\Admin\Financial\PaymentController;
 use App\Http\Controllers\Admin\Financial\InvoiceAdjustmentController;
 use App\Http\Controllers\Admin\Financial\StudentInvoiceController;
@@ -48,7 +49,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
         continue;
     }
 
@@ -1206,6 +1207,35 @@ Route::post('/financial/installment-requests/{installmentRequest}/approve', [Ins
 Route::post('/financial/installment-requests/{installmentRequest}/reject', [InstallmentRequestController::class, 'reject'])
     ->middleware('active_permission:installment-request.update')
     ->name('financial.installment-requests.reject');
+
+// CRUD Penerima Beasiswa (Inertia React) — paritas Livewire.
+Route::get('/financial/student-scholarships/export', [StudentScholarshipController::class, 'export'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.export');
+Route::get('/financial/student-scholarships/search-students', [StudentScholarshipController::class, 'searchStudents'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.search-students');
+Route::post('/financial/student-scholarships/bulk-destroy', [StudentScholarshipController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-scholarship.delete')
+    ->name('financial.student-scholarships.bulk-destroy');
+Route::get('/financial/student-scholarships', [StudentScholarshipController::class, 'index'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.index');
+Route::get('/financial/student-scholarships/create', [StudentScholarshipController::class, 'create'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.create');
+Route::post('/financial/student-scholarships', [StudentScholarshipController::class, 'store'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.store');
+Route::get('/financial/student-scholarships/{studentScholarship}/edit', [StudentScholarshipController::class, 'edit'])
+    ->middleware('active_permission:student-scholarship.update')
+    ->name('financial.student-scholarships.edit');
+Route::put('/financial/student-scholarships/{studentScholarship}', [StudentScholarshipController::class, 'update'])
+    ->middleware('active_permission:student-scholarship.update')
+    ->name('financial.student-scholarships.update');
+Route::delete('/financial/student-scholarships/{studentScholarship}', [StudentScholarshipController::class, 'destroy'])
+    ->middleware('active_permission:student-scholarship.delete')
+    ->name('financial.student-scholarships.destroy');
 
 Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
     ->middleware('active_permission:service-letter-request.view')
