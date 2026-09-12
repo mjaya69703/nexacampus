@@ -21,7 +21,11 @@ use App\Http\Controllers\Admin\Academic\StudentGradeController;
 use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
 use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
+use App\Http\Controllers\Admin\Financial\FinancialHoldController;
+use App\Http\Controllers\Admin\Financial\FinancialDashboardController;
+use App\Http\Controllers\Admin\Financial\FinancialReportController;
 use App\Http\Controllers\Admin\Financial\InstallmentRequestController;
+use App\Http\Controllers\Admin\Financial\StudentCreditController;
 use App\Http\Controllers\Admin\Financial\StudentScholarshipController;
 use App\Http\Controllers\Admin\Financial\PaymentController;
 use App\Http\Controllers\Admin\Financial\InvoiceAdjustmentController;
@@ -49,7 +53,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'student-credits', 'financial-holds', 'financial-reports', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
         continue;
     }
 
@@ -941,9 +945,12 @@ Route::delete('/access/permissions/{permission}', [PermissionController::class, 
     ->middleware('active_permission:permission.delete')
     ->name('access.permissions.destroy');
 
-Route::livewire('/financial/dashboard', 'admin.financial.dashboard.index')
+Route::get('/financial/dashboard', [FinancialDashboardController::class, 'index'])
     ->middleware('active_permission:financial-dashboard.viewAny')
     ->name('financial.dashboard.index');
+Route::get('/financial/financial-reports', [FinancialReportController::class, 'index'])
+    ->middleware('active_permission:financial-report.viewAny')
+    ->name('financial.financial-reports.index');
 Route::livewire('/student-services/dashboard', 'admin.student-services.dashboard.index')
     ->middleware('active_permission:student-service-dashboard.viewAny')
     ->name('student-services.dashboard.index');
@@ -1236,6 +1243,37 @@ Route::put('/financial/student-scholarships/{studentScholarship}', [StudentSchol
 Route::delete('/financial/student-scholarships/{studentScholarship}', [StudentScholarshipController::class, 'destroy'])
     ->middleware('active_permission:student-scholarship.delete')
     ->name('financial.student-scholarships.destroy');
+
+// Saldo Deposit (Inertia React) — paritas Livewire.
+Route::get('/financial/student-credits/export', [StudentCreditController::class, 'export'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.export');
+Route::get('/financial/student-credits/search-students', [StudentCreditController::class, 'searchStudents'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.search-students');
+Route::post('/financial/student-credits/record', [StudentCreditController::class, 'record'])
+    ->middleware('active_permission:student-credit.create')
+    ->name('financial.student-credits.record');
+Route::get('/financial/student-credits', [StudentCreditController::class, 'index'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.index');
+
+// Blokir Akademik (Inertia React, tinjau + penanganan) — paritas Livewire.
+Route::get('/financial/financial-holds/export', [FinancialHoldController::class, 'export'])
+    ->middleware('active_permission:financial-hold.viewAny')
+    ->name('financial.financial-holds.export');
+Route::get('/financial/financial-holds', [FinancialHoldController::class, 'index'])
+    ->middleware('active_permission:financial-hold.viewAny')
+    ->name('financial.financial-holds.index');
+Route::get('/financial/financial-holds/{financialHold}', [FinancialHoldController::class, 'show'])
+    ->middleware('active_permission:financial-hold.view')
+    ->name('financial.financial-holds.show');
+Route::post('/financial/financial-holds/{financialHold}/release', [FinancialHoldController::class, 'release'])
+    ->middleware('active_permission:financial-hold.update')
+    ->name('financial.financial-holds.release');
+Route::post('/financial/financial-holds/{financialHold}/waive', [FinancialHoldController::class, 'waive'])
+    ->middleware('active_permission:financial-hold.update')
+    ->name('financial.financial-holds.waive');
 
 Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
     ->middleware('active_permission:service-letter-request.view')
