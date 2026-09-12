@@ -1,12 +1,13 @@
 // Daftar tarif biaya kuliah — kit CRUD (sampah/restore, toggle aktif, paritas Blade).
 import { Head, router } from '@inertiajs/react';
-import { Plus, Trash2, Wallet } from 'lucide-react';
+import { Plus, Trash2, Upload, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
 import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
+import { ImportModal, ImportResult, ImportResultBanner } from '../../../../components/Shared/Crud/ImportModal';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
@@ -30,8 +31,10 @@ type Props = {
     };
     yearOptions: { id: number; name: string }[];
     programOptions: { id: number; name: string }[];
+    importResult: ImportResult;
     urls: {
-        index: string; create: string; store: string; export: string;
+        index: string; create: string; store: string; export: string; exportPdf: string;
+        importTemplate: string; importSubmit: string;
         bulkDestroy: string; bulkRestore: string; bulkForceDestroy: string;
     };
 };
@@ -78,12 +81,13 @@ function buildQuery(filters: Props['filters'], search: string, overrides: Record
     );
 }
 
-export default function TuitionFeeIndex({ shell, can, stats, data, filters, yearOptions, programOptions, urls }: Props) {
+export default function TuitionFeeIndex({ shell, can, stats, data, filters, yearOptions, programOptions, importResult, urls }: Props) {
     const [search, setSearch] = useState(filters.q);
     const [semester, setSemester] = useState(filters.semester);
     const [selected, setSelected] = useState<number[]>([]);
     const [pending, setPending] = useState<Pending>(null);
     const [processing, setProcessing] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
 
     const isTrash = filters.mode === 'trash';
 
@@ -161,6 +165,18 @@ export default function TuitionFeeIndex({ shell, can, stats, data, filters, year
         Object.entries(buildQuery(filters, search, {})).map(([k, v]) => [k, String(v)]),
     ).toString()}`;
 
+    const submitImport = (file: File) => {
+        setProcessing(true);
+        router.post(urls.importSubmit, { file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onFinish: () => {
+                setProcessing(false);
+                setImportOpen(false);
+            },
+        });
+    };
+
     const copy = pending ? MODAL_COPY[pending.kind] : null;
     const copyName = pending && 'row' in pending
         ? `${pending.row.year} · ${pending.row.program}`
@@ -180,6 +196,8 @@ export default function TuitionFeeIndex({ shell, can, stats, data, filters, year
                             <a className="db-btn light" href={urls.create}><Plus size={15} /> Tambah Tarif</a>
                         ) : undefined}
                     />
+
+                    <ImportResultBanner result={importResult} successText={(n) => `${n} data berhasil diimpor.`} failText={(n) => `Impor dibatalkan — ${n} baris bermasalah, tidak ada data yang disimpan.`} />
 
                     <section className="db-stats" aria-label="Statistik tarif">
                         <div className="db-stat">
@@ -329,6 +347,8 @@ export default function TuitionFeeIndex({ shell, can, stats, data, filters, year
                                 canCreate={false}
                                 createLabel="Tambah Tarif"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
+                                extraActions={can.create ? (<button className="db-btn ghost sm" type="button" onClick={() => setImportOpen(true)}><Upload size={14} /> Import</button>) : undefined}
                                 emptyText={isTrash ? 'Sampah kosong.' : 'Belum ada tarif yang cocok dengan filter.'}
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}
@@ -347,6 +367,17 @@ export default function TuitionFeeIndex({ shell, can, stats, data, filters, year
                     processing={processing}
                     onConfirm={confirmPending}
                     onCancel={() => setPending(null)}
+                />
+
+                <ImportModal
+                    open={importOpen}
+                    title="Impor Tarif Biaya"
+                    description="Unggah file sesuai template untuk menambah banyak tarif sekaligus. Satu baris gagal berarti file ditolak."
+                    templateUrl={urls.importTemplate}
+                    templateLabel="Unduh template"
+                    processing={processing}
+                    onSubmit={submitImport}
+                    onClose={() => setImportOpen(false)}
                 />
             </div>
         </AdminShell>

@@ -30,7 +30,7 @@ type Props = {
         sort: string; direction: 'asc' | 'desc'; perPage: number;
     };
     programOptions: { id: number; name: string }[];
-    urls: { index: string; record: string; export: string; searchStudents: string };
+    urls: { index: string; record: string; export: string; exportPdf: string; searchStudents: string };
 };
 
 const money = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
@@ -319,6 +319,7 @@ export default function StudentCreditIndex({ shell, can, stats, data, filters, p
                                 canCreate={false}
                                 createLabel="Deposit"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
                                 emptyText="Tidak ada saldo nonzero yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}

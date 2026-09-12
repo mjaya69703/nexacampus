@@ -28,7 +28,7 @@ type Props = {
         sort: string; direction: 'asc' | 'desc'; perPage: number;
     };
     statuses: string[];
-    urls: { index: string; export: string };
+    urls: { index: string; export: string; exportPdf: string };
 };
 
 function buildQuery(filters: Props['filters'], search: string, overrides: Record<string, string | number | undefined>) {
@@ -199,6 +199,7 @@ export default function InstallmentRequestIndex({ shell, can, stats, data, filte
                                 canCreate={false}
                                 createLabel="Pengajuan"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
                                 emptyText="Belum ada pengajuan yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}

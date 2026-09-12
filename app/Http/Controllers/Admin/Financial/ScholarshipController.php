@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -121,14 +122,18 @@ class ScholarshipController extends Controller
             ],
             'types' => self::TYPES,
             'discountTypes' => self::DISCOUNT_TYPES,
+            'importResult' => $request->session()->get('import_result'),
             'urls' => [
                 'index' => route('admin.financial.scholarships.index'),
                 'create' => route('admin.financial.scholarships.create'),
                 'store' => route('admin.financial.scholarships.store'),
                 'export' => route('admin.financial.scholarships.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'scholarships']),
                 'bulkDestroy' => route('admin.financial.scholarships.bulk-destroy'),
                 'bulkRestore' => route('admin.financial.scholarships.bulk-restore'),
                 'bulkForceDestroy' => route('admin.financial.scholarships.bulk-force-destroy'),
+                'importTemplate' => route('admin.financial.scholarships.import-template'),
+                'importSubmit' => route('admin.financial.scholarships.import'),
             ],
         ]);
     }
@@ -313,6 +318,139 @@ class ScholarshipController extends Controller
 
     // ── Helpers ─────────────────────────────────────────────────────
 
+    public function importTemplate(): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([['name', 'type', 'discount_type', 'discount_percentage', 'fixed_amount', 'duration_semesters', 'requirements', 'is_active']], null, 'A1');
+        $sheet->fromArray([['Beasiswa Prestasi', 'merit', 'percentage', '50', '', '8', 'IPK minimal 3.50', '1']], null, 'A2');
+        $sheet->getStyle('A1:H1')->getFont()->setBold(true);
+
+        foreach (range('A', 'H') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(
+            fn () => (new Xlsx($spreadsheet))->save('php://output'),
+            'template-import-scholarships.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
+
+        try {
+            $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        } catch (\Throwable) {
+            return back()->with('error', 'File tidak bisa dibaca. Gunakan template yang disediakan.');
+        }
+
+        $rows = $spreadsheet->getActiveSheet()->toArray();
+        $header = array_map(fn ($h) => strtolower(trim((string) $h)), $rows ? array_shift($rows) : []);
+        $missing = array_diff(['name', 'type', 'discount_type'], $header);
+
+        if (! empty($missing)) {
+            return back()->with('error', 'Header wajib hilang: '.implode(', ', $missing).'. Unduh template terbaru.');
+        }
+
+        $rows = array_values(array_filter(
+            $rows,
+            fn ($row) => collect($row)->filter(fn ($v) => trim((string) $v) !== '')->isNotEmpty()
+        ));
+
+        if (empty($rows)) {
+            return back()->with('error', 'File tidak berisi data.');
+        }
+
+        if (count($rows) > 500) {
+            return back()->with('error', 'Maksimal 500 baris per import.');
+        }
+
+        $valid = [];
+        $errors = [];
+
+        foreach ($rows as $i => $row) {
+            $line = $i + 2;
+            $data = array_map(
+                fn ($v) => is_string($v) ? trim($v) : $v,
+                array_combine($header, array_pad(array_slice($row, 0, count($header)), count($header), null))
+            );
+            $rowErrors = [];
+
+            if (($data['name'] ?? null) === null || $data['name'] === '') {
+                $rowErrors[] = 'name wajib diisi';
+            }
+
+            if (! in_array($data['type'] ?? null, self::TYPES, true)) {
+                $rowErrors[] = 'type harus '.implode('/', self::TYPES);
+            }
+
+            if (! in_array($data['discount_type'] ?? null, self::DISCOUNT_TYPES, true)) {
+                $rowErrors[] = 'discount_type harus percentage/fixed';
+            }
+
+            $isPercentage = ($data['discount_type'] ?? null) === 'percentage';
+
+            if ($isPercentage) {
+                $percent = $data['discount_percentage'] ?? null;
+
+                if ($percent === null || $percent === '' || ! is_numeric($percent) || (float) $percent < 0.01 || (float) $percent > 100) {
+                    $rowErrors[] = 'discount_percentage harus 0.01-100 untuk percentage';
+                }
+            } else {
+                $fixed = $data['fixed_amount'] ?? null;
+
+                if ($fixed === null || $fixed === '' || ! is_numeric($fixed) || (float) $fixed < 1) {
+                    $rowErrors[] = 'fixed_amount wajib >= 1 untuk fixed';
+                }
+            }
+
+            $duration = $data['duration_semesters'] ?? null;
+
+            if ($duration === null || $duration === '' || filter_var($duration, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 20]]) === false) {
+                $rowErrors[] = 'duration_semesters harus 1-20';
+            }
+
+            if (! empty($errors) && count($errors) >= 20) {
+                break;
+            }
+
+            if (! empty($rowErrors)) {
+                $errors[] = ['row' => $line, 'messages' => $rowErrors];
+                continue;
+            }
+
+            $valid[] = [
+                'name' => $data['name'],
+                'description' => null,
+                'type' => $data['type'],
+                'discount_type' => $data['discount_type'],
+                'discount_percentage' => $isPercentage ? (float) $data['discount_percentage'] : null,
+                'fixed_amount' => ! $isPercentage ? (float) $data['fixed_amount'] : null,
+                'duration_semesters' => (int) $duration,
+                'requirements' => null,
+                'is_active' => $this->parseImportBool($data['is_active'] ?? null, true),
+            ];
+        }
+
+        if (! empty($errors)) {
+            return redirect()->route('admin.financial.scholarships.index')->with('import_result', [
+                'success' => false, 'created' => 0,
+                'rejected' => count($errors), 'errors' => $errors,
+            ]);
+        }
+
+        Scholarship::insert($valid);
+
+        return redirect()->route('admin.financial.scholarships.index')
+            ->with('success', count($valid).' beasiswa berhasil diimpor.')
+            ->with('import_result', [
+                'success' => true, 'created' => count($valid), 'rejected' => 0, 'errors' => [],
+            ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -345,5 +483,14 @@ class ScholarshipController extends Controller
     private function money(float|string|null $amount): string
     {
         return 'Rp '.number_format((float) $amount, 0, ',', '.');
+    }
+
+    private function parseImportBool(mixed $value, bool $default): bool
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'ya', 'y'], true);
     }
 }

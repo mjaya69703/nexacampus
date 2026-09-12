@@ -31,7 +31,7 @@ type Props = {
     };
     methods: string[];
     statuses: string[];
-    urls: { index: string; export: string };
+    urls: { index: string; export: string; exportPdf: string };
 };
 
 const money = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
@@ -233,6 +233,7 @@ export default function PaymentIndex({ shell, can, stats, data, filters, methods
                                 canCreate={false}
                                 createLabel="Pembayaran"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
                                 emptyText="Belum ada pembayaran yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}

@@ -130,6 +130,7 @@ class FinancialHoldController extends Controller
             'urls' => [
                 'index' => route('admin.financial.financial-holds.index'),
                 'export' => route('admin.financial.financial-holds.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'financial-holds']),
             ],
         ]);
     }

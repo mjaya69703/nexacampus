@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -109,12 +110,16 @@ class ClearancePolicyController extends Controller
             'invoiceTypes' => $this->typeOptions(config('financial.invoice_types', [])),
             'holdTypes' => $this->holdOptions(),
             'modes' => self::MODES,
+            'importResult' => $request->session()->get('import_result'),
             'urls' => [
                 'index' => route('admin.financial.clearance-policies.index'),
                 'create' => route('admin.financial.clearance-policies.create'),
                 'store' => route('admin.financial.clearance-policies.store'),
                 'export' => route('admin.financial.clearance-policies.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'clearance-policies']),
                 'bulkDestroy' => route('admin.financial.clearance-policies.bulk-destroy'),
+                'importTemplate' => route('admin.financial.clearance-policies.import-template'),
+                'importSubmit' => route('admin.financial.clearance-policies.import'),
             ],
         ]);
     }
@@ -257,6 +262,138 @@ class ClearancePolicyController extends Controller
 
     // ── Helpers ─────────────────────────────────────────────────────
 
+    public function importTemplate(): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([['invoice_type', 'hold_type', 'mode', 'grace_days', 'is_active', 'description']], null, 'A1');
+        $sheet->fromArray([['exam', 'exam_card', 'blocking', '7', '1', 'Tunggakan ujian blokir kartu ujian']], null, 'A2');
+        $sheet->getStyle('A1:F1')->getFont()->setBold(true);
+
+        foreach (range('A', 'F') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(
+            fn () => (new Xlsx($spreadsheet))->save('php://output'),
+            'template-import-clearance-policies.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
+
+        try {
+            $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        } catch (\Throwable) {
+            return back()->with('error', 'File tidak bisa dibaca. Gunakan template yang disediakan.');
+        }
+
+        $rows = $spreadsheet->getActiveSheet()->toArray();
+        $header = array_map(fn ($h) => strtolower(trim((string) $h)), $rows ? array_shift($rows) : []);
+        $missing = array_diff(['invoice_type', 'hold_type', 'mode', 'grace_days'], $header);
+
+        if (! empty($missing)) {
+            return back()->with('error', 'Header wajib hilang: '.implode(', ', $missing).'. Unduh template terbaru.');
+        }
+
+        $rows = array_values(array_filter(
+            $rows,
+            fn ($row) => collect($row)->filter(fn ($v) => trim((string) $v) !== '')->isNotEmpty()
+        ));
+
+        if (empty($rows)) {
+            return back()->with('error', 'File tidak berisi data.');
+        }
+
+        if (count($rows) > 500) {
+            return back()->with('error', 'Maksimal 500 baris per import.');
+        }
+
+        $validTypes = array_keys(config('financial.invoice_types', []));
+        $validHolds = array_keys(config('financial.hold_targets', []));
+        $seen = [];
+        $valid = [];
+        $errors = [];
+
+        foreach ($rows as $i => $row) {
+            $line = $i + 2;
+            $data = array_map(
+                fn ($v) => is_string($v) ? trim($v) : $v,
+                array_combine($header, array_pad(array_slice($row, 0, count($header)), count($header), null))
+            );
+            $rowErrors = [];
+
+            $invoiceType = (string) ($data['invoice_type'] ?? '');
+            $holdType = (string) ($data['hold_type'] ?? '');
+
+            if (! in_array($invoiceType, $validTypes, true)) {
+                $rowErrors[] = "invoice_type \"{$invoiceType}\" tidak dikenal";
+            }
+
+            if (! in_array($holdType, $validHolds, true)) {
+                $rowErrors[] = "hold_type \"{$holdType}\" tidak dikenal";
+            }
+
+            if (! in_array($data['mode'] ?? null, self::MODES, true)) {
+                $rowErrors[] = 'mode harus warning/blocking';
+            }
+
+            $grace = $data['grace_days'] ?? null;
+
+            if ($grace === null || $grace === '' || filter_var($grace, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 365]]) === false) {
+                $rowErrors[] = 'grace_days harus 0-365';
+            }
+
+            $comboKey = $invoiceType.'|'.$holdType;
+
+            if (empty($rowErrors)) {
+                if (in_array($comboKey, $seen, true)) {
+                    $rowErrors[] = 'kombinasi duplikat di dalam file';
+                } elseif (FinancialClearancePolicy::where('invoice_type', $invoiceType)->where('hold_type', $holdType)->exists()) {
+                    $rowErrors[] = 'kombinasi sudah terdaftar';
+                } else {
+                    $seen[] = $comboKey;
+                }
+            }
+
+            if (! empty($errors) && count($errors) >= 20) {
+                break;
+            }
+
+            if (! empty($rowErrors)) {
+                $errors[] = ['row' => $line, 'messages' => $rowErrors];
+                continue;
+            }
+
+            $valid[] = [
+                'invoice_type' => $invoiceType,
+                'hold_type' => $holdType,
+                'mode' => $data['mode'],
+                'grace_days' => (int) $grace,
+                'is_active' => $this->parseImportBool($data['is_active'] ?? null, true),
+                'description' => $data['description'] ?? null,
+            ];
+        }
+
+        if (! empty($errors)) {
+            return redirect()->route('admin.financial.clearance-policies.index')->with('import_result', [
+                'success' => false, 'created' => 0,
+                'rejected' => count($errors), 'errors' => $errors,
+            ]);
+        }
+
+        FinancialClearancePolicy::insert($valid);
+
+        return redirect()->route('admin.financial.clearance-policies.index')
+            ->with('success', count($valid).' kebijakan berhasil diimpor.')
+            ->with('import_result', [
+                'success' => true, 'created' => count($valid), 'rejected' => 0, 'errors' => [],
+            ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -312,5 +449,14 @@ class ClearancePolicyController extends Controller
             ])
             ->values()
             ->all();
+    }
+
+    private function parseImportBool(mixed $value, bool $default): bool
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'ya', 'y'], true);
     }
 }

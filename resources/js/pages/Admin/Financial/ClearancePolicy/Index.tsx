@@ -1,12 +1,13 @@
 // Daftar kebijakan bebas tanggungan — kit CRUD (hapus permanen, paritas Blade).
 import { Head, router } from '@inertiajs/react';
-import { Pencil, Plus, ShieldCheck } from 'lucide-react';
+import { Pencil, Plus, ShieldCheck, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
 import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
+import { ImportModal, ImportResult, ImportResultBanner } from '../../../../components/Shared/Crud/ImportModal';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
@@ -32,8 +33,10 @@ type Props = {
     invoiceTypes: { id: string; name: string }[];
     holdTypes: { id: string; name: string }[];
     modes: string[];
+    importResult: ImportResult;
     urls: {
-        index: string; create: string; store: string; export: string; bulkDestroy: string;
+        index: string; create: string; store: string; export: string; exportPdf: string;
+        importTemplate: string; importSubmit: string; bulkDestroy: string;
     };
 };
 
@@ -46,11 +49,12 @@ function buildQuery(filters: Props['filters'], search: string, overrides: Record
     );
 }
 
-export default function ClearancePolicyIndex({ shell, can, stats, data, filters, invoiceTypes, holdTypes, modes, urls }: Props) {
+export default function ClearancePolicyIndex({ shell, can, stats, data, filters, invoiceTypes, holdTypes, modes, importResult, urls }: Props) {
     const [search, setSearch] = useState(filters.q);
     const [selected, setSelected] = useState<number[]>([]);
     const [pending, setPending] = useState<Pending>(null);
     const [processing, setProcessing] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
 
     const visit = (overrides: Record<string, string | number | undefined>, clearSelection = false) => {
         router.get(urls.index, buildQuery(filters, search, overrides), {
@@ -110,6 +114,18 @@ export default function ClearancePolicyIndex({ shell, can, stats, data, filters,
         Object.entries(buildQuery(filters, search, {})).map(([k, v]) => [k, String(v)]),
     ).toString()}`;
 
+    const submitImport = (file: File) => {
+        setProcessing(true);
+        router.post(urls.importSubmit, { file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onFinish: () => {
+                setProcessing(false);
+                setImportOpen(false);
+            },
+        });
+    };
+
     const modal = pending?.kind === 'bulk-delete'
         ? { title: `Hapus permanen ${selected.length} kebijakan?`, message: 'Kebijakan terpilih dihapus permanen dan evaluasi clearance berikutnya memakai sisa yang aktif.', confirm: 'Ya, hapus permanen' }
         : { title: 'Hapus permanen kebijakan?', message: 'Kebijakan dihapus permanen dari konfigurasi aktif.', confirm: 'Ya, hapus permanen' };
@@ -128,6 +144,8 @@ export default function ClearancePolicyIndex({ shell, can, stats, data, filters,
                             <a className="db-btn light" href={urls.create}><Plus size={15} /> Tambah Kebijakan</a>
                         ) : undefined}
                     />
+
+                    <ImportResultBanner result={importResult} successText={(n) => `${n} data berhasil diimpor.`} failText={(n) => `Impor dibatalkan — ${n} baris bermasalah, tidak ada data yang disimpan.`} />
 
                     <section className="db-stats" aria-label="Statistik kebijakan">
                         <div className="db-stat">
@@ -256,6 +274,8 @@ export default function ClearancePolicyIndex({ shell, can, stats, data, filters,
                                 canCreate={false}
                                 createLabel="Tambah Kebijakan"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
+                                extraActions={can.create ? (<button className="db-btn ghost sm" type="button" onClick={() => setImportOpen(true)}><Upload size={14} /> Import</button>) : undefined}
                                 emptyText="Belum ada kebijakan yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}
@@ -274,6 +294,17 @@ export default function ClearancePolicyIndex({ shell, can, stats, data, filters,
                     processing={processing}
                     onConfirm={confirmPending}
                     onCancel={() => setPending(null)}
+                />
+
+                <ImportModal
+                    open={importOpen}
+                    title="Impor Kebijakan Bebas Tanggungan"
+                    description="Unggah file sesuai template untuk menambah banyak kebijakan sekaligus. Satu baris gagal berarti file ditolak."
+                    templateUrl={urls.importTemplate}
+                    templateLabel="Unduh template"
+                    processing={processing}
+                    onSubmit={submitImport}
+                    onClose={() => setImportOpen(false)}
                 />
             </div>
         </AdminShell>

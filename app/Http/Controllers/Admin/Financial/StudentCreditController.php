@@ -114,6 +114,7 @@ class StudentCreditController extends Controller
                 'index' => route('admin.financial.student-credits.index'),
                 'record' => route('admin.financial.student-credits.record'),
                 'export' => route('admin.financial.student-credits.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'student-credits']),
                 'searchStudents' => route('admin.financial.student-credits.search-students'),
             ],
         ]);

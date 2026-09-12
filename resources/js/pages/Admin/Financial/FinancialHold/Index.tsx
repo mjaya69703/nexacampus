@@ -30,7 +30,7 @@ type Props = {
     };
     holdTypes: { id: string; name: string }[];
     statuses: string[];
-    urls: { index: string; export: string };
+    urls: { index: string; export: string; exportPdf: string };
 };
 
 function buildQuery(filters: Props['filters'], search: string, overrides: Record<string, string | number | undefined>) {
@@ -210,6 +210,7 @@ export default function FinancialHoldIndex({ shell, can, stats, data, filters, h
                                 canCreate={false}
                                 createLabel="Blokir"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
                                 emptyText="Belum ada blokir yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}

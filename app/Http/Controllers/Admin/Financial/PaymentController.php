@@ -138,6 +138,7 @@ class PaymentController extends Controller
             'urls' => [
                 'index' => route('admin.financial.payments.index'),
                 'export' => route('admin.financial.payments.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'payments']),
             ],
         ]);
     }

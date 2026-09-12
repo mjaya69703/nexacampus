@@ -120,6 +120,7 @@ class InstallmentRequestController extends Controller
             'urls' => [
                 'index' => route('admin.financial.installment-requests.index'),
                 'export' => route('admin.financial.installment-requests.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'installment-requests']),
             ],
         ]);
     }

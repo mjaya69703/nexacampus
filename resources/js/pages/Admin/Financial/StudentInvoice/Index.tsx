@@ -35,7 +35,7 @@ type Props = {
     statuses: string[];
     yearOptions: { id: number; name: string }[];
     urls: {
-        index: string; create: string; store: string; export: string; bulkCancel: string;
+        index: string; create: string; store: string; export: string; exportPdf: string; bulkCancel: string;
     };
 };
 
@@ -292,6 +292,7 @@ export default function StudentInvoiceIndex({ shell, can, stats, data, filters, 
                                 canCreate={false}
                                 createLabel="Terbitkan Tagihan"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
                                 emptyText="Belum ada tagihan yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}

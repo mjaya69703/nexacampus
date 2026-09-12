@@ -101,6 +101,7 @@ class InvoiceAdjustmentController extends Controller
             'urls' => [
                 'index' => route('admin.financial.invoice-adjustments.index'),
                 'export' => route('admin.financial.invoice-adjustments.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'invoice-adjustments']),
             ],
         ]);
     }

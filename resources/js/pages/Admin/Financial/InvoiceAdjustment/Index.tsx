@@ -28,7 +28,7 @@ type Props = {
         sort: string; direction: 'asc' | 'desc'; perPage: number;
     };
     types: string[];
-    urls: { index: string; export: string };
+    urls: { index: string; export: string; exportPdf: string };
 };
 
 const money = (n: number) => `${n < 0 ? '-' : ''}Rp ${Math.abs(n).toLocaleString('id-ID')}`;
@@ -188,6 +188,7 @@ export default function InvoiceAdjustmentIndex({ shell, can, stats, data, filter
                                 canCreate={false}
                                 createLabel="Penyesuaian"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
                                 emptyText="Belum ada penyesuaian yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}

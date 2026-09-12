@@ -155,6 +155,7 @@ class StudentInvoiceController extends Controller
                 'create' => route('admin.financial.student-invoices.create'),
                 'store' => route('admin.financial.student-invoices.store'),
                 'export' => route('admin.financial.student-invoices.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'student-invoices']),
                 'bulkCancel' => route('admin.financial.student-invoices.bulk-cancel'),
             ],
         ]);

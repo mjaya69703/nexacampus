@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -136,14 +137,18 @@ class TuitionFeeController extends Controller
                 ->map(fn ($y) => ['id' => $y->id, 'name' => $y->name])->all(),
             'programOptions' => StudyProgram::query()->orderBy('name')->get(['id', 'name', 'code'])
                 ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name.' ('.$p->code.')'])->all(),
+            'importResult' => $request->session()->get('import_result'),
             'urls' => [
                 'index' => route('admin.financial.tuition-fees.index'),
                 'create' => route('admin.financial.tuition-fees.create'),
                 'store' => route('admin.financial.tuition-fees.store'),
                 'export' => route('admin.financial.tuition-fees.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'tuition-fees']),
                 'bulkDestroy' => route('admin.financial.tuition-fees.bulk-destroy'),
                 'bulkRestore' => route('admin.financial.tuition-fees.bulk-restore'),
                 'bulkForceDestroy' => route('admin.financial.tuition-fees.bulk-force-destroy'),
+                'importTemplate' => route('admin.financial.tuition-fees.import-template'),
+                'importSubmit' => route('admin.financial.tuition-fees.import'),
             ],
         ]);
     }
@@ -335,6 +340,162 @@ class TuitionFeeController extends Controller
 
     // ── Helpers ─────────────────────────────────────────────────────
 
+    public function importTemplate(): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([['year_code', 'program_code', 'semester', 'base_fee', 'lab_fee', 'library_fee', 'activity_fee', 'late_penalty_per_day', 'payment_deadline', 'is_active', 'notes']], null, 'A1');
+        $sheet->fromArray([['2026', 'TI', '1', '5000000', '500000', '200000', '300000', '50000', '2026-09-30', '1', 'SK Rektor No. 12/2026']], null, 'A2');
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true);
+
+        foreach (range('A', 'K') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(
+            fn () => (new Xlsx($spreadsheet))->save('php://output'),
+            'template-import-tuition-fees.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
+
+        try {
+            $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        } catch (\Throwable) {
+            return back()->with('error', 'File tidak bisa dibaca. Gunakan template yang disediakan.');
+        }
+
+        $rows = $spreadsheet->getActiveSheet()->toArray();
+        $header = array_map(fn ($h) => strtolower(trim((string) $h)), $rows ? array_shift($rows) : []);
+        $missing = array_diff(['year_code', 'program_code', 'semester', 'base_fee', 'payment_deadline'], $header);
+
+        if (! empty($missing)) {
+            return back()->with('error', 'Header wajib hilang: '.implode(', ', $missing).'. Unduh template terbaru.');
+        }
+
+        $rows = array_values(array_filter(
+            $rows,
+            fn ($row) => collect($row)->filter(fn ($v) => trim((string) $v) !== '')->isNotEmpty()
+        ));
+
+        if (empty($rows)) {
+            return back()->with('error', 'File tidak berisi data.');
+        }
+
+        if (count($rows) > 500) {
+            return back()->with('error', 'Maksimal 500 baris per import.');
+        }
+
+        $yearMap = AcademicYear::query()->pluck('id', 'code')->all();
+        $programMap = StudyProgram::query()->pluck('id', 'code')->all();
+        $seen = [];
+        $valid = [];
+        $errors = [];
+
+        foreach ($rows as $i => $row) {
+            $line = $i + 2;
+            $data = array_map(
+                fn ($v) => is_string($v) ? trim($v) : $v,
+                array_combine($header, array_pad(array_slice($row, 0, count($header)), count($header), null))
+            );
+            $rowErrors = [];
+
+            $yearCode = (string) ($data['year_code'] ?? '');
+            $programCode = (string) ($data['program_code'] ?? '');
+
+            if ($yearCode === '' || ! isset($yearMap[$yearCode])) {
+                $rowErrors[] = "tahun \"{$yearCode}\" tidak ditemukan";
+            }
+
+            if ($programCode === '' || ! isset($programMap[$programCode])) {
+                $rowErrors[] = "prodi \"{$programCode}\" tidak ditemukan";
+            }
+
+            $semester = filter_var($data['semester'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 14]]);
+
+            if ($semester === false) {
+                $rowErrors[] = 'semester harus 1-14';
+            }
+
+            foreach (['base_fee', 'lab_fee', 'library_fee', 'activity_fee', 'late_penalty_per_day'] as $moneyKey) {
+                $moneyValue = $data[$moneyKey] ?? null;
+
+                if ($moneyValue !== null && $moneyValue !== '' && (! is_numeric($moneyValue) || (float) $moneyValue < 0)) {
+                    $rowErrors[] = "{$moneyKey} harus angka >= 0";
+                }
+            }
+
+            if (($data['base_fee'] ?? null) === null || $data['base_fee'] === '') {
+                $rowErrors[] = 'base_fee wajib diisi';
+            }
+
+            $deadline = $this->parseImportDate($data['payment_deadline'] ?? null);
+
+            if ($deadline === null) {
+                $rowErrors[] = 'payment_deadline tidak valid (Y-m-d)';
+            }
+
+            $comboKey = $yearCode.'|'.$programCode.'|'.$semester;
+
+            if (empty($rowErrors)) {
+                if (in_array($comboKey, $seen, true)) {
+                    $rowErrors[] = 'kombinasi tahun×prodi×semester duplikat di dalam file';
+                } elseif (TuitionFee::withTrashed()
+                    ->where('academic_year_id', $yearMap[$yearCode])
+                    ->where('study_program_id', $programMap[$programCode])
+                    ->where('semester', $semester)
+                    ->exists()) {
+                    $rowErrors[] = 'kombinasi sudah terdaftar (cek sampah untuk restore)';
+                } else {
+                    $seen[] = $comboKey;
+                }
+            }
+
+            if (! empty($errors) && count($errors) >= 20) {
+                break;
+            }
+
+            if (! empty($rowErrors)) {
+                $errors[] = ['row' => $line, 'messages' => $rowErrors];
+                continue;
+            }
+
+            $valid[] = [
+                'academic_year_id' => $yearMap[$yearCode],
+                'study_program_id' => $programMap[$programCode],
+                'semester' => $semester,
+                'base_fee' => (float) $data['base_fee'],
+                'lab_fee' => (float) ($data['lab_fee'] ?? 0),
+                'library_fee' => (float) ($data['library_fee'] ?? 0),
+                'activity_fee' => (float) ($data['activity_fee'] ?? 0),
+                'late_penalty_per_day' => (float) ($data['late_penalty_per_day'] ?? 0),
+                'payment_deadline' => $deadline,
+                'is_active' => $this->parseImportBool($data['is_active'] ?? null, true),
+                'notes' => $data['notes'] ?? null,
+                'created_by' => $request->user()->id,
+            ];
+        }
+
+        if (! empty($errors)) {
+            return redirect()->route('admin.financial.tuition-fees.index')->with('import_result', [
+                'success' => false, 'created' => 0,
+                'rejected' => count($errors), 'errors' => $errors,
+            ]);
+        }
+
+        TuitionFee::insert($valid);
+
+        return redirect()->route('admin.financial.tuition-fees.index')
+            ->with('success', count($valid).' tarif berhasil diimpor.')
+            ->with('import_result', [
+                'success' => true, 'created' => count($valid), 'rejected' => 0, 'errors' => [],
+            ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -401,5 +562,33 @@ class TuitionFeeController extends Controller
             ->get(['id', 'name', 'code'])
             ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name.' ('.$p->code.')'])
             ->all();
+    }
+
+    private function parseImportDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            try {
+                return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value)->format('Y-m-d');
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        $timestamp = strtotime((string) $value);
+
+        return $timestamp === false ? null : date('Y-m-d', $timestamp);
+    }
+
+    private function parseImportBool(mixed $value, bool $default): bool
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'ya', 'y'], true);
     }
 }

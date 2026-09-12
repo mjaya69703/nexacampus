@@ -34,7 +34,7 @@ type Props = {
     modes: string[];
     statuses: string[];
     urls: {
-        index: string; create: string; store: string; export: string; bulkDestroy: string;
+        index: string; create: string; store: string; export: string; exportPdf: string; bulkDestroy: string;
     };
 };
 
@@ -265,6 +265,7 @@ export default function InvoiceScheduleIndex({ shell, can, stats, data, filters,
                                 canCreate={false}
                                 createLabel="Buat Jadwal"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
                                 emptyText="Belum ada jadwal yang cocok dengan filter."
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}

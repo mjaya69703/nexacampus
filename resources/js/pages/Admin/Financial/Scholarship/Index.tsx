@@ -1,12 +1,13 @@
 // Daftar program beasiswa — kit CRUD (sampah/restore, toggle aktif, paritas Blade).
 import { Head, router } from '@inertiajs/react';
-import { Award, Plus, Trash2 } from 'lucide-react';
+import { Award, Plus, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
 import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
+import { ImportModal, ImportResult, ImportResultBanner } from '../../../../components/Shared/Crud/ImportModal';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
@@ -30,8 +31,10 @@ type Props = {
     };
     types: string[];
     discountTypes: string[];
+    importResult: ImportResult;
     urls: {
-        index: string; create: string; store: string; export: string;
+        index: string; create: string; store: string; export: string; exportPdf: string;
+        importTemplate: string; importSubmit: string;
         bulkDestroy: string; bulkRestore: string; bulkForceDestroy: string;
     };
 };
@@ -82,11 +85,12 @@ const TYPE_TEXT: Record<string, string> = {
     full: 'Pembebasan Penuh', partial: 'Potongan Sebagian', merit: 'Prestasi', need_based: 'Bantuan Ekonomi',
 };
 
-export default function ScholarshipIndex({ shell, can, stats, data, filters, types, discountTypes, urls }: Props) {
+export default function ScholarshipIndex({ shell, can, stats, data, filters, types, discountTypes, importResult, urls }: Props) {
     const [search, setSearch] = useState(filters.q);
     const [selected, setSelected] = useState<number[]>([]);
     const [pending, setPending] = useState<Pending>(null);
     const [processing, setProcessing] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
 
     const isTrash = filters.mode === 'trash';
 
@@ -163,6 +167,18 @@ export default function ScholarshipIndex({ shell, can, stats, data, filters, typ
         Object.entries(buildQuery(filters, search, {})).map(([k, v]) => [k, String(v)]),
     ).toString()}`;
 
+    const submitImport = (file: File) => {
+        setProcessing(true);
+        router.post(urls.importSubmit, { file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onFinish: () => {
+                setProcessing(false);
+                setImportOpen(false);
+            },
+        });
+    };
+
     const copy = pending ? MODAL_COPY[pending.kind] : null;
     const copyName = pending && 'row' in pending ? pending.row.name : String(selected.length);
 
@@ -180,6 +196,8 @@ export default function ScholarshipIndex({ shell, can, stats, data, filters, typ
                             <a className="db-btn light" href={urls.create}><Plus size={15} /> Tambah Beasiswa</a>
                         ) : undefined}
                     />
+
+                    <ImportResultBanner result={importResult} successText={(n) => `${n} data berhasil diimpor.`} failText={(n) => `Impor dibatalkan — ${n} baris bermasalah, tidak ada data yang disimpan.`} />
 
                     <section className="db-stats" aria-label="Statistik beasiswa">
                         <div className="db-stat">
@@ -318,6 +336,8 @@ export default function ScholarshipIndex({ shell, can, stats, data, filters, typ
                                 canCreate={false}
                                 createLabel="Tambah Beasiswa"
                                 exportHref={exportHref}
+                                exportExtra={[{ label: 'PDF laporan', href: urls.exportPdf }]}
+                                extraActions={can.create ? (<button className="db-btn ghost sm" type="button" onClick={() => setImportOpen(true)}><Upload size={14} /> Import</button>) : undefined}
                                 emptyText={isTrash ? 'Sampah kosong.' : 'Belum ada beasiswa yang cocok dengan filter.'}
                                 onPage={(p) => visit({ page: p })}
                                 perPage={filters.perPage}
@@ -336,6 +356,17 @@ export default function ScholarshipIndex({ shell, can, stats, data, filters, typ
                     processing={processing}
                     onConfirm={confirmPending}
                     onCancel={() => setPending(null)}
+                />
+
+                <ImportModal
+                    open={importOpen}
+                    title="Impor Beasiswa"
+                    description="Unggah file sesuai template untuk menambah banyak program beasiswa sekaligus. Satu baris gagal berarti file ditolak."
+                    templateUrl={urls.importTemplate}
+                    templateLabel="Unduh template"
+                    processing={processing}
+                    onSubmit={submitImport}
+                    onClose={() => setImportOpen(false)}
                 />
             </div>
         </AdminShell>

@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
 use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
 use App\Http\Controllers\Admin\Financial\FinancialHoldController;
+use App\Http\Controllers\Admin\Financial\AdminFinancialExportController;
 use App\Http\Controllers\Admin\Financial\FinancialDashboardController;
 use App\Http\Controllers\Admin\Financial\FinancialReportController;
 use App\Http\Controllers\Admin\Financial\InstallmentRequestController;
@@ -948,6 +949,11 @@ Route::delete('/access/permissions/{permission}', [PermissionController::class, 
 Route::get('/financial/dashboard', [FinancialDashboardController::class, 'index'])
     ->middleware('active_permission:financial-dashboard.viewAny')
     ->name('financial.dashboard.index');
+
+// PDF laporan tabel per resource financial (kop + tanda tangan, paritas akademik).
+Route::get('/financial/{resource}/export/pdf', [AdminFinancialExportController::class, 'pdf'])
+    ->whereIn('resource', ['tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'student-credits', 'financial-holds'])
+    ->name('financial.exports.pdf');
 Route::get('/financial/financial-reports', [FinancialReportController::class, 'index'])
     ->middleware('active_permission:financial-report.viewAny')
     ->name('financial.financial-reports.index');
@@ -1005,6 +1011,12 @@ Route::post('/financial/tuition-fees/{id}/restore', [TuitionFeeController::class
 Route::delete('/financial/tuition-fees/{id}/force', [TuitionFeeController::class, 'forceDestroy'])
     ->middleware('active_permission:tuition-fee.delete')
     ->name('financial.tuition-fees.force-destroy');
+Route::get('/financial/tuition-fees/import/template', [TuitionFeeController::class, 'importTemplate'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.import-template');
+Route::post('/financial/tuition-fees/import', [TuitionFeeController::class, 'import'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.import');
 Route::get('/financial/tuition-fees', [TuitionFeeController::class, 'index'])
     ->middleware('active_permission:tuition-fee.viewAny')
     ->name('financial.tuition-fees.index');
@@ -1034,6 +1046,12 @@ Route::get('/financial/clearance-policies/export', [ClearancePolicyController::c
 Route::post('/financial/clearance-policies/bulk-destroy', [ClearancePolicyController::class, 'bulkDestroy'])
     ->middleware('active_permission:clearance-policy.delete')
     ->name('financial.clearance-policies.bulk-destroy');
+Route::get('/financial/clearance-policies/import/template', [ClearancePolicyController::class, 'importTemplate'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.import-template');
+Route::post('/financial/clearance-policies/import', [ClearancePolicyController::class, 'import'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.import');
 Route::get('/financial/clearance-policies', [ClearancePolicyController::class, 'index'])
     ->middleware('active_permission:clearance-policy.viewAny')
     ->name('financial.clearance-policies.index');
@@ -1069,6 +1087,12 @@ Route::post('/financial/scholarships/bulk-restore', [ScholarshipController::clas
 Route::post('/financial/scholarships/bulk-force-destroy', [ScholarshipController::class, 'bulkForceDestroy'])
     ->middleware('active_permission:scholarship.delete')
     ->name('financial.scholarships.bulk-force-destroy');
+Route::get('/financial/scholarships/import/template', [ScholarshipController::class, 'importTemplate'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.import-template');
+Route::post('/financial/scholarships/import', [ScholarshipController::class, 'import'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.import');
 Route::post('/financial/scholarships/{id}/restore', [ScholarshipController::class, 'restore'])
     ->middleware('active_permission:scholarship.update|scholarship.delete')
     ->name('financial.scholarships.restore');
@@ -1225,6 +1249,12 @@ Route::get('/financial/student-scholarships/search-students', [StudentScholarshi
 Route::post('/financial/student-scholarships/bulk-destroy', [StudentScholarshipController::class, 'bulkDestroy'])
     ->middleware('active_permission:student-scholarship.delete')
     ->name('financial.student-scholarships.bulk-destroy');
+Route::get('/financial/student-scholarships/import/template', [StudentScholarshipController::class, 'importTemplate'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.import-template');
+Route::post('/financial/student-scholarships/import', [StudentScholarshipController::class, 'import'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.import');
 Route::get('/financial/student-scholarships', [StudentScholarshipController::class, 'index'])
     ->middleware('active_permission:student-scholarship.viewAny')
     ->name('financial.student-scholarships.index');

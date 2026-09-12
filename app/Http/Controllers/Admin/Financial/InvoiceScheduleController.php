@@ -134,6 +134,7 @@ class InvoiceScheduleController extends Controller
                 'create' => route('admin.financial.invoice-schedules.create'),
                 'store' => route('admin.financial.invoice-schedules.store'),
                 'export' => route('admin.financial.invoice-schedules.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'invoice-schedules']),
                 'bulkDestroy' => route('admin.financial.invoice-schedules.bulk-destroy'),
             ],
         ]);

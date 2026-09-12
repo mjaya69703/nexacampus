@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -130,13 +131,17 @@ class StudentScholarshipController extends Controller
             'yearOptions' => AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name'])
                 ->map(fn ($y) => ['id' => $y->id, 'name' => $y->name])->all(),
             'statuses' => self::STATUSES,
+            'importResult' => $request->session()->get('import_result'),
             'urls' => [
                 'index' => route('admin.financial.student-scholarships.index'),
                 'create' => route('admin.financial.student-scholarships.create'),
                 'store' => route('admin.financial.student-scholarships.store'),
                 'export' => route('admin.financial.student-scholarships.export'),
+                'exportPdf' => route('admin.financial.exports.pdf', ['resource' => 'student-scholarships']),
                 'bulkDestroy' => route('admin.financial.student-scholarships.bulk-destroy'),
                 'searchStudents' => route('admin.financial.student-scholarships.search-students'),
+                'importTemplate' => route('admin.financial.student-scholarships.import-template'),
+                'importSubmit' => route('admin.financial.student-scholarships.import'),
             ],
         ]);
     }
@@ -342,6 +347,156 @@ class StudentScholarshipController extends Controller
 
     // ── Helpers ─────────────────────────────────────────────────────
 
+    public function importTemplate(): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([['nim', 'scholarship_name', 'year_code', 'semester', 'start_date', 'end_date', 'status', 'notes']], null, 'A1');
+        $sheet->fromArray([['20260001', 'Beasiswa Prestasi', '2026', '1', '', '', 'active', '']], null, 'A2');
+        $sheet->getStyle('A1:H1')->getFont()->setBold(true);
+
+        foreach (range('A', 'H') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(
+            fn () => (new Xlsx($spreadsheet))->save('php://output'),
+            'template-import-student-scholarships.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
+
+        try {
+            $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        } catch (\Throwable) {
+            return back()->with('error', 'File tidak bisa dibaca. Gunakan template yang disediakan.');
+        }
+
+        $rows = $spreadsheet->getActiveSheet()->toArray();
+        $header = array_map(fn ($h) => strtolower(trim((string) $h)), $rows ? array_shift($rows) : []);
+        $missing = array_diff(['nim', 'scholarship_name', 'status'], $header);
+
+        if (! empty($missing)) {
+            return back()->with('error', 'Header wajib hilang: '.implode(', ', $missing).'. Unduh template terbaru.');
+        }
+
+        $rows = array_values(array_filter(
+            $rows,
+            fn ($row) => collect($row)->filter(fn ($v) => trim((string) $v) !== '')->isNotEmpty()
+        ));
+
+        if (empty($rows)) {
+            return back()->with('error', 'File tidak berisi data.');
+        }
+
+        if (count($rows) > 500) {
+            return back()->with('error', 'Maksimal 500 baris per import.');
+        }
+
+        $studentMap = StudentProfile::query()->pluck('id', 'nim')->all();
+        $scholarshipGroups = Scholarship::query()->pluck('id', 'name')->all();
+        $yearMap = AcademicYear::query()->pluck('id', 'code')->all();
+        $valid = [];
+        $errors = [];
+
+        foreach ($rows as $i => $row) {
+            $line = $i + 2;
+            $data = array_map(
+                fn ($v) => is_string($v) ? trim($v) : $v,
+                array_combine($header, array_pad(array_slice($row, 0, count($header)), count($header), null))
+            );
+            $rowErrors = [];
+
+            $nim = (string) ($data['nim'] ?? '');
+
+            if ($nim === '' || ! isset($studentMap[$nim])) {
+                $rowErrors[] = "nim \"{$nim}\" tidak ditemukan";
+            }
+
+            $scholarshipName = (string) ($data['scholarship_name'] ?? '');
+            $scholarshipMatches = array_keys(array_filter(
+                $scholarshipGroups,
+                fn ($id, $name) => mb_strtolower($name) === mb_strtolower($scholarshipName),
+                ARRAY_FILTER_USE_BOTH
+            ));
+
+            if ($scholarshipName === '' || count($scholarshipMatches) === 0) {
+                $rowErrors[] = "beasiswa \"{$scholarshipName}\" tidak ditemukan";
+            } elseif (count($scholarshipMatches) > 1) {
+                $rowErrors[] = "beasiswa \"{$scholarshipName}\" ambigu (duplikat nama)";
+            }
+
+            $yearCode = (string) ($data['year_code'] ?? '');
+
+            if ($yearCode !== '' && ! isset($yearMap[$yearCode])) {
+                $rowErrors[] = "tahun \"{$yearCode}\" tidak ditemukan";
+            }
+
+            $semester = $data['semester'] ?? null;
+
+            if ($semester !== null && $semester !== '' && filter_var($semester, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 14]]) === false) {
+                $rowErrors[] = 'semester harus 1-14';
+            }
+
+            $startDate = $this->parseImportDate($data['start_date'] ?? null);
+            $endDate = $this->parseImportDate($data['end_date'] ?? null);
+
+            if (($data['start_date'] ?? null) !== null && ($data['start_date'] ?? '') !== '' && $startDate === null) {
+                $rowErrors[] = 'start_date tidak valid (Y-m-d)';
+            }
+
+            if (($data['end_date'] ?? null) !== null && ($data['end_date'] ?? '') !== '' && $endDate === null) {
+                $rowErrors[] = 'end_date tidak valid (Y-m-d)';
+            } elseif ($startDate !== null && $endDate !== null && $endDate < $startDate) {
+                $rowErrors[] = 'end_date minimal sama dengan start_date';
+            }
+
+            if (! in_array($data['status'] ?? null, self::STATUSES, true)) {
+                $rowErrors[] = 'status harus active/completed/revoked';
+            }
+
+            if (! empty($errors) && count($errors) >= 20) {
+                break;
+            }
+
+            if (! empty($rowErrors)) {
+                $errors[] = ['row' => $line, 'messages' => $rowErrors];
+                continue;
+            }
+
+            $valid[] = [
+                'student_profile_id' => $studentMap[$nim],
+                'scholarship_id' => $scholarshipGroups[$scholarshipMatches[0]],
+                'academic_year_id' => $yearCode !== '' ? $yearMap[$yearCode] : null,
+                'semester' => ($semester !== null && $semester !== '') ? (int) $semester : null,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => $data['status'],
+                'notes' => $data['notes'] ?? null,
+                'created_by' => $request->user()->id,
+            ];
+        }
+
+        if (! empty($errors)) {
+            return redirect()->route('admin.financial.student-scholarships.index')->with('import_result', [
+                'success' => false, 'created' => 0,
+                'rejected' => count($errors), 'errors' => $errors,
+            ]);
+        }
+
+        StudentScholarship::insert($valid);
+
+        return redirect()->route('admin.financial.student-scholarships.index')
+            ->with('success', count($valid).' alokasi berhasil diimpor.')
+            ->with('import_result', [
+                'success' => true, 'created' => count($valid), 'rejected' => 0, 'errors' => [],
+            ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -403,5 +558,24 @@ class StudentScholarshipController extends Controller
         return AcademicYear::query()->orderByDesc('start_date')->get(['id', 'name'])
             ->map(fn ($y) => ['id' => $y->id, 'name' => $y->name])
             ->all();
+    }
+
+    private function parseImportDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            try {
+                return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value)->format('Y-m-d');
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        $timestamp = strtotime((string) $value);
+
+        return $timestamp === false ? null : date('Y-m-d', $timestamp);
     }
 }
