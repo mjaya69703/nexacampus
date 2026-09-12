@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\Academic\StudentGradeController;
 use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
 use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
+use App\Http\Controllers\Admin\Financial\InstallmentRequestController;
 use App\Http\Controllers\Admin\Financial\PaymentController;
 use App\Http\Controllers\Admin\Financial\InvoiceAdjustmentController;
 use App\Http\Controllers\Admin\Financial\StudentInvoiceController;
@@ -47,7 +48,7 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
         continue;
     }
 
@@ -1188,6 +1189,23 @@ Route::get('/financial/invoice-adjustments/export', [InvoiceAdjustmentController
 Route::get('/financial/invoice-adjustments', [InvoiceAdjustmentController::class, 'index'])
     ->middleware('active_permission:invoice-adjustment.viewAny')
     ->name('financial.invoice-adjustments.index');
+
+// Pengajuan Cicilan (Inertia React, tinjau + putusan) — paritas Livewire.
+Route::get('/financial/installment-requests/export', [InstallmentRequestController::class, 'export'])
+    ->middleware('active_permission:installment-request.viewAny')
+    ->name('financial.installment-requests.export');
+Route::get('/financial/installment-requests', [InstallmentRequestController::class, 'index'])
+    ->middleware('active_permission:installment-request.viewAny')
+    ->name('financial.installment-requests.index');
+Route::get('/financial/installment-requests/{installmentRequest}', [InstallmentRequestController::class, 'show'])
+    ->middleware('active_permission:installment-request.view')
+    ->name('financial.installment-requests.show');
+Route::post('/financial/installment-requests/{installmentRequest}/approve', [InstallmentRequestController::class, 'approve'])
+    ->middleware('active_permission:installment-request.update')
+    ->name('financial.installment-requests.approve');
+Route::post('/financial/installment-requests/{installmentRequest}/reject', [InstallmentRequestController::class, 'reject'])
+    ->middleware('active_permission:installment-request.update')
+    ->name('financial.installment-requests.reject');
 
 Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
     ->middleware('active_permission:service-letter-request.view')
