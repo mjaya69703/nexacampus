@@ -37,6 +37,9 @@ use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
 use App\Http\Controllers\Admin\Academic\StudyPlanController;
 use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudyProgramController;
+use App\Http\Controllers\Admin\Publication\AdminPublicationExportController;
+use App\Http\Controllers\Admin\Publication\FaqController;
+use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
@@ -55,6 +58,11 @@ use Illuminate\Support\Facades\Route;
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
     if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'student-credits', 'financial-holds', 'financial-reports', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
+        continue;
+    }
+
+    // Batch-1 publikasi: categories & faqs → Inertia React.
+    if (in_array($resource['plural'], ['categories', 'faqs']) && ($resource['area'] ?? null) === 'publication') {
         continue;
     }
 
@@ -244,6 +252,100 @@ Route::post('/system/settings/sidecar-refresh', [SettingController::class, 'side
 Route::post('/system/settings/use-session', [SettingController::class, 'useSession'])
     ->middleware('active_permission:setting.viewAny')
     ->name('system.settings.use-session');
+
+// CRUD Kategori Publikasi (Inertia React) — Batch-1, nama route & middleware paritas Livewire.
+Route::get('/publication/categories/export', [PublicationCategoryController::class, 'export'])
+    ->middleware('active_permission:publication-category.viewAny')
+    ->name('publication.categories.export');
+Route::get('/publication/categories/import/template', [PublicationCategoryController::class, 'importTemplate'])
+    ->middleware('active_permission:publication-category.create')
+    ->name('publication.categories.import-template');
+Route::post('/publication/categories/import', [PublicationCategoryController::class, 'import'])
+    ->middleware('active_permission:publication-category.create')
+    ->name('publication.categories.import');
+Route::post('/publication/categories/bulk-destroy', [PublicationCategoryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:publication-category.delete')
+    ->name('publication.categories.bulk-destroy');
+Route::post('/publication/categories/bulk-restore', [PublicationCategoryController::class, 'bulkRestore'])
+    ->middleware('active_permission:publication-category.update|publication-category.delete')
+    ->name('publication.categories.bulk-restore');
+Route::post('/publication/categories/bulk-force-destroy', [PublicationCategoryController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:publication-category.update|publication-category.delete')
+    ->name('publication.categories.bulk-force-destroy');
+Route::post('/publication/categories/{id}/restore', [PublicationCategoryController::class, 'restore'])
+    ->middleware('active_permission:publication-category.update|publication-category.delete')
+    ->name('publication.categories.restore');
+Route::delete('/publication/categories/{id}/force', [PublicationCategoryController::class, 'forceDestroy'])
+    ->middleware('active_permission:publication-category.update|publication-category.delete')
+    ->name('publication.categories.force-destroy');
+Route::post('/publication/categories/{category}/toggle', [PublicationCategoryController::class, 'toggle'])
+    ->middleware('active_permission:publication-category.update')
+    ->name('publication.categories.toggle');
+Route::get('/publication/categories', [PublicationCategoryController::class, 'index'])
+    ->middleware('active_permission:publication-category.viewAny')
+    ->name('publication.categories.index');
+Route::get('/publication/categories/create', [PublicationCategoryController::class, 'create'])
+    ->middleware('active_permission:publication-category.create')
+    ->name('publication.categories.create');
+Route::post('/publication/categories', [PublicationCategoryController::class, 'store'])
+    ->middleware('active_permission:publication-category.create')
+    ->name('publication.categories.store');
+Route::get('/publication/categories/{category}/edit', [PublicationCategoryController::class, 'edit'])
+    ->middleware('active_permission:publication-category.update')
+    ->name('publication.categories.edit');
+Route::put('/publication/categories/{category}', [PublicationCategoryController::class, 'update'])
+    ->middleware('active_permission:publication-category.update')
+    ->name('publication.categories.update');
+Route::delete('/publication/categories/{category}', [PublicationCategoryController::class, 'destroy'])
+    ->middleware('active_permission:publication-category.delete')
+    ->name('publication.categories.destroy');
+
+// CRUD FAQ (Inertia React) — Batch-1, nama route & middleware paritas Livewire.
+Route::get('/publication/faqs/export', [FaqController::class, 'export'])
+    ->middleware('active_permission:faq.viewAny')
+    ->name('publication.faqs.export');
+Route::get('/publication/faqs/import/template', [FaqController::class, 'importTemplate'])
+    ->middleware('active_permission:faq.create')
+    ->name('publication.faqs.import-template');
+Route::post('/publication/faqs/import', [FaqController::class, 'import'])
+    ->middleware('active_permission:faq.create')
+    ->name('publication.faqs.import');
+Route::post('/publication/faqs/bulk-destroy', [FaqController::class, 'bulkDestroy'])
+    ->middleware('active_permission:faq.delete')
+    ->name('publication.faqs.bulk-destroy');
+Route::post('/publication/faqs/bulk-restore', [FaqController::class, 'bulkRestore'])
+    ->middleware('active_permission:faq.update|faq.delete')
+    ->name('publication.faqs.bulk-restore');
+Route::post('/publication/faqs/bulk-force-destroy', [FaqController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:faq.update|faq.delete')
+    ->name('publication.faqs.bulk-force-destroy');
+Route::post('/publication/faqs/{id}/restore', [FaqController::class, 'restore'])
+    ->middleware('active_permission:faq.update|faq.delete')
+    ->name('publication.faqs.restore');
+Route::delete('/publication/faqs/{id}/force', [FaqController::class, 'forceDestroy'])
+    ->middleware('active_permission:faq.update|faq.delete')
+    ->name('publication.faqs.force-destroy');
+Route::post('/publication/faqs/{faq}/toggle', [FaqController::class, 'toggle'])
+    ->middleware('active_permission:faq.update')
+    ->name('publication.faqs.toggle');
+Route::get('/publication/faqs', [FaqController::class, 'index'])
+    ->middleware('active_permission:faq.viewAny')
+    ->name('publication.faqs.index');
+Route::get('/publication/faqs/create', [FaqController::class, 'create'])
+    ->middleware('active_permission:faq.create')
+    ->name('publication.faqs.create');
+Route::post('/publication/faqs', [FaqController::class, 'store'])
+    ->middleware('active_permission:faq.create')
+    ->name('publication.faqs.store');
+Route::get('/publication/faqs/{faq}/edit', [FaqController::class, 'edit'])
+    ->middleware('active_permission:faq.update')
+    ->name('publication.faqs.edit');
+Route::put('/publication/faqs/{faq}', [FaqController::class, 'update'])
+    ->middleware('active_permission:faq.update')
+    ->name('publication.faqs.update');
+Route::delete('/publication/faqs/{faq}', [FaqController::class, 'destroy'])
+    ->middleware('active_permission:faq.delete')
+    ->name('publication.faqs.destroy');
 
 // CRUD Fakultas (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/academic/faculties/export', [FacultyController::class, 'export'])
@@ -964,6 +1066,10 @@ Route::get('/academic/{resource}/export/pdf', [AdminAcademicExportController::cl
     ->name('academic.exports.pdf');
 Route::get('/academic/{resource}/imports/template', [AdminAcademicExportController::class, 'importTemplate'])
     ->name('academic.import-template');
+Route::get('/publication/{resource}/export/pdf', [AdminPublicationExportController::class, 'pdf'])
+    ->name('publication.exports.pdf');
+Route::get('/publication/{resource}/imports/template', [AdminPublicationExportController::class, 'importTemplate'])
+    ->name('publication.import-template');
 
 Route::get('/admission/documents/{document}/preview', [AdmissionDocumentController::class, 'adminPreview'])
     ->middleware('active_permission:admission-application.view')
