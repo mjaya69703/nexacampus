@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\Academic\StudyProgramController;
 use App\Http\Controllers\Admin\Publication\AdminPublicationExportController;
 use App\Http\Controllers\Admin\Publication\FaqController;
 use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
+use App\Http\Controllers\Admin\Publication\AnnouncementController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
@@ -62,7 +63,7 @@ foreach (ResourceRegistry::all() as $resource) {
     }
 
     // Batch-1 publikasi: categories & faqs → Inertia React.
-    if (in_array($resource['plural'], ['categories', 'faqs']) && ($resource['area'] ?? null) === 'publication') {
+    if (in_array($resource['plural'], ['categories', 'faqs', 'announcements']) && ($resource['area'] ?? null) === 'publication') {
         continue;
     }
 
@@ -346,6 +347,68 @@ Route::put('/publication/faqs/{faq}', [FaqController::class, 'update'])
 Route::delete('/publication/faqs/{faq}', [FaqController::class, 'destroy'])
     ->middleware('active_permission:faq.delete')
     ->name('publication.faqs.destroy');
+
+// CRUD Pengumuman (Inertia React) — Batch-2, nama route & middleware paritas Livewire + publish.
+Route::get('/publication/announcements/export', [AnnouncementController::class, 'export'])
+    ->middleware('active_permission:announcement.viewAny')
+    ->name('publication.announcements.export');
+Route::get('/publication/announcements/import/template', [AnnouncementController::class, 'importTemplate'])
+    ->middleware('active_permission:announcement.create')
+    ->name('publication.announcements.import-template');
+Route::post('/publication/announcements/import', [AnnouncementController::class, 'import'])
+    ->middleware('active_permission:announcement.create')
+    ->name('publication.announcements.import');
+Route::post('/publication/announcements/bulk-destroy', [AnnouncementController::class, 'bulkDestroy'])
+    ->middleware('active_permission:announcement.delete')
+    ->name('publication.announcements.bulk-destroy');
+Route::post('/publication/announcements/bulk-restore', [AnnouncementController::class, 'bulkRestore'])
+    ->middleware('active_permission:announcement.update|announcement.delete')
+    ->name('publication.announcements.bulk-restore');
+Route::post('/publication/announcements/bulk-force-destroy', [AnnouncementController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:announcement.update|announcement.delete')
+    ->name('publication.announcements.bulk-force-destroy');
+Route::post('/publication/announcements/bulk-publish', [AnnouncementController::class, 'bulkPublish'])
+    ->middleware('active_permission:announcement.publish')
+    ->name('publication.announcements.bulk-publish');
+Route::post('/publication/announcements/{id}/restore', [AnnouncementController::class, 'restore'])
+    ->middleware('active_permission:announcement.update|announcement.delete')
+    ->name('publication.announcements.restore');
+Route::delete('/publication/announcements/{id}/force', [AnnouncementController::class, 'forceDestroy'])
+    ->middleware('active_permission:announcement.update|announcement.delete')
+    ->name('publication.announcements.force-destroy');
+Route::get('/publication/announcements/search-targets/{type}', [AnnouncementController::class, 'searchTargets'])
+    ->middleware('active_permission:announcement.create|announcement.update')
+    ->name('publication.announcements.search-targets');
+Route::post('/publication/announcements/{announcement}/toggle-pin', [AnnouncementController::class, 'togglePin'])
+    ->middleware('active_permission:announcement.update')
+    ->name('publication.announcements.toggle-pin');
+Route::post('/publication/announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])
+    ->middleware('active_permission:announcement.publish')
+    ->name('publication.announcements.publish');
+Route::post('/publication/announcements/{announcement}/unpublish', [AnnouncementController::class, 'unpublish'])
+    ->middleware('active_permission:announcement.publish')
+    ->name('publication.announcements.unpublish');
+Route::get('/publication/announcements', [AnnouncementController::class, 'index'])
+    ->middleware('active_permission:announcement.viewAny')
+    ->name('publication.announcements.index');
+Route::get('/publication/announcements/create', [AnnouncementController::class, 'create'])
+    ->middleware('active_permission:announcement.create')
+    ->name('publication.announcements.create');
+Route::post('/publication/announcements', [AnnouncementController::class, 'store'])
+    ->middleware('active_permission:announcement.create')
+    ->name('publication.announcements.store');
+Route::get('/publication/announcements/{announcement}/edit', [AnnouncementController::class, 'edit'])
+    ->middleware('active_permission:announcement.update')
+    ->name('publication.announcements.edit');
+Route::get('/publication/announcements/{announcement}', [AnnouncementController::class, 'show'])
+    ->middleware('active_permission:announcement.view')
+    ->name('publication.announcements.show');
+Route::put('/publication/announcements/{announcement}', [AnnouncementController::class, 'update'])
+    ->middleware('active_permission:announcement.update')
+    ->name('publication.announcements.update');
+Route::delete('/publication/announcements/{announcement}', [AnnouncementController::class, 'destroy'])
+    ->middleware('active_permission:announcement.delete')
+    ->name('publication.announcements.destroy');
 
 // CRUD Fakultas (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/academic/faculties/export', [FacultyController::class, 'export'])

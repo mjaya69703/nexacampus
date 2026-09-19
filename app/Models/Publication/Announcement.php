@@ -78,7 +78,10 @@ class Announcement extends Model
     {
         return $query->where('is_published', true)
             ->whereNotNull('published_at')
-            ->where('published_at', '<=', now());
+            ->where('published_at', '<=', now())
+            ->where(fn ($sub) => $sub
+                ->whereNull('scheduled_at')
+                ->orWhere('scheduled_at', '<=', now()));
     }
 
     public function scopePinned($query)
