@@ -43,6 +43,7 @@ use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
 use App\Http\Controllers\Admin\Publication\AnnouncementController;
 use App\Http\Controllers\Admin\Publication\AgendaController;
 use App\Http\Controllers\Admin\Publication\NewsController;
+use App\Http\Controllers\Admin\Publication\GalleryController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
@@ -65,7 +66,7 @@ foreach (ResourceRegistry::all() as $resource) {
     }
 
     // Batch-1 publikasi: categories & faqs → Inertia React.
-    if (in_array($resource['plural'], ['categories', 'faqs', 'announcements', 'news', 'agendas']) && ($resource['area'] ?? null) === 'publication') {
+    if (in_array($resource['plural'], ['categories', 'faqs', 'announcements', 'news', 'agendas', 'galleries']) && ($resource['area'] ?? null) === 'publication') {
         continue;
     }
 
@@ -511,6 +512,68 @@ Route::put('/publication/agendas/{agenda}', [AgendaController::class, 'update'])
 Route::delete('/publication/agendas/{agenda}', [AgendaController::class, 'destroy'])
     ->middleware('active_permission:agenda.delete')
     ->name('publication.agendas.destroy');
+
+// CRUD Album Galeri (Inertia React) — Batch-4, nama route & middleware paritas Livewire.
+Route::get('/publication/galleries/export', [GalleryController::class, 'export'])
+    ->middleware('active_permission:gallery.viewAny')
+    ->name('publication.galleries.export');
+Route::get('/publication/galleries/import/template', [GalleryController::class, 'importTemplate'])
+    ->middleware('active_permission:gallery.create')
+    ->name('publication.galleries.import-template');
+Route::post('/publication/galleries/import', [GalleryController::class, 'import'])
+    ->middleware('active_permission:gallery.create')
+    ->name('publication.galleries.import');
+Route::post('/publication/galleries/bulk-destroy', [GalleryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:gallery.delete')
+    ->name('publication.galleries.bulk-destroy');
+Route::post('/publication/galleries/bulk-restore', [GalleryController::class, 'bulkRestore'])
+    ->middleware('active_permission:gallery.update|gallery.delete')
+    ->name('publication.galleries.bulk-restore');
+Route::post('/publication/galleries/bulk-force-destroy', [GalleryController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:gallery.update|gallery.delete')
+    ->name('publication.galleries.bulk-force-destroy');
+Route::post('/publication/galleries/{id}/restore', [GalleryController::class, 'restore'])
+    ->middleware('active_permission:gallery.update|gallery.delete')
+    ->name('publication.galleries.restore');
+Route::delete('/publication/galleries/{id}/force', [GalleryController::class, 'forceDestroy'])
+    ->middleware('active_permission:gallery.update|gallery.delete')
+    ->name('publication.galleries.force-destroy');
+Route::post('/publication/galleries/{gallery}/toggle', [GalleryController::class, 'toggle'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.galleries.toggle');
+Route::get('/publication/galleries', [GalleryController::class, 'index'])
+    ->middleware('active_permission:gallery.viewAny')
+    ->name('publication.galleries.index');
+Route::get('/publication/galleries/create', [GalleryController::class, 'create'])
+    ->middleware('active_permission:gallery.create')
+    ->name('publication.galleries.create');
+Route::post('/publication/galleries', [GalleryController::class, 'store'])
+    ->middleware('active_permission:gallery.create')
+    ->name('publication.galleries.store');
+Route::post('/publication/galleries/{gallery}/images', [GalleryController::class, 'storeImages'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.galleries.images.store');
+Route::get('/publication/galleries/{gallery}/edit', [GalleryController::class, 'edit'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.galleries.edit');
+Route::get('/publication/galleries/{gallery}', [GalleryController::class, 'show'])
+    ->middleware('active_permission:gallery.view')
+    ->name('publication.galleries.show');
+Route::put('/publication/galleries/{gallery}', [GalleryController::class, 'update'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.galleries.update');
+Route::delete('/publication/galleries/{gallery}', [GalleryController::class, 'destroy'])
+    ->middleware('active_permission:gallery.delete')
+    ->name('publication.galleries.destroy');
+Route::patch('/publication/gallery-images/{image}', [GalleryController::class, 'updateImage'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.gallery-images.update');
+Route::delete('/publication/gallery-images/{image}', [GalleryController::class, 'destroyImage'])
+    ->middleware('active_permission:gallery.delete')
+    ->name('publication.gallery-images.destroy');
+Route::post('/publication/gallery-images/{image}/cover', [GalleryController::class, 'setCover'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.gallery-images.cover');
 
 // CRUD Fakultas (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/academic/faculties/export', [FacultyController::class, 'export'])
