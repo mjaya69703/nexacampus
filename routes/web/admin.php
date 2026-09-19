@@ -47,6 +47,7 @@ use App\Http\Controllers\Admin\Publication\GalleryController;
 use App\Http\Controllers\Admin\Campus\AdminCampusExportController;
 use App\Http\Controllers\Admin\Campus\BuildingController;
 use App\Http\Controllers\Admin\Campus\CampusLocationController;
+use App\Http\Controllers\Admin\Campus\RoomController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
@@ -73,7 +74,7 @@ foreach (ResourceRegistry::all() as $resource) {
         continue;
     }
 
-    if (in_array($resource['plural'], ['campus-locations', 'buildings']) && ($resource['area'] ?? null) === 'campus') {
+    if (in_array($resource['plural'], ['campus-locations', 'buildings', 'rooms']) && ($resource['area'] ?? null) === 'campus') {
         continue;
     }
 
@@ -678,6 +679,93 @@ Route::put('/campus/buildings/{building}', [BuildingController::class, 'update']
 Route::delete('/campus/buildings/{building}', [BuildingController::class, 'destroy'])
     ->middleware('active_permission:building.delete')
     ->name('campus.buildings.destroy');
+
+// CRUD Ruangan (Inertia React) — Batch-C2, nama route & middleware paritas Livewire.
+Route::get('/campus/rooms/export', [RoomController::class, 'export'])
+    ->middleware('active_permission:room.viewAny')
+    ->name('campus.rooms.export');
+Route::get('/campus/rooms/import/template', [RoomController::class, 'importTemplate'])
+    ->middleware('active_permission:room.create')
+    ->name('campus.rooms.import-template');
+Route::post('/campus/rooms/import', [RoomController::class, 'import'])
+    ->middleware('active_permission:room.create')
+    ->name('campus.rooms.import');
+Route::post('/campus/rooms/bulk-destroy', [RoomController::class, 'bulkDestroy'])
+    ->middleware('active_permission:room.delete')
+    ->name('campus.rooms.bulk-destroy');
+Route::post('/campus/rooms/bulk-restore', [RoomController::class, 'bulkRestore'])
+    ->middleware('active_permission:room.update|room.delete')
+    ->name('campus.rooms.bulk-restore');
+Route::post('/campus/rooms/bulk-force-destroy', [RoomController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:room.update|room.delete')
+    ->name('campus.rooms.bulk-force-destroy');
+Route::post('/campus/rooms/{id}/restore', [RoomController::class, 'restore'])
+    ->middleware('active_permission:room.update|room.delete')
+    ->name('campus.rooms.restore');
+Route::delete('/campus/rooms/{id}/force', [RoomController::class, 'forceDestroy'])
+    ->middleware('active_permission:room.update|room.delete')
+    ->name('campus.rooms.force-destroy');
+Route::post('/campus/rooms/{room}/toggle', [RoomController::class, 'toggle'])
+    ->middleware('active_permission:room.update')
+    ->name('campus.rooms.toggle');
+Route::get('/campus/rooms', [RoomController::class, 'index'])
+    ->middleware('active_permission:room.viewAny')
+    ->name('campus.rooms.index');
+Route::get('/campus/rooms/create', [RoomController::class, 'create'])
+    ->middleware('active_permission:room.create')
+    ->name('campus.rooms.create');
+Route::post('/campus/rooms', [RoomController::class, 'store'])
+    ->middleware('active_permission:room.create')
+    ->name('campus.rooms.store');
+Route::get('/campus/rooms/{room}/edit', [RoomController::class, 'edit'])
+    ->middleware('active_permission:room.update')
+    ->name('campus.rooms.edit');
+Route::put('/campus/rooms/{room}', [RoomController::class, 'update'])
+    ->middleware('active_permission:room.update')
+    ->name('campus.rooms.update');
+Route::delete('/campus/rooms/{room}', [RoomController::class, 'destroy'])
+    ->middleware('active_permission:room.delete')
+    ->name('campus.rooms.destroy');
+
+// CRUD Aset Kampus (Inertia React) — Batch-C2, nama route & middleware paritas Livewire.
+Route::get('/campus/campus-assets/export', [CampusAssetController::class, 'export'])
+    ->middleware('active_permission:campus-asset.viewAny')
+    ->name('campus.assets.export');
+Route::get('/campus/campus-assets/import/template', [CampusAssetController::class, 'importTemplate'])
+    ->name('campus.assets.import-template');
+Route::post('/campus/campus-assets/import', [CampusAssetController::class, 'import'])
+    ->name('campus.assets.import');
+Route::post('/campus/campus-assets/bulk-destroy', [CampusAssetController::class, 'bulkDestroy'])
+    ->middleware('active_permission:campus-asset.delete')
+    ->name('campus.assets.bulk-destroy');
+Route::post('/campus/campus-assets/bulk-restore', [CampusAssetController::class, 'bulkRestore'])
+    ->middleware('active_permission:campus-asset.update|campus-asset.delete')
+    ->name('campus.assets.bulk-restore');
+Route::post('/campus/campus-assets/bulk-force-destroy', [CampusAssetController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:campus-asset.update|campus-asset.delete')
+    ->name('campus.assets.bulk-force-destroy');
+Route::post('/campus/campus-assets/{id}/restore', [CampusAssetController::class, 'restore'])
+    ->middleware('active_permission:campus-asset.update|campus-asset.delete')
+    ->name('campus.assets.restore');
+Route::delete('/campus/campus-assets/{id}/force', [CampusAssetController::class, 'forceDestroy'])
+    ->middleware('active_permission:campus-asset.update|campus-asset.delete')
+    ->name('campus.assets.force-destroy');
+Route::get('/campus/campus-assets', [CampusAssetController::class, 'index'])
+    ->middleware('active_permission:campus-asset.viewAny')
+    ->name('campus.assets.index');
+Route::get('/campus/campus-assets/create', [CampusAssetController::class, 'create'])
+    ->name('campus.assets.create');
+Route::post('/campus/campus-assets', [CampusAssetController::class, 'store'])
+    ->name('campus.assets.store');
+Route::get('/campus/campus-assets/{asset}/edit', [CampusAssetController::class, 'edit'])
+    ->name('campus.assets.edit');
+Route::get('/campus/campus-assets/{asset}', [CampusAssetController::class, 'show'])
+    ->name('campus.assets.show');
+Route::put('/campus/campus-assets/{asset}', [CampusAssetController::class, 'update'])
+    ->name('campus.assets.update');
+Route::delete('/campus/campus-assets/{asset}', [CampusAssetController::class, 'destroy'])
+    ->middleware('active_permission:campus-asset.delete')
+    ->name('campus.assets.destroy');
 
 // CRUD Fakultas (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/academic/faculties/export', [FacultyController::class, 'export'])
