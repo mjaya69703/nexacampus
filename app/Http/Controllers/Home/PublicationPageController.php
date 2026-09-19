@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Home;
 
+use App\Enums\AnnouncementPriority;
 use App\Enums\AnnouncementTargetType;
 use App\Enums\FaqType;
 use App\Models\Publication\Agenda;
@@ -23,39 +24,110 @@ class PublicationPageController extends \App\Http\Controllers\Controller
 {
     public function announcements(Request $request): Response
     {
+        $validated = $request->validate([
+            'q' => 'nullable|string|max:100',
+            'prioritas' => 'nullable|string|max:50',
+            'page' => 'nullable|integer|min:1',
+        ]);
+
+        $priority = $validated['prioritas'] ?? '';
+        $priorities = collect(AnnouncementPriority::cases())->map(fn ($c) => $c->value)->all();
+
+        if ($priority !== '' && ! in_array($priority, $priorities, true)) {
+            $priority = '';
+        }
+
         $query = Announcement::published()
             ->where('target_type', AnnouncementTargetType::GLOBAL)
             ->orderByDesc('is_pinned')
             ->orderByDesc('published_at');
 
-        $total = $query->count();
+        $total = (clone $query)->count();
 
-        $items = $query->limit(30)->get();
+        if ($priority !== '') {
+            $query->where('priority', $priority);
+        }
 
-        $pinned = $items->where('is_pinned', true)
-            ->map(fn ($a) => [
-                'id' => $a->id,
-                'title' => $a->title,
-                'content' => strip_tags((string) $a->content),
-                'priority' => $a->priority?->value ?? 'normal',
-                'publishedAt' => $a->published_at?->format('d M Y'),
-                'hasAttachment' => filled($a->attachment_path),
-            ])->values()->all();
+        if (filled($validated['q'] ?? null)) {
+            $q = $validated['q'];
+            $query->where('title', 'like', "%{$q}%");
+        }
 
-        $regular = $items->where('is_pinned', false)
-            ->map(fn ($a) => [
-                'id' => $a->id,
-                'title' => $a->title,
-                'content' => Str::limit(strip_tags((string) $a->content), 160),
-                'priority' => $a->priority?->value ?? 'normal',
-                'publishedAt' => $a->published_at?->format('d M Y'),
-                'hasAttachment' => filled($a->attachment_path),
-            ])->values()->all();
+        $perPage = 12;
+        $page = $query->paginate($perPage);
+
+        $map = fn ($a) => [
+            'id' => $a->id,
+            'title' => $a->title,
+            'content' => Str::limit(strip_tags((string) $a->content), 160),
+            'priority' => $a->priority?->value ?? 'normal',
+            'isPinned' => (bool) $a->is_pinned,
+            'publishedAt' => $a->published_at?->format('d M Y'),
+            'hasAttachment' => filled($a->attachment_path),
+            'attachmentUrl' => $this->publicUrl($a->attachment_path),
+            'attachmentType' => $a->attachment_type,
+        ];
+
+        // Pin hanya ditonjolkan di halaman pertama tanpa filter prioritas.
+        $showPinned = $page->currentPage() === 1 && $priority === '';
+        $pinned = $showPinned
+            ? collect($page->items())->where('is_pinned', true)->map($map)->values()->all()
+            : [];
+        $regulars = collect($page->items())
+            ->reject(fn ($a) => $showPinned && $a->is_pinned)
+            ->map($map)->values()->all();
 
         return $this->render($request, 'Home/Publikasi/Pengumuman', [
             'total' => $total,
             'pinned' => $pinned,
-            'regulars' => $regular,
+            'regulars' => $regulars,
+            'page' => [
+                'currentPage' => $page->currentPage(),
+                'lastPage' => $page->lastPage(),
+                'perPage' => $page->perPage(),
+                'total' => $page->total(),
+            ],
+            'filters' => ['prioritas' => $priority, 'q' => $validated['q'] ?? ''],
+            'priorities' => collect(AnnouncementPriority::cases())
+                ->map(fn ($c) => ['value' => $c->value, 'label' => $c->label()])->all(),
+        ]);
+    }
+
+    public function pengumumanShow(Request $request, int $id): Response
+    {
+        $announcement = Announcement::published()
+            ->where('target_type', AnnouncementTargetType::GLOBAL)
+            ->findOrFail($id);
+
+        $related = Announcement::published()
+            ->where('target_type', AnnouncementTargetType::GLOBAL)
+            ->where('id', '!=', $announcement->id)
+            ->orderByDesc('is_pinned')
+            ->orderByDesc('published_at')
+            ->limit(4)
+            ->get(['id', 'title', 'published_at'])
+            ->map(fn ($a) => [
+                'id' => $a->id,
+                'title' => $a->title,
+                'publishedAt' => $a->published_at?->format('d M Y'),
+            ])->all();
+
+        return $this->render($request, 'Home/Publikasi/PengumumanShow', [
+            'announcement' => [
+                'id' => $announcement->id,
+                'title' => $announcement->title,
+                'content' => $announcement->content,
+                'priority' => $announcement->priority?->value ?? 'normal',
+                'priorityLabel' => $announcement->priority?->label() ?? 'Normal',
+                'isPinned' => (bool) $announcement->is_pinned,
+                'publishedAt' => $announcement->published_at?->format('d M Y'),
+                'hasAttachment' => filled($announcement->attachment_path),
+                'attachmentUrl' => $this->publicUrl($announcement->attachment_path),
+                'attachmentType' => $announcement->attachment_type,
+                'attachmentName' => $announcement->attachment_name,
+            ],
+            'related' => $related,
+            'shareUrl' => $request->url(),
         ]);
     }
 
@@ -148,7 +220,7 @@ class PublicationPageController extends \App\Http\Controllers\Controller
                 ->map(fn ($item) => [
                     'title' => $item->title,
                     'slug' => $item->slug,
-                    'image' => $item->featured_image ? Storage::url($item->featured_image) : null,
+                    'image' => $item->featured_image ? $this->publicUrl($item->featured_image) : null,
                     'excerpt' => $item->excerpt ? strip_tags((string) $item->excerpt) : Str::limit(strip_tags((string) $item->content), 120),
                 ])->all();
         }
@@ -174,7 +246,7 @@ class PublicationPageController extends \App\Http\Controllers\Controller
                 'author' => $article->creator->name ?? 'Tim Humas NexaCampus',
                 'publishedAt' => $article->published_at?->translatedFormat('d M Y'),
                 'readingTime' => max(1, (int) ceil(mb_strlen(strip_tags((string) $article->content)) / 1000)),
-                'image' => $article->featured_image ? Storage::url($article->featured_image) : null,
+                'image' => $article->featured_image ? $this->publicUrl($article->featured_image) : null,
                 'shareUrl' => $request->url(),
             ],
             'related' => $related,
@@ -269,14 +341,14 @@ class PublicationPageController extends \App\Http\Controllers\Controller
                 'title' => $album->title,
                 'description' => $album->description,
                 'cover' => $album->cover_image_path
-                    ? Storage::disk('public')->url($album->cover_image_path)
+                    ? $this->publicUrl($album->cover_image_path)
                     : ($album->images->first()
-                        ? Storage::disk('public')->url($album->images->first()->image_path)
+                        ? $this->publicUrl($album->images->first()->image_path)
                         : null),
                 'imageCount' => $album->images->count(),
                 'categoryName' => $album->category?->name ?? 'Umum',
                 'images' => $album->images->map(fn ($image) => [
-                    'url' => Storage::disk('public')->url($image->image_path),
+                    'url' => $this->publicUrl($image->image_path),
                     'caption' => $image->caption,
                 ])->all(),
             ])->all();
@@ -353,7 +425,7 @@ class PublicationPageController extends \App\Http\Controllers\Controller
             'publishedAt' => $n->published_at?->format('d M Y'),
             'day' => $n->published_at?->format('d'),
             'month' => $n->published_at?->translatedFormat('M'),
-            'image' => $n->featured_image ? Storage::url($n->featured_image) : null,
+            'image' => $n->featured_image ? $this->publicUrl($n->featured_image) : null,
             'categorySlug' => $n->category?->slug,
             'categoryName' => $n->category?->name,
         ];
@@ -384,6 +456,11 @@ class PublicationPageController extends \App\Http\Controllers\Controller
             'categoryName' => $e->category?->name,
             'categorySlug' => $e->category?->slug,
         ];
+    }
+
+    private function publicUrl(?string $path): ?string
+    {
+        return filled($path) ? '/storage/'.$path : null;
     }
 
     private function newsCategories(): array

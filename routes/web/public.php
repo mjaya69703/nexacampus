@@ -46,6 +46,7 @@ Route::get('/institusi/akreditasi', [InstitutionPageController::class, 'akredita
 Route::get('/institusi/kerjasama', [InstitutionPageController::class, 'kerjasama'])->name('root.institusi.kerjasama');
 
 Route::get('/pengumuman', [PublicationPageController::class, 'announcements'])->name('root.publication.announcements');
+Route::get('/pengumuman/{id}', [PublicationPageController::class, 'pengumumanShow'])->whereNumber('id')->name('root.publication.announcement-show');
 Route::get('/faq', [PublicationPageController::class, 'faq'])->name('root.faq');
 Route::get('/berita', [PublicationPageController::class, 'news'])->name('root.publication.news');
 Route::get('/berita/{slug}', [PublicationPageController::class, 'newsShow'])->name('root.publication.news-show');

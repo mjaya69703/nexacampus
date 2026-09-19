@@ -29,7 +29,11 @@ export default function AgendaShow({ campus, links, user, event, isUpcoming, cat
     const tilePeriod = [event.month, event.eventDate?.slice(0, 4)].filter(Boolean).join(' ');
 
     return <PublicationShell campus={campus} links={links} user={user} activeTab="Agenda" eyebrow="Detail Agenda" title="Rincian agenda & kegiatan kampus." description="Jadwal, lokasi, dan deskripsi resmi pelaksanaan kegiatan dari panitia penyelenggara." icon={CalendarDays}>
-        <Head title={`${event.title} · ${campus.name}`} />
+        <Head title={`${event.title} · ${campus.name}`}>
+            <meta name="description" content={(event.description ?? '').replace(/\s+/g, ' ').trim().slice(0, 160)} />
+            <meta property="og:title" content={event.title} />
+            <meta property="og:description" content={(event.description ?? '').replace(/\s+/g, ' ').trim().slice(0, 160)} />
+        </Head>
 
         <Link href="/agenda" className="adm-btn ghost sm" style={{ justifySelf:'start' }}>
             <ArrowLeft size={14} /> Kembali ke Daftar Agenda

@@ -13,6 +13,9 @@ type Props = PublicationBaseProps & { article:ArticleDetail; related:RelatedNews
 
 const clampLines = (lines:number): CSSProperties => ({ display:'-webkit-box', WebkitLineClamp:lines, WebkitBoxOrient:'vertical', overflow:'hidden' });
 
+const plainExcerpt = (html:string, length:number): string =>
+    html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, length);
+
 const tileTones = [
     { background:'var(--adm-brand-soft)', color:'var(--adm-brand)' },
     { background:'var(--adm-green-soft)', color:'var(--adm-green)' },
@@ -28,6 +31,7 @@ const categoryTones = [
 
 export default function BeritaShow({ campus, links, user, article, related, latest, categories }: Props) {
     const [copied, setCopied] = useState(false);
+    const [imageBroken, setImageBroken] = useState(false);
     const copyTimer = useRef<number | null>(null);
 
     const copyShareUrl = (): void => {
@@ -44,7 +48,12 @@ export default function BeritaShow({ campus, links, user, article, related, late
     const initials = article.author.split(' ').slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('');
 
     return <PublicationShell campus={campus} links={links} user={user} activeTab="Berita" eyebrow="Detail Warta" title="Baca kabar lengkap dari humas kampus." description="Artikel resmi beserta tautan berbagi, artikel terkait, dan arsip terbaru dalam satu halaman." icon={Newspaper}>
-        <Head title={`${article.title} · ${campus.name}`} />
+        <Head title={`${article.title} · ${campus.name}`}>
+            <meta name="description" content={plainExcerpt(article.content, 160)} />
+            <meta property="og:title" content={article.title} />
+            <meta property="og:description" content={plainExcerpt(article.content, 160)} />
+            {article.image !== null && <meta property="og:image" content={article.image} />}
+        </Head>
 
         <Link href="/berita" className="adm-btn ghost sm" style={{ justifySelf:'start' }}>
             <ArrowLeft size={14} /> Kembali ke Berita Kampus
@@ -120,9 +129,9 @@ export default function BeritaShow({ campus, links, user, article, related, late
                     </div>
 
                     {/* Featured image */}
-                    {article.image !== null && (
+                    {article.image !== null && !imageBroken && (
                         <figure style={{ margin:'20px 30px 0', borderRadius:14, overflow:'hidden', border:'1px solid var(--adm-line)' }}>
-                            <img src={article.image} alt={article.title} style={{ display:'block', width:'100%', maxHeight:400, objectFit:'cover' }} />
+                            <img src={article.image} alt={article.title} loading="lazy" onError={() => setImageBroken(true)} style={{ display:'block', width:'100%', maxHeight:400, objectFit:'cover' }} />
                         </figure>
                     )}
 
