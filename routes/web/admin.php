@@ -41,6 +41,8 @@ use App\Http\Controllers\Admin\Publication\AdminPublicationExportController;
 use App\Http\Controllers\Admin\Publication\FaqController;
 use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
 use App\Http\Controllers\Admin\Publication\AnnouncementController;
+use App\Http\Controllers\Admin\Publication\AgendaController;
+use App\Http\Controllers\Admin\Publication\NewsController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
@@ -63,7 +65,7 @@ foreach (ResourceRegistry::all() as $resource) {
     }
 
     // Batch-1 publikasi: categories & faqs → Inertia React.
-    if (in_array($resource['plural'], ['categories', 'faqs', 'announcements']) && ($resource['area'] ?? null) === 'publication') {
+    if (in_array($resource['plural'], ['categories', 'faqs', 'announcements', 'news', 'agendas']) && ($resource['area'] ?? null) === 'publication') {
         continue;
     }
 
@@ -409,6 +411,106 @@ Route::put('/publication/announcements/{announcement}', [AnnouncementController:
 Route::delete('/publication/announcements/{announcement}', [AnnouncementController::class, 'destroy'])
     ->middleware('active_permission:announcement.delete')
     ->name('publication.announcements.destroy');
+
+// CRUD Berita (Inertia React) — Batch-3, nama route & middleware paritas Livewire.
+Route::get('/publication/news/export', [NewsController::class, 'export'])
+    ->middleware('active_permission:news.viewAny')
+    ->name('publication.news.export');
+Route::get('/publication/news/import/template', [NewsController::class, 'importTemplate'])
+    ->middleware('active_permission:news.create')
+    ->name('publication.news.import-template');
+Route::post('/publication/news/import', [NewsController::class, 'import'])
+    ->middleware('active_permission:news.create')
+    ->name('publication.news.import');
+Route::post('/publication/news/bulk-destroy', [NewsController::class, 'bulkDestroy'])
+    ->middleware('active_permission:news.delete')
+    ->name('publication.news.bulk-destroy');
+Route::post('/publication/news/bulk-restore', [NewsController::class, 'bulkRestore'])
+    ->middleware('active_permission:news.update|news.delete')
+    ->name('publication.news.bulk-restore');
+Route::post('/publication/news/bulk-force-destroy', [NewsController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:news.update|news.delete')
+    ->name('publication.news.bulk-force-destroy');
+Route::post('/publication/news/{id}/restore', [NewsController::class, 'restore'])
+    ->middleware('active_permission:news.update|news.delete')
+    ->name('publication.news.restore');
+Route::delete('/publication/news/{id}/force', [NewsController::class, 'forceDestroy'])
+    ->middleware('active_permission:news.update|news.delete')
+    ->name('publication.news.force-destroy');
+Route::post('/publication/news/{news}/toggle', [NewsController::class, 'toggle'])
+    ->middleware('active_permission:news.update')
+    ->name('publication.news.toggle');
+Route::get('/publication/news', [NewsController::class, 'index'])
+    ->middleware('active_permission:news.viewAny')
+    ->name('publication.news.index');
+Route::get('/publication/news/create', [NewsController::class, 'create'])
+    ->middleware('active_permission:news.create')
+    ->name('publication.news.create');
+Route::post('/publication/news', [NewsController::class, 'store'])
+    ->middleware('active_permission:news.create')
+    ->name('publication.news.store');
+Route::get('/publication/news/{news}/edit', [NewsController::class, 'edit'])
+    ->middleware('active_permission:news.update')
+    ->name('publication.news.edit');
+Route::get('/publication/news/{news}', [NewsController::class, 'show'])
+    ->middleware('active_permission:news.view')
+    ->name('publication.news.show');
+Route::put('/publication/news/{news}', [NewsController::class, 'update'])
+    ->middleware('active_permission:news.update')
+    ->name('publication.news.update');
+Route::delete('/publication/news/{news}', [NewsController::class, 'destroy'])
+    ->middleware('active_permission:news.delete')
+    ->name('publication.news.destroy');
+
+// CRUD Agenda (Inertia React) — Batch-3, nama route & middleware paritas Livewire.
+Route::get('/publication/agendas/export', [AgendaController::class, 'export'])
+    ->middleware('active_permission:agenda.viewAny')
+    ->name('publication.agendas.export');
+Route::get('/publication/agendas/import/template', [AgendaController::class, 'importTemplate'])
+    ->middleware('active_permission:agenda.create')
+    ->name('publication.agendas.import-template');
+Route::post('/publication/agendas/import', [AgendaController::class, 'import'])
+    ->middleware('active_permission:agenda.create')
+    ->name('publication.agendas.import');
+Route::post('/publication/agendas/bulk-destroy', [AgendaController::class, 'bulkDestroy'])
+    ->middleware('active_permission:agenda.delete')
+    ->name('publication.agendas.bulk-destroy');
+Route::post('/publication/agendas/bulk-restore', [AgendaController::class, 'bulkRestore'])
+    ->middleware('active_permission:agenda.update|agenda.delete')
+    ->name('publication.agendas.bulk-restore');
+Route::post('/publication/agendas/bulk-force-destroy', [AgendaController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:agenda.update|agenda.delete')
+    ->name('publication.agendas.bulk-force-destroy');
+Route::post('/publication/agendas/{id}/restore', [AgendaController::class, 'restore'])
+    ->middleware('active_permission:agenda.update|agenda.delete')
+    ->name('publication.agendas.restore');
+Route::delete('/publication/agendas/{id}/force', [AgendaController::class, 'forceDestroy'])
+    ->middleware('active_permission:agenda.update|agenda.delete')
+    ->name('publication.agendas.force-destroy');
+Route::post('/publication/agendas/{agenda}/toggle', [AgendaController::class, 'toggle'])
+    ->middleware('active_permission:agenda.update')
+    ->name('publication.agendas.toggle');
+Route::get('/publication/agendas', [AgendaController::class, 'index'])
+    ->middleware('active_permission:agenda.viewAny')
+    ->name('publication.agendas.index');
+Route::get('/publication/agendas/create', [AgendaController::class, 'create'])
+    ->middleware('active_permission:agenda.create')
+    ->name('publication.agendas.create');
+Route::post('/publication/agendas', [AgendaController::class, 'store'])
+    ->middleware('active_permission:agenda.create')
+    ->name('publication.agendas.store');
+Route::get('/publication/agendas/{agenda}/edit', [AgendaController::class, 'edit'])
+    ->middleware('active_permission:agenda.update')
+    ->name('publication.agendas.edit');
+Route::get('/publication/agendas/{agenda}', [AgendaController::class, 'show'])
+    ->middleware('active_permission:agenda.view')
+    ->name('publication.agendas.show');
+Route::put('/publication/agendas/{agenda}', [AgendaController::class, 'update'])
+    ->middleware('active_permission:agenda.update')
+    ->name('publication.agendas.update');
+Route::delete('/publication/agendas/{agenda}', [AgendaController::class, 'destroy'])
+    ->middleware('active_permission:agenda.delete')
+    ->name('publication.agendas.destroy');
 
 // CRUD Fakultas (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/academic/faculties/export', [FacultyController::class, 'export'])
