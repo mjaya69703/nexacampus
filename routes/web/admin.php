@@ -44,6 +44,9 @@ use App\Http\Controllers\Admin\Publication\AnnouncementController;
 use App\Http\Controllers\Admin\Publication\AgendaController;
 use App\Http\Controllers\Admin\Publication\NewsController;
 use App\Http\Controllers\Admin\Publication\GalleryController;
+use App\Http\Controllers\Admin\Campus\AdminCampusExportController;
+use App\Http\Controllers\Admin\Campus\BuildingController;
+use App\Http\Controllers\Admin\Campus\CampusLocationController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
@@ -67,6 +70,10 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch-1 publikasi: categories & faqs → Inertia React.
     if (in_array($resource['plural'], ['categories', 'faqs', 'announcements', 'news', 'agendas', 'galleries']) && ($resource['area'] ?? null) === 'publication') {
+        continue;
+    }
+
+    if (in_array($resource['plural'], ['campus-locations', 'buildings']) && ($resource['area'] ?? null) === 'campus') {
         continue;
     }
 
@@ -574,6 +581,103 @@ Route::delete('/publication/gallery-images/{image}', [GalleryController::class, 
 Route::post('/publication/gallery-images/{image}/cover', [GalleryController::class, 'setCover'])
     ->middleware('active_permission:gallery.update')
     ->name('publication.gallery-images.cover');
+
+// CRUD Lokasi Kampus (Inertia React) — Batch-C1, nama route & middleware paritas Livewire.
+Route::get('/campus/campus-locations/export', [CampusLocationController::class, 'export'])
+    ->middleware('active_permission:campus-location.viewAny')
+    ->name('campus.locations.export');
+Route::get('/campus/campus-locations/import/template', [CampusLocationController::class, 'importTemplate'])
+    ->middleware('active_permission:campus-location.create')
+    ->name('campus.locations.import-template');
+Route::post('/campus/campus-locations/import', [CampusLocationController::class, 'import'])
+    ->middleware('active_permission:campus-location.create')
+    ->name('campus.locations.import');
+Route::post('/campus/campus-locations/bulk-destroy', [CampusLocationController::class, 'bulkDestroy'])
+    ->middleware('active_permission:campus-location.delete')
+    ->name('campus.locations.bulk-destroy');
+Route::post('/campus/campus-locations/bulk-restore', [CampusLocationController::class, 'bulkRestore'])
+    ->middleware('active_permission:campus-location.update|campus-location.delete')
+    ->name('campus.locations.bulk-restore');
+Route::post('/campus/campus-locations/bulk-force-destroy', [CampusLocationController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:campus-location.update|campus-location.delete')
+    ->name('campus.locations.bulk-force-destroy');
+Route::post('/campus/campus-locations/{id}/restore', [CampusLocationController::class, 'restore'])
+    ->middleware('active_permission:campus-location.update|campus-location.delete')
+    ->name('campus.locations.restore');
+Route::delete('/campus/campus-locations/{id}/force', [CampusLocationController::class, 'forceDestroy'])
+    ->middleware('active_permission:campus-location.update|campus-location.delete')
+    ->name('campus.locations.force-destroy');
+Route::post('/campus/campus-locations/{location}/toggle', [CampusLocationController::class, 'toggle'])
+    ->middleware('active_permission:campus-location.update')
+    ->name('campus.locations.toggle');
+Route::post('/campus/campus-locations/{location}/main', [CampusLocationController::class, 'setMain'])
+    ->middleware('active_permission:campus-location.update')
+    ->name('campus.locations.main');
+Route::get('/campus/campus-locations', [CampusLocationController::class, 'index'])
+    ->middleware('active_permission:campus-location.viewAny')
+    ->name('campus.locations.index');
+Route::get('/campus/campus-locations/create', [CampusLocationController::class, 'create'])
+    ->middleware('active_permission:campus-location.create')
+    ->name('campus.locations.create');
+Route::post('/campus/campus-locations', [CampusLocationController::class, 'store'])
+    ->middleware('active_permission:campus-location.create')
+    ->name('campus.locations.store');
+Route::get('/campus/campus-locations/{location}/edit', [CampusLocationController::class, 'edit'])
+    ->middleware('active_permission:campus-location.update')
+    ->name('campus.locations.edit');
+Route::put('/campus/campus-locations/{location}', [CampusLocationController::class, 'update'])
+    ->middleware('active_permission:campus-location.update')
+    ->name('campus.locations.update');
+Route::delete('/campus/campus-locations/{location}', [CampusLocationController::class, 'destroy'])
+    ->middleware('active_permission:campus-location.delete')
+    ->name('campus.locations.destroy');
+
+// CRUD Gedung (Inertia React) — Batch-C1, nama route & middleware paritas Livewire.
+Route::get('/campus/buildings/export', [BuildingController::class, 'export'])
+    ->middleware('active_permission:building.viewAny')
+    ->name('campus.buildings.export');
+Route::get('/campus/buildings/import/template', [BuildingController::class, 'importTemplate'])
+    ->middleware('active_permission:building.create')
+    ->name('campus.buildings.import-template');
+Route::post('/campus/buildings/import', [BuildingController::class, 'import'])
+    ->middleware('active_permission:building.create')
+    ->name('campus.buildings.import');
+Route::post('/campus/buildings/bulk-destroy', [BuildingController::class, 'bulkDestroy'])
+    ->middleware('active_permission:building.delete')
+    ->name('campus.buildings.bulk-destroy');
+Route::post('/campus/buildings/bulk-restore', [BuildingController::class, 'bulkRestore'])
+    ->middleware('active_permission:building.update|building.delete')
+    ->name('campus.buildings.bulk-restore');
+Route::post('/campus/buildings/bulk-force-destroy', [BuildingController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:building.update|building.delete')
+    ->name('campus.buildings.bulk-force-destroy');
+Route::post('/campus/buildings/{id}/restore', [BuildingController::class, 'restore'])
+    ->middleware('active_permission:building.update|building.delete')
+    ->name('campus.buildings.restore');
+Route::delete('/campus/buildings/{id}/force', [BuildingController::class, 'forceDestroy'])
+    ->middleware('active_permission:building.update|building.delete')
+    ->name('campus.buildings.force-destroy');
+Route::post('/campus/buildings/{building}/toggle', [BuildingController::class, 'toggle'])
+    ->middleware('active_permission:building.update')
+    ->name('campus.buildings.toggle');
+Route::get('/campus/buildings', [BuildingController::class, 'index'])
+    ->middleware('active_permission:building.viewAny')
+    ->name('campus.buildings.index');
+Route::get('/campus/buildings/create', [BuildingController::class, 'create'])
+    ->middleware('active_permission:building.create')
+    ->name('campus.buildings.create');
+Route::post('/campus/buildings', [BuildingController::class, 'store'])
+    ->middleware('active_permission:building.create')
+    ->name('campus.buildings.store');
+Route::get('/campus/buildings/{building}/edit', [BuildingController::class, 'edit'])
+    ->middleware('active_permission:building.update')
+    ->name('campus.buildings.edit');
+Route::put('/campus/buildings/{building}', [BuildingController::class, 'update'])
+    ->middleware('active_permission:building.update')
+    ->name('campus.buildings.update');
+Route::delete('/campus/buildings/{building}', [BuildingController::class, 'destroy'])
+    ->middleware('active_permission:building.delete')
+    ->name('campus.buildings.destroy');
 
 // CRUD Fakultas (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/academic/faculties/export', [FacultyController::class, 'export'])
@@ -1298,6 +1402,10 @@ Route::get('/publication/{resource}/export/pdf', [AdminPublicationExportControll
     ->name('publication.exports.pdf');
 Route::get('/publication/{resource}/imports/template', [AdminPublicationExportController::class, 'importTemplate'])
     ->name('publication.import-template');
+Route::get('/campus/{resource}/export/pdf', [AdminCampusExportController::class, 'pdf'])
+    ->name('campus.exports.pdf');
+Route::get('/campus/{resource}/imports/template', [AdminCampusExportController::class, 'importTemplate'])
+    ->name('campus.import-template');
 
 Route::get('/admission/documents/{document}/preview', [AdmissionDocumentController::class, 'adminPreview'])
     ->middleware('active_permission:admission-application.view')
