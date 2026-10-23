@@ -274,12 +274,11 @@ class PublicationPageController extends \App\Http\Controllers\Controller
 
         $months = Agenda::published()
             ->whereNotNull('event_date')
-            ->selectRaw('YEAR(event_date) as year, MONTH(event_date) as month')
-            ->distinct()
-            ->orderBy('year')
-            ->orderBy('month')
-            ->get()
-            ->map(fn ($m) => sprintf('%04d-%02d', $m->year, $m->month))
+            ->orderBy('event_date')
+            ->pluck('event_date')
+            ->map(fn ($date) => \Carbon\Carbon::parse($date)->format('Y-m'))
+            ->unique()
+            ->values()
             ->all();
 
         $featuredEvent = Agenda::published()->upcoming()->with('category')->orderBy('event_date')->first();

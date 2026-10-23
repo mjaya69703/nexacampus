@@ -54,7 +54,7 @@ new class extends Component
                 ->get(),
             'complaints' => StudentComplaint::with(['studentProfile.user', 'category', 'assignedWorkUnit'])
                 ->whereNotIn('status', ['resolved', 'closed', 'rejected'])
-                ->orderByRaw("CASE WHEN due_at IS NOT NULL AND due_at < NOW() THEN 0 ELSE 1 END")
+                ->orderByRaw('CASE WHEN due_at IS NOT NULL AND due_at < ? THEN 0 ELSE 1 END', [now()])
                 ->orderBy('due_at')
                 ->limit(6)
                 ->get(),

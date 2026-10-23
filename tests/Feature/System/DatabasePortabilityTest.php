@@ -8,7 +8,7 @@
  * CI (pernah terjadi pada dashboard financial). Gunakan
  * App\Support\Database\PortableOrder::priority() sebagai gantinya.
  */
-it('tidak memakai fungsi MySQL-only FIELD() di kode aplikasi', function () {
+it('tidak memakai fungsi SQL MySQL-only di kode aplikasi', function () {
     $offenders = [];
 
     foreach ([app_path(), resource_path('views')] as $directory) {
@@ -26,11 +26,11 @@ it('tidak memakai fungsi MySQL-only FIELD() di kode aplikasi', function () {
                 continue;
             }
 
-            if (preg_match('/\bFIELD\s*\(/i', file_get_contents($file->getPathname()))) {
+            if (preg_match('/\b(FIELD|YEAR|MONTH|IFNULL|GROUP_CONCAT|DATEDIFF|TIMESTAMPDIFF)\s*\(|\bNOW\s*\(\s*\)/', file_get_contents($file->getPathname()))) {
                 $offenders[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file->getPathname());
             }
         }
     }
 
-    expect($offenders)->toBe([], "Gunakan PortableOrder::priority() alih-alih FIELD():\n".implode("\n", $offenders));
+    expect($offenders)->toBe([], "Gunakan PortableOrder/parameter terikat alih-alih fungsi MySQL-only:\n".implode("\n", $offenders));
 });

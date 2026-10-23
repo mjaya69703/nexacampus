@@ -2,11 +2,13 @@
 
 use App\Enums\AnnouncementPriority;
 use App\Enums\AnnouncementTargetType;
+use App\Models\Publication\Agenda;
 use App\Models\Publication\Announcement;
 use App\Models\Publication\Faq;
 use App\Models\Publication\GalleryAlbum;
 use App\Models\Publication\News;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -158,4 +160,29 @@ it('menampilkan halaman FAQ publik', function () {
         ->assertInertia(fn ($page) => $page
             ->component('Home/Publikasi/Faq')
             ->has('faqs', 1));
+});
+
+it('menampilkan agenda publik beserta daftar bulan yang portabel', function () {
+    publicPagesSetup();
+
+    $creatorId = App\Models\User::factory()->create()->id;
+
+    foreach ([['Rapat Januari', '2027-01-15'], ['Seminar Maret', '2027-03-20'], ['Workshop Maret', '2027-03-25']] as [$title, $date]) {
+        Agenda::create([
+            'title' => $title,
+            'slug' => Str::slug($title),
+            'description' => '<p>Agenda.</p>',
+            'event_date' => $date,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+            'created_by' => $creatorId,
+        ]);
+    }
+
+    test()->get('/agenda')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Home/Publikasi/Agenda')
+            ->where('months', ['2027-01', '2027-03'])
+            ->has('events', 3));
 });
