@@ -5,6 +5,7 @@ namespace App\Livewire\Organization;
 use App\Livewire\BasePowerGridTable;
 use App\Models\Organization\EmployeeLeaveRequest;
 use App\Support\ActivePermission;
+use App\Support\Database\PortableConcat;
 use App\Support\Database\PortableOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
@@ -85,7 +86,7 @@ final class EmployeeLeaveRequestTable extends BasePowerGridTable
                             $sub->where(function (Builder $q) use ($value) {
                                 $q->where('first_name', 'like', '%' . $value . '%')
                                     ->orWhere('last_name', 'like', '%' . $value . '%')
-                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhereRaw(PortableConcat::fullName().' like ?', ['%' . $value . '%'])
                                     ->orWhere('username', 'like', '%' . $value . '%')
                                     ->orWhere('email', 'like', '%' . $value . '%');
                             });

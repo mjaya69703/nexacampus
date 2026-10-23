@@ -5,6 +5,7 @@ namespace App\Livewire\Organization;
 use App\Livewire\BasePowerGridTable;
 use App\Models\Organization\UserDevelopmentRecord;
 use App\Support\ActivePermission;
+use App\Support\Database\PortableConcat;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -99,7 +100,7 @@ final class UserDevelopmentRecordTable extends BasePowerGridTable
                             $sub->where(function (Builder $q) use ($value) {
                                 $q->where('first_name', 'like', '%' . $value . '%')
                                     ->orWhere('last_name', 'like', '%' . $value . '%')
-                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ['%' . $value . '%'])
+                                    ->orWhereRaw(PortableConcat::fullName().' like ?', ['%' . $value . '%'])
                                     ->orWhere('username', 'like', '%' . $value . '%')
                                     ->orWhere('email', 'like', '%' . $value . '%');
                             });

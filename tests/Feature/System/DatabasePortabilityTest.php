@@ -6,7 +6,8 @@
  * Produksi memakai MySQL, tetapi test & CI memakai SQLite. Fungsi khusus
  * MySQL seperti FIELD() membuat query berjalan di produksi namun gagal di
  * CI (pernah terjadi pada dashboard financial). Gunakan
- * App\Support\Database\PortableOrder::priority() sebagai gantinya.
+ * App\Support\Database\PortableOrder::priority() atau
+ * App\Support\Database\PortableConcat::fullName() sebagai gantinya.
  */
 it('tidak memakai fungsi SQL MySQL-only di kode aplikasi', function () {
     $offenders = [];
@@ -21,12 +22,12 @@ it('tidak memakai fungsi SQL MySQL-only di kode aplikasi', function () {
                 continue;
             }
 
-            // File helper ini memang menyebut FIELD() di dokumentasi.
-            if (str_ends_with(str_replace('\\', '/', $file->getPathname()), 'app/Support/Database/PortableOrder.php')) {
+            // Helper portabilitas memang menyebut fungsi MySQL di dokumentasi.
+            if (str_contains(str_replace('\\', '/', $file->getPathname()), 'app/Support/Database/')) {
                 continue;
             }
 
-            if (preg_match('/\b(FIELD|YEAR|MONTH|IFNULL|GROUP_CONCAT|DATEDIFF|TIMESTAMPDIFF)\s*\(|\bNOW\s*\(\s*\)/', file_get_contents($file->getPathname()))) {
+            if (preg_match('/\b(FIELD|YEAR|MONTH|IFNULL|GROUP_CONCAT|DATEDIFF|TIMESTAMPDIFF|CONCAT)\s*\(|\bNOW\s*\(\s*\)/', file_get_contents($file->getPathname()))) {
                 $offenders[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file->getPathname());
             }
         }
