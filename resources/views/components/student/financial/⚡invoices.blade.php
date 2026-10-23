@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Financial\StudentInvoice;
+use App\Support\Database\PortableOrder;
 use App\Support\Financial\InvoiceStatusService;
 use Illuminate\Support\Collection;
 use Livewire\Component;
@@ -41,7 +42,7 @@ new class extends Component
             ->with(['academicYear', 'items'])
             ->where('student_profile_id', $studentProfile->id)
             ->where('status', '!=', 'draft')
-            ->orderByRaw("FIELD(status, 'overdue', 'partially_paid', 'issued', 'paid', 'cancelled')")
+            ->orderByRaw(PortableOrder::priority('status', ['overdue', 'partially_paid', 'issued', 'paid', 'cancelled']))
             ->orderBy('due_date')
             ->orderByDesc('created_at')
             ->get();

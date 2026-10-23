@@ -5,6 +5,7 @@ namespace App\Livewire\Organization;
 use App\Livewire\BasePowerGridTable;
 use App\Models\Organization\ApprovalRequest;
 use App\Support\ActivePermission;
+use App\Support\Database\PortableOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -32,7 +33,7 @@ final class ApprovalRequestTable extends BasePowerGridTable
     {
         return ApprovalRequest::query()
             ->with(['template', 'requester'])
-            ->orderByRaw("FIELD(status, 'in_progress', 'submitted', 'draft', 'approved', 'rejected', 'cancelled')")
+            ->orderByRaw(PortableOrder::priority('status', ['in_progress', 'submitted', 'draft', 'approved', 'rejected', 'cancelled']))
             ->orderByDesc('created_at');
     }
 

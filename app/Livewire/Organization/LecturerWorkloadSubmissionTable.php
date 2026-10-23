@@ -5,6 +5,7 @@ namespace App\Livewire\Organization;
 use App\Livewire\BasePowerGridTable;
 use App\Models\Organization\LecturerWorkloadSubmission;
 use App\Support\ActivePermission;
+use App\Support\Database\PortableOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -28,7 +29,7 @@ final class LecturerWorkloadSubmissionTable extends BasePowerGridTable
     {
         return LecturerWorkloadSubmission::query()
             ->with(['period', 'owner', 'lecturerProfile.studyProgram'])
-            ->orderByRaw("FIELD(status, 'in_approval', 'submitted', 'revision', 'draft', 'approved', 'rejected', 'cancelled')")
+            ->orderByRaw(PortableOrder::priority('status', ['in_approval', 'submitted', 'revision', 'draft', 'approved', 'rejected', 'cancelled']))
             ->latest('updated_at');
     }
 

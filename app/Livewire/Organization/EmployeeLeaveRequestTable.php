@@ -5,6 +5,7 @@ namespace App\Livewire\Organization;
 use App\Livewire\BasePowerGridTable;
 use App\Models\Organization\EmployeeLeaveRequest;
 use App\Support\ActivePermission;
+use App\Support\Database\PortableOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -32,7 +33,7 @@ final class EmployeeLeaveRequestTable extends BasePowerGridTable
     {
         return EmployeeLeaveRequest::query()
             ->with(['employeeProfile.user', 'leaveType', 'approvalRequest'])
-            ->orderByRaw("FIELD(status, 'submitted', 'in_approval', 'draft', 'approved', 'rejected', 'cancelled')")
+            ->orderByRaw(PortableOrder::priority('status', ['submitted', 'in_approval', 'draft', 'approved', 'rejected', 'cancelled']))
             ->orderByDesc('created_at');
     }
 

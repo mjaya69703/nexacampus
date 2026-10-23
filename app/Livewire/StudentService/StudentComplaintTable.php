@@ -8,6 +8,7 @@ use App\Models\Organization\WorkUnit;
 use App\Models\StudentService\StudentComplaint;
 use App\Models\StudentService\StudentComplaintCategory;
 use App\Support\ActivePermission;
+use App\Support\Database\PortableOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -43,7 +44,7 @@ final class StudentComplaintTable extends BasePowerGridTable
             });
         }
 
-        return $query->orderByRaw("FIELD(status, 'submitted', 'reopened', 'in_review', 'waiting_student', 'responded', 'resolved', 'closed', 'rejected')")
+        return $query->orderByRaw(PortableOrder::priority('status', ['submitted', 'reopened', 'in_review', 'waiting_student', 'responded', 'resolved', 'closed', 'rejected']))
             ->orderByDesc('last_message_at')
             ->orderByDesc('created_at');
     }
