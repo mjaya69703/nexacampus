@@ -111,6 +111,19 @@ new class extends Component
             transform: translateY(-2px);
             box-shadow: 0 8px 22px rgba(99, 102, 241, .14);
         }
+
+        [data-bs-theme=dark] .queue-item,
+        body[data-bs-theme=dark] .queue-item {
+            background: rgba(43, 28, 67, 0.85);
+            border-color: rgba(167, 139, 255, 0.22);
+            color: #f3edff;
+        }
+
+        [data-bs-theme=dark] .queue-item:hover,
+        body[data-bs-theme=dark] .queue-item:hover {
+            border-color: rgba(167, 139, 255, 0.55);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, .35);
+        }
     </style>
 @endpush
 
