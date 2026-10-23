@@ -74,11 +74,16 @@ class AppServiceProvider extends ServiceProvider
             return ActivePermission::all($permissions);
         });
 
-        // Route macro for CRUD Livewire components
+        // Route macro for CRUD Livewire components.
+        //
+        // `delete` sengaja tidak didaftarkan sebagai route: penghapusan dilakukan
+        // dari PowerGrid lewat konfirmasi SweetAlert, dan tidak ada halaman
+        // `⚡delete.blade.php`. Nilai `delete` pada `actions` di config/resources.php
+        // tetap dipakai ResourceRegistry untuk menghasilkan permission `.delete`.
         Route::macro('crudLivewire', function (
             string $resource,
             string $componentPrefix,
-            array $only = ['index', 'create', 'edit', 'delete'],
+            array $only = ['index', 'create', 'edit'],
             string $uriPrefix = '/manage',
             ?string $permissionResource = null
         ) {
@@ -107,12 +112,6 @@ class AppServiceProvider extends ServiceProvider
                 Route::livewire("{$uriPrefix}/{$resource}/{id}", "{$componentPrefix}.show")
                     ->middleware("active_permission:{$permissionResource}.view")
                     ->name("{$baseName}.show");
-            }
-
-            if (in_array('delete', $only)) {
-                Route::livewire("{$uriPrefix}/{$resource}/{id}/delete", "{$componentPrefix}.delete")
-                    ->middleware("active_permission:{$permissionResource}.delete")
-                    ->name("{$baseName}.delete");
             }
         });
     }

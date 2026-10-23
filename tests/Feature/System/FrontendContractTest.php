@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 /**
  * Kontrak frontend ↔ backend.
  *
@@ -77,4 +79,38 @@ it('mendaftarkan komponen Livewire yang view-nya benar-benar ada', function () {
     }
 
     expect($missing)->toBe([], "Komponen Livewire berikut didaftarkan tetapi view-nya tidak ada:\n".implode("\n", $missing));
+});
+
+it('tidak mendaftarkan route Livewire admin untuk halaman yang tidak ada', function () {
+    $livewireRoutes = collect(Route::getRoutes()->getRoutes())
+        ->filter(fn ($route) => is_string($route->getName())
+            && str_starts_with($route->getName(), 'admin.')
+            && array_key_exists('livewire_component', $route->getAction()));
+
+    $missingViews = [];
+    $deadDeleteRoutes = [];
+
+    foreach ($livewireRoutes as $route) {
+        $name = $route->getName();
+        $component = $route->getAction('livewire_component');
+
+        // Hapus data dilakukan dari PowerGrid, bukan lewat halaman /delete.
+        if (str_ends_with($name, '.delete')) {
+            $deadDeleteRoutes[] = $name.' ['.$component.']';
+        }
+
+        $parts = explode('.', $component);
+        $slug = array_pop($parts);
+        $relative = implode('/', $parts).'/⚡'.$slug.'.blade.php';
+
+        $exists = file_exists(resource_path('views/components/'.$relative))
+            || file_exists(resource_path('views/livewire/'.$relative));
+
+        if (! $exists) {
+            $missingViews[] = $name.' ['.$component.']';
+        }
+    }
+
+    expect($deadDeleteRoutes)->toBe([], "Route delete Livewire berikut tidak punya halaman:\n".implode("\n", $deadDeleteRoutes));
+    expect($missingViews)->toBe([], "Route Livewire berikut tidak punya view:\n".implode("\n", $missingViews));
 });
