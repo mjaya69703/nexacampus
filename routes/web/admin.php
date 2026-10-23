@@ -55,6 +55,9 @@ use App\Http\Controllers\Admin\Admission\AdmissionExamScheduleController;
 use App\Http\Controllers\Admin\Admission\AdmissionPeriodController;
 use App\Http\Controllers\Admin\Admission\AdmissionQuotaController;
 use App\Http\Controllers\Admin\Admission\NimGenerationRuleController;
+use App\Http\Controllers\Admin\Alumni\AlumniProfileController;
+use App\Http\Controllers\Admin\Alumni\EmployerPartnerController;
+use App\Http\Controllers\Admin\Alumni\JobPostingController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
 use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
@@ -90,6 +93,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch AD-2: jadwal ujian, pendaftar & seleksi → Inertia React.
     if (in_array($resource['plural'], ['admission-exam-schedules', 'admission-applications', 'admission-selection']) && ($resource['area'] ?? null) === 'admission') {
+        continue;
+    }
+
+    // Batch AL-1: profil alumni, mitra perusahaan & lowongan → Inertia React.
+    if (in_array($resource['plural'], ['alumni-profiles', 'employer-partners', 'job-postings']) && ($resource['area'] ?? null) === 'alumni') {
         continue;
     }
 
@@ -2067,32 +2075,137 @@ Route::get('/student-services/complaint-attachments/{attachment}/download', [Com
     ->middleware('active_permission:student-complaint.view')
     ->name('student-services.complaint-attachments.download');
 
-Route::livewire('/alumni/profiles', 'admin.alumni.alumni-profiles.index')
-    ->middleware('active_permission:alumni-profile.viewAny')->name('alumni.profiles.index');
-Route::livewire('/alumni/profiles/create', 'admin.alumni.alumni-profiles.create')
-    ->middleware('active_permission:alumni-profile.create')->name('alumni.profiles.create');
-Route::livewire('/alumni/profiles/{id}/edit', 'admin.alumni.alumni-profiles.edit')
-    ->middleware('active_permission:alumni-profile.update')->name('alumni.profiles.edit');
-Route::livewire('/alumni/profiles/{id}', 'admin.alumni.alumni-profiles.show')
-    ->middleware('active_permission:alumni-profile.view')->name('alumni.profiles.show');
-Route::post('/alumni/profiles/batch-convert', [AlumniConversionController::class, 'batchConvert'])
-    ->middleware('active_permission:alumni-profile.create')->name('alumni.profiles.batch-convert');
+// CRUD Profil Alumni (Inertia React) — Batch AL-1.
+Route::get('/alumni/alumni-profiles/export', [AlumniProfileController::class, 'export'])
+    ->middleware('active_permission:alumni-profile.viewAny')
+    ->name('alumni.alumni-profiles.export');
+Route::post('/alumni/alumni-profiles/bulk-destroy', [AlumniProfileController::class, 'bulkDestroy'])
+    ->middleware('active_permission:alumni-profile.delete')
+    ->name('alumni.alumni-profiles.bulk-destroy');
+Route::post('/alumni/alumni-profiles/bulk-restore', [AlumniProfileController::class, 'bulkRestore'])
+    ->middleware('active_permission:alumni-profile.update|alumni-profile.delete')
+    ->name('alumni.alumni-profiles.bulk-restore');
+Route::post('/alumni/alumni-profiles/bulk-force-destroy', [AlumniProfileController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:alumni-profile.update|alumni-profile.delete')
+    ->name('alumni.alumni-profiles.bulk-force-destroy');
+Route::post('/alumni/alumni-profiles/batch-convert', [AlumniConversionController::class, 'batchConvert'])
+    ->middleware('active_permission:alumni-profile.create')
+    ->name('alumni.alumni-profiles.batch-convert');
+Route::post('/alumni/alumni-profiles/{id}/restore', [AlumniProfileController::class, 'restore'])
+    ->middleware('active_permission:alumni-profile.update|alumni-profile.delete')
+    ->name('alumni.alumni-profiles.restore');
+Route::delete('/alumni/alumni-profiles/{id}/force', [AlumniProfileController::class, 'forceDestroy'])
+    ->middleware('active_permission:alumni-profile.update|alumni-profile.delete')
+    ->name('alumni.alumni-profiles.force-destroy');
+Route::post('/alumni/alumni-profiles/{profile}/toggle', [AlumniProfileController::class, 'toggle'])
+    ->middleware('active_permission:alumni-profile.update')
+    ->name('alumni.alumni-profiles.toggle');
+Route::get('/alumni/alumni-profiles', [AlumniProfileController::class, 'index'])
+    ->middleware('active_permission:alumni-profile.viewAny')
+    ->name('alumni.alumni-profiles.index');
+Route::get('/alumni/alumni-profiles/create', [AlumniProfileController::class, 'create'])
+    ->middleware('active_permission:alumni-profile.create')
+    ->name('alumni.alumni-profiles.create');
+Route::post('/alumni/alumni-profiles', [AlumniProfileController::class, 'store'])
+    ->middleware('active_permission:alumni-profile.create')
+    ->name('alumni.alumni-profiles.store');
+Route::get('/alumni/alumni-profiles/{profile}/edit', [AlumniProfileController::class, 'edit'])
+    ->middleware('active_permission:alumni-profile.update')
+    ->name('alumni.alumni-profiles.edit');
+Route::put('/alumni/alumni-profiles/{profile}', [AlumniProfileController::class, 'update'])
+    ->middleware('active_permission:alumni-profile.update')
+    ->name('alumni.alumni-profiles.update');
+Route::delete('/alumni/alumni-profiles/{profile}', [AlumniProfileController::class, 'destroy'])
+    ->middleware('active_permission:alumni-profile.delete')
+    ->name('alumni.alumni-profiles.destroy');
+Route::get('/alumni/alumni-profiles/{profile}', [AlumniProfileController::class, 'show'])
+    ->middleware('active_permission:alumni-profile.view')
+    ->name('alumni.alumni-profiles.show');
 
-Route::livewire('/alumni/employer-partners', 'admin.alumni.employer-partners.index')
-    ->middleware('active_permission:employer-partner.viewAny')->name('alumni.employer-partners.index');
-Route::livewire('/alumni/employer-partners/create', 'admin.alumni.employer-partners.create')
-    ->middleware('active_permission:employer-partner.create')->name('alumni.employer-partners.create');
-Route::livewire('/alumni/employer-partners/{id}/edit', 'admin.alumni.employer-partners.edit')
-    ->middleware('active_permission:employer-partner.update')->name('alumni.employer-partners.edit');
+// CRUD Mitra Perusahaan Alumni (Inertia React) — Batch AL-1.
+Route::get('/alumni/employer-partners/export', [EmployerPartnerController::class, 'export'])
+    ->middleware('active_permission:employer-partner.viewAny')
+    ->name('alumni.employer-partners.export');
+Route::post('/alumni/employer-partners/bulk-destroy', [EmployerPartnerController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employer-partner.delete')
+    ->name('alumni.employer-partners.bulk-destroy');
+Route::post('/alumni/employer-partners/bulk-restore', [EmployerPartnerController::class, 'bulkRestore'])
+    ->middleware('active_permission:employer-partner.update|employer-partner.delete')
+    ->name('alumni.employer-partners.bulk-restore');
+Route::post('/alumni/employer-partners/bulk-force-destroy', [EmployerPartnerController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:employer-partner.update|employer-partner.delete')
+    ->name('alumni.employer-partners.bulk-force-destroy');
+Route::post('/alumni/employer-partners/{id}/restore', [EmployerPartnerController::class, 'restore'])
+    ->middleware('active_permission:employer-partner.update|employer-partner.delete')
+    ->name('alumni.employer-partners.restore');
+Route::delete('/alumni/employer-partners/{id}/force', [EmployerPartnerController::class, 'forceDestroy'])
+    ->middleware('active_permission:employer-partner.update|employer-partner.delete')
+    ->name('alumni.employer-partners.force-destroy');
+Route::post('/alumni/employer-partners/{employerPartner}/toggle', [EmployerPartnerController::class, 'toggle'])
+    ->middleware('active_permission:employer-partner.update')
+    ->name('alumni.employer-partners.toggle');
+Route::get('/alumni/employer-partners', [EmployerPartnerController::class, 'index'])
+    ->middleware('active_permission:employer-partner.viewAny')
+    ->name('alumni.employer-partners.index');
+Route::get('/alumni/employer-partners/create', [EmployerPartnerController::class, 'create'])
+    ->middleware('active_permission:employer-partner.create')
+    ->name('alumni.employer-partners.create');
+Route::post('/alumni/employer-partners', [EmployerPartnerController::class, 'store'])
+    ->middleware('active_permission:employer-partner.create')
+    ->name('alumni.employer-partners.store');
+Route::get('/alumni/employer-partners/{employerPartner}/edit', [EmployerPartnerController::class, 'edit'])
+    ->middleware('active_permission:employer-partner.update')
+    ->name('alumni.employer-partners.edit');
+Route::put('/alumni/employer-partners/{employerPartner}', [EmployerPartnerController::class, 'update'])
+    ->middleware('active_permission:employer-partner.update')
+    ->name('alumni.employer-partners.update');
+Route::delete('/alumni/employer-partners/{employerPartner}', [EmployerPartnerController::class, 'destroy'])
+    ->middleware('active_permission:employer-partner.delete')
+    ->name('alumni.employer-partners.destroy');
 
-Route::livewire('/alumni/job-postings', 'admin.alumni.job-postings.index')
-    ->middleware('active_permission:job-posting.viewAny')->name('alumni.job-postings.index');
-Route::livewire('/alumni/job-postings/create', 'admin.alumni.job-postings.create')
-    ->middleware('active_permission:job-posting.create')->name('alumni.job-postings.create');
-Route::livewire('/alumni/job-postings/{id}/edit', 'admin.alumni.job-postings.edit')
-    ->middleware('active_permission:job-posting.update')->name('alumni.job-postings.edit');
-Route::livewire('/alumni/job-postings/{id}', 'admin.alumni.job-postings.show')
-    ->middleware('active_permission:job-posting.view')->name('alumni.job-postings.show');
+// CRUD Lowongan Kerja Alumni (Inertia React) — Batch AL-1.
+Route::get('/alumni/job-postings/export', [JobPostingController::class, 'export'])
+    ->middleware('active_permission:job-posting.viewAny')
+    ->name('alumni.job-postings.export');
+Route::post('/alumni/job-postings/bulk-destroy', [JobPostingController::class, 'bulkDestroy'])
+    ->middleware('active_permission:job-posting.delete')
+    ->name('alumni.job-postings.bulk-destroy');
+Route::post('/alumni/job-postings/bulk-restore', [JobPostingController::class, 'bulkRestore'])
+    ->middleware('active_permission:job-posting.update|job-posting.delete')
+    ->name('alumni.job-postings.bulk-restore');
+Route::post('/alumni/job-postings/bulk-force-destroy', [JobPostingController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:job-posting.update|job-posting.delete')
+    ->name('alumni.job-postings.bulk-force-destroy');
+Route::post('/alumni/job-postings/{id}/restore', [JobPostingController::class, 'restore'])
+    ->middleware('active_permission:job-posting.update|job-posting.delete')
+    ->name('alumni.job-postings.restore');
+Route::delete('/alumni/job-postings/{id}/force', [JobPostingController::class, 'forceDestroy'])
+    ->middleware('active_permission:job-posting.update|job-posting.delete')
+    ->name('alumni.job-postings.force-destroy');
+Route::post('/alumni/job-postings/{jobPosting}/toggle', [JobPostingController::class, 'toggle'])
+    ->middleware('active_permission:job-posting.update')
+    ->name('alumni.job-postings.toggle');
+Route::get('/alumni/job-postings', [JobPostingController::class, 'index'])
+    ->middleware('active_permission:job-posting.viewAny')
+    ->name('alumni.job-postings.index');
+Route::get('/alumni/job-postings/create', [JobPostingController::class, 'create'])
+    ->middleware('active_permission:job-posting.create')
+    ->name('alumni.job-postings.create');
+Route::post('/alumni/job-postings', [JobPostingController::class, 'store'])
+    ->middleware('active_permission:job-posting.create')
+    ->name('alumni.job-postings.store');
+Route::get('/alumni/job-postings/{jobPosting}/edit', [JobPostingController::class, 'edit'])
+    ->middleware('active_permission:job-posting.update')
+    ->name('alumni.job-postings.edit');
+Route::put('/alumni/job-postings/{jobPosting}', [JobPostingController::class, 'update'])
+    ->middleware('active_permission:job-posting.update')
+    ->name('alumni.job-postings.update');
+Route::delete('/alumni/job-postings/{jobPosting}', [JobPostingController::class, 'destroy'])
+    ->middleware('active_permission:job-posting.delete')
+    ->name('alumni.job-postings.destroy');
+Route::get('/alumni/job-postings/{jobPosting}', [JobPostingController::class, 'show'])
+    ->middleware('active_permission:job-posting.view')
+    ->name('alumni.job-postings.show');
 
 Route::livewire('/alumni/events', 'admin.alumni.alumni-events.index')
     ->middleware('active_permission:alumni-event.viewAny')->name('alumni.events.index');

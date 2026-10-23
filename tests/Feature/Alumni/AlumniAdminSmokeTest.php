@@ -40,8 +40,6 @@ it('merender halaman admin alumni', function (string $routeName, string $permiss
 })->with([
     ['admin.alumni.alumni-profiles.index', 'alumni-profile.viewAny'],
     ['admin.alumni.alumni-profiles.create', 'alumni-profile.create'],
-    ['admin.alumni.profiles.index', 'alumni-profile.viewAny'],
-    ['admin.alumni.profiles.create', 'alumni-profile.create'],
     ['admin.alumni.employer-partners.index', 'employer-partner.viewAny'],
     ['admin.alumni.employer-partners.create', 'employer-partner.create'],
     ['admin.alumni.job-postings.index', 'job-posting.viewAny'],
