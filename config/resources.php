@@ -357,6 +357,20 @@ return [
         ],
     ],
     [
+        'resource' => 'asset-category',
+        'plural' => 'asset-categories',
+        'area' => 'campus',
+        'component' => 'admin.campus.asset-categories',
+        'actions' => ['index', 'create', 'edit', 'delete'],
+        'menu' => [
+            'title' => 'Kategori Aset',
+            'icon' => 'fas fa-tags',
+            'group' => 'Kampus',
+            'group_order' => 60,
+            'order' => 5,
+        ],
+    ],
+    [
         'resource' => 'campus-asset',
         'plural' => 'campus-assets',
         'area' => 'campus',
@@ -368,7 +382,7 @@ return [
             'icon' => 'fas fa-boxes-packing',
             'group' => 'Kampus',
             'group_order' => 60,
-            'order' => 5,
+            'order' => 6,
         ],
     ],
     [
@@ -383,7 +397,7 @@ return [
             'icon' => 'fas fa-screwdriver-wrench',
             'group' => 'Kampus',
             'group_order' => 60,
-            'order' => 6,
+            'order' => 7,
         ],
     ],
     [
@@ -456,7 +470,7 @@ return [
         'area' => 'organization',
         'component' => 'admin.organization.lecturer-workload-submissions',
         'actions' => ['index', 'show'],
-        'permissions' => ['viewAny', 'view', 'update'],
+        'permissions' => ['viewAny', 'view', 'update', 'delete'],
         'menu' => [
             'title' => 'Review BKD',
             'icon' => 'fas fa-clipboard-list',
@@ -504,7 +518,7 @@ return [
         'area' => 'organization',
         'component' => 'admin.organization.lecturer-performance-reviews',
         'actions' => ['index', 'show'],
-        'permissions' => ['viewAny', 'view', 'update'],
+        'permissions' => ['viewAny', 'view', 'update', 'delete'],
         'menu' => [
             'title' => 'Review Performa',
             'icon' => 'fas fa-chart-line',
@@ -672,22 +686,6 @@ return [
             'group_icon' => 'fas fa-building-user',
             'group_order' => 35,
             'order' => 9,
-        ],
-    ],
-    [
-        'resource' => 'employee-attendance-location',
-        'plural' => 'employee-attendance-locations',
-        'area' => 'organization',
-        'component' => 'admin.organization.employee-attendance-locations',
-        'actions' => ['index', 'create', 'edit'],
-        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
-        'menu' => [
-            'title' => 'Lokasi Absensi',
-            'icon' => 'fas fa-location-dot',
-            'group' => 'Kepegawaian',
-            'group_icon' => 'fas fa-building-user',
-            'group_order' => 35,
-            'order' => 10,
         ],
     ],
     [
