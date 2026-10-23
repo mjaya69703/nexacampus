@@ -50,6 +50,9 @@ use App\Http\Controllers\Admin\Campus\CampusLocationController;
 use App\Http\Controllers\Admin\Campus\RoomController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
+use App\Http\Controllers\Admin\Admission\AdmissionPeriodController;
+use App\Http\Controllers\Admin\Admission\AdmissionQuotaController;
+use App\Http\Controllers\Admin\Admission\NimGenerationRuleController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
 use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
@@ -75,6 +78,11 @@ foreach (ResourceRegistry::all() as $resource) {
     }
 
     if (in_array($resource['plural'], ['campus-locations', 'buildings', 'rooms']) && ($resource['area'] ?? null) === 'campus') {
+        continue;
+    }
+
+    // Batch AD-1: periode, kuota & aturan NIM → Inertia React.
+    if (in_array($resource['plural'], ['admission-periods', 'admission-quotas', 'nim-generation-rules']) && ($resource['area'] ?? null) === 'admission') {
         continue;
     }
 
@@ -1510,6 +1518,102 @@ Route::get('/organization/lecturer-workload-submissions/export/{format}', [Lectu
 Route::get('/admission/applications/{application}/acceptance-letter', [AcceptanceLetterController::class, 'show'])
     ->middleware('active_permission:admission-application.view')
     ->name('admission.applications.acceptance-letter');
+
+// CRUD Periode & Gelombang PMB (Inertia React) — Batch AD-1.
+Route::get('/admission/admission-periods/export', [AdmissionPeriodController::class, 'export'])
+    ->middleware('active_permission:admission-period.viewAny')
+    ->name('admission.admission-periods.export');
+Route::post('/admission/admission-periods/bulk-destroy', [AdmissionPeriodController::class, 'bulkDestroy'])
+    ->middleware('active_permission:admission-period.delete')
+    ->name('admission.admission-periods.bulk-destroy');
+Route::post('/admission/admission-periods/bulk-restore', [AdmissionPeriodController::class, 'bulkRestore'])
+    ->middleware('active_permission:admission-period.update|admission-period.delete')
+    ->name('admission.admission-periods.bulk-restore');
+Route::post('/admission/admission-periods/bulk-force-destroy', [AdmissionPeriodController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:admission-period.update|admission-period.delete')
+    ->name('admission.admission-periods.bulk-force-destroy');
+Route::post('/admission/admission-periods/{id}/restore', [AdmissionPeriodController::class, 'restore'])
+    ->middleware('active_permission:admission-period.update|admission-period.delete')
+    ->name('admission.admission-periods.restore');
+Route::delete('/admission/admission-periods/{id}/force', [AdmissionPeriodController::class, 'forceDestroy'])
+    ->middleware('active_permission:admission-period.update|admission-period.delete')
+    ->name('admission.admission-periods.force-destroy');
+Route::post('/admission/admission-periods/{period}/toggle', [AdmissionPeriodController::class, 'toggle'])
+    ->middleware('active_permission:admission-period.update')
+    ->name('admission.admission-periods.toggle');
+Route::get('/admission/admission-periods', [AdmissionPeriodController::class, 'index'])
+    ->middleware('active_permission:admission-period.viewAny')
+    ->name('admission.admission-periods.index');
+Route::get('/admission/admission-periods/create', [AdmissionPeriodController::class, 'create'])
+    ->middleware('active_permission:admission-period.create')
+    ->name('admission.admission-periods.create');
+Route::post('/admission/admission-periods', [AdmissionPeriodController::class, 'store'])
+    ->middleware('active_permission:admission-period.create')
+    ->name('admission.admission-periods.store');
+Route::get('/admission/admission-periods/{period}/edit', [AdmissionPeriodController::class, 'edit'])
+    ->middleware('active_permission:admission-period.update')
+    ->name('admission.admission-periods.edit');
+Route::put('/admission/admission-periods/{period}', [AdmissionPeriodController::class, 'update'])
+    ->middleware('active_permission:admission-period.update')
+    ->name('admission.admission-periods.update');
+Route::delete('/admission/admission-periods/{period}', [AdmissionPeriodController::class, 'destroy'])
+    ->middleware('active_permission:admission-period.delete')
+    ->name('admission.admission-periods.destroy');
+
+// CRUD Kuota Penerimaan PMB (Inertia React) — Batch AD-1 (tanpa soft delete).
+Route::get('/admission/admission-quotas/export', [AdmissionQuotaController::class, 'export'])
+    ->middleware('active_permission:admission-quota.viewAny')
+    ->name('admission.admission-quotas.export');
+Route::post('/admission/admission-quotas/bulk-destroy', [AdmissionQuotaController::class, 'bulkDestroy'])
+    ->middleware('active_permission:admission-quota.delete')
+    ->name('admission.admission-quotas.bulk-destroy');
+Route::get('/admission/admission-quotas', [AdmissionQuotaController::class, 'index'])
+    ->middleware('active_permission:admission-quota.viewAny')
+    ->name('admission.admission-quotas.index');
+Route::get('/admission/admission-quotas/create', [AdmissionQuotaController::class, 'create'])
+    ->middleware('active_permission:admission-quota.create')
+    ->name('admission.admission-quotas.create');
+Route::post('/admission/admission-quotas', [AdmissionQuotaController::class, 'store'])
+    ->middleware('active_permission:admission-quota.create')
+    ->name('admission.admission-quotas.store');
+Route::get('/admission/admission-quotas/{quota}/edit', [AdmissionQuotaController::class, 'edit'])
+    ->middleware('active_permission:admission-quota.update')
+    ->name('admission.admission-quotas.edit');
+Route::put('/admission/admission-quotas/{quota}', [AdmissionQuotaController::class, 'update'])
+    ->middleware('active_permission:admission-quota.update')
+    ->name('admission.admission-quotas.update');
+Route::delete('/admission/admission-quotas/{quota}', [AdmissionQuotaController::class, 'destroy'])
+    ->middleware('active_permission:admission-quota.delete')
+    ->name('admission.admission-quotas.destroy');
+
+// CRUD Aturan Penomoran NIM (Inertia React) — Batch AD-1 (tanpa soft delete).
+Route::get('/admission/nim-generation-rules/export', [NimGenerationRuleController::class, 'export'])
+    ->middleware('active_permission:nim-generation-rule.viewAny')
+    ->name('admission.nim-generation-rules.export');
+Route::post('/admission/nim-generation-rules/bulk-destroy', [NimGenerationRuleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:nim-generation-rule.delete')
+    ->name('admission.nim-generation-rules.bulk-destroy');
+Route::post('/admission/nim-generation-rules/{rule}/toggle', [NimGenerationRuleController::class, 'toggle'])
+    ->middleware('active_permission:nim-generation-rule.update')
+    ->name('admission.nim-generation-rules.toggle');
+Route::get('/admission/nim-generation-rules', [NimGenerationRuleController::class, 'index'])
+    ->middleware('active_permission:nim-generation-rule.viewAny')
+    ->name('admission.nim-generation-rules.index');
+Route::get('/admission/nim-generation-rules/create', [NimGenerationRuleController::class, 'create'])
+    ->middleware('active_permission:nim-generation-rule.create')
+    ->name('admission.nim-generation-rules.create');
+Route::post('/admission/nim-generation-rules', [NimGenerationRuleController::class, 'store'])
+    ->middleware('active_permission:nim-generation-rule.create')
+    ->name('admission.nim-generation-rules.store');
+Route::get('/admission/nim-generation-rules/{rule}/edit', [NimGenerationRuleController::class, 'edit'])
+    ->middleware('active_permission:nim-generation-rule.update')
+    ->name('admission.nim-generation-rules.edit');
+Route::put('/admission/nim-generation-rules/{rule}', [NimGenerationRuleController::class, 'update'])
+    ->middleware('active_permission:nim-generation-rule.update')
+    ->name('admission.nim-generation-rules.update');
+Route::delete('/admission/nim-generation-rules/{rule}', [NimGenerationRuleController::class, 'destroy'])
+    ->middleware('active_permission:nim-generation-rule.delete')
+    ->name('admission.nim-generation-rules.destroy');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
