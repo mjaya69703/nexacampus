@@ -161,7 +161,10 @@ export default function CourseOfferingIndex({ shell, can, stats, data, filters, 
         if (pending.kind === 'bulk-delete') {
             return { title: 'Hapus terpilih?', message: `${selected.length} kelas dipindah ke sampah. Yang sudah punya jadwal/absensi/tugas akan dilewati.`, confirm: 'Ya, hapus', danger: true };
         }
-        return { title: 'Hapus kelas?', message: `"${pending.row.course}" dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+        if (pending.kind === 'delete') {
+            return { title: 'Hapus kelas?', message: `"${pending.row.course}" dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+        }
+        return { title: '', message: '', confirm: 'Ya', danger: true };
     })();
 
     return (

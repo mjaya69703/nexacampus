@@ -49,6 +49,7 @@ jobs:
       - name: Install Node Dependencies & Build Frontend
         run: |
           npm install
+          npm run typecheck
           npm run build
 
       - name: Prepare Environment

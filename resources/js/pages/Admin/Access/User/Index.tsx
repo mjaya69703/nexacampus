@@ -180,14 +180,17 @@ export default function UserIndex({ shell, can, stats, data, filters, roleOption
                 danger: true,
             };
         }
-        return {
-            title: 'Hapus user?',
-            message: pending.row.isSelf
-                ? 'Anda tidak bisa menghapus akun sendiri.'
-                : `"${pending.row.name}" dipindah ke sampah dan bisa dipulihkan.`,
-            confirm: 'Ya, hapus',
-            danger: true,
-        };
+        if (pending.kind === 'delete') {
+            return {
+                title: 'Hapus user?',
+                message: pending.row.isSelf
+                    ? 'Anda tidak bisa menghapus akun sendiri.'
+                    : `"${pending.row.name}" dipindah ke sampah dan bisa dipulihkan.`,
+                confirm: 'Ya, hapus',
+                danger: true,
+            };
+        }
+        return { title: '', message: '', confirm: 'Ya', danger: true };
     })();
 
     return (

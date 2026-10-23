@@ -17,6 +17,9 @@ type DetailRow = {
     updateUrl: string; deleteUrl: string;
 };
 
+/** Opsi penawaran MK — backend mengirim `credits` di level atas. */
+type OfferingOption = AsyncOption & { credits?: number | null };
+
 type Props = {
     shell: ShellProps;
     mode: 'create' | 'edit';
@@ -47,7 +50,7 @@ export default function StudyPlanForm({ shell, mode, plan, years, statuses, deta
         plan.student_profile_id ? { id: Number(plan.student_profile_id), label: plan.student_label ?? '' } : null,
     );
     const [registrations, setRegistrations] = useState<{ id: number; label: string }[]>(registrationOptions);
-    const [addOffering, setAddOffering] = useState<AsyncOption | null>(null);
+    const [addOffering, setAddOffering] = useState<OfferingOption | null>(null);
     const [addStatus, setAddStatus] = useState('Taken');
     const [rowSelected, setRowSelected] = useState<number[]>([]);
     const [editingRow, setEditingRow] = useState<DetailRow | null>(null);
@@ -108,10 +111,9 @@ export default function StudyPlanForm({ shell, mode, plan, years, statuses, deta
     const submitAddDetail = () => {
         if (!addOffering || !urls.detailStore) return;
         setProcessing(true);
-        const selected = offerings.find((o) => Number(o.id) === Number(addOffering.id));
         router.post(urls.detailStore, {
             course_offering_id: Number(addOffering.id),
-            credits: selected?.credits ?? null,
+            credits: addOffering.credits ?? null,
             status: addStatus,
         }, {
             preserveScroll: true,
