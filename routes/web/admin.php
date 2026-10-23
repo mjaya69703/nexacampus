@@ -50,6 +50,8 @@ use App\Http\Controllers\Admin\Campus\CampusLocationController;
 use App\Http\Controllers\Admin\Campus\RoomController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
+use App\Http\Controllers\Admin\Admission\AdmissionApplicationController;
+use App\Http\Controllers\Admin\Admission\AdmissionExamScheduleController;
 use App\Http\Controllers\Admin\Admission\AdmissionPeriodController;
 use App\Http\Controllers\Admin\Admission\AdmissionQuotaController;
 use App\Http\Controllers\Admin\Admission\NimGenerationRuleController;
@@ -83,6 +85,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch AD-1: periode, kuota & aturan NIM → Inertia React.
     if (in_array($resource['plural'], ['admission-periods', 'admission-quotas', 'nim-generation-rules']) && ($resource['area'] ?? null) === 'admission') {
+        continue;
+    }
+
+    // Batch AD-2: jadwal ujian, pendaftar & seleksi → Inertia React.
+    if (in_array($resource['plural'], ['admission-exam-schedules', 'admission-applications', 'admission-selection']) && ($resource['area'] ?? null) === 'admission') {
         continue;
     }
 
@@ -1614,6 +1621,117 @@ Route::put('/admission/nim-generation-rules/{rule}', [NimGenerationRuleControlle
 Route::delete('/admission/nim-generation-rules/{rule}', [NimGenerationRuleController::class, 'destroy'])
     ->middleware('active_permission:nim-generation-rule.delete')
     ->name('admission.nim-generation-rules.destroy');
+
+// CRUD Jadwal Ujian & Seleksi PMB (Inertia React) — Batch AD-2.
+Route::get('/admission/admission-exam-schedules/export', [AdmissionExamScheduleController::class, 'export'])
+    ->middleware('active_permission:admission-exam-schedule.viewAny')
+    ->name('admission.admission-exam-schedules.export');
+Route::post('/admission/admission-exam-schedules/bulk-destroy', [AdmissionExamScheduleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.bulk-destroy');
+Route::post('/admission/admission-exam-schedules/bulk-restore', [AdmissionExamScheduleController::class, 'bulkRestore'])
+    ->middleware('active_permission:admission-exam-schedule.update|admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.bulk-restore');
+Route::post('/admission/admission-exam-schedules/bulk-force-destroy', [AdmissionExamScheduleController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:admission-exam-schedule.update|admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.bulk-force-destroy');
+Route::post('/admission/admission-exam-schedules/{id}/restore', [AdmissionExamScheduleController::class, 'restore'])
+    ->middleware('active_permission:admission-exam-schedule.update|admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.restore');
+Route::delete('/admission/admission-exam-schedules/{id}/force', [AdmissionExamScheduleController::class, 'forceDestroy'])
+    ->middleware('active_permission:admission-exam-schedule.update|admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.force-destroy');
+Route::post('/admission/admission-exam-schedules/{schedule}/toggle', [AdmissionExamScheduleController::class, 'toggle'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.toggle');
+Route::get('/admission/admission-exam-schedules', [AdmissionExamScheduleController::class, 'index'])
+    ->middleware('active_permission:admission-exam-schedule.viewAny')
+    ->name('admission.admission-exam-schedules.index');
+Route::get('/admission/admission-exam-schedules/create', [AdmissionExamScheduleController::class, 'create'])
+    ->middleware('active_permission:admission-exam-schedule.create')
+    ->name('admission.admission-exam-schedules.create');
+Route::post('/admission/admission-exam-schedules', [AdmissionExamScheduleController::class, 'store'])
+    ->middleware('active_permission:admission-exam-schedule.create')
+    ->name('admission.admission-exam-schedules.store');
+Route::get('/admission/admission-exam-schedules/{schedule}/edit', [AdmissionExamScheduleController::class, 'edit'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.edit');
+Route::put('/admission/admission-exam-schedules/{schedule}', [AdmissionExamScheduleController::class, 'update'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.update');
+Route::delete('/admission/admission-exam-schedules/{schedule}', [AdmissionExamScheduleController::class, 'destroy'])
+    ->middleware('active_permission:admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.destroy');
+Route::post('/admission/admission-exam-schedules/{schedule}/participants', [AdmissionExamScheduleController::class, 'assignParticipant'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.store');
+Route::post('/admission/admission-exam-schedules/{schedule}/participants/assign-all', [AdmissionExamScheduleController::class, 'assignAllFromPeriod'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.assign-all');
+Route::patch('/admission/admission-exam-schedules/{schedule}/participants/{participant}/attendance', [AdmissionExamScheduleController::class, 'updateAttendance'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.attendance');
+Route::post('/admission/admission-exam-schedules/{schedule}/participants/{participant}/score', [AdmissionExamScheduleController::class, 'saveScore'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.score');
+Route::delete('/admission/admission-exam-schedules/{schedule}/participants/{participant}', [AdmissionExamScheduleController::class, 'removeParticipant'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.destroy');
+Route::get('/admission/admission-exam-schedules/{schedule}', [AdmissionExamScheduleController::class, 'show'])
+    ->middleware('active_permission:admission-exam-schedule.view')
+    ->name('admission.admission-exam-schedules.show');
+
+// Pendaftar PMB (Inertia React) — Batch AD-2.
+Route::get('/admission/admission-applications/export', [AdmissionApplicationController::class, 'export'])
+    ->middleware('active_permission:admission-application.viewAny')
+    ->name('admission.admission-applications.export');
+Route::post('/admission/admission-applications/bulk-destroy', [AdmissionApplicationController::class, 'bulkDestroy'])
+    ->middleware('active_permission:admission-application.delete')
+    ->name('admission.admission-applications.bulk-destroy');
+Route::post('/admission/admission-applications/bulk-restore', [AdmissionApplicationController::class, 'bulkRestore'])
+    ->middleware('active_permission:admission-application.update|admission-application.delete')
+    ->name('admission.admission-applications.bulk-restore');
+Route::post('/admission/admission-applications/bulk-force-destroy', [AdmissionApplicationController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:admission-application.update|admission-application.delete')
+    ->name('admission.admission-applications.bulk-force-destroy');
+Route::post('/admission/admission-applications/bulk-convert', [AdmissionApplicationController::class, 'bulkConvert'])
+    ->middleware('active_permission:admission-application.update')
+    ->name('admission.admission-applications.bulk-convert');
+Route::post('/admission/admission-applications/{id}/restore', [AdmissionApplicationController::class, 'restore'])
+    ->middleware('active_permission:admission-application.update|admission-application.delete')
+    ->name('admission.admission-applications.restore');
+Route::delete('/admission/admission-applications/{id}/force', [AdmissionApplicationController::class, 'forceDestroy'])
+    ->middleware('active_permission:admission-application.update|admission-application.delete')
+    ->name('admission.admission-applications.force-destroy');
+Route::get('/admission/admission-applications', [AdmissionApplicationController::class, 'index'])
+    ->middleware('active_permission:admission-application.viewAny')
+    ->name('admission.admission-applications.index');
+Route::get('/admission/admission-applications/{application}', [AdmissionApplicationController::class, 'show'])
+    ->middleware('active_permission:admission-application.view')
+    ->name('admission.admission-applications.show');
+Route::put('/admission/admission-applications/{application}/review', [AdmissionApplicationController::class, 'updateReview'])
+    ->middleware('active_permission:admission-application.update')
+    ->name('admission.admission-applications.update-review');
+Route::patch('/admission/admission-applications/{application}/documents/{document}/verify', [AdmissionApplicationController::class, 'verifyDocument'])
+    ->middleware('active_permission:admission-application.update')
+    ->name('admission.admission-applications.documents.verify');
+Route::post('/admission/admission-applications/{application}/convert', [AdmissionApplicationController::class, 'convert'])
+    ->middleware('active_permission:admission-application.update')
+    ->name('admission.admission-applications.convert');
+Route::delete('/admission/admission-applications/{application}', [AdmissionApplicationController::class, 'destroy'])
+    ->middleware('active_permission:admission-application.delete')
+    ->name('admission.admission-applications.destroy');
+
+// Perankingan & keputusan seleksi PMB (Inertia React) — Batch AD-2.
+Route::get('/admission/admission-selection', [AdmissionSelectionController::class, 'index'])
+    ->middleware('active_permission:admission-selection.viewAny')
+    ->name('admission.admission-selection.index');
+Route::post('/admission/admission-selection/bulk-decision', [AdmissionSelectionController::class, 'bulkDecision'])
+    ->middleware('active_permission:admission-selection.update')
+    ->name('admission.admission-selection.bulk-decision');
+Route::post('/admission/admission-selection/{application}/decision', [AdmissionSelectionController::class, 'updateDecision'])
+    ->middleware('active_permission:admission-selection.update')
+    ->name('admission.admission-selection.decision');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
