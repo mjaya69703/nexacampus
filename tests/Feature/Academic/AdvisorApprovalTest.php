@@ -9,6 +9,7 @@ use App\Models\Academic\StudyPlan;
 use App\Models\Academic\StudyProgram;
 use App\Support\AcademicAdvisorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -126,11 +127,11 @@ it('menampilkan KRS menunggu di halaman bimbingan dosen', function () {
     Spatie\Permission\Models\Role::firstOrCreate(['name' => 'lecturer', 'guard_name' => 'web']);
     $setup['lecturerUser']->assignRole('lecturer');
 
-    $html = $this->actingAs($setup['lecturerUser'])
+    $this->actingAs($setup['lecturerUser'])
         ->withSession(['active_role' => 'lecturer'])
         ->get(route('lecturer.academic-advising.show', ['assignmentId' => $setup['assignment']->id]))
         ->assertOk()
-        ->getContent();
-
-    expect($html)->toContain('KRS Menunggu Persetujuan');
+        ->assertInertia(fn ($page) => $page
+            ->component('Lecturer/AcademicAdvising/Show')
+            ->has('pendingPlans'));
 });
