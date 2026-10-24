@@ -2,6 +2,8 @@
 
 namespace App\Support\Alumni;
 
+use App\Enums\EmploymentStatus;
+use App\Enums\JobRelevance;
 use App\Models\Alumni\AlumniProfile;
 use App\Models\Alumni\TracerStudyCampaign;
 use App\Models\Alumni\TracerStudyResponse;
@@ -10,7 +12,9 @@ use Illuminate\Support\Facades\DB;
 class TracerStudyService
 {
     /**
-     * Activate a campaign: count target alumni, set status to active, update total_sent.
+     * Activate a campaign: count target alumni, set status to active, update
+     * the delivery counter and reconcile the response counter with the
+     * responses that actually exist.
      */
     public function sendCampaign(TracerStudyCampaign $campaign): void
     {
@@ -18,13 +22,46 @@ class TracerStudyService
             throw new \RuntimeException('Only draft campaigns can be sent.');
         }
 
+        $responded = $campaign->responses()->count();
         $targetCount = $this->countTargetAlumni($campaign);
 
         $campaign->update([
             'status' => 'active',
-            'total_sent' => $targetCount,
+            // Counter tidak boleh lebih kecil dari jumlah respon yang sudah masuk.
+            'total_sent' => max($targetCount, $responded),
+            'total_responded' => $responded,
             'updated_by' => auth()->id(),
         ]);
+    }
+
+    /**
+     * Keep total_sent / total_responded aligned with the real data.
+     *
+     * Dipakai setelah create/update kampanye: status "active" menghitung ulang
+     * sasaran alumni, sedangkan total_responded selalu disamakan dengan jumlah
+     * respon yang tersimpan agar response rate tidak melenceng.
+     */
+    public function syncCounters(TracerStudyCampaign $campaign): void
+    {
+        $campaign->refresh();
+
+        $responded = $campaign->responses()->count();
+        $target = $this->countTargetAlumni($campaign);
+        $sent = (int) $campaign->total_sent;
+        $status = $campaign->status;
+
+        if ($status === 'active') {
+            $sent = max($target, $responded);
+        } elseif ($sent < $responded) {
+            $sent = $responded;
+        }
+
+        if ($sent !== (int) $campaign->total_sent || $responded !== (int) $campaign->total_responded) {
+            $campaign->update([
+                'total_sent' => $sent,
+                'total_responded' => $responded,
+            ]);
+        }
     }
 
     /**
@@ -89,6 +126,11 @@ class TracerStudyService
 
     /**
      * Generate analytics for a campaign.
+     *
+     * Struktur data dikunci agar cocok dengan tabel laporan:
+     * - employment_distribution / job_relevance_breakdown: [value => ['label','count','percentage']]
+     * - salary_distribution: [range => ['label','count']]
+     * - by_study_program / by_graduation_year: [name => ['responses','working',...]]
      */
     public function analytics(TracerStudyCampaign $campaign): array
     {
@@ -113,66 +155,66 @@ class TracerStudyService
             ];
         }
 
-        // Employment distribution
         $employmentDistribution = $responses
             ->groupBy('employment_status')
-            ->map->count()
-            ->sortDesc()
+            ->map(function ($group, $status) use ($totalResponses) {
+                $count = $group->count();
+
+                return [
+                    'label' => EmploymentStatus::tryFrom((string) $status)?->label()
+                        ?? (filled($status) ? str((string) $status)->replace('_', ' ')->title()->toString() : 'Tidak diisi'),
+                    'count' => $count,
+                    'percentage' => round(($count / $totalResponses) * 100, 1),
+                ];
+            })
+            ->sortByDesc('count')
             ->toArray();
 
-        // Job relevance breakdown
         $jobRelevanceBreakdown = $responses
-            ->filter(fn ($r) => filled($r->job_relevance))
+            ->filter(fn ($response) => filled($response->job_relevance))
             ->groupBy('job_relevance')
-            ->map->count()
-            ->sortDesc()
+            ->map(function ($group, $relevance) use ($totalResponses) {
+                $count = $group->count();
+
+                return [
+                    'label' => JobRelevance::tryFrom((string) $relevance)?->label()
+                        ?? str((string) $relevance)->replace('_', ' ')->title()->toString(),
+                    'count' => $count,
+                    'percentage' => round(($count / $totalResponses) * 100, 1),
+                ];
+            })
+            ->sortByDesc('count')
             ->toArray();
 
-        // Average time to employment (only for those who have it)
-        $employedResponses = $responses->filter(fn ($r) => $r->time_to_employment_months !== null);
+        $employedResponses = $responses->filter(fn ($response) => $response->time_to_employment_months !== null);
         $avgTimeToEmployment = $employedResponses->isNotEmpty()
             ? round($employedResponses->avg('time_to_employment_months'), 1)
             : null;
 
-        // By study program
         $byStudyProgram = $responses
-            ->filter(fn ($r) => $r->alumniProfile?->studyProgram)
-            ->groupBy(fn ($r) => $r->alumniProfile->studyProgram->name)
-            ->map(function ($group) {
-                return [
-                    'total' => $group->count(),
-                    'working' => $group->where('employment_status', 'working')->count(),
-                    'entrepreneur' => $group->where('employment_status', 'entrepreneur')->count(),
-                    'studying' => $group->where('employment_status', 'studying')->count(),
-                    'unemployed' => $group->where('employment_status', 'unemployed')->count(),
-                ];
-            })
+            ->filter(fn ($response) => $response->alumniProfile?->studyProgram)
+            ->groupBy(fn ($response) => $response->alumniProfile->studyProgram->name)
+            ->map(fn ($group) => $this->employmentSummary($group))
+            ->sortByDesc('responses')
             ->toArray();
 
-        // By graduation year
         $byGraduationYear = $responses
-            ->filter(fn ($r) => $r->alumniProfile?->graduation_year)
-            ->groupBy(fn ($r) => $r->alumniProfile->graduation_year)
-            ->map(function ($group) {
-                return [
-                    'total' => $group->count(),
-                    'working' => $group->where('employment_status', 'working')->count(),
-                    'entrepreneur' => $group->where('employment_status', 'entrepreneur')->count(),
-                    'studying' => $group->where('employment_status', 'studying')->count(),
-                    'unemployed' => $group->where('employment_status', 'unemployed')->count(),
-                ];
-            })
+            ->filter(fn ($response) => $response->alumniProfile?->graduation_year)
+            ->groupBy(fn ($response) => $response->alumniProfile->graduation_year)
+            ->map(fn ($group) => $this->employmentSummary($group))
+            ->sortKeysDesc()
             ->toArray();
 
-        // Further study count
         $furtherStudyCount = $responses->where('further_study', true)->count();
 
-        // Salary distribution
         $salaryDistribution = $responses
-            ->filter(fn ($r) => filled($r->salary_range))
+            ->filter(fn ($response) => filled($response->salary_range))
             ->groupBy('salary_range')
-            ->map->count()
-            ->sortDesc()
+            ->map(fn ($group, $range) => [
+                'label' => filled($range) ? (string) $range : '(Tidak diisi)',
+                'count' => $group->count(),
+            ])
+            ->sortByDesc('count')
             ->toArray();
 
         return [
@@ -189,9 +231,25 @@ class TracerStudyService
     }
 
     /**
+     * @param  \Illuminate\Support\Collection<int, TracerStudyResponse>  $group
+     * @return array<string, int>
+     */
+    private function employmentSummary($group): array
+    {
+        return [
+            'responses' => $group->count(),
+            'working' => $group->where('employment_status', EmploymentStatus::Working->value)->count(),
+            'entrepreneur' => $group->where('employment_status', EmploymentStatus::Entrepreneur->value)->count(),
+            'studying' => $group->where('employment_status', EmploymentStatus::Studying->value)->count(),
+            'unemployed' => $group->where('employment_status', EmploymentStatus::Unemployed->value)->count(),
+            'other' => $group->where('employment_status', EmploymentStatus::Other->value)->count(),
+        ];
+    }
+
+    /**
      * Count how many alumni profiles match the campaign's target criteria.
      */
-    private function countTargetAlumni(TracerStudyCampaign $campaign): int
+    public function countTargetAlumni(TracerStudyCampaign $campaign): int
     {
         $query = AlumniProfile::where('is_active', true);
 

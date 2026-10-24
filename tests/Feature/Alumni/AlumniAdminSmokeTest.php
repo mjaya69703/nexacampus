@@ -46,11 +46,7 @@ it('merender halaman admin alumni', function (string $routeName, string $permiss
     ['admin.alumni.job-postings.create', 'job-posting.create'],
     ['admin.alumni.alumni-events.index', 'alumni-event.viewAny'],
     ['admin.alumni.alumni-events.create', 'alumni-event.create'],
-    ['admin.alumni.events.index', 'alumni-event.viewAny'],
-    ['admin.alumni.events.create', 'alumni-event.create'],
     ['admin.alumni.tracer-study-campaigns.index', 'tracer-study-campaign.viewAny'],
     ['admin.alumni.tracer-study-campaigns.create', 'tracer-study-campaign.create'],
-    ['admin.alumni.tracer-study.index', 'tracer-study-campaign.viewAny'],
-    ['admin.alumni.tracer-study.create', 'tracer-study-campaign.create'],
     ['admin.alumni.tracer-study-responses.index', 'tracer-study-response.viewAny'],
 ]);

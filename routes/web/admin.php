@@ -55,9 +55,12 @@ use App\Http\Controllers\Admin\Admission\AdmissionExamScheduleController;
 use App\Http\Controllers\Admin\Admission\AdmissionPeriodController;
 use App\Http\Controllers\Admin\Admission\AdmissionQuotaController;
 use App\Http\Controllers\Admin\Admission\NimGenerationRuleController;
+use App\Http\Controllers\Admin\Alumni\AlumniEventController;
 use App\Http\Controllers\Admin\Alumni\AlumniProfileController;
 use App\Http\Controllers\Admin\Alumni\EmployerPartnerController;
 use App\Http\Controllers\Admin\Alumni\JobPostingController;
+use App\Http\Controllers\Admin\Alumni\TracerStudyCampaignController;
+use App\Http\Controllers\Admin\Alumni\TracerStudyResponseController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
 use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
@@ -98,6 +101,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch AL-1: profil alumni, mitra perusahaan & lowongan → Inertia React.
     if (in_array($resource['plural'], ['alumni-profiles', 'employer-partners', 'job-postings']) && ($resource['area'] ?? null) === 'alumni') {
+        continue;
+    }
+
+    // Batch AL-2: event, kampanye & respon tracer study → Inertia React.
+    if (in_array($resource['plural'], ['alumni-events', 'tracer-study-campaigns', 'tracer-study-responses']) && ($resource['area'] ?? null) === 'alumni') {
         continue;
     }
 
@@ -2207,30 +2215,108 @@ Route::get('/alumni/job-postings/{jobPosting}', [JobPostingController::class, 's
     ->middleware('active_permission:job-posting.view')
     ->name('alumni.job-postings.show');
 
-Route::livewire('/alumni/events', 'admin.alumni.alumni-events.index')
-    ->middleware('active_permission:alumni-event.viewAny')->name('alumni.events.index');
-Route::livewire('/alumni/events/create', 'admin.alumni.alumni-events.create')
-    ->middleware('active_permission:alumni-event.create')->name('alumni.events.create');
-Route::livewire('/alumni/events/{id}/edit', 'admin.alumni.alumni-events.edit')
-    ->middleware('active_permission:alumni-event.update')->name('alumni.events.edit');
-Route::livewire('/alumni/events/{id}', 'admin.alumni.alumni-events.show')
-    ->middleware('active_permission:alumni-event.view')->name('alumni.events.show');
+// CRUD Event / Agenda Alumni (Inertia React) - Batch AL-2.
+Route::get('/alumni/alumni-events/export', [AlumniEventController::class, 'export'])
+    ->middleware('active_permission:alumni-event.viewAny')
+    ->name('alumni.alumni-events.export');
+Route::post('/alumni/alumni-events/bulk-destroy', [AlumniEventController::class, 'bulkDestroy'])
+    ->middleware('active_permission:alumni-event.delete')
+    ->name('alumni.alumni-events.bulk-destroy');
+Route::post('/alumni/alumni-events/bulk-restore', [AlumniEventController::class, 'bulkRestore'])
+    ->middleware('active_permission:alumni-event.update|alumni-event.delete')
+    ->name('alumni.alumni-events.bulk-restore');
+Route::post('/alumni/alumni-events/bulk-force-destroy', [AlumniEventController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:alumni-event.update|alumni-event.delete')
+    ->name('alumni.alumni-events.bulk-force-destroy');
+Route::post('/alumni/alumni-events/{id}/restore', [AlumniEventController::class, 'restore'])
+    ->middleware('active_permission:alumni-event.update|alumni-event.delete')
+    ->name('alumni.alumni-events.restore');
+Route::delete('/alumni/alumni-events/{id}/force', [AlumniEventController::class, 'forceDestroy'])
+    ->middleware('active_permission:alumni-event.update|alumni-event.delete')
+    ->name('alumni.alumni-events.force-destroy');
+Route::post('/alumni/alumni-events/{alumniEvent}/toggle', [AlumniEventController::class, 'toggle'])
+    ->middleware('active_permission:alumni-event.update')
+    ->name('alumni.alumni-events.toggle');
+Route::get('/alumni/alumni-events', [AlumniEventController::class, 'index'])
+    ->middleware('active_permission:alumni-event.viewAny')
+    ->name('alumni.alumni-events.index');
+Route::get('/alumni/alumni-events/create', [AlumniEventController::class, 'create'])
+    ->middleware('active_permission:alumni-event.create')
+    ->name('alumni.alumni-events.create');
+Route::post('/alumni/alumni-events', [AlumniEventController::class, 'store'])
+    ->middleware('active_permission:alumni-event.create')
+    ->name('alumni.alumni-events.store');
+Route::get('/alumni/alumni-events/{alumniEvent}/edit', [AlumniEventController::class, 'edit'])
+    ->middleware('active_permission:alumni-event.update')
+    ->name('alumni.alumni-events.edit');
+Route::put('/alumni/alumni-events/{alumniEvent}', [AlumniEventController::class, 'update'])
+    ->middleware('active_permission:alumni-event.update')
+    ->name('alumni.alumni-events.update');
+Route::delete('/alumni/alumni-events/{alumniEvent}', [AlumniEventController::class, 'destroy'])
+    ->middleware('active_permission:alumni-event.delete')
+    ->name('alumni.alumni-events.destroy');
+Route::get('/alumni/alumni-events/{alumniEvent}', [AlumniEventController::class, 'show'])
+    ->middleware('active_permission:alumni-event.view')
+    ->name('alumni.alumni-events.show');
 
-Route::livewire('/alumni/tracer-study', 'admin.alumni.tracer-study-campaigns.index')
-    ->middleware('active_permission:tracer-study-campaign.viewAny')->name('alumni.tracer-study.index');
-Route::livewire('/alumni/tracer-study/create', 'admin.alumni.tracer-study-campaigns.create')
-    ->middleware('active_permission:tracer-study-campaign.create')->name('alumni.tracer-study.create');
-Route::livewire('/alumni/tracer-study/{id}/edit', 'admin.alumni.tracer-study-campaigns.edit')
-    ->middleware('active_permission:tracer-study-campaign.update')->name('alumni.tracer-study.edit');
-Route::livewire('/alumni/tracer-study/{id}', 'admin.alumni.tracer-study-campaigns.show')
-    ->middleware('active_permission:tracer-study-campaign.view')->name('alumni.tracer-study.show');
-Route::livewire('/alumni/tracer-study/{id}/responses', 'admin.alumni.tracer-study-responses.index')
-    ->middleware('active_permission:tracer-study-response.viewAny')->name('alumni.tracer-study.responses');
-Route::livewire('/alumni/tracer-study-responses/{id}', 'admin.alumni.tracer-study-responses.show')
-    ->middleware('active_permission:tracer-study-response.view')->name('alumni.tracer-study-responses.show');
-Route::get('/alumni/tracer-study/{id}/analytics', [TracerStudyAnalyticsController::class, 'show'])
-    ->middleware('active_permission:tracer-study-campaign.view')->name('alumni.tracer-study.analytics');
-Route::get('/alumni/tracer-study/{id}/export/{format}', [TracerStudyAnalyticsController::class, 'export'])
+// CRUD Kampanye Tracer Study (Inertia React) - Batch AL-2.
+Route::get('/alumni/tracer-study-campaigns/export', [TracerStudyCampaignController::class, 'export'])
+    ->middleware('active_permission:tracer-study-campaign.viewAny')
+    ->name('alumni.tracer-study-campaigns.export');
+Route::post('/alumni/tracer-study-campaigns/bulk-destroy', [TracerStudyCampaignController::class, 'bulkDestroy'])
+    ->middleware('active_permission:tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.bulk-destroy');
+Route::post('/alumni/tracer-study-campaigns/bulk-restore', [TracerStudyCampaignController::class, 'bulkRestore'])
+    ->middleware('active_permission:tracer-study-campaign.update|tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.bulk-restore');
+Route::post('/alumni/tracer-study-campaigns/bulk-force-destroy', [TracerStudyCampaignController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:tracer-study-campaign.update|tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.bulk-force-destroy');
+Route::post('/alumni/tracer-study-campaigns/{id}/restore', [TracerStudyCampaignController::class, 'restore'])
+    ->middleware('active_permission:tracer-study-campaign.update|tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.restore');
+Route::delete('/alumni/tracer-study-campaigns/{id}/force', [TracerStudyCampaignController::class, 'forceDestroy'])
+    ->middleware('active_permission:tracer-study-campaign.update|tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.force-destroy');
+Route::post('/alumni/tracer-study-campaigns/{tracerStudyCampaign}/activate', [TracerStudyCampaignController::class, 'activate'])
+    ->middleware('active_permission:tracer-study-campaign.update')
+    ->name('alumni.tracer-study-campaigns.activate');
+Route::get('/alumni/tracer-study-campaigns/{tracerStudyCampaign}/analytics', [TracerStudyAnalyticsController::class, 'show'])
+    ->middleware('active_permission:tracer-study-campaign.view')
+    ->name('alumni.tracer-study.analytics');
+Route::get('/alumni/tracer-study-campaigns/{id}/export/{format}', [TracerStudyAnalyticsController::class, 'export'])
     ->middleware('active_permission:tracer-study-campaign.view')
     ->whereIn('format', ['csv', 'xlsx', 'pdf'])
     ->name('alumni.tracer-study.export');
+Route::get('/alumni/tracer-study-campaigns', [TracerStudyCampaignController::class, 'index'])
+    ->middleware('active_permission:tracer-study-campaign.viewAny')
+    ->name('alumni.tracer-study-campaigns.index');
+Route::get('/alumni/tracer-study-campaigns/create', [TracerStudyCampaignController::class, 'create'])
+    ->middleware('active_permission:tracer-study-campaign.create')
+    ->name('alumni.tracer-study-campaigns.create');
+Route::post('/alumni/tracer-study-campaigns', [TracerStudyCampaignController::class, 'store'])
+    ->middleware('active_permission:tracer-study-campaign.create')
+    ->name('alumni.tracer-study-campaigns.store');
+Route::get('/alumni/tracer-study-campaigns/{tracerStudyCampaign}/edit', [TracerStudyCampaignController::class, 'edit'])
+    ->middleware('active_permission:tracer-study-campaign.update')
+    ->name('alumni.tracer-study-campaigns.edit');
+Route::put('/alumni/tracer-study-campaigns/{tracerStudyCampaign}', [TracerStudyCampaignController::class, 'update'])
+    ->middleware('active_permission:tracer-study-campaign.update')
+    ->name('alumni.tracer-study-campaigns.update');
+Route::delete('/alumni/tracer-study-campaigns/{tracerStudyCampaign}', [TracerStudyCampaignController::class, 'destroy'])
+    ->middleware('active_permission:tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.destroy');
+Route::get('/alumni/tracer-study-campaigns/{tracerStudyCampaign}', [TracerStudyCampaignController::class, 'show'])
+    ->middleware('active_permission:tracer-study-campaign.view')
+    ->name('alumni.tracer-study-campaigns.show');
+
+// Respon Tracer Study (Inertia React) - Batch AL-2.
+Route::get('/alumni/tracer-study-responses/export', [TracerStudyResponseController::class, 'export'])
+    ->middleware('active_permission:tracer-study-response.viewAny')
+    ->name('alumni.tracer-study-responses.export');
+Route::get('/alumni/tracer-study-responses', [TracerStudyResponseController::class, 'index'])
+    ->middleware('active_permission:tracer-study-response.viewAny')
+    ->name('alumni.tracer-study-responses.index');
+Route::get('/alumni/tracer-study-responses/{tracerStudyResponse}', [TracerStudyResponseController::class, 'show'])
+    ->middleware('active_permission:tracer-study-response.view')
+    ->name('alumni.tracer-study-responses.show');
