@@ -210,17 +210,18 @@ it('lets a student submit an appeal with supporting attachment', function () {
     ['studentUser' => $studentUser, 'appeal' => $appeal, 'grade' => $grade] = createGradeAppealContext();
     $appeal->delete();
 
-    $this->actingAs($studentUser)->withSession(['active_role' => 'student']);
-
-    Livewire::test('student.grade-appeals.index')
-        ->set('studentGradeId', $grade->id)
-        ->set('reasonCategory', 'input_error')
-        ->set('reason', 'Nilai tugas akhir saya belum masuk padahal sudah dikumpulkan tepat waktu.')
-        ->set('expectedOutcome', 'Mohon cek ulang bukti pengumpulan tugas akhir.')
-        ->set('requestedScore', '88')
-        ->set('attachments', [UploadedFile::fake()->image('bukti-nilai.png')])
-        ->call('submitAppeal')
-        ->assertHasNoErrors();
+    $this->actingAs($studentUser)
+        ->withSession(['active_role' => 'student'])
+        ->post(route('student.grade-appeals.store'), [
+            'gradeId' => $grade->id,
+            'category' => 'input_error',
+            'reason' => 'Nilai tugas akhir saya belum masuk padahal sudah dikumpulkan tepat waktu.',
+            'expectedOutcome' => 'Mohon cek ulang bukti pengumpulan tugas akhir.',
+            'requestedScore' => '88',
+            'attachments' => [UploadedFile::fake()->image('bukti-nilai.png')],
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
 
     $newAppeal = GradeAppeal::query()->where('student_grade_id', $grade->id)->latest('id')->first();
 

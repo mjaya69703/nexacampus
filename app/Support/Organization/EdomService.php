@@ -3,7 +3,6 @@
 namespace App\Support\Organization;
 
 use App\Models\Academic\CourseOfferingLecturer;
-use App\Models\Academic\StudyPlan;
 use App\Models\Academic\StudyPlanDetail;
 use App\Models\Organization\EdomPeriod;
 use App\Models\Organization\EdomQuestion;
@@ -33,12 +32,14 @@ class EdomService
             return collect();
         }
 
-        $offeringIds = StudyPlan::query()
-            ->where('student_profile_id', $studentProfileId)
-            ->when($period->academic_year_id, fn ($query) => $query->where('academic_year_id', $period->academic_year_id))
-            ->with('details')
-            ->get()
-            ->flatMap(fn (StudyPlan $plan) => $plan->details->pluck('course_offering_id'))
+        $offeringIds = StudyPlanDetail::query()
+            ->officiallyEnrolled()
+            ->whereHas('studyPlan', function ($query) use ($studentProfileId, $period) {
+                $query->where('student_profile_id', $studentProfileId)
+                    ->when($period->academic_year_id, fn ($nested) => $nested->where('academic_year_id', $period->academic_year_id));
+            })
+            ->pluck('course_offering_id')
+            ->map(fn ($id) => (int) $id)
             ->unique()
             ->values();
 
@@ -47,6 +48,8 @@ class EdomService
             ->where('is_active', true)
             ->with(['courseOffering.course', 'courseOffering.academicYear', 'lecturerProfile.user'])
             ->get()
+            ->unique(fn (CourseOfferingLecturer $assignment) => $assignment->course_offering_id.'-'.$assignment->lecturer_profile_id)
+            ->values()
             ->map(function (CourseOfferingLecturer $assignment) use ($period, $studentProfileId) {
                 $response = EdomResponse::query()
                     ->where('edom_period_id', $period->id)
@@ -83,6 +86,7 @@ class EdomService
 
         $eligibleOffering = StudyPlanDetail::query()
             ->where('course_offering_id', $courseOfferingId)
+            ->officiallyEnrolled()
             ->whereHas('studyPlan', function ($query) use ($studentProfile, $period) {
                 $query->where('student_profile_id', $studentProfile->id)
                     ->when($period->academic_year_id, fn ($nested) => $nested->where('academic_year_id', $period->academic_year_id));
@@ -110,13 +114,52 @@ class EdomService
 
         $questions = EdomQuestion::query()->where('is_active', true)->orderBy('sort_order')->get();
 
+        // Normalisasi & validasi jawaban: skala wajib bilangan bulat 1-5,
+        // teks dibatasi 2000 karakter. Sebelumnya nilai non-angka dipaksa
+        // menjadi 0 sehingga evaluasi bisa tersimpan tanpa skor valid.
+        $normalized = [];
+
         foreach ($questions as $question) {
-            if ($question->is_required && blank($answers[$question->id] ?? null)) {
+            $value = $answers[$question->id] ?? null;
+
+            if ($question->answer_type === 'scale') {
+                if (blank($value)) {
+                    if ($question->is_required) {
+                        throw ValidationException::withMessages(["answers.{$question->id}" => 'Pertanyaan ini wajib diisi.']);
+                    }
+
+                    $normalized[$question->id] = null;
+
+                    continue;
+                }
+
+                if (! is_numeric($value) || (int) $value != $value || (int) $value < 1 || (int) $value > 5) {
+                    throw ValidationException::withMessages([
+                        "answers.{$question->id}" => 'Pilih skala penilaian antara 1 sampai 5.',
+                    ]);
+                }
+
+                $normalized[$question->id] = (int) $value;
+
+                continue;
+            }
+
+            $text = is_string($value) ? trim($value) : '';
+
+            if ($question->is_required && $text === '') {
                 throw ValidationException::withMessages(["answers.{$question->id}" => 'Pertanyaan ini wajib diisi.']);
             }
+
+            if (mb_strlen($text) > 2000) {
+                throw ValidationException::withMessages([
+                    "answers.{$question->id}" => 'Jawaban teks maksimal 2000 karakter.',
+                ]);
+            }
+
+            $normalized[$question->id] = $text !== '' ? $text : null;
         }
 
-        return DB::transaction(function () use ($period, $courseOfferingId, $lecturerProfileId, $studentProfile, $questions, $answers) {
+        return DB::transaction(function () use ($period, $courseOfferingId, $lecturerProfileId, $studentProfile, $questions, $normalized) {
             $response = EdomResponse::create([
                 'edom_period_id' => $period->id,
                 'course_offering_id' => $courseOfferingId,
@@ -126,12 +169,12 @@ class EdomService
             ]);
 
             foreach ($questions as $question) {
-                $value = $answers[$question->id] ?? null;
+                $value = $normalized[$question->id] ?? null;
 
                 $response->answers()->create([
                     'edom_question_id' => $question->id,
-                    'score' => $question->answer_type === 'scale' ? (int) $value : null,
-                    'text_answer' => $question->answer_type === 'text' ? trim((string) $value) : null,
+                    'score' => $question->answer_type === 'scale' ? $value : null,
+                    'text_answer' => $question->answer_type === 'text' ? $value : null,
                 ]);
             }
 

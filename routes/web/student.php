@@ -5,12 +5,18 @@ use App\Http\Controllers\Academic\GradeAppealAttachmentController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Student\DashboardController;
+use App\Http\Controllers\Student\StudentAnnouncementController;
 use App\Http\Controllers\Student\StudentAssignmentController;
 use App\Http\Controllers\Student\StudentConsultationController;
+use App\Http\Controllers\Student\StudentDigitalIdController;
+use App\Http\Controllers\Student\StudentEdomController;
+use App\Http\Controllers\Student\StudentFinancialController;
+use App\Http\Controllers\Student\StudentGradeAppealController;
 use App\Http\Controllers\Student\StudentGradesController;
 use App\Http\Controllers\Student\StudentLearningController;
 use App\Http\Controllers\Student\StudentProgressController;
 use App\Http\Controllers\Student\StudentRegistrationController;
+use App\Http\Controllers\Student\StudentScheduleController;
 use App\Http\Controllers\Student\StudentStudyPlanController;
 use App\Http\Controllers\Student\StudentTranscriptController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
@@ -23,7 +29,7 @@ Route::get('/registration', [StudentRegistrationController::class, 'index'])->na
 Route::post('/registration/draft', [StudentRegistrationController::class, 'saveDraft'])->name('registration.draft');
 Route::post('/registration/submit', [StudentRegistrationController::class, 'submit'])->name('registration.submit');
 Route::post('/registration/cancel', [StudentRegistrationController::class, 'cancel'])->name('registration.cancel');
-Route::livewire('/digital-id', 'student.digital-id.index')->name('digital-id.index');
+Route::get('/digital-id', [StudentDigitalIdController::class, 'index'])->name('digital-id.index');
 Route::get('/study-plan', [StudentStudyPlanController::class, 'index'])->name('study-plan.index');
 Route::post('/study-plan/courses', [StudentStudyPlanController::class, 'store'])->name('study-plan.courses.store');
 Route::delete('/study-plan/courses/{detail}', [StudentStudyPlanController::class, 'destroy'])->name('study-plan.courses.destroy');
@@ -32,15 +38,19 @@ Route::post('/study-plan/revise', [StudentStudyPlanController::class, 'revise'])
 Route::get('/study-plan/comparison', [StudentStudyPlanController::class, 'comparison'])->name('study-plan.comparison');
 Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress.index');
 Route::get('/grades', [StudentGradesController::class, 'index'])->name('grades.index');
-Route::livewire('/grade-appeals', 'student.grade-appeals.index')->name('grade-appeals.index');
+Route::get('/grade-appeals', [StudentGradeAppealController::class, 'index'])->name('grade-appeals.index');
+Route::post('/grade-appeals', [StudentGradeAppealController::class, 'store'])->name('grade-appeals.store');
 Route::get('/grade-appeal-attachments/{attachment}/preview', [GradeAppealAttachmentController::class, 'studentPreview'])->name('grade-appeal-attachments.preview');
-Route::livewire('/financial/invoices', 'student.financial.invoices')->name('financial.invoices');
-Route::livewire('/financial/invoices/{id}', 'student.financial.invoice-detail')->name('financial.invoices.show');
+Route::get('/financial/invoices', [StudentFinancialController::class, 'invoices'])->name('financial.invoices');
+Route::get('/financial/invoices/{id}', [StudentFinancialController::class, 'show'])->whereNumber('id')->name('financial.invoices.show');
+Route::post('/financial/invoices/{id}/payment', [StudentFinancialController::class, 'pay'])->whereNumber('id')->name('financial.invoices.pay');
+Route::post('/financial/invoices/{id}/installment', [StudentFinancialController::class, 'requestInstallment'])->whereNumber('id')->name('financial.invoices.installment');
 Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'student'])->name('financial.payments.receipt');
 Route::get('/transcript', [StudentTranscriptController::class, 'index'])->name('transcript.index');
-Route::livewire('/schedule', 'student.schedule.index')->name('schedule.index');
-Route::livewire('/schedule/{offeringId}/attendance', 'student.schedule.attendance.index')->name('schedule.attendance');
-Route::livewire('/schedule/attendance/{sessionId}/record', 'student.schedule.attendance.record.index')->name('schedule.attendance.record');
+Route::get('/schedule', [StudentScheduleController::class, 'index'])->name('schedule.index');
+Route::get('/schedule/{offeringId}/attendance', [StudentScheduleController::class, 'attendance'])->whereNumber('offeringId')->name('schedule.attendance');
+Route::get('/schedule/attendance/{sessionId}/record', [StudentScheduleController::class, 'record'])->whereNumber('sessionId')->name('schedule.attendance.record');
+Route::post('/schedule/attendance/{sessionId}/record', [StudentScheduleController::class, 'scan'])->whereNumber('sessionId')->name('schedule.attendance.record.scan');
 Route::get('/materials', [StudentLearningController::class, 'materials'])->name('course-materials.index');
 Route::get('/course-offerings/{offering}/materials', [StudentLearningController::class, 'offeringMaterials'])->name('course-materials.offering');
 Route::post('/materials/{material}/bookmark', [StudentLearningController::class, 'toggleBookmark'])->name('learning.bookmark');
@@ -62,10 +72,16 @@ Route::get('/assignments/submissions/files/{file}', [AssignmentFileController::c
 Route::get('/learning/{material}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->name('learning.preview');
 Route::get('/learning/{material}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->name('learning.link');
 Route::get('/course-materials/{id}/download/{fileId?}', [CourseMaterialController::class, 'download'])->name('course-materials.download');
-Route::livewire('/announcements', 'student.publication.announcements.index')->name('announcements.index');
-Route::livewire('/announcements/{id}', 'student.publication.announcements.show')->name('announcements.show');
-Route::livewire('/edom', 'student.edom.index')->name('edom.index');
-Route::livewire('/edom/{periodId}/{courseOfferingId}/{lecturerProfileId}', 'student.edom.show')->name('edom.show');
+Route::get('/announcements', [StudentAnnouncementController::class, 'index'])->name('announcements.index');
+Route::get('/announcements/{id}', [StudentAnnouncementController::class, 'show'])->whereNumber('id')->name('announcements.show');
+Route::get('/announcements/{id}/attachment', [StudentAnnouncementController::class, 'downloadAttachment'])->whereNumber('id')->name('announcements.attachment');
+Route::get('/edom', [StudentEdomController::class, 'index'])->name('edom.index');
+Route::get('/edom/{periodId}/{courseOfferingId}/{lecturerProfileId}', [StudentEdomController::class, 'show'])
+    ->whereNumber('periodId')->whereNumber('courseOfferingId')->whereNumber('lecturerProfileId')
+    ->name('edom.show');
+Route::post('/edom/{periodId}/{courseOfferingId}/{lecturerProfileId}', [StudentEdomController::class, 'submit'])
+    ->whereNumber('periodId')->whereNumber('courseOfferingId')->whereNumber('lecturerProfileId')
+    ->name('edom.submit');
 Route::livewire('/services/letters', 'student.student-services.letters')->name('student-services.letters');
 Route::livewire('/services/letters/create', 'student.student-services.letter-create')->name('student-services.letters.create');
 Route::livewire('/services/letters/{id}/edit', 'student.student-services.letter-edit')->name('student-services.letters.edit');
