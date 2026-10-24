@@ -64,8 +64,6 @@ it('merender seluruh halaman portal mahasiswa', function (string $routeName) {
     'banding nilai' => ['student.grade-appeals.index'],
     'materi' => ['student.course-materials.index'],
     'jadwal' => ['student.schedule.index'],
-    'krs' => ['student.study-plan.index'],
-    'perbandingan krs' => ['student.study-plan.comparison'],
     'pengaduan' => ['student.student-services.complaints'],
     'buat pengaduan' => ['student.student-services.complaints.create'],
     'yudisium' => ['student.student-services.graduations'],
