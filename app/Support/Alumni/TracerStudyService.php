@@ -125,6 +125,59 @@ class TracerStudyService
     }
 
     /**
+     * Whether the campaign is currently open for responses. Status "active"
+     * alone is not enough: campaign period must also cover today.
+     */
+    public function isOpen(TracerStudyCampaign $campaign): bool
+    {
+        if ($campaign->status !== 'active') {
+            return false;
+        }
+
+        $today = now()->startOfDay();
+
+        if ($campaign->start_date && $campaign->start_date->gt($today)) {
+            return false;
+        }
+
+        if ($campaign->end_date && $campaign->end_date->lt($today)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether an alumni profile matches the campaign target (graduation year
+     * and/or study program). Empty targets mean the campaign is for everyone.
+     */
+    public function targetsProfile(TracerStudyCampaign $campaign, AlumniProfile $profile): bool
+    {
+        $years = array_map('intval', $campaign->target_graduation_years ?? []);
+
+        if ($years !== [] && ! in_array((int) $profile->graduation_year, $years, true)) {
+            return false;
+        }
+
+        $programs = array_map('intval', $campaign->target_study_program_ids ?? []);
+
+        if ($programs !== [] && ! in_array((int) $profile->study_program_id, $programs, true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Campaign is visible/fillable by the alumni: open period, active status,
+     * and matching target criteria.
+     */
+    public function isAvailableFor(TracerStudyCampaign $campaign, AlumniProfile $profile): bool
+    {
+        return $this->isOpen($campaign) && $this->targetsProfile($campaign, $profile);
+    }
+
+    /**
      * Generate analytics for a campaign.
      *
      * Struktur data dikunci agar cocok dengan tabel laporan:
