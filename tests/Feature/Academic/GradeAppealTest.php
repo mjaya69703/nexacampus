@@ -19,6 +19,7 @@ use App\Support\TranscriptSyncService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
@@ -134,10 +135,13 @@ it('shows grade appeal entry points on the student grades page', function () {
         ->withSession(['active_role' => 'student'])
         ->get(route('student.grades.index'))
         ->assertOk()
-        ->assertSee('Nilai Terpublikasi')
-        ->assertSee('Keberatan Diajukan')
-        ->assertSee('Pantau Keberatan')
-        ->assertSee('Keberatan Nilai');
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Student/Grades/Index')
+            ->has('rows', 1)
+            ->where('rows.0.courseName', 'Struktur Data Appeal')
+            ->where('rows.0.appealStatus', 'submitted')
+            ->where('rows.0.hasActiveAppeal', true)
+            ->where('stats.activeAppeals', 1));
 });
 
 it('renders transcript entries for published student grades', function () {
@@ -149,9 +153,11 @@ it('renders transcript entries for published student grades', function () {
         ->withSession(['active_role' => 'student'])
         ->get(route('student.transcript.index'))
         ->assertOk()
-        ->assertSee('Transkrip Akademik')
-        ->assertSee('Struktur Data Appeal')
-        ->assertSee('IPK');
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Student/Transcript/Index')
+            ->has('entries', 1)
+            ->where('entries.0.courseName', 'Struktur Data Appeal')
+            ->where('summary.cumulativeGpa', 2.5));
 });
 
 it('lets an assigned lecturer approve an appeal and correct the score', function () {
