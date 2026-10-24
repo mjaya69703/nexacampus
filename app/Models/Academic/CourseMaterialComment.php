@@ -2,11 +2,10 @@
 
 namespace App\Models\Academic;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Academic\CourseMaterial;
-
 
 class CourseMaterialComment extends Model
 {
@@ -18,49 +17,52 @@ class CourseMaterialComment extends Model
         'likes_count',
         'is_edited',
         'is_deleted',
+        'edited_at',
     ];
-    
+
     protected $casts = [
         'likes_count' => 'integer',
         'is_edited' => 'boolean',
         'is_deleted' => 'boolean',
+        'edited_at' => 'datetime',
     ];
-    
+
     public function courseMaterial(): BelongsTo
     {
         return $this->belongsTo(CourseMaterial::class);
     }
-    
+
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(User::class);
     }
-    
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(CourseMaterialComment::class, 'parent_id');
     }
-    
+
     public function replies(): HasMany
     {
         return $this->hasMany(CourseMaterialComment::class, 'parent_id')
             ->orderBy('created_at', 'asc');
     }
-    
+
     public function likes(): HasMany
     {
-        return $this->hasMany(\App\Models\Academic\CommentLike::class, 'comment_id');
+        return $this->hasMany(CommentLike::class, 'comment_id');
     }
-    
+
     public function scopeNotDeleted($query)
     {
         return $query->where('is_deleted', false);
     }
-    
+
     public function getMentionedUsersAttribute(): array
     {
         // Parse @username from content
         preg_match_all('/@([\w.]+)/', $this->content, $matches);
+
         return $matches[1] ?? [];
     }
 }
