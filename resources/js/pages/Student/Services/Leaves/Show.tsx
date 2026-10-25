@@ -39,7 +39,7 @@ export default function LeavesShow({ shell, application, urls }: Props) {
                         <div className="db-card-head"><h2 className="db-card-title">Riwayat</h2></div>
                         <div className="db-card-body">
                             {application.histories.map((h) => (
-                                <div key={h.id} style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>
+                                <div key={h.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--db-line)' }}>
                                     <b>{h.to}</b> · {h.changedAt} · {h.changedBy ?? '-'}{h.notes ? ` — ${h.notes}` : ''}
                                 </div>
                             ))}

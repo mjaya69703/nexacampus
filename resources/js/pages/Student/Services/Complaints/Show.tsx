@@ -49,7 +49,7 @@ export default function ComplaintsShow({ shell, complaint, canReply, canClose, u
                         <div className="db-card-head"><h2 className="db-card-title">Thread</h2></div>
                         <div className="db-card-body">
                             {complaint.messages.map((m) => (
-                                <div key={m.id} style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
+                                <div key={m.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--db-line)' }}>
                                     <b>{m.senderName}</b> · {m.createdAt}
                                     <div style={{ marginTop: 4 }}>{m.message}</div>
                                     {m.attachments.length > 0 && (
@@ -86,7 +86,7 @@ export default function ComplaintsShow({ shell, complaint, canReply, canClose, u
                         <div className="db-card-head"><h2 className="db-card-title">Riwayat Status</h2></div>
                         <div className="db-card-body">
                             {complaint.histories.map((h) => (
-                                <div key={h.id} style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>
+                                <div key={h.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--db-line)' }}>
                                     <b>{h.to}</b> · {h.changedAt} · {h.changedBy ?? '-'}{h.notes ? ` — ${h.notes}` : ''}
                                 </div>
                             ))}

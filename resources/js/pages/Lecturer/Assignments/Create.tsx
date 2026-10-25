@@ -1,25 +1,30 @@
-import { Head, Link } from '@inertiajs/react';
-import { ClipboardList } from 'lucide-react';
-import { AdminShell, ShellProps } from '../../../components/Shared/AdminShell';
-import { CrudHero } from '../../../components/Shared/Crud/CrudHero';
-import '../../../../css/dashboard.css';
-import '../../../../css/crud.css';
+// Halaman buat tugas baru untuk kelas dosen.
+import { ShellProps } from '../../../components/Shared/AdminShell';
+import AssignmentForm, { AssignmentDefaults } from './AssignmentForm';
 
-type Props = { shell: ShellProps; offeringId: number; urls: { index: string } };
+type OfferingInfo = {
+    course: string; label: string; academicYear: string; studyProgram: string; enrolledCount: number;
+};
 
-export default function AssignmentsCreate({ shell, offeringId, urls }: Props) {
+type Props = {
+    shell: ShellProps;
+    offeringId: number;
+    offeringInfo: OfferingInfo;
+    defaults: AssignmentDefaults;
+    urls: { index: string; store: string; show: string };
+};
+
+export default function AssignmentsCreate({ shell, offeringInfo, defaults, urls }: Props) {
     return (
-        <AdminShell shell={shell}>
-            <Head title={`Buat Tugas · ${shell.appName}`} />
-            <div className="db-root">
-                <div className="db-stack">
-                    <CrudHero icon={ClipboardList} eyebrow="Akademik" title="Buat Tugas" description={`Kelas #${offeringId}`} badges={[]} />
-                    <Link href={urls.index} className="db-btn ghost sm">← Kembali</Link>
-                    <section className="db-card">
-                        <div className="db-card-body">Form pembuatan tugas.</div>
-                    </section>
-                </div>
-            </div>
-        </AdminShell>
+        <AssignmentForm
+            shell={shell}
+            pageTitle="Buat Tugas"
+            heroDescription={`${offeringInfo.course} · ${offeringInfo.label}`}
+            defaults={defaults}
+            existingFiles={[]}
+            offeringInfo={offeringInfo}
+            urls={{ index: urls.index, submit: urls.store, show: urls.show }}
+            submitMethod="post"
+        />
     );
 }

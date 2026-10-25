@@ -32,13 +32,35 @@ class DashboardController extends Controller
             return Inertia::render('Lecturer/Dashboard', [
                 'shell' => ShellProps::make($user, 'Dashboard', 'Dashboard Dosen'),
                 'hasProfile' => false,
-                'lecturer' => ['name' => $user->name],
+                'lecturer' => [
+                    'name' => $user->name,
+                    'programName' => null,
+                    'facultyName' => null,
+                    'activeYearName' => null,
+                ],
                 'inbox' => [],
+                'summary' => [
+                    'classes' => 0,
+                    'sks' => 0,
+                    'students' => 0,
+                    'sessionsWeek' => 0,
+                    'advisees' => 0,
+                    'yearName' => null,
+                    'classesUrl' => route('lecturer.course-offerings.index'),
+                    'calendarUrl' => route('lecturer.calendar.index'),
+                    'advisingUrl' => route('lecturer.academic-advising.index'),
+                ],
                 'week' => [],
                 'classes' => [],
+                'classesUrl' => route('lecturer.course-offerings.index'),
+                'gradesUrl' => route('lecturer.student-grades.index'),
                 'bkd' => null,
                 'tridharma' => null,
-                'announcements' => ['unread' => 0, 'items' => []],
+                'announcements' => [
+                    'unread' => 0,
+                    'allUrl' => route('lecturer.announcements.index'),
+                    'items' => [],
+                ],
             ]);
         }
 

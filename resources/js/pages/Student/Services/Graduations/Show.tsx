@@ -36,9 +36,9 @@ export default function GraduationsShow({ shell, application, checklistItems, ch
                             <div className="db-card-body">
                                 {checklistItems.map((c) => (
                                     <div key={c.key} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '4px 0' }}>
-                                        <span className="db-badge" style={{ background: c.checked ? '#dcfce7' : '#f3f4f6', color: c.checked ? '#166534' : '#6b7280' }}>{c.checked ? '✓' : '○'}</span>
+                                        <span className={`db-badge ${c.checked ? 'green' : 'gray'}`}>{c.checked ? '✓' : '○'}</span>
                                         <span>{c.label}</span>
-                                        {c.checkedAt && <small style={{ color: '#666' }}>{c.checkedAt}</small>}
+                                        {c.checkedAt && <small style={{ color: 'var(--db-muted)' }}>{c.checkedAt}</small>}
                                     </div>
                                 ))}
                             </div>
@@ -61,7 +61,7 @@ export default function GraduationsShow({ shell, application, checklistItems, ch
                         <div className="db-card-head"><h2 className="db-card-title">Riwayat</h2></div>
                         <div className="db-card-body">
                             {application.histories.map((h) => (
-                                <div key={h.id} style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>
+                                <div key={h.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--db-line)' }}>
                                     <b>{h.to}</b> · {h.changedAt} · {h.changedBy ?? '-'}{h.notes ? ` — ${h.notes}` : ''}
                                 </div>
                             ))}

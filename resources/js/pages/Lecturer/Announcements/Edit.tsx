@@ -22,7 +22,7 @@ export default function AnnouncementsEdit({ shell, announcement, courseOfferings
         publishedAt: announcement.publishedAt ?? '', scheduledAt: announcement.scheduledAt ?? '', attachment: null, removeAttachment: false,
     });
 
-    const submit = (e: FormEvent) => { e.preventDefault(); form.post(urls.update, { forceFormData: true, preserveScroll: true }); };
+    const submit = (e: FormEvent) => { e.preventDefault(); form.put(urls.update, { forceFormData: true, preserveScroll: true }); };
 
     return (
         <AdminShell shell={shell}>
@@ -34,16 +34,16 @@ export default function AnnouncementsEdit({ shell, announcement, courseOfferings
                     <section className="db-card">
                         <div className="db-card-body">
                             <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
-                                <label className="db-label">Judul</label>
+                                <label className="crud-label">Judul</label>
                                 <input className="db-input" value={form.data.title} onChange={(e) => form.setData('title', e.target.value)} />
-                                <label className="db-label">Konten</label>
+                                <label className="crud-label">Konten</label>
                                 <textarea className="db-input" rows={6} value={form.data.content} onChange={(e) => form.setData('content', e.target.value)} />
-                                <label className="db-label">Kelas Tujuan</label>
+                                <label className="crud-label">Kelas Tujuan</label>
                                 <select className="db-input" value={form.data.targetId} onChange={(e) => form.setData('targetId', e.target.value)}>
                                     <option value="">Pilih kelas</option>
                                     {courseOfferings.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                                 </select>
-                                <label className="db-label">Prioritas</label>
+                                <label className="crud-label">Prioritas</label>
                                 <select className="db-input" value={form.data.priority} onChange={(e) => form.setData('priority', e.target.value)}>
                                     {priorities.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                                 </select>
@@ -53,15 +53,15 @@ export default function AnnouncementsEdit({ shell, announcement, courseOfferings
                                 <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                     <input type="checkbox" checked={form.data.isPublished} onChange={(e) => form.setData('isPublished', e.target.checked)} /> Publikasikan
                                 </label>
-                                <label className="db-label">Waktu Publikasi</label>
+                                <label className="crud-label">Waktu Publikasi</label>
                                 <input type="datetime-local" className="db-input" value={form.data.publishedAt} onChange={(e) => form.setData('publishedAt', e.target.value)} />
-                                <label className="db-label">Jadwal (opsional)</label>
+                                <label className="crud-label">Jadwal (opsional)</label>
                                 <input type="datetime-local" className="db-input" value={form.data.scheduledAt} onChange={(e) => form.setData('scheduledAt', e.target.value)} />
                                 {announcement.attachmentName && <div>Lampiran saat ini: {announcement.attachmentName}</div>}
                                 <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                     <input type="checkbox" checked={form.data.removeAttachment} onChange={(e) => form.setData('removeAttachment', e.target.checked)} /> Hapus lampiran
                                 </label>
-                                <label className="db-label">Lampiran baru (opsional)</label>
+                                <label className="crud-label">Lampiran baru (opsional)</label>
                                 <input type="file" className="db-input" onChange={(e) => form.setData('attachment', e.target.files?.[0] ?? null)} />
                                 <button type="submit" className="db-btn primary" disabled={form.processing}><Send size={14} /> Simpan</button>
                             </form>

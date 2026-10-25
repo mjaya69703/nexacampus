@@ -1,25 +1,47 @@
-import { Head, Link } from '@inertiajs/react';
-import { ClipboardList } from 'lucide-react';
-import { AdminShell, ShellProps } from '../../../components/Shared/AdminShell';
-import { CrudHero } from '../../../components/Shared/Crud/CrudHero';
-import '../../../../css/dashboard.css';
-import '../../../../css/crud.css';
+// Halaman ubah tugas — termasuk mengelola berkas instruksi yang sudah ada.
+import { ShellProps } from '../../../components/Shared/AdminShell';
+import AssignmentForm, { AssignmentDefaults, ExistingFile } from './AssignmentForm';
 
-type Props = { shell: ShellProps; id: number; urls: { index: string; show: string } };
+type OfferingInfo = {
+    course: string; label: string; academicYear: string; studyProgram: string; enrolledCount: number;
+};
 
-export default function AssignmentsEdit({ shell, id, urls }: Props) {
+type Assignment = AssignmentDefaults & { files: ExistingFile[] };
+
+type Props = {
+    shell: ShellProps;
+    id: number;
+    offeringId: number;
+    offeringInfo: OfferingInfo;
+    assignment: Assignment;
+    urls: { index: string; show: string; update: string };
+};
+
+export default function AssignmentsEdit({ shell, offeringInfo, assignment, urls }: Props) {
+    const defaults: AssignmentDefaults = {
+        title: assignment.title,
+        description: assignment.description,
+        dueAt: assignment.dueAt,
+        maxScore: assignment.maxScore,
+        allowedFileTypes: assignment.allowedFileTypes,
+        maxFileSizeMb: assignment.maxFileSizeMb,
+        allowTextSubmission: assignment.allowTextSubmission,
+        allowFileSubmission: assignment.allowFileSubmission,
+        allowResubmission: assignment.allowResubmission,
+        acceptLateSubmission: assignment.acceptLateSubmission,
+        isPublished: assignment.isPublished,
+    };
+
     return (
-        <AdminShell shell={shell}>
-            <Head title={`Edit Tugas · ${shell.appName}`} />
-            <div className="db-root">
-                <div className="db-stack">
-                    <CrudHero icon={ClipboardList} eyebrow="Akademik" title="Edit Tugas" description={`Tugas #${id}`} badges={[]} />
-                    <Link href={urls.show} className="db-btn ghost sm">← Kembali</Link>
-                    <section className="db-card">
-                        <div className="db-card-body">Form edit tugas.</div>
-                    </section>
-                </div>
-            </div>
-        </AdminShell>
+        <AssignmentForm
+            shell={shell}
+            pageTitle="Edit Tugas"
+            heroDescription={`${offeringInfo.course} · ${offeringInfo.label}`}
+            defaults={defaults}
+            existingFiles={assignment.files}
+            offeringInfo={offeringInfo}
+            urls={{ index: urls.index, submit: urls.update, show: urls.show }}
+            submitMethod="put"
+        />
     );
 }

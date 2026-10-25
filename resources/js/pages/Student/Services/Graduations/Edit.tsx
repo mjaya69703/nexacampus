@@ -58,7 +58,7 @@ export default function GraduationsEdit({ shell, application, graduationBatches,
                         <section className="db-card">
                             <div className="db-card-body" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))' }}>
                                 {checks.map((c, i) => (
-                                    <div key={i} className="db-note" style={{ background: c.passed ? '#ecfdf5' : '#fffbeb' }}>
+                                    <div key={i} className={`db-note ${c.passed ? 'success' : 'warning'}`}>
                                         <b>{c.label}</b><div style={{ fontSize: 12 }}>{c.message}</div>
                                     </div>
                                 ))}
@@ -88,7 +88,7 @@ export default function GraduationsEdit({ shell, application, graduationBatches,
                                         {documentRequirements.map((r) => {
                                             const existing = docMap.get(r.id);
                                             return (
-                                                <div key={r.id} style={{ border: '1px solid #eee', padding: 10, borderRadius: 8 }}>
+                                                <div key={r.id} style={{ border: '1px solid var(--db-line)', padding: 10, borderRadius: 8 }}>
                                                     <div><b>{r.label}</b> {r.isRequired ? '(wajib)' : '(opsional)'}</div>
                                                     {existing && <div style={{ fontSize: 12 }}>Sudah ada: {existing.fileName} ({existing.verificationStatus})</div>}
                                                     <input type="file" className="db-input" accept={r.allowedExtensions.map((e) => '.' + e).join(',')}

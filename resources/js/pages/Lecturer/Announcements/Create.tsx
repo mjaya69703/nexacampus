@@ -32,22 +32,22 @@ export default function AnnouncementsCreate({ shell, courseOfferings, priorities
                     <section className="db-card">
                         <div className="db-card-body">
                             <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
-                                <label className="db-label">Judul</label>
+                                <label className="crud-label">Judul</label>
                                 <input className="db-input" value={form.data.title} onChange={(e) => form.setData('title', e.target.value)} />
                                 {form.errors.title && <div className="db-note danger">{form.errors.title}</div>}
 
-                                <label className="db-label">Konten</label>
+                                <label className="crud-label">Konten</label>
                                 <textarea className="db-input" rows={6} value={form.data.content} onChange={(e) => form.setData('content', e.target.value)} />
                                 {form.errors.content && <div className="db-note danger">{form.errors.content}</div>}
 
-                                <label className="db-label">Kelas Tujuan</label>
+                                <label className="crud-label">Kelas Tujuan</label>
                                 <select className="db-input" value={form.data.targetId} onChange={(e) => form.setData('targetId', e.target.value)}>
                                     <option value="">Pilih kelas</option>
                                     {courseOfferings.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                                 </select>
                                 {form.errors.targetId && <div className="db-note danger">{form.errors.targetId}</div>}
 
-                                <label className="db-label">Prioritas</label>
+                                <label className="crud-label">Prioritas</label>
                                 <select className="db-input" value={form.data.priority} onChange={(e) => form.setData('priority', e.target.value)}>
                                     {priorities.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                                 </select>
@@ -59,13 +59,13 @@ export default function AnnouncementsCreate({ shell, courseOfferings, priorities
                                     <input type="checkbox" checked={form.data.isPublished} onChange={(e) => form.setData('isPublished', e.target.checked)} /> Publikasikan
                                 </label>
 
-                                <label className="db-label">Waktu Publikasi</label>
+                                <label className="crud-label">Waktu Publikasi</label>
                                 <input type="datetime-local" className="db-input" value={form.data.publishedAt} onChange={(e) => form.setData('publishedAt', e.target.value)} />
 
-                                <label className="db-label">Jadwal (opsional)</label>
+                                <label className="crud-label">Jadwal (opsional)</label>
                                 <input type="datetime-local" className="db-input" value={form.data.scheduledAt} onChange={(e) => form.setData('scheduledAt', e.target.value)} />
 
-                                <label className="db-label">Lampiran (opsional)</label>
+                                <label className="crud-label">Lampiran (opsional)</label>
                                 <input type="file" className="db-input" onChange={(e) => form.setData('attachment', e.target.files?.[0] ?? null)} />
 
                                 <button type="submit" className="db-btn primary" disabled={form.processing}><Send size={14} /> Kirim</button>

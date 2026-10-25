@@ -51,7 +51,7 @@ export default function GraduationsCreate({ shell, graduationBatches, eligibilit
                         <section className="db-card">
                             <div className="db-card-body" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))' }}>
                                 {checks.map((c, i) => (
-                                    <div key={i} className="db-note" style={{ background: c.passed ? '#ecfdf5' : '#fffbeb' }}>
+                                    <div key={i} className={`db-note ${c.passed ? 'success' : 'warning'}`}>
                                         <b>{c.label}</b><div style={{ fontSize: 12 }}>{c.message}</div>
                                     </div>
                                 ))}
@@ -80,9 +80,9 @@ export default function GraduationsCreate({ shell, graduationBatches, eligibilit
                                     <div style={{ display: 'grid', gap: 12 }}>
                                         <b>Dokumen Yudisium</b>
                                         {documentRequirements.map((r) => (
-                                            <div key={r.id} style={{ border: '1px solid #eee', padding: 10, borderRadius: 8 }}>
+                                            <div key={r.id} style={{ border: '1px solid var(--db-line)', padding: 10, borderRadius: 8 }}>
                                                 <div><b>{r.label}</b> {r.isRequired ? '(wajib)' : '(opsional)'}</div>
-                                                {r.description && <div style={{ fontSize: 12, color: '#666' }}>{r.description}</div>}
+                                                {r.description && <div style={{ fontSize: 12, color: 'var(--db-muted)' }}>{r.description}</div>}
                                                 <input type="file" className="db-input" accept={r.allowedExtensions.map((e) => '.' + e).join(',')}
                                                     onChange={(e) => form.setData('documentUploads', { ...form.data.documentUploads, [r.id]: e.target.files?.[0] ?? null })} />
                                                 {form.errors[`documentUploads.${r.id}`] && <div className="db-note danger">{form.errors[`documentUploads.${r.id}`]}</div>}
