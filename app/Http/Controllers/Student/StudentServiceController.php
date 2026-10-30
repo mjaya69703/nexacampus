@@ -7,6 +7,7 @@ use App\Models\Academic\AcademicYear;
 use App\Models\Academic\Faculty;
 use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudyProgram;
+use App\Models\Financial\StudentInvoice;
 use App\Models\StudentService\GraduationApplication;
 use App\Models\StudentService\GraduationDocument;
 use App\Models\StudentService\ServiceLetterRequest;
@@ -247,7 +248,11 @@ class StudentServiceController extends Controller
             'type' => $r->letterType?->name ?? '-',
             'purpose' => $r->purpose,
             'status' => $r->status,
+            'statusLabel' => $this->statusLabel($r->status),
             'submittedAt' => $r->created_at?->format('d M Y H:i'),
+            'downloadUrl' => $r->isDownloadable()
+                ? route('student.student-services.letters.download', ['request' => $r->id])
+                : null,
             'url' => route('student.student-services.letters.show', ['id' => $r->id]),
         ];
     }
@@ -258,16 +263,21 @@ class StudentServiceController extends Controller
             'id' => $r->id,
             'number' => $r->request_number,
             'type' => $r->letterType?->name ?? '-',
+            'typeDescription' => $r->letterType?->description,
+            'fulfillmentMode' => $r->letterType?->fulfillment_mode,
             'purpose' => $r->purpose,
             'status' => $r->status,
-            'statusLabel' => str($r->status)->replace('_', ' ')->title()->toString(),
-            'requestData' => $r->request_data ?? [],
+            'statusLabel' => $this->statusLabel($r->status),
+            'requestData' => collect($r->request_data ?? [])->except(['purpose'])->all(),
             'studentNotes' => $r->student_notes,
             'adminNotes' => $r->admin_notes,
             'attachmentPath' => $r->attachment_path,
             'attachmentUrl' => $r->attachment_path ? Storage::disk('public')->url($r->attachment_path) : null,
             'finalFilePath' => $r->finalFilePath(),
             'isDownloadable' => $r->isDownloadable(),
+            'submittedAt' => $r->created_at?->format('d M Y H:i'),
+            'updatedAt' => $r->updated_at?->format('d M Y H:i'),
+            'issuedAt' => $r->issued_at?->format('d M Y H:i'),
             'histories' => $r->histories->map(fn ($h) => [
                 'id' => $h->id,
                 'from' => $h->from_status,
@@ -316,7 +326,12 @@ class StudentServiceController extends Controller
                 'academicYear' => $a->academicYear?->name ?? '-',
                 'semester' => $a->semester,
                 'duration' => $a->duration_semesters,
+                'reasonCategory' => $a->reason_category,
+                'reasonLabel' => $this->reasonCategoryLabel((string) $a->reason_category),
+                'reason' => $a->reason,
+                'leaveFeeAmount' => $a->leave_fee_amount !== null ? (float) $a->leave_fee_amount : null,
                 'status' => $a->status,
+                'statusLabel' => $this->statusLabel($a->status),
                 'submittedAt' => $a->created_at?->format('d M Y H:i'),
                 'url' => route('student.student-services.leaves.show', ['id' => $a->id]),
             ])->values()->all(),
@@ -468,15 +483,19 @@ class StudentServiceController extends Controller
             'semester' => $a->semester,
             'duration' => $a->duration_semesters,
             'reasonCategory' => $a->reason_category,
+            'reasonLabel' => $this->reasonCategoryLabel((string) $a->reason_category),
             'reason' => $a->reason,
             'status' => $a->status,
-            'statusLabel' => str($a->status)->replace('_', ' ')->title()->toString(),
+            'statusLabel' => $this->statusLabel($a->status),
             'studentNotes' => $a->student_notes,
             'adminNotes' => $a->admin_notes,
             'attachmentPath' => $a->attachment_path,
             'attachmentUrl' => $a->attachment_path ? Storage::disk('public')->url($a->attachment_path) : null,
             'leaveFeeAmount' => $a->leave_fee_amount !== null ? (float) $a->leave_fee_amount : null,
             'leaveFeeInvoiceId' => $a->leave_fee_invoice_id,
+            'invoice' => $this->invoiceSummary($a->leaveFeeInvoice),
+            'submittedAt' => $a->created_at?->format('d M Y H:i'),
+            'updatedAt' => $a->updated_at?->format('d M Y H:i'),
             'histories' => $a->histories->map(fn ($h) => [
                 'id' => $h->id,
                 'from' => $h->from_status,
@@ -525,7 +544,12 @@ class StudentServiceController extends Controller
                 'fromProgram' => $r->fromStudyProgram?->name ?? '-',
                 'toProgram' => $r->toStudyProgram?->name ?? '-',
                 'type' => $r->transfer_type,
+                'typeLabel' => $this->transferTypeLabel((string) $r->transfer_type),
+                'fromClassType' => $r->from_class_type,
+                'toClassType' => $r->to_class_type,
+                'transferFeeAmount' => $r->transfer_fee_amount !== null ? (float) $r->transfer_fee_amount : null,
                 'status' => $r->status,
+                'statusLabel' => $this->statusLabel($r->status),
                 'submittedAt' => $r->created_at?->format('d M Y H:i'),
                 'url' => route('student.student-services.transfers.show', ['id' => $r->id]),
             ])->values()->all(),
@@ -560,9 +584,9 @@ class StudentServiceController extends Controller
             ])->values()->all();
 
         $classTypeOptions = [
-            ['value' => 'regular', 'label' => 'Regular'],
-            ['value' => 'evening', 'label' => 'Evening'],
-            ['value' => 'weekend', 'label' => 'Weekend'],
+            ['value' => 'regular', 'label' => 'Kelas Reguler'],
+            ['value' => 'evening', 'label' => 'Kelas Sore'],
+            ['value' => 'weekend', 'label' => 'Kelas Akhir Pekan'],
         ];
 
         return Inertia::render('Student/Services/Transfers/Create', [
@@ -641,9 +665,9 @@ class StudentServiceController extends Controller
             ])->values()->all();
 
         $classTypeOptions = [
-            ['value' => 'regular', 'label' => 'Regular'],
-            ['value' => 'evening', 'label' => 'Evening'],
-            ['value' => 'weekend', 'label' => 'Weekend'],
+            ['value' => 'regular', 'label' => 'Kelas Reguler'],
+            ['value' => 'evening', 'label' => 'Kelas Sore'],
+            ['value' => 'weekend', 'label' => 'Kelas Akhir Pekan'],
         ];
 
         $targetFacultyId = $transferRequest->transfer_type === 'faculty'
@@ -734,15 +758,19 @@ class StudentServiceController extends Controller
             'number' => $r->request_number,
             'fromProgram' => $r->fromStudyProgram?->name ?? '-',
             'toProgram' => $r->toStudyProgram?->name ?? '-',
+            'fromProgramId' => $r->from_study_program_id,
             'toProgramId' => $r->to_study_program_id,
             'transferType' => $r->transfer_type,
+            'transferTypeLabel' => $this->transferTypeLabel((string) $r->transfer_type),
             'fromClassType' => $r->from_class_type,
             'toClassType' => $r->to_class_type,
+            'fromClassTypeLabel' => $this->classTypeLabel($r->from_class_type),
+            'toClassTypeLabel' => $this->classTypeLabel($r->to_class_type),
             'currentSemester' => $r->current_semester,
             'recommendedSemester' => $r->recommended_semester,
             'reason' => $r->reason,
             'status' => $r->status,
-            'statusLabel' => str($r->status)->replace('_', ' ')->title()->toString(),
+            'statusLabel' => $this->statusLabel($r->status),
             'studentNotes' => $r->student_notes,
             'adminNotes' => $r->admin_notes,
             'academicEvaluationNotes' => $r->academic_evaluation_notes,
@@ -750,8 +778,11 @@ class StudentServiceController extends Controller
             'financeNotes' => $r->finance_notes,
             'transferFeeAmount' => $r->transfer_fee_amount !== null ? (float) $r->transfer_fee_amount : null,
             'transferFeeDueDate' => $r->transfer_fee_due_date?->format('d M Y'),
+            'invoice' => $this->invoiceSummary($r->transferFeeInvoice),
             'attachmentPath' => $r->attachment_path,
             'attachmentUrl' => $r->attachment_path ? Storage::disk('public')->url($r->attachment_path) : null,
+            'submittedAt' => $r->created_at?->format('d M Y H:i'),
+            'updatedAt' => $r->updated_at?->format('d M Y H:i'),
             'histories' => $r->histories->map(fn ($h) => [
                 'id' => $h->id,
                 'from' => $h->from_status,
@@ -797,8 +828,10 @@ class StudentServiceController extends Controller
                 'id' => $a->id,
                 'number' => $a->application_number,
                 'status' => $a->status,
+                'statusLabel' => $this->statusLabel($a->status),
                 'graduationPeriod' => $a->graduation_period,
                 'graduationDate' => $a->graduation_date?->format('d M Y'),
+                'thesisTitle' => $a->thesis_title,
                 'submittedAt' => $a->created_at?->format('d M Y H:i'),
                 'url' => route('student.student-services.graduations.show', ['id' => $a->id]),
             ])->values()->all(),
@@ -1035,16 +1068,31 @@ class StudentServiceController extends Controller
         ];
 
         $checklist = $application->admin_checklist ?? [];
+        $checklistAliases = [
+            'transcript_checked' => ['transcript_checked', 'transcript'],
+            'final_project_checked' => ['final_project_checked', 'thesis'],
+            'library_clearance' => ['library_clearance', 'library'],
+            'lab_clearance' => ['lab_clearance', 'lab'],
+            'document_complete' => ['document_complete', 'documents'],
+        ];
         $checklistItems = [];
         foreach ($checklistLabels as $key => $label) {
-            $item = $checklist[$key] ?? [];
+            $item = [];
+            foreach ($checklistAliases[$key] ?? [$key] as $alias) {
+                if (array_key_exists($alias, $checklist)) {
+                    $item = $checklist[$alias];
+                    break;
+                }
+            }
+
+            $isArray = is_array($item);
             $checklistItems[] = [
                 'key' => $key,
                 'label' => $label,
-                'checked' => (bool) ($item['checked'] ?? false),
-                'checkedAt' => $item['checked_at'] ?? null,
-                'checkedBy' => $item['checked_by_name'] ?? null,
-                'notes' => $item['notes'] ?? null,
+                'checked' => $isArray ? (bool) ($item['checked'] ?? false) : (bool) $item,
+                'checkedAt' => $isArray ? ($item['checked_at'] ?? null) : null,
+                'checkedBy' => $isArray ? ($item['checked_by_name'] ?? null) : null,
+                'notes' => $isArray ? ($item['notes'] ?? null) : null,
             ];
         }
 
@@ -1079,7 +1127,7 @@ class StudentServiceController extends Controller
             'id' => $a->id,
             'number' => $a->application_number,
             'status' => $a->status,
-            'statusLabel' => str($a->status)->replace('_', ' ')->title()->toString(),
+            'statusLabel' => $this->statusLabel($a->status),
             'graduationPeriod' => $a->graduation_period,
             'graduationDate' => $a->graduation_date?->format('d M Y'),
             'thesisTitle' => $a->thesis_title,
@@ -1090,7 +1138,10 @@ class StudentServiceController extends Controller
             'attachmentUrl' => $a->attachment_path ? Storage::disk('public')->url($a->attachment_path) : null,
             'academicPeriod' => $a->academicPeriod?->name,
             'graduationBatch' => $a->graduationBatch?->name,
+            'graduationBatchId' => $a->graduation_batch_id,
             'eligibilitySnapshot' => $a->eligibility_snapshot,
+            'submittedAt' => $a->created_at?->format('d M Y H:i'),
+            'updatedAt' => $a->updated_at?->format('d M Y H:i'),
             'histories' => $a->histories->map(fn ($h) => [
                 'id' => $h->id,
                 'from' => $h->from_status,
@@ -1138,10 +1189,12 @@ class StudentServiceController extends Controller
                 'subject' => $c->subject,
                 'category' => $c->category?->name ?? '-',
                 'priority' => $c->priority,
+                'priorityLabel' => $this->priorityLabel((string) $c->priority),
                 'status' => $c->status,
-                'statusLabel' => str($c->status)->replace('_', ' ')->title()->toString(),
+                'statusLabel' => $this->statusLabel($c->status),
                 'assignedUnit' => $c->assignedWorkUnit?->name,
                 'submittedAt' => $c->created_at?->format('d M Y H:i'),
+                'dueAt' => $c->due_at?->format('d M Y H:i'),
                 'url' => route('student.student-services.complaints.show', ['id' => $c->id]),
             ])->values()->all(),
             'summary' => $summary,
@@ -1213,16 +1266,9 @@ class StudentServiceController extends Controller
             ->where('student_profile_id', $profile->id)
             ->findOrFail($id);
 
-        $statusLabels = [
-            'submitted' => 'Masuk',
-            'in_review' => 'Direview',
-            'waiting_student' => 'Menunggu Kamu',
-            'responded' => 'Dibalas',
-            'resolved' => 'Selesai',
-            'closed' => 'Ditutup',
-            'rejected' => 'Ditolak',
-            'reopened' => 'Dibuka Lagi',
-        ];
+        $visibleMessages = $complaint->messages
+            ->reject(fn ($m) => (bool) $m->is_internal_note)
+            ->values();
 
         return Inertia::render('Student/Services/Complaints/Show', [
             'shell' => ShellProps::make($user, 'Student Services', 'Detail Pengaduan'),
@@ -1232,24 +1278,19 @@ class StudentServiceController extends Controller
                 'subject' => $complaint->subject,
                 'description' => $complaint->description,
                 'priority' => $complaint->priority,
-                'priorityLabel' => match ($complaint->priority) {
-                    'low' => 'Rendah',
-                    'high' => 'Tinggi',
-                    'urgent' => 'Urgent',
-                    default => 'Normal',
-                },
+                'priorityLabel' => $this->priorityLabel((string) $complaint->priority),
                 'status' => $complaint->status,
-                'statusLabel' => $statusLabels[$complaint->status] ?? str($complaint->status)->replace('_', ' ')->title()->toString(),
+                'statusLabel' => $this->statusLabel($complaint->status),
                 'category' => $complaint->category?->name ?? '-',
                 'assignedUnit' => $complaint->assignedWorkUnit?->name,
                 'submittedAt' => $complaint->created_at?->format('d M Y H:i'),
+                'updatedAt' => $complaint->updated_at?->format('d M Y H:i'),
                 'dueAt' => $complaint->due_at?->format('d M Y H:i'),
-                'messages' => $complaint->messages->map(fn ($m) => [
+                'messages' => $visibleMessages->map(fn ($m) => [
                     'id' => $m->id,
                     'senderType' => $m->sender_type,
                     'senderName' => $m->user?->name ?? ($m->sender_type === 'student' ? 'Mahasiswa' : 'Staff'),
                     'message' => $m->message,
-                    'isInternal' => (bool) $m->is_internal_note,
                     'createdAt' => $m->created_at?->format('d M Y H:i'),
                     'attachments' => $m->attachments->map(fn ($a) => [
                         'id' => $a->id,
@@ -1316,5 +1357,100 @@ class StudentServiceController extends Controller
 
         return redirect()->route('student.student-services.complaints.show', ['id' => $complaint->id])
             ->with('success', 'Pengaduan ditutup.');
+    }
+
+    // ---------------------------------------------------------------- Labels
+    private function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'submitted' => 'Diajukan',
+            'under_review' => 'Sedang Ditinjau',
+            'revision_requested' => 'Perlu Perbaikan',
+            'in_approval' => 'Menunggu Persetujuan',
+            'approved_pending_payment' => 'Menunggu Pembayaran',
+            'approved' => 'Disetujui',
+            'issued' => 'Diterbitkan',
+            'rejected' => 'Ditolak',
+            'cancelled' => 'Dibatalkan',
+            'activated' => 'Cuti Aktif',
+            'returned' => 'Kembali Aktif',
+            'applied' => 'Sudah Diterapkan',
+            'finalized' => 'Selesai',
+            'in_review' => 'Sedang Direview',
+            'waiting_student' => 'Menunggu Kamu',
+            'responded' => 'Dibalas',
+            'resolved' => 'Selesai',
+            'closed' => 'Ditutup',
+            'reopened' => 'Dibuka Lagi',
+            default => str($status)->replace('_', ' ')->title()->toString(),
+        };
+    }
+
+    private function priorityLabel(string $priority): string
+    {
+        return match ($priority) {
+            'low' => 'Rendah',
+            'high' => 'Tinggi',
+            'urgent' => 'Mendesak',
+            default => 'Normal',
+        };
+    }
+
+    private function reasonCategoryLabel(string $reason): string
+    {
+        return match ($reason) {
+            'personal' => 'Alasan Pribadi',
+            'medical' => 'Alasan Kesehatan',
+            'financial' => 'Alasan Finansial',
+            'family' => 'Alasan Keluarga',
+            'work' => 'Alasan Pekerjaan',
+            default => 'Lainnya',
+        };
+    }
+
+    private function transferTypeLabel(string $type): string
+    {
+        return match ($type) {
+            'study_program' => 'Pindah Program Studi',
+            'faculty' => 'Pindah Fakultas',
+            'class_type' => 'Pindah Kelas',
+            default => 'Lainnya',
+        };
+    }
+
+    private function classTypeLabel(?string $type): string
+    {
+        return match ($type) {
+            'regular' => 'Kelas Reguler',
+            'evening' => 'Kelas Sore',
+            'weekend' => 'Kelas Akhir Pekan',
+            default => '-',
+        };
+    }
+
+    private function invoiceSummary(?StudentInvoice $invoice): ?array
+    {
+        if ($invoice === null) {
+            return null;
+        }
+
+        return [
+            'id' => $invoice->id,
+            'number' => $invoice->invoice_number,
+            'status' => $invoice->status,
+            'statusLabel' => match ($invoice->status) {
+                'paid' => 'Lunas',
+                'partially_paid' => 'Dibayar Sebagian',
+                'unpaid' => 'Belum Dibayar',
+                'overdue' => 'Jatuh Tempo',
+                'cancelled' => 'Dibatalkan',
+                'draft' => 'Draf',
+                default => str((string) $invoice->status)->replace('_', ' ')->title()->toString(),
+            },
+            'amount' => (float) $invoice->total_amount,
+            'paidAmount' => (float) $invoice->paid_amount,
+            'dueDate' => $invoice->due_date?->format('d M Y'),
+            'url' => route('student.financial.invoices.show', ['id' => $invoice->id]),
+        ];
     }
 }
