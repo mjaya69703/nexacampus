@@ -268,6 +268,7 @@ a.as-nav-link:hover, button.as-nav-link:hover { background: var(--as-sidebar-hov
     align-items: center;
     gap: 10px;
     width: min(22rem, 30vw);
+    min-width: 0;
     min-height: 40px;
     padding: 6px 8px 6px 13px;
     border: 1px solid var(--as-topbar-border);
