@@ -61,6 +61,7 @@ Route::get('/assignments/{assignment}/report/pdf', [AssignmentReportExportContro
 Route::get('/attendance-sessions/{sessionId}/edit', [LecturerPortalController::class, 'attendanceSessionsEdit'])->whereNumber('sessionId')->name('attendance-sessions.edit');
 Route::post('/attendance-sessions/{sessionId}', [$lp, 'attendanceSessionsSave'])->whereNumber('sessionId')->name('attendance-sessions.save');
 Route::post('/course-offerings/{offeringId}/attendance/{sessionId}/open', [$lp, 'attendanceSessionsOpen'])->whereNumber('offeringId')->whereNumber('sessionId')->name('course-offerings.attendance.open');
+Route::post('/course-offerings/{offeringId}/attendance/{sessionId}/close', [$lp, 'attendanceSessionsClose'])->whereNumber('offeringId')->whereNumber('sessionId')->name('course-offerings.attendance.close');
 Route::get('/course-offerings/{offeringId}/attendance/{sessionId}/qr', [$lp, 'attendanceSessionsQr'])->whereNumber('offeringId')->whereNumber('sessionId')->name('course-offerings.attendance.qr');
 Route::get('/student-grades', [LecturerPortalController::class, 'studentGradesIndex'])->name('student-grades.index');
 Route::get('/student-grades/grade-book', [LecturerPortalController::class, 'studentGradesGradeBook'])->name('student-grades.grade-book');

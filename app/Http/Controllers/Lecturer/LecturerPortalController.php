@@ -43,6 +43,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Throwable;
 
 class LecturerPortalController extends Controller
@@ -248,6 +249,7 @@ class LecturerPortalController extends Controller
                 'absentCount' => $session->absent_count,
                 'editUrl' => route('lecturer.attendance-sessions.edit', ['sessionId' => $session->id]),
                 'openUrl' => route('lecturer.course-offerings.attendance.open', ['offeringId' => $offeringId, 'sessionId' => $session->id]),
+                'closeUrl' => route('lecturer.course-offerings.attendance.close', ['offeringId' => $offeringId, 'sessionId' => $session->id]),
                 'qrUrl' => route('lecturer.course-offerings.attendance.qr', ['offeringId' => $offeringId, 'sessionId' => $session->id]),
             ])->values()->all(),
             'stats' => [
@@ -1064,13 +1066,37 @@ class LecturerPortalController extends Controller
             ->where('course_offering_id', $offeringId)
             ->findOrFail($sessionId);
 
+        $payload = $session->status === 'Opened'
+            ? app(AcademicAttendanceQrService::class)->qrPayload($session)
+            : null;
+
+        if ($payload !== null) {
+            $payload['svg'] = (string) QrCode::format('svg')
+                ->size(260)
+                ->margin(1)
+                ->errorCorrection('M')
+                ->generate($payload['url']);
+        }
+
         return response()->json([
             'meetingNo' => $session->meeting_no,
             'topic' => $session->topic ?: '-',
             'status' => $session->status,
             'openedAt' => $session->opened_at?->format('H:i:s') ?? '-',
-            'payload' => $session->status === 'Opened' ? app(AcademicAttendanceQrService::class)->qrPayload($session) : null,
+            'payload' => $payload,
         ]);
+    }
+
+    public function attendanceSessionsClose(Request $request, int $offeringId, int $sessionId): RedirectResponse
+    {
+        $this->assignedOffering($request, $offeringId);
+        $session = AttendanceSession::query()
+            ->where('course_offering_id', $offeringId)
+            ->findOrFail($sessionId);
+
+        app(AcademicAttendanceQrService::class)->closeSession($session, $request->user()->id);
+
+        return back()->with('success', 'Absensi ditutup. Mahasiswa tidak bisa lagi memindai QR.');
     }
 
     // ---------------------------------------------------------------- Student Grades Edit
