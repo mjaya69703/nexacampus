@@ -63,6 +63,16 @@ use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
+use App\Http\Controllers\Admin\StudentService\GraduationApplicationController;
+use App\Http\Controllers\Admin\StudentService\GraduationBatchController;
+use App\Http\Controllers\Admin\StudentService\GraduationDocumentRequirementController;
+use App\Http\Controllers\Admin\StudentService\GraduationPolicyController;
+use App\Http\Controllers\Admin\StudentService\ServiceLetterRequestController;
+use App\Http\Controllers\Admin\StudentService\ServiceLetterTypeController;
+use App\Http\Controllers\Admin\StudentService\StudentComplaintCategoryController;
+use App\Http\Controllers\Admin\StudentService\StudentComplaintController;
+use App\Http\Controllers\Admin\StudentService\StudentLeaveApplicationController;
+use App\Http\Controllers\Admin\StudentService\StudentTransferRequestController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -101,6 +111,11 @@ foreach (ResourceRegistry::all() as $resource) {
         continue;
     }
 
+    // Batch SS-1: seluruh CRUD layanan mahasiswa → Inertia React.
+    if (in_array($resource['plural'], ['service-letter-types', 'service-letter-requests', 'leave-applications', 'transfer-requests', 'graduation-batches', 'graduation-applications', 'graduation-policies', 'graduation-document-requirements', 'student-complaint-categories', 'student-complaints']) && ($resource['area'] ?? null) === 'student-services') {
+        continue;
+    }
+
     Route::crudLivewire(
         $resource['plural'],
         $resource['component'],
@@ -109,6 +124,233 @@ foreach (ResourceRegistry::all() as $resource) {
         $resource['resource']
     );
 }
+
+// CRUD Layanan Mahasiswa (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/student-services/service-letter-types', [ServiceLetterTypeController::class, 'index'])
+    ->middleware('active_permission:service-letter-type.viewAny')
+    ->name('student-services.letter-types.index');
+Route::get('/student-services/service-letter-types/create', [ServiceLetterTypeController::class, 'create'])
+    ->middleware('active_permission:service-letter-type.create')
+    ->name('student-services.letter-types.create');
+Route::post('/student-services/service-letter-types', [ServiceLetterTypeController::class, 'store'])
+    ->middleware('active_permission:service-letter-type.create')
+    ->name('student-services.letter-types.store');
+Route::post('/student-services/service-letter-types/bulk-destroy', [ServiceLetterTypeController::class, 'bulkDestroy'])
+    ->middleware('active_permission:service-letter-type.delete')
+    ->name('student-services.letter-types.bulk-destroy');
+Route::get('/student-services/service-letter-types/{id}/edit', [ServiceLetterTypeController::class, 'edit'])
+    ->middleware('active_permission:service-letter-type.update')
+    ->name('student-services.letter-types.edit');
+Route::put('/student-services/service-letter-types/{id}', [ServiceLetterTypeController::class, 'update'])
+    ->middleware('active_permission:service-letter-type.update')
+    ->name('student-services.letter-types.update');
+Route::post('/student-services/service-letter-types/{id}/toggle', [ServiceLetterTypeController::class, 'toggle'])
+    ->middleware('active_permission:service-letter-type.update')
+    ->name('student-services.letter-types.toggle');
+Route::delete('/student-services/service-letter-types/{id}', [ServiceLetterTypeController::class, 'destroy'])
+    ->middleware('active_permission:service-letter-type.delete')
+    ->name('student-services.letter-types.destroy');
+
+Route::get('/student-services/service-letter-requests', [ServiceLetterRequestController::class, 'index'])
+    ->middleware('active_permission:service-letter-request.viewAny')
+    ->name('student-services.letter-requests.index');
+Route::get('/student-services/service-letter-requests/{id}', [ServiceLetterRequestController::class, 'show'])
+    ->middleware('active_permission:service-letter-request.view')
+    ->name('student-services.letter-requests.show');
+Route::post('/student-services/service-letter-requests/{id}/mark-under-review', [ServiceLetterRequestController::class, 'markUnderReview'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.mark-under-review');
+Route::post('/student-services/service-letter-requests/{id}/approve', [ServiceLetterRequestController::class, 'approve'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.approve');
+Route::post('/student-services/service-letter-requests/{id}/request-revision', [ServiceLetterRequestController::class, 'requestRevision'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.request-revision');
+Route::post('/student-services/service-letter-requests/{id}/reject', [ServiceLetterRequestController::class, 'reject'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.reject');
+Route::post('/student-services/service-letter-requests/{id}/issue', [ServiceLetterRequestController::class, 'issue'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.issue');
+
+Route::get('/student-services/leave-applications', [StudentLeaveApplicationController::class, 'index'])
+    ->middleware('active_permission:leave-application.viewAny')
+    ->name('student-services.leave-applications.index');
+Route::get('/student-services/leave-applications/{id}', [StudentLeaveApplicationController::class, 'show'])
+    ->middleware('active_permission:leave-application.view')
+    ->name('student-services.leave-applications.show');
+Route::post('/student-services/leave-applications/{id}/mark-under-review', [StudentLeaveApplicationController::class, 'markUnderReview'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.mark-under-review');
+Route::post('/student-services/leave-applications/{id}/approve', [StudentLeaveApplicationController::class, 'approve'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.approve');
+Route::post('/student-services/leave-applications/{id}/request-revision', [StudentLeaveApplicationController::class, 'requestRevision'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.request-revision');
+Route::post('/student-services/leave-applications/{id}/reject', [StudentLeaveApplicationController::class, 'reject'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.reject');
+Route::post('/student-services/leave-applications/{id}/activate', [StudentLeaveApplicationController::class, 'activate'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.activate');
+Route::post('/student-services/leave-applications/{id}/return-to-active', [StudentLeaveApplicationController::class, 'returnToActive'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.return-to-active');
+
+Route::get('/student-services/transfer-requests', [StudentTransferRequestController::class, 'index'])
+    ->middleware('active_permission:transfer-request.viewAny')
+    ->name('student-services.transfer-requests.index');
+Route::get('/student-services/transfer-requests/{id}', [StudentTransferRequestController::class, 'show'])
+    ->middleware('active_permission:transfer-request.view')
+    ->name('student-services.transfer-requests.show');
+Route::post('/student-services/transfer-requests/{id}/mark-under-review', [StudentTransferRequestController::class, 'markUnderReview'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.mark-under-review');
+Route::post('/student-services/transfer-requests/{id}/approve', [StudentTransferRequestController::class, 'approve'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.approve');
+Route::post('/student-services/transfer-requests/{id}/request-revision', [StudentTransferRequestController::class, 'requestRevision'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.request-revision');
+Route::post('/student-services/transfer-requests/{id}/reject', [StudentTransferRequestController::class, 'reject'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.reject');
+Route::post('/student-services/transfer-requests/{id}/apply-transfer', [StudentTransferRequestController::class, 'applyTransfer'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.apply-transfer');
+
+Route::get('/student-services/graduation-batches', [GraduationBatchController::class, 'index'])
+    ->middleware('active_permission:graduation-batch.viewAny')
+    ->name('student-services.graduation-batches.index');
+Route::get('/student-services/graduation-batches/create', [GraduationBatchController::class, 'create'])
+    ->middleware('active_permission:graduation-batch.create')
+    ->name('student-services.graduation-batches.create');
+Route::post('/student-services/graduation-batches', [GraduationBatchController::class, 'store'])
+    ->middleware('active_permission:graduation-batch.create')
+    ->name('student-services.graduation-batches.store');
+Route::get('/student-services/graduation-batches/{id}', [GraduationBatchController::class, 'show'])
+    ->middleware('active_permission:graduation-batch.view')
+    ->name('student-services.graduation-batches.show');
+Route::get('/student-services/graduation-batches/{id}/edit', [GraduationBatchController::class, 'edit'])
+    ->middleware('active_permission:graduation-batch.update')
+    ->name('student-services.graduation-batches.edit');
+Route::put('/student-services/graduation-batches/{id}', [GraduationBatchController::class, 'update'])
+    ->middleware('active_permission:graduation-batch.update')
+    ->name('student-services.graduation-batches.update');
+Route::post('/student-services/graduation-batches/{id}/bulk-finalize', [GraduationBatchController::class, 'bulkFinalize'])
+    ->middleware('active_permission:graduation-batch.update')
+    ->name('student-services.graduation-batches.bulk-finalize');
+
+Route::get('/student-services/graduation-applications', [GraduationApplicationController::class, 'index'])
+    ->middleware('active_permission:graduation-application.viewAny')
+    ->name('student-services.graduation-applications.index');
+Route::get('/student-services/graduation-applications/{id}', [GraduationApplicationController::class, 'show'])
+    ->middleware('active_permission:graduation-application.view')
+    ->name('student-services.graduation-applications.show');
+Route::post('/student-services/graduation-applications/{id}/mark-under-review', [GraduationApplicationController::class, 'markUnderReview'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.mark-under-review');
+Route::post('/student-services/graduation-applications/{id}/save-checklist', [GraduationApplicationController::class, 'saveChecklist'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.save-checklist');
+Route::post('/student-services/graduation-applications/{id}/verify-document', [GraduationApplicationController::class, 'verifyDocument'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.verify-document');
+Route::post('/student-services/graduation-applications/{id}/approve', [GraduationApplicationController::class, 'approve'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.approve');
+Route::post('/student-services/graduation-applications/{id}/request-revision', [GraduationApplicationController::class, 'requestRevision'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.request-revision');
+Route::post('/student-services/graduation-applications/{id}/reject', [GraduationApplicationController::class, 'reject'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.reject');
+Route::post('/student-services/graduation-applications/{id}/finalize', [GraduationApplicationController::class, 'finalize'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.finalize');
+
+Route::get('/student-services/graduation-policies', [GraduationPolicyController::class, 'index'])
+    ->middleware('active_permission:graduation-policy.viewAny')
+    ->name('student-services.graduation-policies.index');
+Route::get('/student-services/graduation-policies/create', [GraduationPolicyController::class, 'create'])
+    ->middleware('active_permission:graduation-policy.create')
+    ->name('student-services.graduation-policies.create');
+Route::post('/student-services/graduation-policies', [GraduationPolicyController::class, 'store'])
+    ->middleware('active_permission:graduation-policy.create')
+    ->name('student-services.graduation-policies.store');
+Route::get('/student-services/graduation-policies/{id}/edit', [GraduationPolicyController::class, 'edit'])
+    ->middleware('active_permission:graduation-policy.update')
+    ->name('student-services.graduation-policies.edit');
+Route::put('/student-services/graduation-policies/{id}', [GraduationPolicyController::class, 'update'])
+    ->middleware('active_permission:graduation-policy.update')
+    ->name('student-services.graduation-policies.update');
+Route::post('/student-services/graduation-policies/{id}/toggle', [GraduationPolicyController::class, 'toggle'])
+    ->middleware('active_permission:graduation-policy.update')
+    ->name('student-services.graduation-policies.toggle');
+
+Route::get('/student-services/graduation-document-requirements', [GraduationDocumentRequirementController::class, 'index'])
+    ->middleware('active_permission:graduation-document-requirement.viewAny')
+    ->name('student-services.graduation-document-requirements.index');
+Route::get('/student-services/graduation-document-requirements/create', [GraduationDocumentRequirementController::class, 'create'])
+    ->middleware('active_permission:graduation-document-requirement.create')
+    ->name('student-services.graduation-document-requirements.create');
+Route::post('/student-services/graduation-document-requirements', [GraduationDocumentRequirementController::class, 'store'])
+    ->middleware('active_permission:graduation-document-requirement.create')
+    ->name('student-services.graduation-document-requirements.store');
+Route::get('/student-services/graduation-document-requirements/{id}/edit', [GraduationDocumentRequirementController::class, 'edit'])
+    ->middleware('active_permission:graduation-document-requirement.update')
+    ->name('student-services.graduation-document-requirements.edit');
+Route::put('/student-services/graduation-document-requirements/{id}', [GraduationDocumentRequirementController::class, 'update'])
+    ->middleware('active_permission:graduation-document-requirement.update')
+    ->name('student-services.graduation-document-requirements.update');
+Route::post('/student-services/graduation-document-requirements/{id}/toggle', [GraduationDocumentRequirementController::class, 'toggle'])
+    ->middleware('active_permission:graduation-document-requirement.update')
+    ->name('student-services.graduation-document-requirements.toggle');
+
+Route::get('/student-services/student-complaint-categories', [StudentComplaintCategoryController::class, 'index'])
+    ->middleware('active_permission:student-complaint-category.viewAny')
+    ->name('student-services.complaint-categories.index');
+Route::get('/student-services/student-complaint-categories/create', [StudentComplaintCategoryController::class, 'create'])
+    ->middleware('active_permission:student-complaint-category.create')
+    ->name('student-services.complaint-categories.create');
+Route::post('/student-services/student-complaint-categories', [StudentComplaintCategoryController::class, 'store'])
+    ->middleware('active_permission:student-complaint-category.create')
+    ->name('student-services.complaint-categories.store');
+Route::post('/student-services/student-complaint-categories/bulk-destroy', [StudentComplaintCategoryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-complaint-category.delete')
+    ->name('student-services.complaint-categories.bulk-destroy');
+Route::get('/student-services/student-complaint-categories/{id}/edit', [StudentComplaintCategoryController::class, 'edit'])
+    ->middleware('active_permission:student-complaint-category.update')
+    ->name('student-services.complaint-categories.edit');
+Route::put('/student-services/student-complaint-categories/{id}', [StudentComplaintCategoryController::class, 'update'])
+    ->middleware('active_permission:student-complaint-category.update')
+    ->name('student-services.complaint-categories.update');
+Route::post('/student-services/student-complaint-categories/{id}/toggle', [StudentComplaintCategoryController::class, 'toggle'])
+    ->middleware('active_permission:student-complaint-category.update')
+    ->name('student-services.complaint-categories.toggle');
+Route::delete('/student-services/student-complaint-categories/{id}', [StudentComplaintCategoryController::class, 'destroy'])
+    ->middleware('active_permission:student-complaint-category.delete')
+    ->name('student-services.complaint-categories.destroy');
+
+Route::get('/student-services/student-complaints', [StudentComplaintController::class, 'index'])
+    ->middleware('active_permission:student-complaint.viewAny')
+    ->name('student-services.complaints.index');
+Route::get('/student-services/student-complaints/{id}', [StudentComplaintController::class, 'show'])
+    ->middleware('active_permission:student-complaint.view')
+    ->name('student-services.complaints.show');
+Route::post('/student-services/student-complaints/{id}/assign', [StudentComplaintController::class, 'assign'])
+    ->middleware('active_permission:student-complaint.assign|student-complaint.update')
+    ->name('student-services.complaints.assign');
+Route::post('/student-services/student-complaints/{id}/claim', [StudentComplaintController::class, 'claim'])
+    ->middleware('active_permission:student-complaint.assign|student-complaint.update')
+    ->name('student-services.complaints.claim');
+Route::post('/student-services/student-complaints/{id}/reply', [StudentComplaintController::class, 'reply'])
+    ->middleware('active_permission:student-complaint.respond|student-complaint.update')
+    ->name('student-services.complaints.reply');
+Route::post('/student-services/student-complaints/{id}/set-status', [StudentComplaintController::class, 'setStatus'])
+    ->middleware('active_permission:student-complaint.resolve|student-complaint.update')
+    ->name('student-services.complaints.set-status');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])

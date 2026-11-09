@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import '../../../../css/crud.css';
 
-export type AsyncOption = { id: number | string; label: string };
+export type AsyncOption = { id: number | string; label: string; meta?: Record<string, number | string | null> };
 
 type Props = {
     label: string;
