@@ -74,6 +74,8 @@ use App\Http\Controllers\Admin\StudentService\StudentComplaintController;
 use App\Http\Controllers\Admin\StudentService\StudentLeaveApplicationController;
 use App\Http\Controllers\Admin\StudentService\StudentTransferRequestController;
 use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
+use App\Http\Controllers\Admin\Organization\EdomPeriodController;
+use App\Http\Controllers\Admin\Organization\EdomQuestionController;
 use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
@@ -120,6 +122,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch OR-1: master jabatan & jenis cuti pegawai → Inertia React.
     if (in_array($resource['plural'], ['organizational-positions', 'employee-leave-types']) && ($resource['area'] ?? null) === 'organization') {
+        continue;
+    }
+
+    // Batch OR-2: periode & bank pertanyaan EDOM → Inertia React.
+    if (in_array($resource['plural'], ['edom-periods', 'edom-questions']) && ($resource['area'] ?? null) === 'organization') {
         continue;
     }
 
@@ -409,6 +416,53 @@ Route::post('/organization/employee-leave-types/{id}/toggle', [EmployeeLeaveType
 Route::delete('/organization/employee-leave-types/{id}', [EmployeeLeaveTypeController::class, 'destroy'])
     ->middleware('active_permission:employee-leave-type.delete')
     ->name('organization.employee-leave-types.destroy');
+
+Route::get('/organization/edom-periods', [EdomPeriodController::class, 'index'])
+    ->middleware('active_permission:edom-period.viewAny')
+    ->name('organization.edom-periods.index');
+Route::get('/organization/edom-periods/create', [EdomPeriodController::class, 'create'])
+    ->middleware('active_permission:edom-period.create')
+    ->name('organization.edom-periods.create');
+Route::post('/organization/edom-periods', [EdomPeriodController::class, 'store'])
+    ->middleware('active_permission:edom-period.create')
+    ->name('organization.edom-periods.store');
+Route::post('/organization/edom-periods/bulk-destroy', [EdomPeriodController::class, 'bulkDestroy'])
+    ->middleware('active_permission:edom-period.delete')
+    ->name('organization.edom-periods.bulk-destroy');
+Route::get('/organization/edom-periods/{id}/edit', [EdomPeriodController::class, 'edit'])
+    ->middleware('active_permission:edom-period.update')
+    ->name('organization.edom-periods.edit');
+Route::put('/organization/edom-periods/{id}', [EdomPeriodController::class, 'update'])
+    ->middleware('active_permission:edom-period.update')
+    ->name('organization.edom-periods.update');
+Route::delete('/organization/edom-periods/{id}', [EdomPeriodController::class, 'destroy'])
+    ->middleware('active_permission:edom-period.delete')
+    ->name('organization.edom-periods.destroy');
+
+Route::get('/organization/edom-questions', [EdomQuestionController::class, 'index'])
+    ->middleware('active_permission:edom-question.viewAny')
+    ->name('organization.edom-questions.index');
+Route::get('/organization/edom-questions/create', [EdomQuestionController::class, 'create'])
+    ->middleware('active_permission:edom-question.create')
+    ->name('organization.edom-questions.create');
+Route::post('/organization/edom-questions', [EdomQuestionController::class, 'store'])
+    ->middleware('active_permission:edom-question.create')
+    ->name('organization.edom-questions.store');
+Route::post('/organization/edom-questions/bulk-destroy', [EdomQuestionController::class, 'bulkDestroy'])
+    ->middleware('active_permission:edom-question.delete')
+    ->name('organization.edom-questions.bulk-destroy');
+Route::get('/organization/edom-questions/{id}/edit', [EdomQuestionController::class, 'edit'])
+    ->middleware('active_permission:edom-question.update')
+    ->name('organization.edom-questions.edit');
+Route::put('/organization/edom-questions/{id}', [EdomQuestionController::class, 'update'])
+    ->middleware('active_permission:edom-question.update')
+    ->name('organization.edom-questions.update');
+Route::post('/organization/edom-questions/{id}/toggle', [EdomQuestionController::class, 'toggle'])
+    ->middleware('active_permission:edom-question.update')
+    ->name('organization.edom-questions.toggle');
+Route::delete('/organization/edom-questions/{id}', [EdomQuestionController::class, 'destroy'])
+    ->middleware('active_permission:edom-question.delete')
+    ->name('organization.edom-questions.destroy');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])
