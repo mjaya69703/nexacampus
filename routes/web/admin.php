@@ -73,6 +73,8 @@ use App\Http\Controllers\Admin\StudentService\StudentComplaintCategoryController
 use App\Http\Controllers\Admin\StudentService\StudentComplaintController;
 use App\Http\Controllers\Admin\StudentService\StudentLeaveApplicationController;
 use App\Http\Controllers\Admin\StudentService\StudentTransferRequestController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
+use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -113,6 +115,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch SS-1: seluruh CRUD layanan mahasiswa → Inertia React.
     if (in_array($resource['plural'], ['service-letter-types', 'service-letter-requests', 'leave-applications', 'transfer-requests', 'graduation-batches', 'graduation-applications', 'graduation-policies', 'graduation-document-requirements', 'student-complaint-categories', 'student-complaints']) && ($resource['area'] ?? null) === 'student-services') {
+        continue;
+    }
+
+    // Batch OR-1: master jabatan & jenis cuti pegawai → Inertia React.
+    if (in_array($resource['plural'], ['organizational-positions', 'employee-leave-types']) && ($resource['area'] ?? null) === 'organization') {
         continue;
     }
 
@@ -351,6 +358,57 @@ Route::post('/student-services/student-complaints/{id}/reply', [StudentComplaint
 Route::post('/student-services/student-complaints/{id}/set-status', [StudentComplaintController::class, 'setStatus'])
     ->middleware('active_permission:student-complaint.resolve|student-complaint.update')
     ->name('student-services.complaints.set-status');
+
+// CRUD Kepegawaian (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/organization/organizational-positions', [OrganizationalPositionController::class, 'index'])
+    ->middleware('active_permission:organizational-position.viewAny')
+    ->name('organization.organizational-positions.index');
+Route::get('/organization/organizational-positions/create', [OrganizationalPositionController::class, 'create'])
+    ->middleware('active_permission:organizational-position.create')
+    ->name('organization.organizational-positions.create');
+Route::post('/organization/organizational-positions', [OrganizationalPositionController::class, 'store'])
+    ->middleware('active_permission:organizational-position.create')
+    ->name('organization.organizational-positions.store');
+Route::post('/organization/organizational-positions/bulk-destroy', [OrganizationalPositionController::class, 'bulkDestroy'])
+    ->middleware('active_permission:organizational-position.delete')
+    ->name('organization.organizational-positions.bulk-destroy');
+Route::get('/organization/organizational-positions/{id}/edit', [OrganizationalPositionController::class, 'edit'])
+    ->middleware('active_permission:organizational-position.update')
+    ->name('organization.organizational-positions.edit');
+Route::put('/organization/organizational-positions/{id}', [OrganizationalPositionController::class, 'update'])
+    ->middleware('active_permission:organizational-position.update')
+    ->name('organization.organizational-positions.update');
+Route::post('/organization/organizational-positions/{id}/toggle', [OrganizationalPositionController::class, 'toggle'])
+    ->middleware('active_permission:organizational-position.update')
+    ->name('organization.organizational-positions.toggle');
+Route::delete('/organization/organizational-positions/{id}', [OrganizationalPositionController::class, 'destroy'])
+    ->middleware('active_permission:organizational-position.delete')
+    ->name('organization.organizational-positions.destroy');
+
+Route::get('/organization/employee-leave-types', [EmployeeLeaveTypeController::class, 'index'])
+    ->middleware('active_permission:employee-leave-type.viewAny')
+    ->name('organization.employee-leave-types.index');
+Route::get('/organization/employee-leave-types/create', [EmployeeLeaveTypeController::class, 'create'])
+    ->middleware('active_permission:employee-leave-type.create')
+    ->name('organization.employee-leave-types.create');
+Route::post('/organization/employee-leave-types', [EmployeeLeaveTypeController::class, 'store'])
+    ->middleware('active_permission:employee-leave-type.create')
+    ->name('organization.employee-leave-types.store');
+Route::post('/organization/employee-leave-types/bulk-destroy', [EmployeeLeaveTypeController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-leave-type.delete')
+    ->name('organization.employee-leave-types.bulk-destroy');
+Route::get('/organization/employee-leave-types/{id}/edit', [EmployeeLeaveTypeController::class, 'edit'])
+    ->middleware('active_permission:employee-leave-type.update')
+    ->name('organization.employee-leave-types.edit');
+Route::put('/organization/employee-leave-types/{id}', [EmployeeLeaveTypeController::class, 'update'])
+    ->middleware('active_permission:employee-leave-type.update')
+    ->name('organization.employee-leave-types.update');
+Route::post('/organization/employee-leave-types/{id}/toggle', [EmployeeLeaveTypeController::class, 'toggle'])
+    ->middleware('active_permission:employee-leave-type.update')
+    ->name('organization.employee-leave-types.toggle');
+Route::delete('/organization/employee-leave-types/{id}', [EmployeeLeaveTypeController::class, 'destroy'])
+    ->middleware('active_permission:employee-leave-type.delete')
+    ->name('organization.employee-leave-types.destroy');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])

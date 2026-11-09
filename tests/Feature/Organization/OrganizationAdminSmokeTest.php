@@ -29,14 +29,18 @@ function organizationAdminSmokePermission(string $name): void
     $role->givePermissionTo(Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']));
 }
 
-it('merender halaman admin kepegawaian dan organisasi', function (string $routeName, string $permission) {
+it('merender halaman admin kepegawaian dan organisasi', function (string $routeName, string $permission, ?string $component = null) {
     $user = organizationAdminSmokeSetup();
     organizationAdminSmokePermission($permission);
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->withSession(['active_role' => 'admin'])
         ->get(route($routeName))
         ->assertOk();
+
+    if ($component !== null) {
+        $response->assertInertia(fn ($page) => $page->component($component));
+    }
 })->with([
     ['admin.organization.user-development-records.index', 'user-development-record.viewAny'],
     ['admin.organization.user-development-records.create', 'user-development-record.create'],
@@ -56,8 +60,8 @@ it('merender halaman admin kepegawaian dan organisasi', function (string $routeN
     ['admin.organization.lecturer-performance-rubrics.create', 'lecturer-performance-rubric.create'],
     ['admin.organization.employee-profiles.index', 'employee-profile.viewAny'],
     ['admin.organization.employee-profiles.create', 'employee-profile.create'],
-    ['admin.organization.organizational-positions.index', 'organizational-position.viewAny'],
-    ['admin.organization.organizational-positions.create', 'organizational-position.create'],
+    ['admin.organization.organizational-positions.index', 'organizational-position.viewAny', 'Admin/Organization/OrganizationalPositions/Index'],
+    ['admin.organization.organizational-positions.create', 'organizational-position.create', 'Admin/Organization/OrganizationalPositions/Form'],
     ['admin.organization.employee-position-assignments.index', 'employee-position-assignment.viewAny'],
     ['admin.organization.employee-position-assignments.create', 'employee-position-assignment.create'],
     ['admin.organization.work-units.index', 'work-unit.viewAny'],
@@ -66,8 +70,8 @@ it('merender halaman admin kepegawaian dan organisasi', function (string $routeN
     ['admin.organization.approval-templates.create', 'approval-template.create'],
     ['admin.organization.approval-requests.index', 'approval-request.viewAny'],
     ['admin.organization.approval-requests.create', 'approval-request.create'],
-    ['admin.organization.employee-leave-types.index', 'employee-leave-type.viewAny'],
-    ['admin.organization.employee-leave-types.create', 'employee-leave-type.create'],
+    ['admin.organization.employee-leave-types.index', 'employee-leave-type.viewAny', 'Admin/Organization/EmployeeLeaveTypes/Index'],
+    ['admin.organization.employee-leave-types.create', 'employee-leave-type.create', 'Admin/Organization/EmployeeLeaveTypes/Form'],
     ['admin.organization.employee-leave-requests.index', 'employee-leave-request.viewAny'],
     ['admin.organization.employee-leave-requests.create', 'employee-leave-request.create'],
     ['admin.organization.employee-attendance-records.index', 'employee-attendance-record.viewAny'],
