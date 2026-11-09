@@ -76,6 +76,8 @@ use App\Http\Controllers\Admin\StudentService\StudentTransferRequestController;
 use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
 use App\Http\Controllers\Admin\Organization\EdomPeriodController;
 use App\Http\Controllers\Admin\Organization\EdomQuestionController;
+use App\Http\Controllers\Admin\Organization\LecturerPerformanceRubricController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
 use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
@@ -127,6 +129,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch OR-2: periode & bank pertanyaan EDOM → Inertia React.
     if (in_array($resource['plural'], ['edom-periods', 'edom-questions']) && ($resource['area'] ?? null) === 'organization') {
+        continue;
+    }
+
+    // Batch OR-3: aturan SKS BKD & rubrik performa dosen → Inertia React.
+    if (in_array($resource['plural'], ['lecturer-workload-rules', 'lecturer-performance-rubrics']) && ($resource['area'] ?? null) === 'organization') {
         continue;
     }
 
@@ -463,6 +470,50 @@ Route::post('/organization/edom-questions/{id}/toggle', [EdomQuestionController:
 Route::delete('/organization/edom-questions/{id}', [EdomQuestionController::class, 'destroy'])
     ->middleware('active_permission:edom-question.delete')
     ->name('organization.edom-questions.destroy');
+
+Route::get('/organization/lecturer-workload-rules', [LecturerWorkloadRuleController::class, 'index'])
+    ->middleware('active_permission:lecturer-workload-rule.viewAny')
+    ->name('organization.lecturer-workload-rules.index');
+Route::get('/organization/lecturer-workload-rules/create', [LecturerWorkloadRuleController::class, 'create'])
+    ->middleware('active_permission:lecturer-workload-rule.create')
+    ->name('organization.lecturer-workload-rules.create');
+Route::post('/organization/lecturer-workload-rules', [LecturerWorkloadRuleController::class, 'store'])
+    ->middleware('active_permission:lecturer-workload-rule.create')
+    ->name('organization.lecturer-workload-rules.store');
+Route::post('/organization/lecturer-workload-rules/bulk-destroy', [LecturerWorkloadRuleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:lecturer-workload-rule.delete')
+    ->name('organization.lecturer-workload-rules.bulk-destroy');
+Route::get('/organization/lecturer-workload-rules/{id}/edit', [LecturerWorkloadRuleController::class, 'edit'])
+    ->middleware('active_permission:lecturer-workload-rule.update')
+    ->name('organization.lecturer-workload-rules.edit');
+Route::put('/organization/lecturer-workload-rules/{id}', [LecturerWorkloadRuleController::class, 'update'])
+    ->middleware('active_permission:lecturer-workload-rule.update')
+    ->name('organization.lecturer-workload-rules.update');
+Route::delete('/organization/lecturer-workload-rules/{id}', [LecturerWorkloadRuleController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-workload-rule.delete')
+    ->name('organization.lecturer-workload-rules.destroy');
+
+Route::get('/organization/lecturer-performance-rubrics', [LecturerPerformanceRubricController::class, 'index'])
+    ->middleware('active_permission:lecturer-performance-rubric.viewAny')
+    ->name('organization.lecturer-performance-rubrics.index');
+Route::get('/organization/lecturer-performance-rubrics/create', [LecturerPerformanceRubricController::class, 'create'])
+    ->middleware('active_permission:lecturer-performance-rubric.create')
+    ->name('organization.lecturer-performance-rubrics.create');
+Route::post('/organization/lecturer-performance-rubrics', [LecturerPerformanceRubricController::class, 'store'])
+    ->middleware('active_permission:lecturer-performance-rubric.create')
+    ->name('organization.lecturer-performance-rubrics.store');
+Route::get('/organization/lecturer-performance-rubrics/{id}/edit', [LecturerPerformanceRubricController::class, 'edit'])
+    ->middleware('active_permission:lecturer-performance-rubric.update')
+    ->name('organization.lecturer-performance-rubrics.edit');
+Route::put('/organization/lecturer-performance-rubrics/{id}', [LecturerPerformanceRubricController::class, 'update'])
+    ->middleware('active_permission:lecturer-performance-rubric.update')
+    ->name('organization.lecturer-performance-rubrics.update');
+Route::post('/organization/lecturer-performance-rubrics/{id}/toggle', [LecturerPerformanceRubricController::class, 'toggle'])
+    ->middleware('active_permission:lecturer-performance-rubric.update')
+    ->name('organization.lecturer-performance-rubrics.toggle');
+Route::delete('/organization/lecturer-performance-rubrics/{id}', [LecturerPerformanceRubricController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-performance-rubric.delete')
+    ->name('organization.lecturer-performance-rubrics.destroy');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])
