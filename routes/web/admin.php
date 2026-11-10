@@ -73,10 +73,12 @@ use App\Http\Controllers\Admin\StudentService\StudentComplaintCategoryController
 use App\Http\Controllers\Admin\StudentService\StudentComplaintController;
 use App\Http\Controllers\Admin\StudentService\StudentLeaveApplicationController;
 use App\Http\Controllers\Admin\StudentService\StudentTransferRequestController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveBalanceController;
 use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
 use App\Http\Controllers\Admin\Organization\EdomPeriodController;
 use App\Http\Controllers\Admin\Organization\EdomQuestionController;
 use App\Http\Controllers\Admin\Organization\LecturerPerformanceRubricController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadPeriodController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
 use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
 use App\Http\Controllers\Admin\Organization\UserDevelopmentRecordController;
@@ -141,6 +143,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch OR-4: unit kerja & sertifikasi/pelatihan pegawai → Inertia React.
     if (in_array($resource['plural'], ['work-units', 'user-development-records']) && ($resource['area'] ?? null) === 'organization') {
+        continue;
+    }
+
+    // Batch OR-5: periode BKD & saldo cuti pegawai → Inertia React.
+    if (in_array($resource['plural'], ['lecturer-workload-periods', 'employee-leave-balances']) && ($resource['area'] ?? null) === 'organization') {
         continue;
     }
 
@@ -580,6 +587,41 @@ Route::post('/organization/user-development-records/{id}/unverify', [UserDevelop
 Route::delete('/organization/user-development-records/{id}', [UserDevelopmentRecordController::class, 'destroy'])
     ->middleware('active_permission:user-development-record.delete')
     ->name('organization.user-development-records.destroy');
+
+Route::get('/organization/lecturer-workload-periods', [LecturerWorkloadPeriodController::class, 'index'])
+    ->middleware('active_permission:lecturer-workload-period.viewAny')
+    ->name('organization.lecturer-workload-periods.index');
+Route::get('/organization/lecturer-workload-periods/create', [LecturerWorkloadPeriodController::class, 'create'])
+    ->middleware('active_permission:lecturer-workload-period.create')
+    ->name('organization.lecturer-workload-periods.create');
+Route::post('/organization/lecturer-workload-periods', [LecturerWorkloadPeriodController::class, 'store'])
+    ->middleware('active_permission:lecturer-workload-period.create')
+    ->name('organization.lecturer-workload-periods.store');
+Route::post('/organization/lecturer-workload-periods/bulk-destroy', [LecturerWorkloadPeriodController::class, 'bulkDestroy'])
+    ->middleware('active_permission:lecturer-workload-period.delete')
+    ->name('organization.lecturer-workload-periods.bulk-destroy');
+Route::get('/organization/lecturer-workload-periods/{id}', [LecturerWorkloadPeriodController::class, 'show'])
+    ->middleware('active_permission:lecturer-workload-period.view')
+    ->name('organization.lecturer-workload-periods.show');
+Route::get('/organization/lecturer-workload-periods/{id}/edit', [LecturerWorkloadPeriodController::class, 'edit'])
+    ->middleware('active_permission:lecturer-workload-period.update')
+    ->name('organization.lecturer-workload-periods.edit');
+Route::put('/organization/lecturer-workload-periods/{id}', [LecturerWorkloadPeriodController::class, 'update'])
+    ->middleware('active_permission:lecturer-workload-period.update')
+    ->name('organization.lecturer-workload-periods.update');
+Route::delete('/organization/lecturer-workload-periods/{id}', [LecturerWorkloadPeriodController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-workload-period.delete')
+    ->name('organization.lecturer-workload-periods.destroy');
+
+Route::get('/organization/employee-leave-balances', [EmployeeLeaveBalanceController::class, 'index'])
+    ->middleware('active_permission:employee-leave-balance.viewAny')
+    ->name('organization.employee-leave-balances.index');
+Route::get('/organization/employee-leave-balances/search-employees', [EmployeeLeaveBalanceController::class, 'searchEmployees'])
+    ->middleware('active_permission:employee-leave-balance.create|employee-leave-balance.update')
+    ->name('organization.employee-leave-balances.search-employees');
+Route::post('/organization/employee-leave-balances', [EmployeeLeaveBalanceController::class, 'save'])
+    ->middleware('active_permission:employee-leave-balance.create|employee-leave-balance.update')
+    ->name('organization.employee-leave-balances.save');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])

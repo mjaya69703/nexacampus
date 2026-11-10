@@ -46,8 +46,8 @@ it('merender halaman admin kepegawaian dan organisasi', function (string $routeN
     ['admin.organization.user-development-records.create', 'user-development-record.create', 'Admin/Organization/UserDevelopmentRecords/Form'],
     ['admin.organization.tridharma-records.index', 'tridharma-record.viewAny'],
     ['admin.organization.tridharma-records.create', 'tridharma-record.create'],
-    ['admin.organization.lecturer-workload-periods.index', 'lecturer-workload-period.viewAny'],
-    ['admin.organization.lecturer-workload-periods.create', 'lecturer-workload-period.create'],
+    ['admin.organization.lecturer-workload-periods.index', 'lecturer-workload-period.viewAny', 'Admin/Organization/LecturerWorkloadPeriods/Index'],
+    ['admin.organization.lecturer-workload-periods.create', 'lecturer-workload-period.create', 'Admin/Organization/LecturerWorkloadPeriods/Form'],
     ['admin.organization.lecturer-workload-rules.index', 'lecturer-workload-rule.viewAny', 'Admin/Organization/LecturerWorkloadRules/Index'],
     ['admin.organization.lecturer-workload-rules.create', 'lecturer-workload-rule.create', 'Admin/Organization/LecturerWorkloadRules/Form'],
     ['admin.organization.lecturer-workload-submissions.index', 'lecturer-workload-submission.viewAny'],
@@ -76,5 +76,5 @@ it('merender halaman admin kepegawaian dan organisasi', function (string $routeN
     ['admin.organization.employee-leave-requests.create', 'employee-leave-request.create'],
     ['admin.organization.employee-attendance-records.index', 'employee-attendance-record.viewAny'],
     ['admin.organization.employee-attendance-records.create', 'employee-attendance-record.create'],
-    ['admin.organization.employee-leave-balances.index', 'employee-leave-balance.viewAny'],
+    ['admin.organization.employee-leave-balances.index', 'employee-leave-balance.viewAny', 'Admin/Organization/EmployeeLeaveBalances/Index'],
 ]);
