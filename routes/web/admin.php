@@ -83,6 +83,7 @@ use App\Http\Controllers\Admin\Organization\LecturerWorkloadPeriodController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadSubmissionController;
 use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
+use App\Http\Controllers\Admin\Organization\TridharmaRecordController;
 use App\Http\Controllers\Admin\Organization\UserDevelopmentRecordController;
 use App\Http\Controllers\Admin\Organization\WorkUnitController;
 use App\Support\ResourceRegistry;
@@ -155,6 +156,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch OR-6: review BKD & review performa dosen → Inertia React.
     if (in_array($resource['plural'], ['lecturer-workload-submissions', 'lecturer-performance-reviews']) && ($resource['area'] ?? null) === 'organization') {
+        continue;
+    }
+
+    // Batch OR-7: portofolio Tridharma → Inertia React.
+    if ($resource['plural'] === 'tridharma-records' && ($resource['area'] ?? null) === 'organization') {
         continue;
     }
 
@@ -658,6 +664,61 @@ Route::post('/organization/lecturer-performance-reviews/{id}/publish', [Lecturer
 Route::delete('/organization/lecturer-performance-reviews/{id}', [LecturerPerformanceReviewController::class, 'destroy'])
     ->middleware('active_permission:lecturer-performance-review.delete')
     ->name('organization.lecturer-performance-reviews.destroy');
+
+Route::get('/organization/tridharma-records', [TridharmaRecordController::class, 'index'])
+    ->middleware('active_permission:tridharma-record.viewAny')
+    ->name('organization.tridharma-records.index');
+Route::get('/organization/tridharma-records/create', [TridharmaRecordController::class, 'create'])
+    ->middleware('active_permission:tridharma-record.create')
+    ->name('organization.tridharma-records.create');
+Route::get('/organization/tridharma-records/search-users', [TridharmaRecordController::class, 'searchUsers'])
+    ->middleware('active_permission:tridharma-record.create|tridharma-record.update')
+    ->name('organization.tridharma-records.search-users');
+Route::post('/organization/tridharma-records', [TridharmaRecordController::class, 'store'])
+    ->middleware('active_permission:tridharma-record.create')
+    ->name('organization.tridharma-records.store');
+Route::post('/organization/tridharma-records/bulk-destroy', [TridharmaRecordController::class, 'bulkDestroy'])
+    ->middleware('active_permission:tridharma-record.delete')
+    ->name('organization.tridharma-records.bulk-destroy');
+Route::get('/organization/tridharma-records/{id}/edit', [TridharmaRecordController::class, 'edit'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.edit');
+Route::put('/organization/tridharma-records/{id}', [TridharmaRecordController::class, 'update'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.update');
+Route::get('/organization/tridharma-records/{id}', [TridharmaRecordController::class, 'show'])
+    ->middleware('active_permission:tridharma-record.view')
+    ->name('organization.tridharma-records.show');
+Route::post('/organization/tridharma-records/{id}/submit-approval', [TridharmaRecordController::class, 'submitApproval'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.submit-approval');
+Route::post('/organization/tridharma-records/{id}/verify', [TridharmaRecordController::class, 'verify'])
+    ->middleware('active_permission:tridharma-record.verify')
+    ->name('organization.tridharma-records.verify');
+Route::post('/organization/tridharma-records/{id}/complete', [TridharmaRecordController::class, 'complete'])
+    ->middleware('active_permission:tridharma-record.complete')
+    ->name('organization.tridharma-records.complete');
+Route::post('/organization/tridharma-records/{id}/archive', [TridharmaRecordController::class, 'archive'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.archive');
+Route::post('/organization/tridharma-records/{id}/members', [TridharmaRecordController::class, 'storeMember'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.members.store');
+Route::post('/organization/tridharma-records/{id}/milestones', [TridharmaRecordController::class, 'storeMilestone'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.milestones.store');
+Route::post('/organization/tridharma-records/{id}/budgets', [TridharmaRecordController::class, 'storeBudget'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.budgets.store');
+Route::post('/organization/tridharma-records/{id}/outputs', [TridharmaRecordController::class, 'storeOutput'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.outputs.store');
+Route::post('/organization/tridharma-records/{id}/attachments', [TridharmaRecordController::class, 'storeAttachment'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.attachments.store');
+Route::delete('/organization/tridharma-records/{id}', [TridharmaRecordController::class, 'destroy'])
+    ->middleware('active_permission:tridharma-record.delete')
+    ->name('organization.tridharma-records.destroy');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])

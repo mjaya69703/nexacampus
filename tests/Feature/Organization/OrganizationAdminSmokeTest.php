@@ -44,8 +44,8 @@ it('merender halaman admin kepegawaian dan organisasi', function (string $routeN
 })->with([
     ['admin.organization.user-development-records.index', 'user-development-record.viewAny', 'Admin/Organization/UserDevelopmentRecords/Index'],
     ['admin.organization.user-development-records.create', 'user-development-record.create', 'Admin/Organization/UserDevelopmentRecords/Form'],
-    ['admin.organization.tridharma-records.index', 'tridharma-record.viewAny'],
-    ['admin.organization.tridharma-records.create', 'tridharma-record.create'],
+    ['admin.organization.tridharma-records.index', 'tridharma-record.viewAny', 'Admin/Organization/TridharmaRecords/Index'],
+    ['admin.organization.tridharma-records.create', 'tridharma-record.create', 'Admin/Organization/TridharmaRecords/Form'],
     ['admin.organization.lecturer-workload-periods.index', 'lecturer-workload-period.viewAny', 'Admin/Organization/LecturerWorkloadPeriods/Index'],
     ['admin.organization.lecturer-workload-periods.create', 'lecturer-workload-period.create', 'Admin/Organization/LecturerWorkloadPeriods/Form'],
     ['admin.organization.lecturer-workload-rules.index', 'lecturer-workload-rule.viewAny', 'Admin/Organization/LecturerWorkloadRules/Index'],
