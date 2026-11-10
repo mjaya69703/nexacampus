@@ -77,9 +77,11 @@ use App\Http\Controllers\Admin\Organization\EmployeeLeaveBalanceController;
 use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
 use App\Http\Controllers\Admin\Organization\EdomPeriodController;
 use App\Http\Controllers\Admin\Organization\EdomQuestionController;
+use App\Http\Controllers\Admin\Organization\LecturerPerformanceReviewController;
 use App\Http\Controllers\Admin\Organization\LecturerPerformanceRubricController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadPeriodController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadSubmissionController;
 use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
 use App\Http\Controllers\Admin\Organization\UserDevelopmentRecordController;
 use App\Http\Controllers\Admin\Organization\WorkUnitController;
@@ -148,6 +150,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch OR-5: periode BKD & saldo cuti pegawai → Inertia React.
     if (in_array($resource['plural'], ['lecturer-workload-periods', 'employee-leave-balances']) && ($resource['area'] ?? null) === 'organization') {
+        continue;
+    }
+
+    // Batch OR-6: review BKD & review performa dosen → Inertia React.
+    if (in_array($resource['plural'], ['lecturer-workload-submissions', 'lecturer-performance-reviews']) && ($resource['area'] ?? null) === 'organization') {
         continue;
     }
 
@@ -622,6 +629,35 @@ Route::get('/organization/employee-leave-balances/search-employees', [EmployeeLe
 Route::post('/organization/employee-leave-balances', [EmployeeLeaveBalanceController::class, 'save'])
     ->middleware('active_permission:employee-leave-balance.create|employee-leave-balance.update')
     ->name('organization.employee-leave-balances.save');
+
+Route::get('/organization/lecturer-workload-submissions', [LecturerWorkloadSubmissionController::class, 'index'])
+    ->middleware('active_permission:lecturer-workload-submission.viewAny')
+    ->name('organization.lecturer-workload-submissions.index');
+Route::get('/organization/lecturer-workload-submissions/{id}', [LecturerWorkloadSubmissionController::class, 'show'])
+    ->middleware('active_permission:lecturer-workload-submission.view')
+    ->name('organization.lecturer-workload-submissions.show');
+Route::post('/organization/lecturer-workload-submissions/{id}/request-revision', [LecturerWorkloadSubmissionController::class, 'requestRevision'])
+    ->middleware('active_permission:lecturer-workload-submission.update')
+    ->name('organization.lecturer-workload-submissions.request-revision');
+Route::delete('/organization/lecturer-workload-submissions/{id}', [LecturerWorkloadSubmissionController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-workload-submission.delete')
+    ->name('organization.lecturer-workload-submissions.destroy');
+
+Route::get('/organization/lecturer-performance-reviews', [LecturerPerformanceReviewController::class, 'index'])
+    ->middleware('active_permission:lecturer-performance-review.viewAny')
+    ->name('organization.lecturer-performance-reviews.index');
+Route::post('/organization/lecturer-performance-reviews/calculate-all', [LecturerPerformanceReviewController::class, 'calculateAll'])
+    ->middleware('active_permission:lecturer-performance-review.update')
+    ->name('organization.lecturer-performance-reviews.calculate-all');
+Route::get('/organization/lecturer-performance-reviews/{id}', [LecturerPerformanceReviewController::class, 'show'])
+    ->middleware('active_permission:lecturer-performance-review.view')
+    ->name('organization.lecturer-performance-reviews.show');
+Route::post('/organization/lecturer-performance-reviews/{id}/publish', [LecturerPerformanceReviewController::class, 'publish'])
+    ->middleware('active_permission:lecturer-performance-review.update')
+    ->name('organization.lecturer-performance-reviews.publish');
+Route::delete('/organization/lecturer-performance-reviews/{id}', [LecturerPerformanceReviewController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-performance-review.delete')
+    ->name('organization.lecturer-performance-reviews.destroy');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])
