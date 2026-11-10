@@ -75,6 +75,8 @@ use App\Http\Controllers\Admin\StudentService\StudentLeaveApplicationController;
 use App\Http\Controllers\Admin\StudentService\StudentTransferRequestController;
 use App\Http\Controllers\Admin\Organization\EmployeeLeaveBalanceController;
 use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
+use App\Http\Controllers\Admin\Organization\ApprovalRequestController;
+use App\Http\Controllers\Admin\Organization\ApprovalTemplateController;
 use App\Http\Controllers\Admin\Organization\EdomPeriodController;
 use App\Http\Controllers\Admin\Organization\EdomQuestionController;
 use App\Http\Controllers\Admin\Organization\LecturerPerformanceReviewController;
@@ -82,6 +84,10 @@ use App\Http\Controllers\Admin\Organization\LecturerPerformanceRubricController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadPeriodController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadSubmissionController;
+use App\Http\Controllers\Admin\Organization\EmployeeAttendanceRecordController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveRequestController;
+use App\Http\Controllers\Admin\Organization\EmployeePositionAssignmentController;
+use App\Http\Controllers\Admin\Organization\EmployeeProfileController;
 use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
 use App\Http\Controllers\Admin\Organization\TridharmaRecordController;
 use App\Http\Controllers\Admin\Organization\UserDevelopmentRecordController;
@@ -161,6 +167,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch OR-7: portofolio Tridharma → Inertia React.
     if ($resource['plural'] === 'tridharma-records' && ($resource['area'] ?? null) === 'organization') {
+        continue;
+    }
+
+    // Batch OR-8: pegawai, penugasan, approval, cuti & absensi → Inertia React.
+    if (in_array($resource['plural'], ['employee-profiles', 'employee-position-assignments', 'approval-templates', 'approval-requests', 'employee-leave-requests', 'employee-attendance-records']) && ($resource['area'] ?? null) === 'organization') {
         continue;
     }
 
@@ -719,6 +730,163 @@ Route::post('/organization/tridharma-records/{id}/attachments', [TridharmaRecord
 Route::delete('/organization/tridharma-records/{id}', [TridharmaRecordController::class, 'destroy'])
     ->middleware('active_permission:tridharma-record.delete')
     ->name('organization.tridharma-records.destroy');
+
+// Batch OR-8: pegawai, penugasan jabatan, template/request approval, cuti & absensi pegawai (Inertia React).
+Route::get('/organization/employee-profiles', [EmployeeProfileController::class, 'index'])
+    ->middleware('active_permission:employee-profile.viewAny')
+    ->name('organization.employee-profiles.index');
+Route::get('/organization/employee-profiles/create', [EmployeeProfileController::class, 'create'])
+    ->middleware('active_permission:employee-profile.create')
+    ->name('organization.employee-profiles.create');
+Route::get('/organization/employee-profiles/search-users', [EmployeeProfileController::class, 'searchUsers'])
+    ->middleware('active_permission:employee-profile.create|employee-profile.update')
+    ->name('organization.employee-profiles.search-users');
+Route::post('/organization/employee-profiles', [EmployeeProfileController::class, 'store'])
+    ->middleware('active_permission:employee-profile.create')
+    ->name('organization.employee-profiles.store');
+Route::post('/organization/employee-profiles/bulk-destroy', [EmployeeProfileController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-profile.delete')
+    ->name('organization.employee-profiles.bulk-destroy');
+Route::get('/organization/employee-profiles/{id}/edit', [EmployeeProfileController::class, 'edit'])
+    ->middleware('active_permission:employee-profile.update')
+    ->name('organization.employee-profiles.edit');
+Route::put('/organization/employee-profiles/{id}', [EmployeeProfileController::class, 'update'])
+    ->middleware('active_permission:employee-profile.update')
+    ->name('organization.employee-profiles.update');
+Route::post('/organization/employee-profiles/{id}/toggle', [EmployeeProfileController::class, 'toggle'])
+    ->middleware('active_permission:employee-profile.update')
+    ->name('organization.employee-profiles.toggle');
+Route::delete('/organization/employee-profiles/{id}', [EmployeeProfileController::class, 'destroy'])
+    ->middleware('active_permission:employee-profile.delete')
+    ->name('organization.employee-profiles.destroy');
+
+Route::get('/organization/employee-position-assignments', [EmployeePositionAssignmentController::class, 'index'])
+    ->middleware('active_permission:employee-position-assignment.viewAny')
+    ->name('organization.employee-position-assignments.index');
+Route::get('/organization/employee-position-assignments/create', [EmployeePositionAssignmentController::class, 'create'])
+    ->middleware('active_permission:employee-position-assignment.create')
+    ->name('organization.employee-position-assignments.create');
+Route::get('/organization/employee-position-assignments/search-employees', [EmployeePositionAssignmentController::class, 'searchEmployees'])
+    ->middleware('active_permission:employee-position-assignment.create|employee-position-assignment.update')
+    ->name('organization.employee-position-assignments.search-employees');
+Route::post('/organization/employee-position-assignments', [EmployeePositionAssignmentController::class, 'store'])
+    ->middleware('active_permission:employee-position-assignment.create')
+    ->name('organization.employee-position-assignments.store');
+Route::post('/organization/employee-position-assignments/bulk-destroy', [EmployeePositionAssignmentController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-position-assignment.delete')
+    ->name('organization.employee-position-assignments.bulk-destroy');
+Route::get('/organization/employee-position-assignments/{id}/edit', [EmployeePositionAssignmentController::class, 'edit'])
+    ->middleware('active_permission:employee-position-assignment.update')
+    ->name('organization.employee-position-assignments.edit');
+Route::put('/organization/employee-position-assignments/{id}', [EmployeePositionAssignmentController::class, 'update'])
+    ->middleware('active_permission:employee-position-assignment.update')
+    ->name('organization.employee-position-assignments.update');
+Route::post('/organization/employee-position-assignments/{id}/toggle', [EmployeePositionAssignmentController::class, 'toggle'])
+    ->middleware('active_permission:employee-position-assignment.update')
+    ->name('organization.employee-position-assignments.toggle');
+Route::delete('/organization/employee-position-assignments/{id}', [EmployeePositionAssignmentController::class, 'destroy'])
+    ->middleware('active_permission:employee-position-assignment.delete')
+    ->name('organization.employee-position-assignments.destroy');
+
+Route::get('/organization/approval-templates', [ApprovalTemplateController::class, 'index'])
+    ->middleware('active_permission:approval-template.viewAny')
+    ->name('organization.approval-templates.index');
+Route::get('/organization/approval-templates/create', [ApprovalTemplateController::class, 'create'])
+    ->middleware('active_permission:approval-template.create')
+    ->name('organization.approval-templates.create');
+Route::post('/organization/approval-templates', [ApprovalTemplateController::class, 'store'])
+    ->middleware('active_permission:approval-template.create')
+    ->name('organization.approval-templates.store');
+Route::post('/organization/approval-templates/bulk-destroy', [ApprovalTemplateController::class, 'bulkDestroy'])
+    ->middleware('active_permission:approval-template.delete')
+    ->name('organization.approval-templates.bulk-destroy');
+Route::get('/organization/approval-templates/{id}/edit', [ApprovalTemplateController::class, 'edit'])
+    ->middleware('active_permission:approval-template.update')
+    ->name('organization.approval-templates.edit');
+Route::put('/organization/approval-templates/{id}', [ApprovalTemplateController::class, 'update'])
+    ->middleware('active_permission:approval-template.update')
+    ->name('organization.approval-templates.update');
+Route::post('/organization/approval-templates/{id}/toggle', [ApprovalTemplateController::class, 'toggle'])
+    ->middleware('active_permission:approval-template.update')
+    ->name('organization.approval-templates.toggle');
+Route::delete('/organization/approval-templates/{id}', [ApprovalTemplateController::class, 'destroy'])
+    ->middleware('active_permission:approval-template.delete')
+    ->name('organization.approval-templates.destroy');
+
+Route::get('/organization/approval-requests', [ApprovalRequestController::class, 'index'])
+    ->middleware('active_permission:approval-request.viewAny')
+    ->name('organization.approval-requests.index');
+Route::get('/organization/approval-requests/create', [ApprovalRequestController::class, 'create'])
+    ->middleware('active_permission:approval-request.create')
+    ->name('organization.approval-requests.create');
+Route::post('/organization/approval-requests', [ApprovalRequestController::class, 'store'])
+    ->middleware('active_permission:approval-request.create')
+    ->name('organization.approval-requests.store');
+Route::post('/organization/approval-requests/bulk-destroy', [ApprovalRequestController::class, 'bulkDestroy'])
+    ->middleware('active_permission:approval-request.delete')
+    ->name('organization.approval-requests.bulk-destroy');
+Route::get('/organization/approval-requests/{id}', [ApprovalRequestController::class, 'show'])
+    ->middleware('active_permission:approval-request.view')
+    ->name('organization.approval-requests.show');
+Route::post('/organization/approval-requests/{id}/approve', [ApprovalRequestController::class, 'approve'])
+    ->middleware('active_permission:approval-request.update')
+    ->name('organization.approval-requests.approve');
+Route::post('/organization/approval-requests/{id}/reject', [ApprovalRequestController::class, 'reject'])
+    ->middleware('active_permission:approval-request.update')
+    ->name('organization.approval-requests.reject');
+Route::post('/organization/approval-requests/{id}/cancel', [ApprovalRequestController::class, 'cancel'])
+    ->middleware('active_permission:approval-request.update')
+    ->name('organization.approval-requests.cancel');
+Route::delete('/organization/approval-requests/{id}', [ApprovalRequestController::class, 'destroy'])
+    ->middleware('active_permission:approval-request.delete')
+    ->name('organization.approval-requests.destroy');
+
+Route::get('/organization/employee-leave-requests', [EmployeeLeaveRequestController::class, 'index'])
+    ->middleware('active_permission:employee-leave-request.viewAny')
+    ->name('organization.employee-leave-requests.index');
+Route::get('/organization/employee-leave-requests/create', [EmployeeLeaveRequestController::class, 'create'])
+    ->middleware('active_permission:employee-leave-request.create')
+    ->name('organization.employee-leave-requests.create');
+Route::get('/organization/employee-leave-requests/search-employees', [EmployeeLeaveRequestController::class, 'searchEmployees'])
+    ->middleware('active_permission:employee-leave-request.create|employee-leave-request.update')
+    ->name('organization.employee-leave-requests.search-employees');
+Route::post('/organization/employee-leave-requests', [EmployeeLeaveRequestController::class, 'store'])
+    ->middleware('active_permission:employee-leave-request.create')
+    ->name('organization.employee-leave-requests.store');
+Route::post('/organization/employee-leave-requests/bulk-destroy', [EmployeeLeaveRequestController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-leave-request.delete')
+    ->name('organization.employee-leave-requests.bulk-destroy');
+Route::get('/organization/employee-leave-requests/{id}', [EmployeeLeaveRequestController::class, 'show'])
+    ->middleware('active_permission:employee-leave-request.view')
+    ->name('organization.employee-leave-requests.show');
+Route::post('/organization/employee-leave-requests/{id}/cancel', [EmployeeLeaveRequestController::class, 'cancel'])
+    ->middleware('active_permission:employee-leave-request.update')
+    ->name('organization.employee-leave-requests.cancel');
+Route::delete('/organization/employee-leave-requests/{id}', [EmployeeLeaveRequestController::class, 'destroy'])
+    ->middleware('active_permission:employee-leave-request.delete')
+    ->name('organization.employee-leave-requests.destroy');
+
+Route::get('/organization/employee-attendance-records', [EmployeeAttendanceRecordController::class, 'index'])
+    ->middleware('active_permission:employee-attendance-record.viewAny')
+    ->name('organization.employee-attendance-records.index');
+Route::get('/organization/employee-attendance-records/create', [EmployeeAttendanceRecordController::class, 'create'])
+    ->middleware('active_permission:employee-attendance-record.create')
+    ->name('organization.employee-attendance-records.create');
+Route::get('/organization/employee-attendance-records/search-employees', [EmployeeAttendanceRecordController::class, 'searchEmployees'])
+    ->middleware('active_permission:employee-attendance-record.create|employee-attendance-record.update')
+    ->name('organization.employee-attendance-records.search-employees');
+Route::post('/organization/employee-attendance-records', [EmployeeAttendanceRecordController::class, 'store'])
+    ->middleware('active_permission:employee-attendance-record.create')
+    ->name('organization.employee-attendance-records.store');
+Route::post('/organization/employee-attendance-records/bulk-destroy', [EmployeeAttendanceRecordController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-attendance-record.delete')
+    ->name('organization.employee-attendance-records.bulk-destroy');
+Route::get('/organization/employee-attendance-records/{id}', [EmployeeAttendanceRecordController::class, 'show'])
+    ->middleware('active_permission:employee-attendance-record.view')
+    ->name('organization.employee-attendance-records.show');
+Route::delete('/organization/employee-attendance-records/{id}', [EmployeeAttendanceRecordController::class, 'destroy'])
+    ->middleware('active_permission:employee-attendance-record.delete')
+    ->name('organization.employee-attendance-records.destroy');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])
