@@ -42,8 +42,8 @@ it('merender halaman admin kepegawaian dan organisasi', function (string $routeN
         $response->assertInertia(fn ($page) => $page->component($component));
     }
 })->with([
-    ['admin.organization.user-development-records.index', 'user-development-record.viewAny'],
-    ['admin.organization.user-development-records.create', 'user-development-record.create'],
+    ['admin.organization.user-development-records.index', 'user-development-record.viewAny', 'Admin/Organization/UserDevelopmentRecords/Index'],
+    ['admin.organization.user-development-records.create', 'user-development-record.create', 'Admin/Organization/UserDevelopmentRecords/Form'],
     ['admin.organization.tridharma-records.index', 'tridharma-record.viewAny'],
     ['admin.organization.tridharma-records.create', 'tridharma-record.create'],
     ['admin.organization.lecturer-workload-periods.index', 'lecturer-workload-period.viewAny'],
@@ -64,8 +64,8 @@ it('merender halaman admin kepegawaian dan organisasi', function (string $routeN
     ['admin.organization.organizational-positions.create', 'organizational-position.create', 'Admin/Organization/OrganizationalPositions/Form'],
     ['admin.organization.employee-position-assignments.index', 'employee-position-assignment.viewAny'],
     ['admin.organization.employee-position-assignments.create', 'employee-position-assignment.create'],
-    ['admin.organization.work-units.index', 'work-unit.viewAny'],
-    ['admin.organization.work-units.create', 'work-unit.create'],
+    ['admin.organization.work-units.index', 'work-unit.viewAny', 'Admin/Organization/WorkUnits/Index'],
+    ['admin.organization.work-units.create', 'work-unit.create', 'Admin/Organization/WorkUnits/Form'],
     ['admin.organization.approval-templates.index', 'approval-template.viewAny'],
     ['admin.organization.approval-templates.create', 'approval-template.create'],
     ['admin.organization.approval-requests.index', 'approval-request.viewAny'],

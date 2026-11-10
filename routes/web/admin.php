@@ -79,6 +79,8 @@ use App\Http\Controllers\Admin\Organization\EdomQuestionController;
 use App\Http\Controllers\Admin\Organization\LecturerPerformanceRubricController;
 use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
 use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
+use App\Http\Controllers\Admin\Organization\UserDevelopmentRecordController;
+use App\Http\Controllers\Admin\Organization\WorkUnitController;
 use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -134,6 +136,11 @@ foreach (ResourceRegistry::all() as $resource) {
 
     // Batch OR-3: aturan SKS BKD & rubrik performa dosen → Inertia React.
     if (in_array($resource['plural'], ['lecturer-workload-rules', 'lecturer-performance-rubrics']) && ($resource['area'] ?? null) === 'organization') {
+        continue;
+    }
+
+    // Batch OR-4: unit kerja & sertifikasi/pelatihan pegawai → Inertia React.
+    if (in_array($resource['plural'], ['work-units', 'user-development-records']) && ($resource['area'] ?? null) === 'organization') {
         continue;
     }
 
@@ -514,6 +521,65 @@ Route::post('/organization/lecturer-performance-rubrics/{id}/toggle', [LecturerP
 Route::delete('/organization/lecturer-performance-rubrics/{id}', [LecturerPerformanceRubricController::class, 'destroy'])
     ->middleware('active_permission:lecturer-performance-rubric.delete')
     ->name('organization.lecturer-performance-rubrics.destroy');
+
+Route::get('/organization/work-units', [WorkUnitController::class, 'index'])
+    ->middleware('active_permission:work-unit.viewAny')
+    ->name('organization.work-units.index');
+Route::get('/organization/work-units/create', [WorkUnitController::class, 'create'])
+    ->middleware('active_permission:work-unit.create')
+    ->name('organization.work-units.create');
+Route::get('/organization/work-units/search-users', [WorkUnitController::class, 'searchUsers'])
+    ->middleware('active_permission:work-unit.create|work-unit.update')
+    ->name('organization.work-units.search-users');
+Route::post('/organization/work-units', [WorkUnitController::class, 'store'])
+    ->middleware('active_permission:work-unit.create')
+    ->name('organization.work-units.store');
+Route::post('/organization/work-units/bulk-destroy', [WorkUnitController::class, 'bulkDestroy'])
+    ->middleware('active_permission:work-unit.delete')
+    ->name('organization.work-units.bulk-destroy');
+Route::get('/organization/work-units/{id}/edit', [WorkUnitController::class, 'edit'])
+    ->middleware('active_permission:work-unit.update')
+    ->name('organization.work-units.edit');
+Route::put('/organization/work-units/{id}', [WorkUnitController::class, 'update'])
+    ->middleware('active_permission:work-unit.update')
+    ->name('organization.work-units.update');
+Route::post('/organization/work-units/{id}/toggle', [WorkUnitController::class, 'toggle'])
+    ->middleware('active_permission:work-unit.update')
+    ->name('organization.work-units.toggle');
+Route::delete('/organization/work-units/{id}', [WorkUnitController::class, 'destroy'])
+    ->middleware('active_permission:work-unit.delete')
+    ->name('organization.work-units.destroy');
+
+Route::get('/organization/user-development-records', [UserDevelopmentRecordController::class, 'index'])
+    ->middleware('active_permission:user-development-record.viewAny')
+    ->name('organization.user-development-records.index');
+Route::get('/organization/user-development-records/create', [UserDevelopmentRecordController::class, 'create'])
+    ->middleware('active_permission:user-development-record.create')
+    ->name('organization.user-development-records.create');
+Route::get('/organization/user-development-records/search-users', [UserDevelopmentRecordController::class, 'searchUsers'])
+    ->middleware('active_permission:user-development-record.create')
+    ->name('organization.user-development-records.search-users');
+Route::post('/organization/user-development-records', [UserDevelopmentRecordController::class, 'store'])
+    ->middleware('active_permission:user-development-record.create')
+    ->name('organization.user-development-records.store');
+Route::post('/organization/user-development-records/bulk-destroy', [UserDevelopmentRecordController::class, 'bulkDestroy'])
+    ->middleware('active_permission:user-development-record.delete')
+    ->name('organization.user-development-records.bulk-destroy');
+Route::get('/organization/user-development-records/{id}/edit', [UserDevelopmentRecordController::class, 'edit'])
+    ->middleware('active_permission:user-development-record.update')
+    ->name('organization.user-development-records.edit');
+Route::put('/organization/user-development-records/{id}', [UserDevelopmentRecordController::class, 'update'])
+    ->middleware('active_permission:user-development-record.update')
+    ->name('organization.user-development-records.update');
+Route::post('/organization/user-development-records/{id}/verify', [UserDevelopmentRecordController::class, 'verify'])
+    ->middleware('active_permission:user-development-record.update')
+    ->name('organization.user-development-records.verify');
+Route::post('/organization/user-development-records/{id}/unverify', [UserDevelopmentRecordController::class, 'unverify'])
+    ->middleware('active_permission:user-development-record.update')
+    ->name('organization.user-development-records.unverify');
+Route::delete('/organization/user-development-records/{id}', [UserDevelopmentRecordController::class, 'destroy'])
+    ->middleware('active_permission:user-development-record.delete')
+    ->name('organization.user-development-records.destroy');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])
