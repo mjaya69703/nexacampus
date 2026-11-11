@@ -224,7 +224,7 @@ class AcademicLeaderOversightService
     {
         return StudyPlanDetail::query()
             ->where('course_offering_id', $courseOfferingId)
-            ->whereHas('studyPlan', fn (Builder $query) => $query->where('status', 'Approved'))
+            ->officiallyEnrolled()
             ->with('studyPlan.studentProfile')
             ->get()
             ->pluck('studyPlan.studentProfile.id')

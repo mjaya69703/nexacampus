@@ -130,6 +130,7 @@ class DashboardController extends Controller
             $students = (int) StudyPlanDetail::query()
                 ->join('study_plans', 'study_plans.id', '=', 'study_plan_details.study_plan_id')
                 ->whereIn('study_plan_details.course_offering_id', $activeOfferingIds)
+                ->officiallyEnrolled()
                 ->distinct('study_plans.student_profile_id')
                 ->count('study_plans.student_profile_id');
 
@@ -457,6 +458,7 @@ class DashboardController extends Controller
             ->selectRaw('study_plan_details.course_offering_id, COUNT(DISTINCT study_plans.student_profile_id) as total')
             ->join('study_plans', 'study_plans.id', '=', 'study_plan_details.study_plan_id')
             ->whereIn('study_plan_details.course_offering_id', $activeOfferingIds)
+            ->officiallyEnrolled()
             ->groupBy('study_plan_details.course_offering_id')
             ->pluck('total', 'study_plan_details.course_offering_id');
 
@@ -485,6 +487,7 @@ class DashboardController extends Controller
         $totals = StudyPlanDetail::query()
             ->selectRaw('course_offering_id, COUNT(*) as total')
             ->whereIn('course_offering_id', $activeOfferingIds)
+            ->officiallyEnrolled()
             ->groupBy('course_offering_id')
             ->pluck('total', 'course_offering_id');
 

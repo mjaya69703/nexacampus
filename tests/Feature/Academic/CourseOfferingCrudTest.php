@@ -149,13 +149,76 @@ it('menampilkan mahasiswa terdaftar di tab workspace', function () {
         'course_offering_id' => $offering->id,
         'status' => 'Taken',
     ]);
-
     actingOfferingOperator($setup['operator'])
         ->get("/admin/academic/course-offerings/{$offering->id}")
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('students', 1)
             ->where('students.0.nim', '2026TI0001'));
+});
+
+it('menolak penurunan kapasitas di bawah kursi yang sedang dipegang', function () {
+    $setup = offeringCrudSetup();
+    giveOfferingPermissionsToOperator(['course-offering.update']);
+
+    $offering = makeOffering($setup, ['capacity' => 2, 'status' => 'Open']);
+    $studentUser = App\Models\User::factory()->create();
+    $student = App\Models\Academic\StudentProfile::create([
+        'user_id' => $studentUser->id,
+        'study_program_id' => $setup['program']->id,
+        'nim' => '2026TI0002',
+        'entry_year' => 2026,
+        'academic_status' => 'Aktif',
+        'entry_date' => '2026-08-01',
+        'current_semester' => 1,
+        'is_active' => true,
+    ]);
+    $plan = App\Models\Academic\StudyPlan::create([
+        'student_profile_id' => $student->id,
+        'academic_year_id' => $setup['year']->id,
+        'semester_no' => 1,
+        'status' => 'Approved',
+    ]);
+    $plan->details()->create([
+        'course_offering_id' => $offering->id,
+        'status' => 'Taken',
+    ]);
+    $studentTwo = App\Models\Academic\StudentProfile::create([
+        'user_id' => App\Models\User::factory()->create()->id,
+        'study_program_id' => $setup['program']->id,
+        'nim' => '2026TI0003',
+        'entry_year' => 2026,
+        'academic_status' => 'Aktif',
+        'entry_date' => '2026-08-01',
+        'current_semester' => 1,
+        'is_active' => true,
+    ]);
+    $secondPlan = App\Models\Academic\StudyPlan::create([
+        'student_profile_id' => $studentTwo->id,
+        'academic_year_id' => $setup['year']->id,
+        'semester_no' => 1,
+        'status' => 'Approved',
+    ]);
+    $secondPlan->details()->create([
+        'course_offering_id' => $offering->id,
+        'status' => 'Taken',
+    ]);
+
+    actingOfferingOperator($setup['operator'])
+        ->put("/admin/academic/course-offerings/{$offering->id}", [
+            'academic_year_id' => $setup['year']->id,
+            'study_program_id' => $setup['program']->id,
+            'course_id' => $setup['course']->id,
+            'label' => 'A',
+            'semester_no' => 1,
+            'capacity' => 1,
+            'credits' => 3,
+            'delivery_mode' => 'Offline',
+            'status' => 'Open',
+        ])
+        ->assertSessionHasErrors('capacity');
+
+    expect($offering->fresh()->capacity)->toBe(2);
 });
 
 it('mengelola dosen pengampu: tambah, duplikat ditolak, ubah, hapus', function () {
