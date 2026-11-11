@@ -361,6 +361,26 @@ a.db-stat:hover { background: var(--db-soft); text-decoration: none; }
 .db-invoice b { display: block; color: var(--db-heading); font-size: 14px; }
 .db-invoice small { display: block; color: var(--db-muted); font-size: 11.5px; }
 
+/* Grafik tren IPS/IPK — SVG memakai token tema agar aman dark mode. */
+.db-chart svg { display: block; width: 100%; height: auto; }
+.db-chart-grid { stroke: var(--db-line); stroke-width: 1; }
+.db-chart-axis { fill: var(--db-muted); font-size: 10px; font-weight: 600; }
+.db-chart-line { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.db-chart-line.ips { stroke: var(--db-chart-1); }
+.db-chart-line.ipk { stroke: var(--db-chart-3); }
+.db-chart-point { stroke: var(--db-card); stroke-width: 1.5; }
+.db-chart-point.ips { fill: var(--db-chart-1); }
+.db-chart-point.ipk { fill: var(--db-chart-3); }
+.db-chart-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 6px; }
+.db-chart-legend-item { display: inline-flex; align-items: center; gap: 6px; color: var(--db-muted); font-size: 11.5px; font-weight: 700; }
+.db-chart-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.db-chart-swatch.ips { background: var(--db-chart-1); }
+.db-chart-swatch.ipk { background: var(--db-chart-3); }
+.db-chart-empty { display: flex; align-items: center; gap: 12px; padding: 16px 0; color: var(--db-muted); }
+.db-chart-empty svg { flex: 0 0 auto; color: var(--db-brand); }
+.db-chart-empty b { display: block; color: var(--db-heading); font-size: 13px; }
+.db-chart-empty small { display: block; font-size: 11.5px; }
+
 @media (max-width: 960px) {
     .cx-blocks { grid-template-columns: 1fr; }
     .db-layout { grid-template-columns: 1fr; }

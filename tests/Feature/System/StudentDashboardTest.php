@@ -194,3 +194,108 @@ it('renders the full student dashboard from real academic data', function () {
             ->has('announcements.items', 1)
             ->where('announcements.unread', 1));
 });
+
+function studentDashboardYear(string $code): int
+{
+    return DB::table('academic_years')->insertGetId([
+        'name' => 'Tahun '.$code,
+        'code' => $code,
+        'semester' => 'Ganjil',
+        'start_date' => now()->subMonths(6)->toDateString(),
+        'end_date' => now()->addMonths(6)->toDateString(),
+        'is_active' => false,
+    ]);
+}
+
+function studentDashboardResult(int $studentId, int $yearId, int $semester, float $ips, float $cumulative): void
+{
+    DB::table('study_results')->insert([
+        'student_profile_id' => $studentId,
+        'academic_year_id' => $yearId,
+        'semester_no' => $semester,
+        'total_courses' => 1,
+        'total_credits_taken' => 3,
+        'total_credits_passed' => 3,
+        'semester_gpa' => $ips,
+        'cumulative_gpa' => $cumulative,
+        'status' => 'Published',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
+
+function studentDashboardEntry(int $studentId, int $courseId, int $yearId, int $semester, int $credits, float $gradePoint): void
+{
+    DB::table('transcript_entries')->insert([
+        'student_profile_id' => $studentId,
+        'course_id' => $courseId,
+        'academic_year_id' => $yearId,
+        'semester_no' => $semester,
+        'credits' => $credits,
+        'grade_point' => $gradePoint,
+        'result_status' => 'Passed',
+        'is_counted_in_gpa' => true,
+        'is_best_grade' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
+
+it('menampilkan tren IPS dan IPK dengan sumbu minimal semester 1-8', function () {
+    $setup = studentDashboardSetup();
+    $year2 = studentDashboardYear('2027');
+
+    // Semester 1: IPS 3,00. IPK 3,50 pada kolom hasil studi sengaja
+    // merupakan snapshot akhir; grafik harus memakai IPK kumulatif 3,00.
+    studentDashboardResult($setup['studentId'], $setup['yearId'], 1, 3.00, 3.50);
+    studentDashboardEntry($setup['studentId'], $setup['courseId'], $setup['yearId'], 1, 3, 3.00);
+
+    // Semester 2: IPS 4,00 → IPK kumulatif (3+4)/2 = 3,50.
+    studentDashboardResult($setup['studentId'], $year2, 2, 4.00, 3.50);
+    studentDashboardEntry($setup['studentId'], $setup['courseId'], $year2, 2, 3, 4.00);
+
+    $this->actingAs($setup['user'])
+        ->withSession(['active_role' => 'student'])
+        ->get('/student/dashboard')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Student/Dashboard')
+            ->where('gradeTrend.maxSemester', 8)
+            ->has('gradeTrend.points', 8)
+            ->where('gradeTrend.points.0.semester', 1)
+            ->where('gradeTrend.points.0.ips', fn ($value) => (float) $value === 3.0)
+            ->where('gradeTrend.points.0.ipk', fn ($value) => (float) $value === 3.0)
+            ->where('gradeTrend.points.1.semester', 2)
+            ->where('gradeTrend.points.1.ips', fn ($value) => (float) $value === 4.0)
+            ->where('gradeTrend.points.1.ipk', fn ($value) => (float) $value === 3.5)
+            ->where('gradeTrend.points.7.ips', null)
+            ->where('gradeTrend.points.7.ipk', null)
+            ->where('gradeTrend.filled', 2));
+});
+
+it('memperluas sumbu grafik saat mahasiswa menempuh semester di atas 8', function () {
+    $setup = studentDashboardSetup();
+
+    DB::table('student_profiles')
+        ->where('id', $setup['studentId'])
+        ->update(['current_semester' => 11]);
+
+    $year10 = studentDashboardYear('2030');
+    studentDashboardResult($setup['studentId'], $year10, 10, 3.75, 3.60);
+    studentDashboardEntry($setup['studentId'], $setup['courseId'], $year10, 10, 3, 3.75);
+
+    $this->actingAs($setup['user'])
+        ->withSession(['active_role' => 'student'])
+        ->get('/student/dashboard')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Student/Dashboard')
+            ->where('gradeTrend.maxSemester', 11)
+            ->has('gradeTrend.points', 11)
+            ->where('gradeTrend.points.9.semester', 10)
+            ->where('gradeTrend.points.9.ips', fn ($value) => (float) $value === 3.75)
+            ->where('gradeTrend.points.9.ipk', fn ($value) => (float) $value === 3.75)
+            ->where('gradeTrend.points.10.semester', 11)
+            ->where('gradeTrend.points.10.ips', null)
+            ->where('gradeTrend.points.10.ipk', null));
+});

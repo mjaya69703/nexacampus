@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Academic\AcademicYear;
 use App\Models\Academic\AttendanceRecord;
 use App\Models\Academic\StudentGrade;
+use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudentRegistration;
 use App\Models\Academic\StudyPlan;
 use App\Models\Academic\StudyPlanDetail;
@@ -35,6 +36,15 @@ class DashboardController extends Controller
                 'tiles' => [],
                 'stats' => ['courses' => 0, 'credits' => 0, 'publishedGrades' => 0, 'transcripts' => 0],
                 'academic' => ['ips' => '-', 'ipk' => '-', 'programName' => '-', 'activeYear' => '-'],
+                'gradeTrend' => [
+                    'points' => array_map(fn (int $semester) => [
+                        'semester' => $semester,
+                        'ips' => null,
+                        'ipk' => null,
+                    ], range(1, 8)),
+                    'maxSemester' => 8,
+                    'filled' => 0,
+                ],
                 'attendance' => ['total' => 0, 'attended' => 0, 'absent' => 0, 'rate' => null],
                 'grades' => [],
                 'schedules' => [],
@@ -169,6 +179,7 @@ class DashboardController extends Controller
                 'programName' => $profile->studyProgram?->name ?? '-',
                 'activeYear' => $activeYear?->name ?? '-',
             ],
+            'gradeTrend' => $this->gradeTrend($profile),
             'attendance' => [
                 'total' => $totalAttendance,
                 'attended' => $attendedCount,
@@ -200,6 +211,104 @@ class DashboardController extends Controller
             ],
             'urls' => $this->urls(),
         ]);
+    }
+
+    /**
+     * Tren IPS/IPK per semester untuk grafik dashboard.
+     *
+     * Sumbu minimal 1-8 sesuai kebutuhan portal, lalu melebar otomatis
+     * bila mahasiswa sudah menempuh semester 9 ke atas (termasuk semester
+     * berjalan dan rencana studi terakhir). IPS memakai hasil studi resmi;
+     * IPK dihitung kumulatif per semester dari entri transkrip yang masuk
+     * hitungan GPA supaya grafik menunjukkan posisi IPK saat itu, bukan
+     * snapshot IPK akhir yang sama untuk semua semester.
+     *
+     * @return array{points: array<int, array{semester: int, ips: float|null, ipk: float|null}>, maxSemester: int, filled: int}
+     */
+    private function gradeTrend(StudentProfile $profile): array
+    {
+        $studyResults = StudyResult::query()
+            ->where('student_profile_id', $profile->id)
+            ->whereNotNull('semester_no')
+            ->orderBy('semester_no')
+            ->orderBy('id')
+            ->get();
+
+        // keyBy: bila ada lebih dari satu hasil untuk semester yang sama,
+        // baris dengan id terbesar (paling baru) yang dipakai.
+        $resultsBySemester = $studyResults->keyBy(fn (StudyResult $result) => (int) $result->semester_no);
+
+        $entries = TranscriptEntry::query()
+            ->where('student_profile_id', $profile->id)
+            ->where('is_counted_in_gpa', true)
+            ->whereNotNull('grade_point')
+            ->whereNotNull('semester_no')
+            ->where(fn ($query) => $query->where('is_best_grade', true)->orWhereNull('is_best_grade'))
+            ->get(['semester_no', 'credits', 'grade_point']);
+
+        $entriesBySemester = $entries->groupBy(fn (TranscriptEntry $entry) => (int) $entry->semester_no);
+
+        $latestDataSemester = max(
+            (int) ($studyResults
+                ->filter(fn (StudyResult $result) => $result->semester_gpa !== null)
+                ->max(fn (StudyResult $result) => (int) $result->semester_no) ?? 0),
+            (int) ($entries->max(fn (TranscriptEntry $entry) => (int) $entry->semester_no) ?? 0),
+        );
+
+        $latestPlanSemester = (int) StudyPlan::query()
+            ->where('student_profile_id', $profile->id)
+            ->max('semester_no');
+
+        $maxSemester = max(
+            8,
+            (int) ($profile->current_semester ?? 0),
+            $latestDataSemester,
+            $latestPlanSemester,
+        );
+
+        $points = [];
+        $cumulativeCredits = 0.0;
+        $cumulativePoints = 0.0;
+
+        for ($semester = 1; $semester <= $maxSemester; $semester++) {
+            $semesterEntries = $entriesBySemester->get($semester, collect());
+            $semesterCredits = (float) $semesterEntries->sum(fn (TranscriptEntry $entry) => (int) ($entry->credits ?? 0));
+            $semesterPoints = (float) $semesterEntries->sum(
+                fn (TranscriptEntry $entry) => (float) $entry->grade_point * (int) ($entry->credits ?? 0)
+            );
+
+            $result = $resultsBySemester->get($semester);
+
+            $ips = $result?->semester_gpa !== null
+                ? round((float) $result->semester_gpa, 2)
+                : ($semesterCredits > 0 ? round($semesterPoints / $semesterCredits, 2) : null);
+
+            $cumulativeCredits += $semesterCredits;
+            $cumulativePoints += $semesterPoints;
+
+            $ipk = null;
+
+            if ($semester <= $latestDataSemester && $cumulativeCredits > 0) {
+                $ipk = round($cumulativePoints / $cumulativeCredits, 2);
+            } elseif ($semester <= $latestDataSemester && $result?->cumulative_gpa !== null) {
+                // Fallback data lama yang belum punya entri transkrip.
+                $ipk = round((float) $result->cumulative_gpa, 2);
+            }
+
+            $points[] = [
+                'semester' => $semester,
+                'ips' => $ips,
+                'ipk' => $ipk,
+            ];
+        }
+
+        return [
+            'points' => $points,
+            'maxSemester' => $maxSemester,
+            'filled' => collect($points)
+                ->filter(fn (array $point) => $point['ips'] !== null || $point['ipk'] !== null)
+                ->count(),
+        ];
     }
 
     /**
