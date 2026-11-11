@@ -1,5 +1,6 @@
 // Grafik tren IPS & IPK per semester — SVG ringan, tanpa dependency chart.
 import { LineChart } from 'lucide-react';
+import { useState } from 'react';
 
 export type GpaTrendPoint = {
     semester: number;
@@ -18,8 +19,12 @@ const MAX_GPA = 4;
 const TICKS = [0, 1, 2, 3, 4];
 
 const clamp = (value: number): number => Math.min(Math.max(value, 0), MAX_GPA);
+const formatScore = (value: number | null): string => (value === null ? '–' : value.toFixed(2));
 
 export function GpaTrendChart({ points }: Props) {
+    const [hovered, setHovered] = useState<number | null>(null);
+    const [selected, setSelected] = useState<number | null>(null);
+
     const plotWidth = WIDTH - PAD.left - PAD.right;
     const plotHeight = HEIGHT - PAD.top - PAD.bottom;
 
@@ -45,6 +50,16 @@ export function GpaTrendChart({ points }: Props) {
 
     const filled = points.filter((point) => point.ips !== null || point.ipk !== null).length;
     const labelStep = points.length > 16 ? Math.ceil(points.length / 12) : 1;
+    const step = points.length > 1 ? plotWidth / (points.length - 1) : plotWidth;
+
+    const activeIndex = hovered ?? selected;
+    const activePoint = activeIndex !== null ? points[activeIndex] ?? null : null;
+
+    const toggleSelected = (index: number): void =>
+        setSelected((current) => (current === index ? null : index));
+
+    const describe = (point: GpaTrendPoint): string =>
+        `Semester ${point.semester}. IPS ${formatScore(point.ips)}. IPK ${formatScore(point.ipk)}.`;
 
     if (filled === 0) {
         return (
@@ -68,6 +83,23 @@ export function GpaTrendChart({ points }: Props) {
                     </span>
                 ))}
                 <span className="db-hint" style={{ marginLeft: 'auto' }}>Skala 0 – 4,00</span>
+            </div>
+
+            <div className="db-chart-readout" aria-live="polite">
+                {activePoint ? (
+                    <>
+                        <b>Semester {activePoint.semester}</b>{' '}
+                        <span className="db-chart-readout-item ips">IPS {formatScore(activePoint.ips)}</span>{' '}
+                        <span className="db-chart-readout-item ipk">IPK {formatScore(activePoint.ipk)}</span>{' '}
+                        {activePoint.ips === null && activePoint.ipk === null && (
+                            <span className="db-chart-readout-empty">Belum ada nilai pada semester ini.</span>
+                        )}
+                    </>
+                ) : (
+                    <span className="db-chart-readout-empty">
+                        Arahkan kursor atau klik titik/semester untuk melihat detail.
+                    </span>
+                )}
             </div>
 
             <svg
@@ -95,6 +127,16 @@ export function GpaTrendChart({ points }: Props) {
                     </g>
                 ))}
 
+                {activeIndex !== null && (
+                    <line
+                        className="db-chart-guide"
+                        x1={x(activeIndex)}
+                        x2={x(activeIndex)}
+                        y1={PAD.top}
+                        y2={PAD.top + plotHeight}
+                    />
+                )}
+
                 {series.map((item) => (
                     <path
                         key={item.key}
@@ -104,20 +146,25 @@ export function GpaTrendChart({ points }: Props) {
                 ))}
 
                 {series.flatMap((item) =>
-                    points
-                        .map((point, index) => ({ point, index, value: point[item.key] }))
-                        .filter((entry): entry is { point: GpaTrendPoint; index: number; value: number } => entry.value !== null)
-                        .map((entry) => (
+                    points.map((point, index) => {
+                        const value = point[item.key];
+
+                        if (value === null) {
+                            return null;
+                        }
+
+                        const isActive = activeIndex === index;
+
+                        return (
                             <circle
-                                key={`${item.key}-${entry.point.semester}`}
-                                className={`db-chart-point ${item.key}`}
-                                cx={x(entry.index)}
-                                cy={y(entry.value)}
-                                r={3.4}
-                            >
-                                <title>{`Semester ${entry.point.semester} · ${item.label} ${entry.value.toFixed(2)}`}</title>
-                            </circle>
-                        )),
+                                key={`${item.key}-${point.semester}`}
+                                className={`db-chart-point ${item.key}${isActive ? ' is-active' : ''}`}
+                                cx={x(index)}
+                                cy={y(value)}
+                                r={isActive ? 5 : 3.4}
+                            />
+                        );
+                    }),
                 )}
 
                 {points.map((point, index) => {
@@ -140,6 +187,37 @@ export function GpaTrendChart({ points }: Props) {
                         >
                             {point.semester}
                         </text>
+                    );
+                })}
+
+                {points.map((point, index) => {
+                    const start = Math.max(PAD.left, x(index) - step / 2);
+                    const end = Math.min(PAD.left + plotWidth, x(index) + step / 2);
+
+                    return (
+                        <rect
+                            key={`hit-${point.semester}`}
+                            className="db-chart-hit"
+                            x={start}
+                            y={PAD.top}
+                            width={Math.max(1, end - start)}
+                            height={plotHeight}
+                            tabIndex={0}
+                            role="button"
+                            aria-label={describe(point)}
+                            aria-pressed={selected === index}
+                            onMouseEnter={() => setHovered(index)}
+                            onMouseLeave={() => setHovered(null)}
+                            onFocus={() => setHovered(index)}
+                            onBlur={() => setHovered(null)}
+                            onClick={() => toggleSelected(index)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    toggleSelected(index);
+                                }
+                            }}
+                        />
                     );
                 })}
             </svg>
