@@ -42,3 +42,12 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 AI_REVISION_GUIDELINE.md
+# NexaCampus wrapper (apk/): hasil compile + dependensi lokal
+/apk/dist/
+/apk/desktop/www/
+/apk/desktop/node_modules/
+/apk/desktop/dist/
+/apk/android/.gradle/
+/apk/android/app/build/
+/apk/android/app/src/main/assets/www/
+*.apk
