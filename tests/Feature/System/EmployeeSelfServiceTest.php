@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Organization\EmployeeAttendanceLocation;
+use App\Models\Campus\CampusLocation;
 use App\Models\Organization\EmployeeAttendanceRecord;
 use App\Models\Organization\EmployeeLeaveRequest;
 use App\Models\Organization\EmployeeLeaveType;
@@ -301,12 +301,13 @@ it('records self-service check-in and check-out inside the office radius', funct
     Storage::fake('public');
     $user = employeeTestSetup();
 
-    EmployeeAttendanceLocation::create([
+    CampusLocation::create([
         'name' => 'Kantor Pusat',
         'code' => 'KTR',
         'latitude' => -6.2,
         'longitude' => 106.8,
         'radius_meters' => 500,
+        'is_attendance_point' => true,
         'is_active' => true,
     ]);
 
@@ -354,12 +355,13 @@ it('rejects self-service check-in outside the office radius', function () {
     Storage::fake('public');
     $user = employeeTestSetup();
 
-    EmployeeAttendanceLocation::create([
+    CampusLocation::create([
         'name' => 'Kantor Pusat',
         'code' => 'KTR',
         'latitude' => -6.2,
         'longitude' => 106.8,
         'radius_meters' => 100,
+        'is_attendance_point' => true,
         'is_active' => true,
     ]);
 

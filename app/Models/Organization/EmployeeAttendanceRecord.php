@@ -94,12 +94,12 @@ class EmployeeAttendanceRecord extends Model
 
     public function checkInLocation(): BelongsTo
     {
-        return $this->belongsTo(EmployeeAttendanceLocation::class, 'check_in_location_id');
+        return $this->belongsTo(\App\Models\Campus\CampusLocation::class, 'check_in_location_id');
     }
 
     public function checkOutLocation(): BelongsTo
     {
-        return $this->belongsTo(EmployeeAttendanceLocation::class, 'check_out_location_id');
+        return $this->belongsTo(\App\Models\Campus\CampusLocation::class, 'check_out_location_id');
     }
 
     public function getCheckInPhotoUrlAttribute(): ?string

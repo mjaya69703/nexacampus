@@ -31,6 +31,7 @@ class CampusLocationController extends Controller
         $validated = $request->validate([
             'q' => 'nullable|string|max:100',
             'is_main' => 'nullable|in:0,1',
+            'is_attendance' => 'nullable|in:0,1',
             'is_active' => 'nullable|in:0,1',
             'sort' => 'nullable|in:id,name,code,created_at',
             'direction' => 'nullable|in:asc,desc',
@@ -59,6 +60,10 @@ class CampusLocationController extends Controller
             }
         }
 
+        if (isset($validated['is_attendance']) && $validated['is_attendance'] !== '') {
+            $query->where('is_attendance_point', (bool) $validated['is_attendance']);
+        }
+
         $sort = $validated['sort'] ?? 'id';
         $direction = $validated['direction'] ?? 'desc';
         $query->orderBy($sort, $direction);
@@ -78,6 +83,7 @@ class CampusLocationController extends Controller
             'stats' => [
                 'total' => CampusLocation::count(),
                 'active' => CampusLocation::where('is_active', true)->count(),
+                'attendance' => CampusLocation::attendancePoints()->count(),
                 'buildings' => Building::count(),
                 'trashed' => CampusLocation::onlyTrashed()->count(),
             ],
@@ -90,6 +96,7 @@ class CampusLocationController extends Controller
                     'address' => $l->address,
                     'buildingCount' => (int) $l->buildings_count,
                     'isMain' => (bool) $l->is_main,
+                    'isAttendancePoint' => (bool) $l->is_attendance_point,
                     'isActive' => (bool) $l->is_active,
                     'createdAt' => $l->created_at?->format('d M Y H:i'),
                     'editUrl' => $isTrash ? null : route('admin.campus.locations.edit', $l->id),
@@ -107,6 +114,7 @@ class CampusLocationController extends Controller
             'filters' => [
                 'q' => $validated['q'] ?? '',
                 'is_main' => $validated['is_main'] ?? '',
+                'is_attendance' => $validated['is_attendance'] ?? '',
                 'is_active' => $validated['is_active'] ?? '',
                 'sort' => $sort,
                 'direction' => $direction,
@@ -136,7 +144,7 @@ class CampusLocationController extends Controller
             'location' => [
                 'name' => '', 'code' => '', 'address' => '', 'phone' => '', 'email' => '',
                 'latitude' => '', 'longitude' => '', 'radius_meters' => 100,
-                'is_main' => false, 'is_active' => true, 'desc' => '',
+                'is_main' => false, 'is_attendance_point' => false, 'is_active' => true, 'desc' => '',
             ],
             'urls' => [
                 'index' => route('admin.campus.locations.index'),
@@ -157,6 +165,7 @@ class CampusLocationController extends Controller
             'longitude' => 'nullable|numeric|between:-180,180',
             'radius_meters' => 'required|integer|min:10|max:10000',
             'is_main' => 'boolean',
+            'is_attendance_point' => 'boolean',
             'is_active' => 'boolean',
             'desc' => 'nullable|string',
         ]);
@@ -171,6 +180,7 @@ class CampusLocationController extends Controller
             'longitude' => $validated['longitude'] ?? null,
             'radius_meters' => $validated['radius_meters'] ?? 100,
             'is_main' => $validated['is_main'] ?? false,
+            'is_attendance_point' => $validated['is_attendance_point'] ?? false,
             'is_active' => $validated['is_active'] ?? true,
             'desc' => $validated['desc'] ?? null,
             'created_by' => $request->user()->id,
@@ -200,6 +210,7 @@ class CampusLocationController extends Controller
                 'longitude' => $location->longitude !== null ? (string) $location->longitude : '',
                 'radius_meters' => (int) $location->radius_meters,
                 'is_main' => (bool) $location->is_main,
+                'is_attendance_point' => (bool) $location->is_attendance_point,
                 'is_active' => (bool) $location->is_active,
                 'desc' => $location->desc ?? '',
             ],
@@ -222,6 +233,7 @@ class CampusLocationController extends Controller
             'longitude' => 'nullable|numeric|between:-180,180',
             'radius_meters' => 'required|integer|min:10|max:10000',
             'is_main' => 'boolean',
+            'is_attendance_point' => 'boolean',
             'is_active' => 'boolean',
             'desc' => 'nullable|string',
         ]);
@@ -236,6 +248,7 @@ class CampusLocationController extends Controller
             'longitude' => $validated['longitude'] ?? null,
             'radius_meters' => $validated['radius_meters'] ?? 100,
             'is_main' => $validated['is_main'] ?? false,
+            'is_attendance_point' => $validated['is_attendance_point'] ?? false,
             'is_active' => $validated['is_active'] ?? true,
             'desc' => $validated['desc'] ?? null,
             'updated_by' => $request->user()->id,
@@ -272,6 +285,10 @@ class CampusLocationController extends Controller
             return back()->with('error', 'Lokasi "'.$location->name.'" masih memiliki gedung. Hapus atau pindahkan gedung terlebih dahulu.');
         }
 
+        if ($this->attendanceUsage($location->id) > 0) {
+            return back()->with('error', 'Lokasi "'.$location->name.'" masih dipakai riwayat absensi pegawai.');
+        }
+
         $name = $location->name;
         $location->delete();
 
@@ -287,17 +304,17 @@ class CampusLocationController extends Controller
         ]);
 
         $locations = CampusLocation::whereIn('id', $validated['ids'])->withCount('buildings')->get();
-        $blocked = $locations->where('buildings_count', '>', 0);
-        $deletable = $locations->where('buildings_count', 0);
+        $blocked = $locations->filter(fn ($l) => $l->buildings_count > 0 || $this->attendanceUsage($l->id) > 0);
+        $deletable = $locations->filter(fn ($l) => $l->buildings_count === 0 && $this->attendanceUsage($l->id) === 0);
 
         CampusLocation::whereIn('id', $deletable->pluck('id'))->delete();
 
         if ($blocked->isNotEmpty() && $deletable->isNotEmpty()) {
-            return back()->with('warning', $deletable->count().' lokasi dihapus. '.$blocked->count().' tidak bisa dihapus karena masih memiliki gedung.');
+            return back()->with('warning', $deletable->count().' lokasi dihapus. '.$blocked->count().' tidak bisa dihapus karena masih memiliki gedung atau dipakai absensi.');
         }
 
         if ($blocked->isNotEmpty()) {
-            return back()->with('error', 'Lokasi tidak bisa dihapus karena masih memiliki gedung.');
+            return back()->with('error', 'Lokasi tidak bisa dihapus karena masih memiliki gedung atau dipakai absensi.');
         }
 
         return back()->with('success', $deletable->count().' lokasi berhasil dihapus.');
@@ -317,6 +334,10 @@ class CampusLocationController extends Controller
 
         if ($location->buildings()->withTrashed()->count() > 0) {
             return back()->with('error', 'Lokasi "'.$location->name.'" masih memiliki gedung. Hapus atau pindahkan gedung terlebih dahulu.');
+        }
+
+        if ($this->attendanceUsage($location->id, true) > 0) {
+            return back()->with('error', 'Lokasi "'.$location->name.'" masih dipakai riwayat absensi pegawai.');
         }
 
         $name = $location->name;
@@ -350,19 +371,19 @@ class CampusLocationController extends Controller
         ]);
 
         $locations = CampusLocation::withTrashed()->whereIn('id', $validated['ids'])->withCount(['buildings' => fn ($q) => $q->withTrashed()])->get();
-        $blocked = $locations->where('buildings_count', '>', 0);
-        $deletable = $locations->where('buildings_count', 0);
+        $blocked = $locations->filter(fn ($l) => $l->buildings_count > 0 || $this->attendanceUsage($l->id, true) > 0);
+        $deletable = $locations->filter(fn ($l) => $l->buildings_count === 0 && $this->attendanceUsage($l->id, true) === 0);
 
         foreach ($deletable as $location) {
             $location->forceDelete();
         }
 
         if ($blocked->isNotEmpty() && $deletable->isNotEmpty()) {
-            return back()->with('warning', $deletable->count().' lokasi dihapus permanen. '.$blocked->count().' tidak bisa dihapus karena masih memiliki gedung.');
+            return back()->with('warning', $deletable->count().' lokasi dihapus permanen. '.$blocked->count().' tidak bisa dihapus karena masih memiliki gedung atau dipakai absensi.');
         }
 
         if ($blocked->isNotEmpty()) {
-            return back()->with('error', 'Lokasi tidak bisa dihapus karena masih memiliki gedung.');
+            return back()->with('error', 'Lokasi tidak bisa dihapus karena masih memiliki gedung atau dipakai absensi.');
         }
 
         return back()->with('success', $deletable->count().' lokasi dihapus permanen.');
@@ -429,11 +450,11 @@ class CampusLocationController extends Controller
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->fromArray([['name', 'code', 'address', 'phone', 'email', 'latitude', 'longitude', 'radius_meters', 'is_main', 'is_active']], null, 'A1');
-        $sheet->fromArray([['Kampus Utama', 'KMP-A', 'Jl. Contoh No. 1', '021-123456', 'info@kampus.ac.id', '-6.2', '106.8', '100', '1', '1']], null, 'A2');
-        $sheet->getStyle('A1:J1')->getFont()->setBold(true);
+        $sheet->fromArray([['name', 'code', 'address', 'phone', 'email', 'latitude', 'longitude', 'radius_meters', 'is_main', 'is_attendance_point', 'is_active']], null, 'A1');
+        $sheet->fromArray([['Kampus Utama', 'KMP-A', 'Jl. Contoh No. 1', '021-123456', 'info@kampus.ac.id', '-6.2', '106.8', '100', '1', '1', '1']], null, 'A2');
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true);
 
-        foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'] as $column) {
+        foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'] as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
 
@@ -558,6 +579,7 @@ class CampusLocationController extends Controller
                 'longitude' => isset($data['longitude']) && $data['longitude'] !== '' ? $data['longitude'] : null,
                 'radius_meters' => isset($data['radius_meters']) && $data['radius_meters'] !== '' ? (int) $data['radius_meters'] : 100,
                 'is_main' => $isMain,
+                'is_attendance_point' => $this->parseImportBool($data['is_attendance_point'] ?? null, false),
                 'is_active' => $this->parseImportBool($data['is_active'] ?? null, true),
                 'created_by' => $request->user()->id,
                 'created_at' => now(),
@@ -591,6 +613,22 @@ class CampusLocationController extends Controller
         CampusLocation::query()
             ->when($exceptId, fn ($query) => $query->where('id', '!=', $exceptId))
             ->update(['is_main' => false, 'updated_by' => $by]);
+    }
+
+    /**
+     * Jumlah riwayat absensi yang menunjuk ke lokasi ini.
+     */
+    private function attendanceUsage(int $locationId, bool $withTrashed = false): int
+    {
+        $checkIn = \App\Models\Organization\EmployeeAttendanceRecord::where('check_in_location_id', $locationId);
+        $checkOut = \App\Models\Organization\EmployeeAttendanceRecord::where('check_out_location_id', $locationId);
+
+        if ($withTrashed) {
+            $checkIn->withTrashed();
+            $checkOut->withTrashed();
+        }
+
+        return $checkIn->count() + $checkOut->count();
     }
 
     private function parseImportBool(mixed $value, bool $default): bool

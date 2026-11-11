@@ -13,7 +13,7 @@ import '../../../../../css/crud.css';
 
 type Row = {
     id: number; no: number; name: string; code: string; address: string | null;
-    buildingCount: number; isMain: boolean; isActive: boolean;
+    buildingCount: number; isMain: boolean; isAttendancePoint: boolean; isActive: boolean;
     createdAt: string | null; editUrl: string | null; deleteUrl: string;
     restoreUrl: string; forceUrl: string; toggleUrl: string; mainUrl: string;
 };
@@ -21,12 +21,12 @@ type Row = {
 type Props = {
     shell: ShellProps;
     can: { create: boolean; update: boolean; delete: boolean; restore: boolean; toggle: boolean };
-    stats: { total: number; active: number; buildings: number; trashed: number };
+    stats: { total: number; active: number; attendance: number; buildings: number; trashed: number };
     data: {
         rows: Row[];
         currentPage: number; lastPage: number; perPage: number; total: number;
     };
-    filters: { q: string; is_main: string; is_active: string; sort: string; direction: 'asc' | 'desc'; mode: 'all' | 'trash'; perPage: number };
+    filters: { q: string; is_main: string; is_attendance: string; is_active: string; sort: string; direction: 'asc' | 'desc'; mode: 'all' | 'trash'; perPage: number };
     importResult: ImportResult;
     urls: {
         index: string; create: string; export: string; exportPdf: string; importTemplate: string; importSubmit: string;
@@ -99,11 +99,11 @@ export default function LocationIndex({ shell, can, stats, data, filters, import
     const [importOpen, setImportOpen] = useState(false);
     const isTrash = filters.mode === 'trash';
 
-    const activeFilterCount = (filters.is_main !== '' ? 1 : 0) + (filters.is_active !== '' ? 1 : 0);
+    const activeFilterCount = (filters.is_main !== '' ? 1 : 0) + (filters.is_attendance !== '' ? 1 : 0) + (filters.is_active !== '' ? 1 : 0);
 
     const resetFilters = () => {
         setSearch('');
-        router.get(urls.index, buildQuery({ ...filters, q: '', is_main: '', is_active: '', page: 1 } as never, '', { page: 1 }), {
+        router.get(urls.index, buildQuery({ ...filters, q: '', is_main: '', is_attendance: '', is_active: '', page: 1 } as never, '', { page: 1 }), {
             preserveState: true,
             replace: true,
             onSuccess: () => setSelected([]),
@@ -227,6 +227,10 @@ export default function LocationIndex({ shell, can, stats, data, filters, import
                         </div>
                         <div className="db-stat">
                             <span className="db-stat-icon gold"><Building2 size={20} /></span>
+                            <div><span className="db-stat-num">{stats.attendance}</span><span className="db-stat-label">Titik absensi</span></div>
+                        </div>
+                        <div className="db-stat">
+                            <span className="db-stat-icon gold"><Building2 size={20} /></span>
                             <div><span className="db-stat-num">{stats.buildings}</span><span className="db-stat-label">Total gedung</span></div>
                         </div>
                         <div className="db-stat">
@@ -292,6 +296,14 @@ export default function LocationIndex({ shell, can, stats, data, filters, import
                                         ),
                                     },
                                     {
+                                        key: 'attendance', label: 'Absensi', sortable: false,
+                                        render: (row) => (
+                                            <span className={`db-badge ${row.isAttendancePoint ? 'green' : 'gray'}`}>
+                                                {row.isAttendancePoint ? 'Titik absensi' : '—'}
+                                            </span>
+                                        ),
+                                    },
+                                    {
                                         key: 'is_active', label: 'Status',
                                         render: (row) => (
                                             can.toggle && !isTrash ? (
@@ -331,6 +343,16 @@ export default function LocationIndex({ shell, can, stats, data, filters, import
                                             <option value="">Utama + cabang</option>
                                             <option value="1">Utama</option>
                                             <option value="0">Cabang</option>
+                                        </select>
+                                        <select
+                                            className="db-input"
+                                            value={filters.is_attendance}
+                                            onChange={(e) => visit({ is_attendance: e.target.value, page: 1 }, true)}
+                                            aria-label="Filter absensi"
+                                        >
+                                            <option value="">Semua titik</option>
+                                            <option value="1">Titik absensi</option>
+                                            <option value="0">Bukan absensi</option>
                                         </select>
                                         <select
                                             className="db-input"

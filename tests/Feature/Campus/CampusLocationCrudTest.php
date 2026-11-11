@@ -47,6 +47,8 @@ function actingCampusLocationOperator($operator)
 }
 
 it('menampilkan daftar lokasi dengan hitungan gedung', function () {
+    // Catatan: DB fresh selalu berisi 1 baris bawaan MAIN_CAMPUS dari
+    // migrasi unifikasi absensi (2026_09_18_150907), jadi total = 2.
     $setup = campusLocationCrudSetup();
     giveCampusLocationPermissionsToOperator(['campus-location.viewAny']);
 
@@ -58,9 +60,9 @@ it('menampilkan daftar lokasi dengan hitungan gedung', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('Admin/Campus/Location/Index')
-            ->where('stats.total', 1)
+            ->where('stats.total', 2)
             ->where('stats.buildings', 1)
-            ->has('data.rows', 1)
+            ->has('data.rows', 2)
             ->where('data.rows.0.buildingCount', 1)
             ->where('data.rows.0.code', 'KMP-A'));
 });
@@ -118,6 +120,54 @@ it('menegakkan satu kampus utama', function () {
 
     expect((bool) $lama->fresh()->is_main)->toBeTrue();
     expect(CampusLocation::where('is_main', true)->count())->toBe(1);
+});
+
+it('menandai lokasi sebagai titik absensi dan memfilternya', function () {
+    $setup = campusLocationCrudSetup();
+    giveCampusLocationPermissionsToOperator(['campus-location.create', 'campus-location.viewAny']);
+
+    actingCampusLocationOperator($setup['operator'])
+        ->post('/admin/campus/campus-locations', [
+            'name' => 'Kantor', 'code' => 'KTR',
+            'latitude' => -6.2, 'longitude' => 106.8,
+            'radius_meters' => 150, 'is_attendance_point' => true,
+        ])
+        ->assertRedirect('/admin/campus/campus-locations')
+        ->assertSessionHas('success');
+
+    expect(\App\Models\Campus\CampusLocation::where('code', 'KTR')->firstOrFail()->is_attendance_point)->toBeTrue();
+
+    actingCampusLocationOperator($setup['operator'])
+        ->get('/admin/campus/campus-locations?is_attendance=1')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('data.rows', 2)
+            ->where('data.rows.0.code', 'KTR')
+            ->where('data.rows.0.isAttendancePoint', true)
+            ->where('stats.attendance', 2));
+});
+
+it('menolak hapus lokasi yang dipakai riwayat absensi', function () {
+    $setup = campusLocationCrudSetup();
+    giveCampusLocationPermissionsToOperator(['campus-location.delete']);
+
+    $location = \App\Models\Campus\CampusLocation::create([
+        'name' => 'Kantor', 'code' => 'KTR', 'is_attendance_point' => true, 'is_active' => true,
+    ]);
+    $profileUser = \App\Models\User::factory()->create();
+    $profile = \App\Models\Organization\EmployeeProfile::create(['user_id' => $profileUser->id, 'is_active' => true]);
+    \App\Models\Organization\EmployeeAttendanceRecord::create([
+        'employee_profile_id' => $profile->id,
+        'attendance_date' => now()->format('Y-m-d'),
+        'check_in_location_id' => $location->id,
+        'status' => 'present',
+    ]);
+
+    actingCampusLocationOperator($setup['operator'])
+        ->delete("/admin/campus/campus-locations/{$location->id}")
+        ->assertSessionHas('error');
+
+    expect(\App\Models\Campus\CampusLocation::find($location->id))->not->toBeNull();
 });
 
 it('menolak hapus lokasi yang masih memiliki gedung', function () {

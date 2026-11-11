@@ -31,6 +31,7 @@ class CampusLocation extends Model
         'longitude',
         'radius_meters',
         'is_main',
+        'is_attendance_point',
         'is_active',
         'desc',
         'created_by',
@@ -42,6 +43,7 @@ class CampusLocation extends Model
     {
         return [
             'is_main' => 'boolean',
+            'is_attendance_point' => 'boolean',
             'is_active' => 'boolean',
             'latitude' => 'float',
             'longitude' => 'float',
@@ -52,5 +54,20 @@ class CampusLocation extends Model
     public function buildings(): HasMany
     {
         return $this->hasMany(Building::class);
+    }
+
+    public function scopeAttendancePoints($query)
+    {
+        return $query->where('is_attendance_point', true);
+    }
+
+    public function attendanceCheckIns(): HasMany
+    {
+        return $this->hasMany(\App\Models\Organization\EmployeeAttendanceRecord::class, 'check_in_location_id');
+    }
+
+    public function attendanceCheckOuts(): HasMany
+    {
+        return $this->hasMany(\App\Models\Organization\EmployeeAttendanceRecord::class, 'check_out_location_id');
     }
 }

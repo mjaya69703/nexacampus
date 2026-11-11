@@ -13,7 +13,7 @@ type Props = {
     location: {
         id?: number; name: string; code: string; address: string; phone: string; email: string;
         latitude: string; longitude: string; radius_meters: number;
-        is_main: boolean; is_active: boolean; desc: string;
+        is_main: boolean; is_attendance_point: boolean; is_active: boolean; desc: string;
     };
     urls: { index: string; submit: string };
 };
@@ -30,6 +30,7 @@ export default function LocationForm({ shell, mode, location, urls }: Props) {
         longitude: location.longitude,
         radius_meters: location.radius_meters,
         is_main: location.is_main,
+        is_attendance_point: location.is_attendance_point,
         is_active: location.is_active,
         desc: location.desc,
     });
@@ -123,10 +124,10 @@ export default function LocationForm({ shell, mode, location, urls }: Props) {
                                         error={form.errors.longitude}
                                     />
                                     <TextField
-                                        label="Radius geofence (meter)"
+                                        label="Radius geofence absensi (meter)"
                                         type="number"
                                         min={10}
-                                        hint="10 sampai 10000. Dipakai peta kontak publik."
+                                        hint="10 sampai 10000. Dipakai validasi radius absensi pegawai bila titik absensi aktif."
                                         value={String(form.data.radius_meters)}
                                         onChange={(e) => form.setData('radius_meters', e.target.value === '' ? 100 : Number(e.target.value))}
                                         error={form.errors.radius_meters}
@@ -137,6 +138,13 @@ export default function LocationForm({ shell, mode, location, urls }: Props) {
                                         onChange={(v) => form.setData('is_main', v)}
                                         error={form.errors.is_main}
                                         hint="Menggantikan lokasi utama saat ini."
+                                    />
+                                    <SwitchField
+                                        label="Titik absensi pegawai"
+                                        checked={form.data.is_attendance_point}
+                                        onChange={(v) => form.setData('is_attendance_point', v)}
+                                        error={form.errors.is_attendance_point}
+                                        hint="Aktifkan agar lokasi dipakai geofence absensi mandiri pegawai."
                                     />
                                     <SwitchField
                                         label="Status aktif"
