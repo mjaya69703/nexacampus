@@ -25,7 +25,7 @@ class CampusAsset extends Model
     protected $fillable = [
         'asset_code',
         'name',
-        'category',
+        'category_id',
         'room_id',
         'brand',
         'model_number',
@@ -33,6 +33,8 @@ class CampusAsset extends Model
         'condition',
         'purchase_date',
         'purchase_cost',
+        'funding_source',
+        'funding_detail',
         'is_borrowable',
         'status',
         'notes',
@@ -53,6 +55,11 @@ class CampusAsset extends Model
     public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(AssetCategory::class, 'category_id');
     }
 
     public function maintenanceTickets(): HasMany
