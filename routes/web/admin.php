@@ -24,6 +24,20 @@ use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
 use App\Http\Controllers\Admin\Academic\StudyPlanController;
 use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudyProgramController;
+use App\Http\Controllers\Admin\Financial\AdminFinancialExportController;
+use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
+use App\Http\Controllers\Admin\Financial\FinancialDashboardController;
+use App\Http\Controllers\Admin\Financial\FinancialHoldController;
+use App\Http\Controllers\Admin\Financial\FinancialReportController;
+use App\Http\Controllers\Admin\Financial\InstallmentRequestController;
+use App\Http\Controllers\Admin\Financial\InvoiceAdjustmentController;
+use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
+use App\Http\Controllers\Admin\Financial\PaymentController;
+use App\Http\Controllers\Admin\Financial\ScholarshipController;
+use App\Http\Controllers\Admin\Financial\StudentCreditController;
+use App\Http\Controllers\Admin\Financial\StudentInvoiceController;
+use App\Http\Controllers\Admin\Financial\StudentScholarshipController;
+use App\Http\Controllers\Admin\Financial\TuitionFeeController;
 use App\Http\Controllers\Admin\Campus\AdminCampusExportController;
 use App\Http\Controllers\Admin\Campus\AssetCategoryController;
 use App\Http\Controllers\Admin\Campus\BuildingController;
@@ -97,8 +111,9 @@ use Illuminate\Support\Facades\Route;
 
 foreach (ResourceRegistry::all() as $resource) {
     // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
+    // Seluruh resource Financial → Inertia React (termasuk dashboard & laporan).
     // Batch-1 publikasi: categories & faqs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
+    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'student-credits', 'financial-holds', 'financial-reports', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
         continue;
     }
 
@@ -2441,9 +2456,17 @@ Route::delete('/access/permissions/{permission}', [PermissionController::class, 
     ->middleware('active_permission:permission.delete')
     ->name('access.permissions.destroy');
 
-Route::get('/financial/dashboard', [AdminDashboardController::class, 'financialDashboard'])
+Route::get('/financial/dashboard', [FinancialDashboardController::class, 'index'])
     ->middleware('active_permission:financial-dashboard.viewAny')
     ->name('financial.dashboard.index');
+
+// PDF laporan tabel per resource financial (kop + tanda tangan, paritas akademik).
+Route::get('/financial/{resource}/export/pdf', [AdminFinancialExportController::class, 'pdf'])
+    ->whereIn('resource', ['tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'student-credits', 'financial-holds'])
+    ->name('financial.exports.pdf');
+Route::get('/financial/financial-reports', [FinancialReportController::class, 'index'])
+    ->middleware('active_permission:financial-report.viewAny')
+    ->name('financial.financial-reports.index');
 Route::get('/student-services/dashboard', [AdminDashboardController::class, 'studentServicesDashboard'])
     ->middleware('active_permission:student-service-dashboard.viewAny')
     ->name('student-services.dashboard.index');
@@ -2693,6 +2716,319 @@ foreach (['csv', 'xlsx', 'pdf'] as $format) {
         ->middleware('active_permission:financial-report.viewAny')
         ->name("financial.reports.export.{$format}");
 }
+
+// CRUD Tarif Biaya Kuliah (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/financial/tuition-fees/export', [TuitionFeeController::class, 'export'])
+    ->middleware('active_permission:tuition-fee.viewAny')
+    ->name('financial.tuition-fees.export');
+Route::post('/financial/tuition-fees/bulk-destroy', [TuitionFeeController::class, 'bulkDestroy'])
+    ->middleware('active_permission:tuition-fee.delete')
+    ->name('financial.tuition-fees.bulk-destroy');
+Route::post('/financial/tuition-fees/bulk-restore', [TuitionFeeController::class, 'bulkRestore'])
+    ->middleware('active_permission:tuition-fee.update|tuition-fee.delete')
+    ->name('financial.tuition-fees.bulk-restore');
+Route::post('/financial/tuition-fees/bulk-force-destroy', [TuitionFeeController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:tuition-fee.delete')
+    ->name('financial.tuition-fees.bulk-force-destroy');
+Route::post('/financial/tuition-fees/{id}/restore', [TuitionFeeController::class, 'restore'])
+    ->middleware('active_permission:tuition-fee.update|tuition-fee.delete')
+    ->name('financial.tuition-fees.restore');
+Route::delete('/financial/tuition-fees/{id}/force', [TuitionFeeController::class, 'forceDestroy'])
+    ->middleware('active_permission:tuition-fee.delete')
+    ->name('financial.tuition-fees.force-destroy');
+Route::get('/financial/tuition-fees/import/template', [TuitionFeeController::class, 'importTemplate'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.import-template');
+Route::post('/financial/tuition-fees/import', [TuitionFeeController::class, 'import'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.import');
+Route::get('/financial/tuition-fees', [TuitionFeeController::class, 'index'])
+    ->middleware('active_permission:tuition-fee.viewAny')
+    ->name('financial.tuition-fees.index');
+Route::get('/financial/tuition-fees/create', [TuitionFeeController::class, 'create'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.create');
+Route::post('/financial/tuition-fees', [TuitionFeeController::class, 'store'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.store');
+Route::get('/financial/tuition-fees/{tuitionFee}/edit', [TuitionFeeController::class, 'edit'])
+    ->middleware('active_permission:tuition-fee.update')
+    ->name('financial.tuition-fees.edit');
+Route::put('/financial/tuition-fees/{tuitionFee}', [TuitionFeeController::class, 'update'])
+    ->middleware('active_permission:tuition-fee.update')
+    ->name('financial.tuition-fees.update');
+Route::post('/financial/tuition-fees/{tuitionFee}/toggle', [TuitionFeeController::class, 'toggle'])
+    ->middleware('active_permission:tuition-fee.update')
+    ->name('financial.tuition-fees.toggle');
+Route::delete('/financial/tuition-fees/{tuitionFee}', [TuitionFeeController::class, 'destroy'])
+    ->middleware('active_permission:tuition-fee.delete')
+    ->name('financial.tuition-fees.destroy');
+
+// CRUD Kebijakan Bebas Tanggungan (Inertia React) — paritas Livewire.
+Route::get('/financial/clearance-policies/export', [ClearancePolicyController::class, 'export'])
+    ->middleware('active_permission:clearance-policy.viewAny')
+    ->name('financial.clearance-policies.export');
+Route::post('/financial/clearance-policies/bulk-destroy', [ClearancePolicyController::class, 'bulkDestroy'])
+    ->middleware('active_permission:clearance-policy.delete')
+    ->name('financial.clearance-policies.bulk-destroy');
+Route::get('/financial/clearance-policies/import/template', [ClearancePolicyController::class, 'importTemplate'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.import-template');
+Route::post('/financial/clearance-policies/import', [ClearancePolicyController::class, 'import'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.import');
+Route::get('/financial/clearance-policies', [ClearancePolicyController::class, 'index'])
+    ->middleware('active_permission:clearance-policy.viewAny')
+    ->name('financial.clearance-policies.index');
+Route::get('/financial/clearance-policies/create', [ClearancePolicyController::class, 'create'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.create');
+Route::post('/financial/clearance-policies', [ClearancePolicyController::class, 'store'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.store');
+Route::get('/financial/clearance-policies/{clearancePolicy}/edit', [ClearancePolicyController::class, 'edit'])
+    ->middleware('active_permission:clearance-policy.update')
+    ->name('financial.clearance-policies.edit');
+Route::put('/financial/clearance-policies/{clearancePolicy}', [ClearancePolicyController::class, 'update'])
+    ->middleware('active_permission:clearance-policy.update')
+    ->name('financial.clearance-policies.update');
+Route::post('/financial/clearance-policies/{clearancePolicy}/toggle', [ClearancePolicyController::class, 'toggle'])
+    ->middleware('active_permission:clearance-policy.update')
+    ->name('financial.clearance-policies.toggle');
+Route::delete('/financial/clearance-policies/{clearancePolicy}', [ClearancePolicyController::class, 'destroy'])
+    ->middleware('active_permission:clearance-policy.delete')
+    ->name('financial.clearance-policies.destroy');
+
+// CRUD Program Beasiswa (Inertia React) — paritas Livewire.
+Route::get('/financial/scholarships/export', [ScholarshipController::class, 'export'])
+    ->middleware('active_permission:scholarship.viewAny')
+    ->name('financial.scholarships.export');
+Route::post('/financial/scholarships/bulk-destroy', [ScholarshipController::class, 'bulkDestroy'])
+    ->middleware('active_permission:scholarship.delete')
+    ->name('financial.scholarships.bulk-destroy');
+Route::post('/financial/scholarships/bulk-restore', [ScholarshipController::class, 'bulkRestore'])
+    ->middleware('active_permission:scholarship.update|scholarship.delete')
+    ->name('financial.scholarships.bulk-restore');
+Route::post('/financial/scholarships/bulk-force-destroy', [ScholarshipController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:scholarship.delete')
+    ->name('financial.scholarships.bulk-force-destroy');
+Route::get('/financial/scholarships/import/template', [ScholarshipController::class, 'importTemplate'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.import-template');
+Route::post('/financial/scholarships/import', [ScholarshipController::class, 'import'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.import');
+Route::post('/financial/scholarships/{id}/restore', [ScholarshipController::class, 'restore'])
+    ->middleware('active_permission:scholarship.update|scholarship.delete')
+    ->name('financial.scholarships.restore');
+Route::delete('/financial/scholarships/{id}/force', [ScholarshipController::class, 'forceDestroy'])
+    ->middleware('active_permission:scholarship.delete')
+    ->name('financial.scholarships.force-destroy');
+Route::get('/financial/scholarships', [ScholarshipController::class, 'index'])
+    ->middleware('active_permission:scholarship.viewAny')
+    ->name('financial.scholarships.index');
+Route::get('/financial/scholarships/create', [ScholarshipController::class, 'create'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.create');
+Route::post('/financial/scholarships', [ScholarshipController::class, 'store'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.store');
+Route::get('/financial/scholarships/{scholarship}/edit', [ScholarshipController::class, 'edit'])
+    ->middleware('active_permission:scholarship.update')
+    ->name('financial.scholarships.edit');
+Route::put('/financial/scholarships/{scholarship}', [ScholarshipController::class, 'update'])
+    ->middleware('active_permission:scholarship.update')
+    ->name('financial.scholarships.update');
+Route::post('/financial/scholarships/{scholarship}/toggle', [ScholarshipController::class, 'toggle'])
+    ->middleware('active_permission:scholarship.update')
+    ->name('financial.scholarships.toggle');
+Route::delete('/financial/scholarships/{scholarship}', [ScholarshipController::class, 'destroy'])
+    ->middleware('active_permission:scholarship.delete')
+    ->name('financial.scholarships.destroy');
+
+// CRUD Jadwal Penerbitan Tagihan (Inertia React) — paritas Livewire.
+Route::get('/financial/invoice-schedules/export', [InvoiceScheduleController::class, 'export'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.export');
+Route::get('/financial/invoice-schedules/search-students', [InvoiceScheduleController::class, 'searchStudents'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.search-students');
+Route::post('/financial/invoice-schedules/bulk-destroy', [InvoiceScheduleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:invoice-schedule.delete')
+    ->name('financial.invoice-schedules.bulk-destroy');
+Route::get('/financial/invoice-schedules', [InvoiceScheduleController::class, 'index'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.index');
+Route::get('/financial/invoice-schedules/create', [InvoiceScheduleController::class, 'create'])
+    ->middleware('active_permission:invoice-schedule.create')
+    ->name('financial.invoice-schedules.create');
+Route::post('/financial/invoice-schedules', [InvoiceScheduleController::class, 'store'])
+    ->middleware('active_permission:invoice-schedule.create')
+    ->name('financial.invoice-schedules.store');
+Route::get('/financial/invoice-schedules/{invoiceSchedule}/edit', [InvoiceScheduleController::class, 'edit'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.edit');
+Route::put('/financial/invoice-schedules/{invoiceSchedule}', [InvoiceScheduleController::class, 'update'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.update');
+Route::post('/financial/invoice-schedules/{invoiceSchedule}/run', [InvoiceScheduleController::class, 'run'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.run');
+Route::delete('/financial/invoice-schedules/{invoiceSchedule}', [InvoiceScheduleController::class, 'destroy'])
+    ->middleware('active_permission:invoice-schedule.delete')
+    ->name('financial.invoice-schedules.destroy');
+
+// CRUD Tagihan Mahasiswa (Inertia React) — paritas Livewire.
+Route::get('/financial/student-invoices/export', [StudentInvoiceController::class, 'export'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.export');
+Route::get('/financial/student-invoices/search-students', [StudentInvoiceController::class, 'searchStudents'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.search-students');
+Route::post('/financial/student-invoices/bulk-cancel', [StudentInvoiceController::class, 'bulkCancel'])
+    ->middleware('active_permission:student-invoice.delete')
+    ->name('financial.student-invoices.bulk-cancel');
+Route::get('/financial/student-invoices', [StudentInvoiceController::class, 'index'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.index');
+Route::get('/financial/student-invoices/create', [StudentInvoiceController::class, 'create'])
+    ->middleware('active_permission:student-invoice.create')
+    ->name('financial.student-invoices.create');
+Route::post('/financial/student-invoices', [StudentInvoiceController::class, 'store'])
+    ->middleware('active_permission:student-invoice.create')
+    ->name('financial.student-invoices.store');
+Route::get('/financial/student-invoices/{studentInvoice}/edit', [StudentInvoiceController::class, 'edit'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.edit');
+Route::put('/financial/student-invoices/{studentInvoice}', [StudentInvoiceController::class, 'update'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.update');
+Route::get('/financial/student-invoices/{studentInvoice}', [StudentInvoiceController::class, 'show'])
+    ->middleware('active_permission:student-invoice.view')
+    ->name('financial.student-invoices.show');
+Route::post('/financial/student-invoices/{studentInvoice}/issue', [StudentInvoiceController::class, 'issue'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.issue');
+Route::post('/financial/student-invoices/{studentInvoice}/cancel', [StudentInvoiceController::class, 'cancel'])
+    ->middleware('active_permission:student-invoice.delete')
+    ->name('financial.student-invoices.cancel');
+Route::get('/financial/student-invoices/{studentInvoice}/pdf', [StudentInvoiceController::class, 'pdf'])
+    ->middleware('active_permission:student-invoice.view')
+    ->name('financial.student-invoices.pdf');
+Route::post('/financial/student-invoices/{studentInvoice}/adjust', [StudentInvoiceController::class, 'adjust'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.adjust');
+Route::post('/financial/student-invoices/{studentInvoice}/apply-scholarship', [StudentInvoiceController::class, 'applyScholarship'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.apply-scholarship');
+
+// Pembayaran (Inertia React, read-only + verifikasi) — paritas Livewire.
+Route::get('/financial/payments/export', [PaymentController::class, 'export'])
+    ->middleware('active_permission:payment.viewAny')
+    ->name('financial.payments.export');
+Route::get('/financial/payments', [PaymentController::class, 'index'])
+    ->middleware('active_permission:payment.viewAny')
+    ->name('financial.payments.index');
+Route::get('/financial/payments/{payment}', [PaymentController::class, 'show'])
+    ->middleware('active_permission:payment.view')
+    ->name('financial.payments.show');
+Route::post('/financial/payments/{payment}/verify', [PaymentController::class, 'verify'])
+    ->middleware('active_permission:payment.update')
+    ->name('financial.payments.verify');
+Route::post('/financial/payments/{payment}/reject', [PaymentController::class, 'reject'])
+    ->middleware('active_permission:payment.update')
+    ->name('financial.payments.reject');
+
+// Log Penyesuaian Tagihan (Inertia React, read-only) — paritas Livewire.
+Route::get('/financial/invoice-adjustments/export', [InvoiceAdjustmentController::class, 'export'])
+    ->middleware('active_permission:invoice-adjustment.viewAny')
+    ->name('financial.invoice-adjustments.export');
+Route::get('/financial/invoice-adjustments', [InvoiceAdjustmentController::class, 'index'])
+    ->middleware('active_permission:invoice-adjustment.viewAny')
+    ->name('financial.invoice-adjustments.index');
+
+// Pengajuan Cicilan (Inertia React, tinjau + putusan) — paritas Livewire.
+Route::get('/financial/installment-requests/export', [InstallmentRequestController::class, 'export'])
+    ->middleware('active_permission:installment-request.viewAny')
+    ->name('financial.installment-requests.export');
+Route::get('/financial/installment-requests', [InstallmentRequestController::class, 'index'])
+    ->middleware('active_permission:installment-request.viewAny')
+    ->name('financial.installment-requests.index');
+Route::get('/financial/installment-requests/{installmentRequest}', [InstallmentRequestController::class, 'show'])
+    ->middleware('active_permission:installment-request.view')
+    ->name('financial.installment-requests.show');
+Route::post('/financial/installment-requests/{installmentRequest}/approve', [InstallmentRequestController::class, 'approve'])
+    ->middleware('active_permission:installment-request.update')
+    ->name('financial.installment-requests.approve');
+Route::post('/financial/installment-requests/{installmentRequest}/reject', [InstallmentRequestController::class, 'reject'])
+    ->middleware('active_permission:installment-request.update')
+    ->name('financial.installment-requests.reject');
+
+// CRUD Penerima Beasiswa (Inertia React) — paritas Livewire.
+Route::get('/financial/student-scholarships/export', [StudentScholarshipController::class, 'export'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.export');
+Route::get('/financial/student-scholarships/search-students', [StudentScholarshipController::class, 'searchStudents'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.search-students');
+Route::post('/financial/student-scholarships/bulk-destroy', [StudentScholarshipController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-scholarship.delete')
+    ->name('financial.student-scholarships.bulk-destroy');
+Route::get('/financial/student-scholarships/import/template', [StudentScholarshipController::class, 'importTemplate'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.import-template');
+Route::post('/financial/student-scholarships/import', [StudentScholarshipController::class, 'import'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.import');
+Route::get('/financial/student-scholarships', [StudentScholarshipController::class, 'index'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.index');
+Route::get('/financial/student-scholarships/create', [StudentScholarshipController::class, 'create'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.create');
+Route::post('/financial/student-scholarships', [StudentScholarshipController::class, 'store'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.store');
+Route::get('/financial/student-scholarships/{studentScholarship}/edit', [StudentScholarshipController::class, 'edit'])
+    ->middleware('active_permission:student-scholarship.update')
+    ->name('financial.student-scholarships.edit');
+Route::put('/financial/student-scholarships/{studentScholarship}', [StudentScholarshipController::class, 'update'])
+    ->middleware('active_permission:student-scholarship.update')
+    ->name('financial.student-scholarships.update');
+Route::delete('/financial/student-scholarships/{studentScholarship}', [StudentScholarshipController::class, 'destroy'])
+    ->middleware('active_permission:student-scholarship.delete')
+    ->name('financial.student-scholarships.destroy');
+
+// Saldo Deposit (Inertia React) — paritas Livewire.
+Route::get('/financial/student-credits/export', [StudentCreditController::class, 'export'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.export');
+Route::get('/financial/student-credits/search-students', [StudentCreditController::class, 'searchStudents'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.search-students');
+Route::post('/financial/student-credits/record', [StudentCreditController::class, 'record'])
+    ->middleware('active_permission:student-credit.create')
+    ->name('financial.student-credits.record');
+Route::get('/financial/student-credits', [StudentCreditController::class, 'index'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.index');
+
+// Blokir Akademik (Inertia React, tinjau + penanganan) — paritas Livewire.
+Route::get('/financial/financial-holds/export', [FinancialHoldController::class, 'export'])
+    ->middleware('active_permission:financial-hold.viewAny')
+    ->name('financial.financial-holds.export');
+Route::get('/financial/financial-holds', [FinancialHoldController::class, 'index'])
+    ->middleware('active_permission:financial-hold.viewAny')
+    ->name('financial.financial-holds.index');
+Route::get('/financial/financial-holds/{financialHold}', [FinancialHoldController::class, 'show'])
+    ->middleware('active_permission:financial-hold.view')
+    ->name('financial.financial-holds.show');
+Route::post('/financial/financial-holds/{financialHold}/release', [FinancialHoldController::class, 'release'])
+    ->middleware('active_permission:financial-hold.update')
+    ->name('financial.financial-holds.release');
+Route::post('/financial/financial-holds/{financialHold}/waive', [FinancialHoldController::class, 'waive'])
+    ->middleware('active_permission:financial-hold.update')
+    ->name('financial.financial-holds.waive');
 
 Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
     ->middleware('active_permission:service-letter-request.view')

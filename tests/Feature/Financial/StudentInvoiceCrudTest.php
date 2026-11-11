@@ -66,7 +66,7 @@ function studentInvoiceSetup(): array
         'semester' => 1,
         'base_fee' => 5000000,
         'lab_fee' => 500000,
-        'payment_deadline' => '2026-09-30',
+        'payment_deadline' => now()->addMonth()->format('Y-m-d'),
         'is_active' => true,
     ]);
 

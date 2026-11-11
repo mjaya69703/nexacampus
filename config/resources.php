@@ -1077,8 +1077,8 @@ return [
         'plural' => 'student-credits',
         'area' => 'financial',
         'component' => 'admin.financial.student-credits',
-        'actions' => ['index'],
-        'permissions' => ['viewAny', 'view'],
+        'actions' => ['index', 'create'],
+        'permissions' => ['viewAny', 'view', 'create'],
         'menu' => [
             'title' => 'Saldo Mahasiswa',
             'icon' => 'fas fa-coins',
