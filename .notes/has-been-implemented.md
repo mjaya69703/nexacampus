@@ -4,6 +4,19 @@ Dokumen ini berisi tracking progress implementasi fitur-fitur NexaCampus yang se
 
 ---
 
+## Migrasi Admin ke Inertia React (COMPLETED, November 2026)
+
+**Status:** COMPLETED
+
+- Seluruh modul admin (Access, System, Academic, Campus, Publication, Admission, Alumni, Student Service, Organization, **Financial**) sudah dimigrasi dari Blade/Livewire/PowerGrid ke **Inertia.js 3 + React 19**.
+- Financial mencakup dashboard, tarif, clearance, beasiswa, jadwal tagihan, tagihan mahasiswa, pembayaran, penyesuaian, cicilan, penerima beasiswa, saldo deposit, blokir akademik, dan laporan — seluruh route memakai controller Inertia.
+- Pola CRUD baru: controller `App\Http\Controllers\Admin\{Area}`, halaman `resources/js/pages/Admin/{Area}/{Resources}/`, komponen shared `CrudTable`, `FilterPanel`, `fields`, `CrudHero`, `ConfirmModal`, `AsyncSelect`, `AdminShell`.
+- View Blade dan tabel Livewire lama per area dihapus setelah paritas fitur terverifikasi. Tidak ada lagi halaman admin yang memakai PowerGrid.
+- Dokumentasi pola diperbarui di `AI_CONTEXT.md` (§3.1) dan `.notes/AI_DEVELOPMENT_MEMORY.md` (§1b); skill `crud-resource` kini memakai pola Inertia React.
+- Verifikasi akhir: **798 test / 7.973 assertion** lulus, `npm run typecheck`, `npm run build`, dan smoke test browser lintas area termasuk seluruh halaman Financial.
+
+---
+
 ## ⭐ AI Development Memory & Modular Domain QA Suite (RESTUCTURED & VERIFIED)
 
 **Status:** ✅ COMPLETED (July 2026)  
