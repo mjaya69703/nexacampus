@@ -100,7 +100,7 @@ nexacampus/
 │   │   └── StudentService/
 │   ├── Models/                                 # Eloquent models per domain
 │   │   ├── User.php                            # Root user model (multi-profile)
-│   │   ├── Academic/   (43 models)
+│   │   ├── Academic/   (49 models)
 │   │   ├── Access/     (Role, Permission)
 │   │   ├── Admission/  (11 models)
 │   │   ├── Alumni/     (7 models)
@@ -855,6 +855,39 @@ Generic approval workflow via:
 
 Used by: Employee leaves, financial adjustments, student service requests.
 
+### 3.10 Modul Skripsi / Tugas Akhir
+
+Domain `Academic` — alur: mahasiswa mengajukan proposal → admin menyetujui/menolak + menetapkan pembimbing → milestone bimbingan (mahasiswa submit, dosen review) → admin menjadwalkan sidang → dosen/penguji memberi nilai → admin finalisasi nilai & publikasi repositori.
+
+**Tabel:** `theses`, `thesis_supervisors`, `thesis_milestones`, `thesis_documents`, `thesis_defenses`, `thesis_defense_examiners`.
+
+**Status:**
+- `theses.status`: `draft`, `submitted`, `in_progress`, `defense_ready`, `defended`, `completed`, `rejected`, `cancelled`
+- `thesis_milestones.status`: `pending`, `in_progress`, `submitted`, `revision`, `approved`
+- `thesis_defenses.status`: `scheduled`, `completed`, `cancelled`, `postponed`; tipe `proposal` / `result`; hasil `passed` / `passed_with_revision` / `failed`
+
+**Service utama:** `app(ThesisService::class)` di `app/Support/Academic/ThesisService.php`:
+- `createProposal()`, `approve()`, `reject()`, `submitMilestone()`, `reviewMilestone()`
+- `scheduleDefense()`, `completeDefense()`, `finalize()`, `storeDocument()`
+- `ensureNoActiveThesis()` — mahasiswa hanya boleh punya satu thesis aktif
+- Konversi skor → huruf mutu (`gradeFromScore`) dan sinkronisasi status thesis dari milestone/sidang
+
+**Route (28):**
+- Admin: `admin.academic.theses.*` (`index/create/store/show/edit/update/destroy`, `approve`, `reject`, `milestones.store/update/destroy`, `defenses.store/update/complete/cancel`, `documents.store/destroy/download`, `finalize`, `bulk-destroy`, `search-lecturers`, `search-students`)
+- Mahasiswa: `student.thesis.*` (`index/store/update/cancel`, `milestones.submit`, `documents.store/destroy/download`)
+- Dosen: `lecturer.theses.*` (`index/show`, `milestones.review`, `defenses.score`, `documents.download`)
+
+**Halaman React:**
+- Admin: `resources/js/pages/Admin/Academic/Theses/{Index,Form,Show}.tsx`
+- Mahasiswa: `resources/js/pages/Student/Thesis/Index.tsx`
+- Dosen: `resources/js/pages/Lecturer/Theses/{Index,Show}.tsx`
+
+**Permission:** `thesis.viewAny`, `thesis.view`, `thesis.create`, `thesis.update`, `thesis.delete`, `thesis.approve`, `thesis.defense`, `thesis.grade`.
+
+**Dokumen:** disk `public`, folder `thesis/{thesis_id}`. Akses unduh dibatasi pemilik, pembimbing, penguji, dan admin ber-permission `thesis.view` (`Academic\ThesisDocumentController`).
+
+**Test:** `tests/Feature/Academic/ThesisManagementTest.php`.
+
 ---
 
 ## 4. Naming Conventions
@@ -996,6 +1029,7 @@ session()->flash('info', 'Informasi.');                     // Blue
 `course_materials` → `course_material_files`, `course_material_versions`
 `consultation_slots` → `consultation_appointments`
 `grade_appeals` → `grade_appeal_attachments`
+`theses` → `thesis_supervisors`, `thesis_milestones`, `thesis_documents`, `thesis_defenses` → `thesis_defense_examiners`
 
 ### Financial Module:
 `tuition_fees` → `invoice_schedules` → `student_invoices` → `invoice_items`
@@ -1131,7 +1165,7 @@ Controller terpisah hanya dipakai untuk operasi non-Inertia: file download, PDF 
 ### 12.1 Struktur Domain Test Suite
 ```
 tests/Feature/
-├── Academic/       # KRS, Nilai, Kalender, QR Attendance, registrasi
+├── Academic/       # KRS, Nilai, Kalender, QR Attendance, registrasi, Skripsi/Tugas Akhir
 ├── Access/         # User, role, permission (Inertia CRUD)
 ├── Admission/      # PMB, NIM Generator, Konversi Maba
 ├── Alumni/         # Tracer Study, Job Board, Event
@@ -1143,7 +1177,7 @@ tests/Feature/
 └── System/         # Uji sistem umum, smoke render Inertia
 ```
 
-**Status saat ini:** **798 test / 7.973 assertion** lulus (`php artisan test`, ±100 detik).
+**Status saat ini:** **818 test / 8.280 assertion** lulus (`php artisan test`, ±185 detik).
 
 ### 12.2 Konvensi Penulisan Pest Test (`*Test.php`)
 1. **Direct Namespace/Uses:** File pengujian di `tests/Feature/[Domain]/` ditulis langsung dengan `<?php \n\n use App\Models\...` tanpa deklarasi `namespace Tests\Feature\[Domain];` karena `tests/Pest.php` telah dikonfigurasikan dengan `uses(TestCase::class, RefreshDatabase::class)->in('Feature');` yang mengikat seluruh subdirektori secara rekursif.
@@ -1152,7 +1186,7 @@ tests/Feature/
 4. **Test CRUD Inertia:** Gunakan `assertInertia(fn (Assert $page) => $page->component('Admin/{Area}/{Resources}/Index')->has('data.rows', ...))`; uji juga `can` permission, filter, create/update, guard delete, dan bulk delete. Contoh: `tests/Feature/Organization/OrganizationOr8CrudTest.php`.
 5. **Menjalankan Pengujian:**
    ```bash
-   php artisan test                                      # Seluruh 798 test (semua domain)
+   php artisan test                                      # Seluruh 818 test (semua domain)
    php artisan test tests/Feature/Organization           # Satu domain
    php artisan test --filter=AdmissionEndToEndTest       # Satu file/kelas test
    php artisan test --filter=FinancialClearanceEndToEndTest

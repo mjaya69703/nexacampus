@@ -57,6 +57,15 @@
 - **Integrasi Tagihan Cuti:** Saat disetujui bersama biaya administrasi (`approveFromApproval()`), sistem membuat invoice khusus bertipe `'leave'`. Saat dibayar (`markFeePaid()`), status berganti menjadi `'approved'`.
 - **Aktivasi Akademik Otomatis:** Ketika admin memanggil `activate($application)`, sistem secara otomatis mengubah `StudentProfile->academic_status` menjadi `'Cuti'`, menyetel `is_active = false`, dan membuat/memperbarui rekam jejak di `StudentRegistration`.
 
+### D. Alur Skripsi / Tugas Akhir (Domain: `Academic`)
+- **Service utama:** `app(ThesisService::class)` (`app/Support/Academic/ThesisService.php`).
+- **Pengajuan:** `createProposal($student, $data, $actor)` → status `submitted` + 5 milestone default; controller menyimpan berkas proposal sebagai `ThesisDocument` kategori `proposal`. `ensureNoActiveThesis()` menolak pengajuan kedua selama masih ada thesis aktif.
+- **Approval:** `approve($thesis, $actor, $supervisorIds)` → status `in_progress` + pembimbing primary/secondary; `reject($thesis, $actor, $reason)` → status `rejected`.
+- **Milestone:** `submitMilestone()` (mahasiswa) → `submitted`; `reviewMilestone()` (dosen) → `approved`/`revision`. Jika semua milestone `approved`, status thesis menjadi `defense_ready`.
+- **Sidang:** `scheduleDefense()` membuat `ThesisDefense` + `ThesisDefenseExaminer`; `completeDefense()` menyimpan hasil/nilai dan mengubah status thesis menjadi `defended`; `finalize()` (status `defended`) → `completed`, mengisi `final_score`/`final_grade`, dan opsional publikasi repositori.
+- **Dokumen:** `storeDocument()` menyimpan ke disk `public` folder `thesis/{thesis_id}`; unduhan dijaga `Academic\ThesisDocumentController` (pemilik, pembimbing, penguji, admin `thesis.view`).
+- **Konversi nilai:** `ThesisService::gradeFromScore()` (85 → `B+`, dst.) dipakai konsisten oleh sidang dan finalisasi.
+
 ---
 
 ## 3. Konvensi Pengujian Otomatis (Pest Testing Suite)
@@ -69,7 +78,7 @@
 ---
 
 ## 4. Perintah Kilat AI
-- **Run All Tests:** `php artisan test` (Lulus 100% pada **798 test / 7.973 assertions**)
+- **Run All Tests:** `php artisan test` (Lulus 100% pada **818 test / 8.280 assertions**)
 - **Run Single Domain Test:** `php artisan test tests/Feature/[Domain]`
 - **Run Single Test:** `php artisan test --filter=[TestName]`
 - **Type Check React:** `npm run typecheck`

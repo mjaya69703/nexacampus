@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Academic\ThesisDocumentController;
 use App\Http\Controllers\Admin\Academic\AcademicAdvisorAssignmentController;
 use App\Http\Controllers\Admin\Academic\AcademicPeriodController;
 use App\Http\Controllers\Admin\Academic\AcademicYearController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Admin\Academic\StudentGradeController;
 use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
 use App\Http\Controllers\Admin\Academic\StudyPlanController;
 use App\Http\Controllers\Admin\Academic\StudyProgramController;
+use App\Http\Controllers\Admin\Academic\ThesisController;
 use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Access\PermissionController;
 use App\Http\Controllers\Admin\Access\RoleController;
@@ -3186,3 +3188,74 @@ Route::get('/alumni/tracer-study-responses', [TracerStudyResponseController::cla
 Route::get('/alumni/tracer-study-responses/{tracerStudyResponse}', [TracerStudyResponseController::class, 'show'])
     ->middleware('active_permission:tracer-study-response.view')
     ->name('alumni.tracer-study-responses.show');
+
+// Skripsi / Tugas Akhir (Inertia React).
+Route::get('/academic/theses/search-students', [ThesisController::class, 'searchStudents'])
+    ->middleware('active_permission:thesis.viewAny')
+    ->name('academic.theses.search-students');
+Route::get('/academic/theses/search-lecturers', [ThesisController::class, 'searchLecturers'])
+    ->middleware('active_permission:thesis.viewAny')
+    ->name('academic.theses.search-lecturers');
+Route::post('/academic/theses/bulk-destroy', [ThesisController::class, 'bulkDestroy'])
+    ->middleware('active_permission:thesis.delete')
+    ->name('academic.theses.bulk-destroy');
+Route::post('/academic/theses/{thesis}/approve', [ThesisController::class, 'approve'])
+    ->middleware('active_permission:thesis.approve')
+    ->name('academic.theses.approve');
+Route::post('/academic/theses/{thesis}/reject', [ThesisController::class, 'reject'])
+    ->middleware('active_permission:thesis.approve')
+    ->name('academic.theses.reject');
+Route::post('/academic/theses/{thesis}/milestones', [ThesisController::class, 'storeMilestone'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.milestones.store');
+Route::put('/academic/theses/milestones/{milestone}', [ThesisController::class, 'updateMilestone'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.milestones.update');
+Route::delete('/academic/theses/milestones/{milestone}', [ThesisController::class, 'destroyMilestone'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.milestones.destroy');
+Route::post('/academic/theses/{thesis}/defenses', [ThesisController::class, 'storeDefense'])
+    ->middleware('active_permission:thesis.defense')
+    ->name('academic.theses.defenses.store');
+Route::put('/academic/theses/defenses/{defense}', [ThesisController::class, 'updateDefense'])
+    ->middleware('active_permission:thesis.defense')
+    ->name('academic.theses.defenses.update');
+Route::post('/academic/theses/defenses/{defense}/cancel', [ThesisController::class, 'cancelDefense'])
+    ->middleware('active_permission:thesis.defense')
+    ->name('academic.theses.defenses.cancel');
+Route::post('/academic/theses/defenses/{defense}/complete', [ThesisController::class, 'completeDefense'])
+    ->middleware('active_permission:thesis.grade')
+    ->name('academic.theses.defenses.complete');
+Route::post('/academic/theses/{thesis}/documents', [ThesisController::class, 'storeDocument'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.documents.store');
+Route::delete('/academic/theses/documents/{document}', [ThesisController::class, 'destroyDocument'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.documents.destroy');
+Route::get('/academic/theses/documents/{document}/download', [ThesisDocumentController::class, 'admin'])
+    ->middleware('active_permission:thesis.view')
+    ->name('academic.theses.documents.download');
+Route::post('/academic/theses/{thesis}/finalize', [ThesisController::class, 'finalize'])
+    ->middleware('active_permission:thesis.grade')
+    ->name('academic.theses.finalize');
+Route::get('/academic/theses', [ThesisController::class, 'index'])
+    ->middleware('active_permission:thesis.viewAny')
+    ->name('academic.theses.index');
+Route::get('/academic/theses/create', [ThesisController::class, 'create'])
+    ->middleware('active_permission:thesis.create')
+    ->name('academic.theses.create');
+Route::post('/academic/theses', [ThesisController::class, 'store'])
+    ->middleware('active_permission:thesis.create')
+    ->name('academic.theses.store');
+Route::get('/academic/theses/{thesis}/edit', [ThesisController::class, 'edit'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.edit');
+Route::get('/academic/theses/{thesis}', [ThesisController::class, 'show'])
+    ->middleware('active_permission:thesis.view')
+    ->name('academic.theses.show');
+Route::put('/academic/theses/{thesis}', [ThesisController::class, 'update'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.update');
+Route::delete('/academic/theses/{thesis}', [ThesisController::class, 'destroy'])
+    ->middleware('active_permission:thesis.delete')
+    ->name('academic.theses.destroy');

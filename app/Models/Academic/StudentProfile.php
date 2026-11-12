@@ -2,6 +2,7 @@
 
 namespace App\Models\Academic;
 
+use App\Enums\ThesisStatus;
 use App\Models\Financial\FinancialHold;
 use App\Models\Financial\StudentCreditBalance;
 use App\Models\Financial\StudentCreditTransaction;
@@ -166,5 +167,17 @@ class StudentProfile extends Model
     public function consultationAppointments(): HasMany
     {
         return $this->hasMany(ConsultationAppointment::class);
+    }
+
+    public function theses(): HasMany
+    {
+        return $this->hasMany(Thesis::class);
+    }
+
+    public function activeThesis(): HasOne
+    {
+        return $this->hasOne(Thesis::class)
+            ->whereIn('status', ThesisStatus::activeValues())
+            ->orderByDesc('id');
     }
 }

@@ -1707,7 +1707,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 - [ ] **Library Management Integration** - Book borrowing system
 - [ ] **Hostel/Dormitory Management** - Room allocation
 - [ ] **Internship/PKL Management** - Placement tracking
-- [ ] **Thesis/Final Project Management** - Skripsi monitoring
+- [x] **Thesis/Final Project Management** - Skripsi/Tugas Akhir (proposal, pembimbing, milestone, sidang, repositori)
 - [ ] **Research & Community Service** - Dosen research tracking
 - [ ] **Partnership & MOU Management** - Institutional cooperation
 
@@ -1958,6 +1958,17 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
     - UI: Lecturer `lecturer.consultations.index`, Student `student.consultations.index`.
     - Navigation integrated into lecturer and student sidebars.
     - Remaining enhancement candidates: calendar sync, email/in-app notification integration, holiday/break exceptions.
+
+- **2026-11-12 (Skripsi / Tugas Akhir):**
+  - **COMPLETED: Thesis/Final Project Management** (roadmap §13)
+    - Alur lengkap: pengajuan proposal mahasiswa → approve/reject + penetapan pembimbing → milestone bimbingan → jadwal sidang → penilaian penguji → finalisasi nilai + publikasi repositori.
+    - Database: `theses`, `thesis_supervisors`, `thesis_milestones`, `thesis_documents`, `thesis_defenses`, `thesis_defense_examiners`.
+    - Service: `app/Support/Academic/ThesisService.php` (transisi status, milestone default, konversi nilai, guard satu thesis aktif).
+    - Admin: `Admin/Academic/Theses/{Index,Form,Show}.tsx` + permission `thesis.*`.
+    - Portal mahasiswa: `Student/Thesis/Index.tsx` (pengajuan, milestone, dokumen, sidang, hasil).
+    - Portal dosen: `Lecturer/Theses/{Index,Show}.tsx` (review milestone, nilai sidang, unduh dokumen).
+    - Dokumen di disk `public` (`thesis/{id}`) dengan kontrol akses pemilik/pembimbing/penguji/admin.
+    - Test: `tests/Feature/Academic/ThesisManagementTest.php` (12 test, 195 assertion); suite total 818 test / 8.280 assertion.
 
 - Last updated by: AI Assistant (based on actual git commit history)
 

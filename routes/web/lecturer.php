@@ -3,11 +3,13 @@
 use App\Http\Controllers\Academic\AssignmentFileController;
 use App\Http\Controllers\Academic\AssignmentReportExportController;
 use App\Http\Controllers\Academic\GradeAppealAttachmentController;
+use App\Http\Controllers\Academic\ThesisDocumentController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
-use App\Http\Controllers\Lecturer\GradeBookExportController;
-use App\Http\Controllers\Shared\Employee\TridharmaController;
 use App\Http\Controllers\Lecturer\DashboardController;
+use App\Http\Controllers\Lecturer\GradeBookExportController;
 use App\Http\Controllers\Lecturer\LecturerPortalController;
+use App\Http\Controllers\Lecturer\ThesisSupervisionController;
+use App\Http\Controllers\Shared\Employee\TridharmaController;
 use Illuminate\Support\Facades\Route;
 
 $lp = LecturerPortalController::class;
@@ -15,7 +17,7 @@ Route::get('/announcements', [$lp, 'announcementsIndex'])->name('announcements.i
 Route::get('/announcements/create', [$lp, 'announcementsCreate'])->name('announcements.create');
 Route::post('/announcements', [$lp, 'announcementsStore'])->name('announcements.store');
 Route::get('/announcements/{id}/edit', [$lp, 'announcementsEdit'])->whereNumber('id')->name('announcements.edit');
-Route::match(['put','patch'], '/announcements/{id}', [$lp, 'announcementsUpdate'])->whereNumber('id')->name('announcements.update');
+Route::match(['put', 'patch'], '/announcements/{id}', [$lp, 'announcementsUpdate'])->whereNumber('id')->name('announcements.update');
 Route::get('/announcements/{id}', [$lp, 'announcementsShow'])->whereNumber('id')->name('announcements.show');
 Route::delete('/announcements/{id}', [$lp, 'announcementsDestroy'])->whereNumber('id')->name('announcements.destroy');
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -32,13 +34,13 @@ Route::get('/course-materials/{id}/download', [CourseMaterialController::class, 
 Route::get('/course-materials/{id}/preview/{fileId?}', [CourseMaterialController::class, 'preview'])->whereNumber('id')->name('course-materials.preview');
 Route::get('/course-materials/{id}/link/{fileId}', [CourseMaterialController::class, 'openLink'])->whereNumber('id')->name('course-materials.link');
 Route::post('/course-offerings/{offeringId}/materials', [$lp, 'courseMaterialsStore'])->whereNumber('offeringId')->name('course-materials.store');
-Route::match(['put','patch'], '/course-materials/{id}', [$lp, 'courseMaterialsUpdate'])->whereNumber('id')->name('course-materials.update');
+Route::match(['put', 'patch'], '/course-materials/{id}', [$lp, 'courseMaterialsUpdate'])->whereNumber('id')->name('course-materials.update');
 Route::delete('/course-materials/{id}', [$lp, 'courseMaterialsDestroy'])->whereNumber('id')->name('course-materials.destroy');
 Route::post('/course-materials/{id}/toggle', [$lp, 'courseMaterialsToggle'])->whereNumber('id')->name('course-materials.toggle');
 Route::get('/assignments', [LecturerPortalController::class, 'assignmentsIndex'])->name('assignments.index');
 Route::post('/course-offerings/{offeringId}/assignments', [$lp, 'assignmentsStore'])->whereNumber('offeringId')->name('assignments.store');
 Route::get('/course-offerings/{offeringId}/assignments/create', [LecturerPortalController::class, 'assignmentsCreate'])->whereNumber('offeringId')->name('assignments.create');
-Route::match(['put','patch'], '/assignments/{id}', [$lp, 'assignmentsUpdate'])->whereNumber('id')->name('assignments.update');
+Route::match(['put', 'patch'], '/assignments/{id}', [$lp, 'assignmentsUpdate'])->whereNumber('id')->name('assignments.update');
 Route::delete('/assignments/{id}', [$lp, 'assignmentsDestroy'])->whereNumber('id')->name('assignments.destroy');
 Route::delete('/assignments/{id}/files/{fileId}', [$lp, 'assignmentsDestroyFile'])->whereNumber('id')->whereNumber('fileId')->name('assignments.files.destroy');
 Route::get('/assignments/{id}/edit', [LecturerPortalController::class, 'assignmentsEdit'])->whereNumber('id')->name('assignments.edit');
@@ -48,7 +50,7 @@ Route::post('/assignments/{id}/return', [$lp, 'assignmentsReturn'])->whereNumber
 Route::post('/assignments/{id}/sync-gradebook', [$lp, 'assignmentsSyncGradeBook'])->whereNumber('id')->name('assignments.sync-gradebook');
 Route::get('/consultations', [LecturerPortalController::class, 'consultationsIndex'])->name('consultations.index');
 Route::post('/consultations/slots', [$lp, 'consultationSlotStore'])->name('consultations.slots.store');
-Route::match(['put','patch'], '/consultations/slots/{id}', [$lp, 'consultationSlotUpdate'])->whereNumber('id')->name('consultations.slots.update');
+Route::match(['put', 'patch'], '/consultations/slots/{id}', [$lp, 'consultationSlotUpdate'])->whereNumber('id')->name('consultations.slots.update');
 Route::post('/consultations/slots/{id}/toggle', [$lp, 'consultationSlotToggle'])->whereNumber('id')->name('consultations.slots.toggle');
 Route::delete('/consultations/slots/{id}', [$lp, 'consultationSlotDestroy'])->whereNumber('id')->name('consultations.slots.destroy');
 Route::post('/consultations/appointments/{id}/status', [$lp, 'consultationAppointmentStatus'])->whereNumber('id')->name('consultations.appointments.status');
@@ -97,3 +99,10 @@ Route::post('/tridharma/{record}/members', [TridharmaController::class, 'storeMe
 Route::delete('/tridharma/{record}/members/{member}', [TridharmaController::class, 'destroyMember'])->name('tridharma.members.destroy');
 Route::post('/tridharma/{record}/attachments', [TridharmaController::class, 'storeAttachment'])->name('tridharma.attachments.store');
 Route::get('/users/search', [TridharmaController::class, 'searchUsers'])->name('users.search');
+
+// Bimbingan Skripsi / Tugas Akhir (Inertia React).
+Route::get('/theses', [ThesisSupervisionController::class, 'index'])->name('theses.index');
+Route::get('/theses/documents/{document}/download', [ThesisDocumentController::class, 'lecturer'])->name('theses.documents.download');
+Route::post('/theses/milestones/{milestone}/review', [ThesisSupervisionController::class, 'reviewMilestone'])->name('theses.milestones.review');
+Route::post('/theses/defenses/{defense}/score', [ThesisSupervisionController::class, 'scoreDefense'])->name('theses.defenses.score');
+Route::get('/theses/{thesis}', [ThesisSupervisionController::class, 'show'])->whereNumber('thesis')->name('theses.show');

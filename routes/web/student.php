@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Academic\AssignmentFileController;
 use App\Http\Controllers\Academic\GradeAppealAttachmentController;
+use App\Http\Controllers\Academic\ThesisDocumentController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Student\DashboardController;
@@ -17,9 +18,10 @@ use App\Http\Controllers\Student\StudentLearningController;
 use App\Http\Controllers\Student\StudentProgressController;
 use App\Http\Controllers\Student\StudentRegistrationController;
 use App\Http\Controllers\Student\StudentScheduleController;
-use App\Http\Controllers\Student\StudentStudyPlanController;
-use App\Http\Controllers\Student\StudentTranscriptController;
 use App\Http\Controllers\Student\StudentServiceController;
+use App\Http\Controllers\Student\StudentStudyPlanController;
+use App\Http\Controllers\Student\StudentThesisController;
+use App\Http\Controllers\Student\StudentTranscriptController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
@@ -88,26 +90,26 @@ Route::get('/services/letters', [$svc, 'lettersIndex'])->name('student-services.
 Route::get('/services/letters/create', [$svc, 'lettersCreate'])->name('student-services.letters.create');
 Route::post('/services/letters', [$svc, 'lettersStore'])->name('student-services.letters.store');
 Route::get('/services/letters/{id}/edit', [$svc, 'lettersEdit'])->whereNumber('id')->name('student-services.letters.edit');
-Route::match(['put','patch'],'/services/letters/{id}', [$svc, 'lettersUpdate'])->whereNumber('id')->name('student-services.letters.update');
+Route::match(['put', 'patch'], '/services/letters/{id}', [$svc, 'lettersUpdate'])->whereNumber('id')->name('student-services.letters.update');
 Route::get('/services/letters/{id}', [$svc, 'lettersShow'])->whereNumber('id')->name('student-services.letters.show');
 Route::get('/services/letters/{request}/download', [ServiceLetterDownloadController::class, 'student'])->name('student-services.letters.download');
 Route::get('/services/leaves', [$svc, 'leavesIndex'])->name('student-services.leaves');
 Route::get('/services/leaves/create', [$svc, 'leavesCreate'])->name('student-services.leaves.create');
 Route::post('/services/leaves', [$svc, 'leavesStore'])->name('student-services.leaves.store');
 Route::get('/services/leaves/{id}/edit', [$svc, 'leavesEdit'])->whereNumber('id')->name('student-services.leaves.edit');
-Route::match(['put','patch'],'/services/leaves/{id}', [$svc, 'leavesUpdate'])->whereNumber('id')->name('student-services.leaves.update');
+Route::match(['put', 'patch'], '/services/leaves/{id}', [$svc, 'leavesUpdate'])->whereNumber('id')->name('student-services.leaves.update');
 Route::get('/services/leaves/{id}', [$svc, 'leavesShow'])->whereNumber('id')->name('student-services.leaves.show');
 Route::get('/services/transfers', [$svc, 'transfersIndex'])->name('student-services.transfers');
 Route::get('/services/transfers/create', [$svc, 'transfersCreate'])->name('student-services.transfers.create');
 Route::post('/services/transfers', [$svc, 'transfersStore'])->name('student-services.transfers.store');
 Route::get('/services/transfers/{id}/edit', [$svc, 'transfersEdit'])->whereNumber('id')->name('student-services.transfers.edit');
-Route::match(['put','patch'],'/services/transfers/{id}', [$svc, 'transfersUpdate'])->whereNumber('id')->name('student-services.transfers.update');
+Route::match(['put', 'patch'], '/services/transfers/{id}', [$svc, 'transfersUpdate'])->whereNumber('id')->name('student-services.transfers.update');
 Route::get('/services/transfers/{id}', [$svc, 'transfersShow'])->whereNumber('id')->name('student-services.transfers.show');
 Route::get('/services/graduations', [$svc, 'graduationsIndex'])->name('student-services.graduations');
 Route::get('/services/graduations/create', [$svc, 'graduationsCreate'])->name('student-services.graduations.create');
 Route::post('/services/graduations', [$svc, 'graduationsStore'])->name('student-services.graduations.store');
 Route::get('/services/graduations/{id}/edit', [$svc, 'graduationsEdit'])->whereNumber('id')->name('student-services.graduations.edit');
-Route::match(['put','patch'],'/services/graduations/{id}', [$svc, 'graduationsUpdate'])->whereNumber('id')->name('student-services.graduations.update');
+Route::match(['put', 'patch'], '/services/graduations/{id}', [$svc, 'graduationsUpdate'])->whereNumber('id')->name('student-services.graduations.update');
 Route::get('/services/graduations/{id}', [$svc, 'graduationsShow'])->whereNumber('id')->name('student-services.graduations.show');
 Route::get('/services/graduation-documents/{document}/preview', [GraduationDocumentController::class, 'studentPreview'])->name('student-services.graduation-documents.preview');
 Route::get('/services/complaints', [$svc, 'complaintsIndex'])->name('student-services.complaints');
@@ -117,3 +119,13 @@ Route::get('/services/complaints/{id}', [$svc, 'complaintsShow'])->whereNumber('
 Route::post('/services/complaints/{id}/reply', [$svc, 'complaintsReply'])->whereNumber('id')->name('student-services.complaints.reply');
 Route::post('/services/complaints/{id}/close', [$svc, 'complaintsClose'])->whereNumber('id')->name('student-services.complaints.close');
 Route::get('/services/complaint-attachments/{attachment}/download', [ComplaintAttachmentController::class, 'student'])->name('student-services.complaint-attachments.download');
+
+// Skripsi / Tugas Akhir (Inertia React).
+Route::get('/thesis', [StudentThesisController::class, 'index'])->name('thesis.index');
+Route::post('/thesis', [StudentThesisController::class, 'store'])->name('thesis.store');
+Route::post('/thesis/cancel', [StudentThesisController::class, 'cancel'])->name('thesis.cancel');
+Route::put('/thesis/{id}', [StudentThesisController::class, 'update'])->whereNumber('id')->name('thesis.update');
+Route::post('/thesis/milestones/{milestone}/submit', [StudentThesisController::class, 'submitMilestone'])->name('thesis.milestones.submit');
+Route::post('/thesis/documents', [StudentThesisController::class, 'storeDocument'])->name('thesis.documents.store');
+Route::delete('/thesis/documents/{document}', [StudentThesisController::class, 'destroyDocument'])->name('thesis.documents.destroy');
+Route::get('/thesis/documents/{document}/download', [ThesisDocumentController::class, 'student'])->name('thesis.documents.download');

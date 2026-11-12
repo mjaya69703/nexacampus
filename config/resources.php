@@ -300,6 +300,21 @@ return [
         ],
     ],
     [
+        'resource' => 'thesis',
+        'plural' => 'theses',
+        'area' => 'academic',
+        'component' => 'admin.academic.theses',
+        'actions' => ['index', 'create', 'edit', 'show', 'delete'],
+        'permissions' => ['viewAny', 'view', 'create', 'update', 'delete', 'approve', 'defense', 'grade'],
+        'menu' => [
+            'title' => 'Skripsi / Tugas Akhir',
+            'icon' => 'fas fa-book-open-reader',
+            'group' => 'Akademik',
+            'group_order' => 10,
+            'order' => 14,
+        ],
+    ],
+    [
         'resource' => 'campus-location',
         'plural' => 'campus-locations',
         'area' => 'campus',

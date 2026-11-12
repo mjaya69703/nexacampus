@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             AcademicSeeder::class,
             DemoSeniorStudentSeeder::class,
+            ThesisDemoSeeder::class,
             OrganizationSeeder::class,
             AdmissionSeeder::class,
             FinancialSeeder::class,
