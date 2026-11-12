@@ -8,13 +8,13 @@
 **NexaCampus** adalah Sistem Informasi Akademik (SIAKAD) perguruan tinggi terpadu berbasis **Laravel 12** + **Inertia.js** + **React 19** + **Bootstrap 5 (Tabler)**. Proyek ini full-stack single-monolith dengan multi-role access (superuser, admin, lecturer, student, academic-leader, alumni).
 
 > [!IMPORTANT]
-> **STATUS MIGRASI (per November 2026):** Seluruh UI — admin, portal, auth, halaman publik, dan setup wizard — sudah menggunakan **Inertia.js 3 + React 19** (`resources/js/pages/**`). Tidak ada lagi halaman Livewire/Blade/PowerGrid yang aktif; paket `livewire/livewire` hanya tersisa sebagai dependensi package WhatsApp tanpa UI. Untuk modul/fitur baru, **WAJIB memakai pola Inertia React di §3.1**.
+> **STATUS MIGRASI (per November 2026):** Seluruh UI — admin, portal, auth, halaman publik, dan setup wizard — sudah menggunakan **Inertia.js 3 + React 19** (`resources/js/pages/**`). Tidak ada lagi halaman Livewire/Blade/PowerGrid milik aplikasi. Paket `livewire/livewire` + `livewire/flux` hanya dipakai oleh UI admin bawaan package WhatsApp (opsional, di luar navigasi aplikasi). Untuk modul/fitur baru, **WAJIB memakai pola Inertia React di §3.1**.
 
 ### Tech Stack
 | Layer | Teknologi |
 |---|---|
 | **Backend Framework** | Laravel 12 (PHP 8.2+) |
-| **Frontend Reactivity** | **Inertia.js 3 + React 19** (seluruh halaman; Livewire hanya dependensi WhatsApp tanpa UI) |
+| **Frontend Reactivity** | **Inertia.js 3 + React 19** (seluruh halaman aplikasi; Livewire/Flux hanya untuk UI admin bawaan package WhatsApp) |
 | **UI Kit** | Bootstrap 5 (Tabler Admin Theme) + komponen React shared |
 | **CSS** | TailwindCSS 4 via Vite plugin + `dashboard.css`/`crud.css` + custom CSS variables |
 | **DataTable** | Komponen React `CrudTable` |
@@ -27,7 +27,7 @@
 | **Database** | MySQL (DB: `nexacampus`) |
 | **Queue** | Database driver |
 | **Session/Cache** | Database driver |
-| **Rich Text Editor** | Mantix Jodit Text Editor |
+| **Rich Text Editor** | Jodit (`jodit-react`) |
 | **Export** | PhpSpreadsheet 5 + DomPDF 3 + OpenSpout 5 |
 | **Notification** | Email (SMTP) + WhatsApp (kstmostofa/laravel-whatsapp) + Web Push |
 | **PWA** | erag/laravel-pwa |
@@ -94,10 +94,6 @@ nexacampus/
 │   │       ├── EnsureActiveRoleHasPermission.php # middleware: active_permission:resource.action
 │   │       ├── EnsureFinancialClearance.php     # middleware: financial_clearance
 │   │       └── EnsureSystemIsInstalled.php      # middleware: is_installed
-│   ├── Livewire/                               # ⚠️ LEGACY — tidak dipakai UI (menunggu cleanup)
-│   │   ├── BasePowerGridTable.php              # Base class PowerGrid (legacy, tidak dipakai modul aktif)
-│   │   └── Concerns/
-│   │       └── ExportsPowerGridWithPhpSpreadsheet.php  # Trait export XLS/CSV (legacy)
 │   ├── Mail/                                   # Mailable classes per domain
 │   │   ├── Academic/
 │   │   ├── Financial/
@@ -163,7 +159,7 @@ nexacampus/
 │   └── views/
 │       ├── app.blade.php                       # ⭐ Root Inertia (div#app + @vite)
 │       ├── layouts/                            # Layout Blade legacy (PDF, error)
-│       ├── components/                         # Komponen Blade legacy (vendor powergrid, dll.)
+│       ├── components/                         # Komponen Blade legacy (alert, dll.)
 │       ├── templates/                          # Reusable template
 │       ├── exports/                            # PDF/export templates
 │       ├── pdf/                                # DomPDF templates
@@ -209,7 +205,7 @@ nexacampus/
     'resource' => 'your-resource',      // Singular kebab-case (dipakai untuk permission: your-resource.viewAny)
     'plural' => 'your-resources',       // Plural (dipakai untuk URL)
     'area' => 'academic',               // Domain area (academic/admission/financial/etc.)
-    'component' => 'admin.academic.your-resources',  // Legacy: prefix Livewire (tidak dipakai route Inertia)
+    'component' => 'admin.academic.your-resources',  // Legacy: prefix komponen (tidak dipakai route Inertia)
     'actions' => ['index', 'create', 'edit', 'show', 'delete'],  // Available actions
     'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'], // Optional: custom permissions
     'menu' => [
@@ -283,14 +279,9 @@ class YourResource extends Model
 
 #### Step 3: Route eksplisit (`routes/web/admin.php`)
 
-Resource Inertia **tetap terdaftar** di `config/resources.php` (untuk menu & permission), tetapi di-skip dari `Route::crudLivewire()` lalu route-nya ditulis eksplisit:
+Resource Inertia **tetap terdaftar** di `config/resources.php` (untuk menu & permission), lalu route-nya ditulis eksplisit di `routes/web/admin.php`:
 
 ```php
-// Di dalam loop ResourceRegistry::all()
-if (in_array($resource['plural'], ['your-resources']) && ($resource['area'] ?? null) === 'academic') {
-    continue; // sudah Inertia React
-}
-
 // Route eksplisit (nama route WAJIB sama dengan yang dipakai sidebar/menu)
 Route::get('/academic/your-resources', [YourResourceController::class, 'index'])
     ->middleware('active_permission:your-resource.viewAny')
@@ -722,30 +713,13 @@ admission-application.viewAny, admission-application.view, admission-application
 ### 3.3 Route Patterns
 
 #### Admin Routes (Inertia React — primary)
-Route admin ditulis eksplisit di `routes/web/admin.php`. Loop `ResourceRegistry` hanya membuat route legacy untuk resource yang **tidak** di-skip:
+Route admin ditulis eksplisit di `routes/web/admin.php`. Tidak ada lagi loop `ResourceRegistry` atau macro `crudLivewire`; `config/resources.php` hanya menjadi sumber menu & permission.
 
 ```php
 // routes/web/admin.php
-foreach (ResourceRegistry::all() as $resource) {
-    if (in_array($resource['plural'], ['users', 'faculties', 'work-units', /* ... */])) {
-        continue; // sudah Inertia React, route ditulis eksplisit di bawah
-    }
-
-    Route::crudLivewire(/* legacy, tidak dipakai modul aktif */);
-}
-
 Route::get('/academic/faculties', [FacultyController::class, 'index'])
     ->middleware('active_permission:faculty.viewAny')
     ->name('academic.faculties.index');
-```
-
-#### Legacy: `Route::crudLivewire()` (historis, tidak dipakai modul aktif)
-```php
-// Defined in AppServiceProvider::boot() — menghasilkan route Blade/Livewire.
-Route::macro('crudLivewire', function ($resource, $componentPrefix, $only, $uriPrefix) {
-    // Generates: admin/{area}/{resources}, admin/{area}/{resources}/create, etc.
-    // With middleware: active_permission:{singular}.{action}
-});
 ```
 
 #### Route Name Conventions:
@@ -1145,7 +1119,6 @@ Controller terpisah hanya dipakai untuk operasi non-Inertia: file download, PDF 
 | `resources/js/components/Shared/Crud/` | Saat mengubah perilaku tabel/form/filter bersama |
 | `app/Support/SidebarMenu.php` | Setiap tambah menu untuk role tertentu |
 | `app/Support/Inertia/ShellProps.php` | Saat menambah data global sidebar/topbar |
-| `app/Livewire/` | Legacy PowerGrid, tidak dipakai (menunggu cleanup) |
 | `database/migrations/` | Setiap tambah/ubah schema |
 | `database/seeders/` | Setiap tambah data seeder |
 

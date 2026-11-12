@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b80b17c8654719d4651a2b75aa974a10",
+    "content-hash": "9e3ae02506a65743df9b3e20c02de5f7",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -2950,67 +2950,6 @@
             "time": "2026-04-11T18:38:28+00:00"
         },
         {
-            "name": "mantix/livewire-jodit-text-editor",
-            "version": "v1.9",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Mantix/livewire-jodit-text-editor.git",
-                "reference": "cad645a793f079d353372ec00ef1fee392f644fc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Mantix/livewire-jodit-text-editor/zipball/cad645a793f079d353372ec00ef1fee392f644fc",
-                "reference": "cad645a793f079d353372ec00ef1fee392f644fc",
-                "shasum": ""
-            },
-            "require": {
-                "livewire/livewire": "^3.0|^4.0",
-                "php": "^8.1",
-                "spatie/laravel-package-tools": "^1.16"
-            },
-            "require-dev": {
-                "larastan/larastan": "^2.0",
-                "laravel/pint": "^1.13",
-                "orchestra/testbench": "^8.0",
-                "pestphp/pest": "^2.30"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Mantix\\LivewireJoditTextEditor\\LivewireJoditTextEditorServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Mantix\\LivewireJoditTextEditor\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Pieter Naber",
-                    "email": "Pieter@Mantix.nl",
-                    "role": "Developer"
-                }
-            ],
-            "description": "A powerful Livewire rich text editor (WYSIWYG) component built top of Jodit Editor.",
-            "keywords": [
-                "editor",
-                "livewire",
-                "wysiwyg"
-            ],
-            "support": {
-                "issues": "https://github.com/Mantix/livewire-jodit-text-editor/issues",
-                "source": "https://github.com/Mantix/livewire-jodit-text-editor/tree/v1.9"
-            },
-            "time": "2026-01-22T16:24:58+00:00"
-        },
-        {
             "name": "markbaker/complex",
             "version": "3.0.2",
             "source": {
@@ -4041,84 +3980,6 @@
                 }
             ],
             "time": "2025-12-27T19:41:33+00:00"
-        },
-        {
-            "name": "power-components/livewire-powergrid",
-            "version": "v6.9.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Power-Components/livewire-powergrid.git",
-                "reference": "2a0adb116e0e20b0e0cacadeca1b77194883d337"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Power-Components/livewire-powergrid/zipball/2a0adb116e0e20b0e0cacadeca1b77194883d337",
-                "reference": "2a0adb116e0e20b0e0cacadeca1b77194883d337",
-                "shasum": ""
-            },
-            "require": {
-                "laravel/prompts": "*",
-                "livewire/livewire": "^3.7|^4.0",
-                "php": "^8.2"
-            },
-            "require-dev": {
-                "composer/composer": "^2.8",
-                "laradumps/laradumps": "^4.6",
-                "larastan/larastan": "^2.0|^3.0",
-                "laravel/pint": "^1.26",
-                "laravel/scout": "^10.11.3",
-                "openspout/openspout": "^4.24.5|^5.0",
-                "orchestra/testbench": "^9.4|^10.0",
-                "pestphp/pest": "^3.0|^4.0"
-            },
-            "suggest": {
-                "openspout/openspout": "Required to export XLS and CSV"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "PowerComponents\\LivewirePowerGrid\\Providers\\PowerGridServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "files": [
-                    "src/functions.php"
-                ],
-                "psr-4": {
-                    "PowerComponents\\LivewirePowerGrid\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Luan Freitas",
-                    "email": "luanfreitas10@protonmail.com",
-                    "role": "Developer"
-                },
-                {
-                    "name": "DanSysAnalyst",
-                    "email": "daniel@sysanalyst.eu",
-                    "role": "Developer"
-                }
-            ],
-            "description": "PowerGrid generates Advanced Datatables using Laravel Livewire.",
-            "homepage": "https://github.com/power-components/livewire-powergrid",
-            "support": {
-                "issues": "https://github.com/Power-Components/livewire-powergrid/issues",
-                "source": "https://github.com/Power-Components/livewire-powergrid/tree/v6.9.2"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/luanfreitasdev",
-                    "type": "github"
-                }
-            ],
-            "time": "2026-03-04T12:47:30+00:00"
         },
         {
             "name": "psr/clock",

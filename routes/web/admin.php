@@ -1,29 +1,47 @@
 <?php
 
-use App\Http\Controllers\Admin\Access\PermissionController;
-use App\Http\Controllers\Admin\Access\RoleController;
-use App\Http\Controllers\Admin\Access\UserController;
-use App\Http\Controllers\Admin\System\ActivityLogController;
-use App\Http\Controllers\Admin\System\MenuController;
-use App\Http\Controllers\Admin\System\NotificationLogController;
-use App\Http\Controllers\Admin\System\SettingController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
+use App\Http\Controllers\Admin\Academic\AcademicAdvisorAssignmentController;
 use App\Http\Controllers\Admin\Academic\AcademicPeriodController;
 use App\Http\Controllers\Admin\Academic\AcademicYearController;
-use App\Http\Controllers\Admin\Academic\AcademicAdvisorAssignmentController;
+use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Admin\Academic\AttendanceSessionController;
 use App\Http\Controllers\Admin\Academic\CourseController;
 use App\Http\Controllers\Admin\Academic\CourseOfferingController;
 use App\Http\Controllers\Admin\Academic\CourseScheduleController;
 use App\Http\Controllers\Admin\Academic\CurriculumController;
+use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudentGradeController;
-use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
 use App\Http\Controllers\Admin\Academic\StudyPlanController;
-use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudyProgramController;
+use App\Http\Controllers\Admin\Academic\TranscriptController;
+use App\Http\Controllers\Admin\Access\PermissionController;
+use App\Http\Controllers\Admin\Access\RoleController;
+use App\Http\Controllers\Admin\Access\UserController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
+use App\Http\Controllers\Admin\Admission\AdmissionApplicationController;
+use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
+use App\Http\Controllers\Admin\Admission\AdmissionExamScheduleController;
+use App\Http\Controllers\Admin\Admission\AdmissionPeriodController;
+use App\Http\Controllers\Admin\Admission\AdmissionQuotaController;
+use App\Http\Controllers\Admin\Admission\AdmissionSelectionController;
+use App\Http\Controllers\Admin\Admission\NimGenerationRuleController;
+use App\Http\Controllers\Admin\Alumni\AlumniEventController;
+use App\Http\Controllers\Admin\Alumni\AlumniProfileController;
+use App\Http\Controllers\Admin\Alumni\EmployerPartnerController;
+use App\Http\Controllers\Admin\Alumni\JobPostingController;
+use App\Http\Controllers\Admin\Alumni\TracerStudyCampaignController;
+use App\Http\Controllers\Admin\Alumni\TracerStudyResponseController;
+use App\Http\Controllers\Admin\Campus\AdminCampusExportController;
+use App\Http\Controllers\Admin\Campus\AssetCategoryController;
+use App\Http\Controllers\Admin\Campus\BuildingController;
+use App\Http\Controllers\Admin\Campus\CampusAssetController;
+use App\Http\Controllers\Admin\Campus\CampusLocationController;
+use App\Http\Controllers\Admin\Campus\MaintenanceController;
+use App\Http\Controllers\Admin\Campus\RoomController;
+use App\Http\Controllers\Admin\Campus\RoomReservationController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Financial\AdminFinancialExportController;
 use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
 use App\Http\Controllers\Admin\Financial\FinancialDashboardController;
@@ -38,14 +56,25 @@ use App\Http\Controllers\Admin\Financial\StudentCreditController;
 use App\Http\Controllers\Admin\Financial\StudentInvoiceController;
 use App\Http\Controllers\Admin\Financial\StudentScholarshipController;
 use App\Http\Controllers\Admin\Financial\TuitionFeeController;
-use App\Http\Controllers\Admin\Campus\AdminCampusExportController;
-use App\Http\Controllers\Admin\Campus\AssetCategoryController;
-use App\Http\Controllers\Admin\Campus\BuildingController;
-use App\Http\Controllers\Admin\Campus\CampusAssetController;
-use App\Http\Controllers\Admin\Campus\CampusLocationController;
-use App\Http\Controllers\Admin\Campus\MaintenanceController;
-use App\Http\Controllers\Admin\Campus\RoomController;
-use App\Http\Controllers\Admin\Campus\RoomReservationController;
+use App\Http\Controllers\Admin\Organization\ApprovalRequestController;
+use App\Http\Controllers\Admin\Organization\ApprovalTemplateController;
+use App\Http\Controllers\Admin\Organization\EdomPeriodController;
+use App\Http\Controllers\Admin\Organization\EdomQuestionController;
+use App\Http\Controllers\Admin\Organization\EmployeeAttendanceRecordController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveBalanceController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveRequestController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
+use App\Http\Controllers\Admin\Organization\EmployeePositionAssignmentController;
+use App\Http\Controllers\Admin\Organization\EmployeeProfileController;
+use App\Http\Controllers\Admin\Organization\LecturerPerformanceReviewController;
+use App\Http\Controllers\Admin\Organization\LecturerPerformanceRubricController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadPeriodController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadSubmissionController;
+use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
+use App\Http\Controllers\Admin\Organization\TridharmaRecordController;
+use App\Http\Controllers\Admin\Organization\UserDevelopmentRecordController;
+use App\Http\Controllers\Admin\Organization\WorkUnitController;
 use App\Http\Controllers\Admin\Publication\AdminPublicationExportController;
 use App\Http\Controllers\Admin\Publication\AgendaController;
 use App\Http\Controllers\Admin\Publication\AnnouncementController;
@@ -53,30 +82,6 @@ use App\Http\Controllers\Admin\Publication\FaqController;
 use App\Http\Controllers\Admin\Publication\GalleryController;
 use App\Http\Controllers\Admin\Publication\NewsController;
 use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
-use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
-use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
-use App\Http\Controllers\Admin\Admission\AdmissionApplicationController;
-use App\Http\Controllers\Admin\Admission\AdmissionExamScheduleController;
-use App\Http\Controllers\Admin\Admission\AdmissionPeriodController;
-use App\Http\Controllers\Admin\Admission\AdmissionQuotaController;
-use App\Http\Controllers\Admin\Admission\AdmissionSelectionController;
-use App\Http\Controllers\Admin\Admission\NimGenerationRuleController;
-use App\Http\Controllers\Admin\Alumni\AlumniEventController;
-use App\Http\Controllers\Admin\Alumni\AlumniProfileController;
-use App\Http\Controllers\Admin\Alumni\EmployerPartnerController;
-use App\Http\Controllers\Admin\Alumni\JobPostingController;
-use App\Http\Controllers\Admin\Alumni\TracerStudyCampaignController;
-use App\Http\Controllers\Admin\Alumni\TracerStudyResponseController;
-use App\Http\Controllers\Alumni\AlumniConversionController;
-use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
-use App\Http\Controllers\Financial\FinancialReportExportController;
-use App\Http\Controllers\Financial\PaymentReceiptController;
-use App\Http\Controllers\Organization\LecturerWorkloadExportController;
-use App\Http\Controllers\Organization\TridharmaAttachmentController;
-use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
-use App\Http\Controllers\StudentService\ComplaintAttachmentController;
-use App\Http\Controllers\StudentService\GraduationDocumentController;
-use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
 use App\Http\Controllers\Admin\StudentService\GraduationApplicationController;
 use App\Http\Controllers\Admin\StudentService\GraduationBatchController;
 use App\Http\Controllers\Admin\StudentService\GraduationDocumentRequirementController;
@@ -87,119 +92,23 @@ use App\Http\Controllers\Admin\StudentService\StudentComplaintCategoryController
 use App\Http\Controllers\Admin\StudentService\StudentComplaintController;
 use App\Http\Controllers\Admin\StudentService\StudentLeaveApplicationController;
 use App\Http\Controllers\Admin\StudentService\StudentTransferRequestController;
-use App\Http\Controllers\Admin\Organization\EmployeeLeaveBalanceController;
-use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
-use App\Http\Controllers\Admin\Organization\ApprovalRequestController;
-use App\Http\Controllers\Admin\Organization\ApprovalTemplateController;
-use App\Http\Controllers\Admin\Organization\EdomPeriodController;
-use App\Http\Controllers\Admin\Organization\EdomQuestionController;
-use App\Http\Controllers\Admin\Organization\LecturerPerformanceReviewController;
-use App\Http\Controllers\Admin\Organization\LecturerPerformanceRubricController;
-use App\Http\Controllers\Admin\Organization\LecturerWorkloadPeriodController;
-use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
-use App\Http\Controllers\Admin\Organization\LecturerWorkloadSubmissionController;
-use App\Http\Controllers\Admin\Organization\EmployeeAttendanceRecordController;
-use App\Http\Controllers\Admin\Organization\EmployeeLeaveRequestController;
-use App\Http\Controllers\Admin\Organization\EmployeePositionAssignmentController;
-use App\Http\Controllers\Admin\Organization\EmployeeProfileController;
-use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
-use App\Http\Controllers\Admin\Organization\TridharmaRecordController;
-use App\Http\Controllers\Admin\Organization\UserDevelopmentRecordController;
-use App\Http\Controllers\Admin\Organization\WorkUnitController;
-use App\Support\ResourceRegistry;
+use App\Http\Controllers\Admin\System\ActivityLogController;
+use App\Http\Controllers\Admin\System\MenuController;
+use App\Http\Controllers\Admin\System\NotificationLogController;
+use App\Http\Controllers\Admin\System\SettingController;
+use App\Http\Controllers\Alumni\AlumniConversionController;
+use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
+use App\Http\Controllers\Financial\FinancialReportExportController;
+use App\Http\Controllers\Financial\PaymentReceiptController;
+use App\Http\Controllers\Organization\LecturerWorkloadExportController;
+use App\Http\Controllers\Organization\TridharmaAttachmentController;
+use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
+use App\Http\Controllers\StudentService\ComplaintAttachmentController;
+use App\Http\Controllers\StudentService\GraduationDocumentController;
+use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
 use Illuminate\Support\Facades\Route;
 
-foreach (ResourceRegistry::all() as $resource) {
-    // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    // Seluruh resource Financial → Inertia React (termasuk dashboard & laporan).
-    // Batch-1 publikasi: categories & faqs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'student-credits', 'financial-holds', 'financial-reports', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic', 'financial'])) {
-        continue;
-    }
-
-    if (in_array($resource['plural'], ['categories', 'faqs', 'announcements', 'news', 'agendas', 'galleries']) && ($resource['area'] ?? null) === 'publication') {
-        continue;
-    }
-
-    if (in_array($resource['plural'], ['campus-locations', 'buildings', 'rooms', 'campus-assets', 'room-reservations', 'facility-maintenances', 'asset-categories']) && ($resource['area'] ?? null) === 'campus') {
-        continue;
-    }
-
-    // Batch AD-1: periode, kuota & aturan NIM → Inertia React.
-    if (in_array($resource['plural'], ['admission-periods', 'admission-quotas', 'nim-generation-rules']) && ($resource['area'] ?? null) === 'admission') {
-        continue;
-    }
-
-    // Batch AD-2: jadwal ujian, pendaftar & seleksi → Inertia React.
-    if (in_array($resource['plural'], ['admission-exam-schedules', 'admission-applications', 'admission-selection']) && ($resource['area'] ?? null) === 'admission') {
-        continue;
-    }
-
-    // Batch AL-1: profil alumni, mitra perusahaan & lowongan → Inertia React.
-    if (in_array($resource['plural'], ['alumni-profiles', 'employer-partners', 'job-postings']) && ($resource['area'] ?? null) === 'alumni') {
-        continue;
-    }
-
-    // Batch AL-2: event, kampanye & respon tracer study → Inertia React.
-    if (in_array($resource['plural'], ['alumni-events', 'tracer-study-campaigns', 'tracer-study-responses']) && ($resource['area'] ?? null) === 'alumni') {
-        continue;
-    }
-
-    // Batch SS-1: seluruh CRUD layanan mahasiswa → Inertia React.
-    if (in_array($resource['plural'], ['service-letter-types', 'service-letter-requests', 'leave-applications', 'transfer-requests', 'graduation-batches', 'graduation-applications', 'graduation-policies', 'graduation-document-requirements', 'student-complaint-categories', 'student-complaints']) && ($resource['area'] ?? null) === 'student-services') {
-        continue;
-    }
-
-    // Batch OR-1: master jabatan & jenis cuti pegawai → Inertia React.
-    if (in_array($resource['plural'], ['organizational-positions', 'employee-leave-types']) && ($resource['area'] ?? null) === 'organization') {
-        continue;
-    }
-
-    // Batch OR-2: periode & bank pertanyaan EDOM → Inertia React.
-    if (in_array($resource['plural'], ['edom-periods', 'edom-questions']) && ($resource['area'] ?? null) === 'organization') {
-        continue;
-    }
-
-    // Batch OR-3: aturan SKS BKD & rubrik performa dosen → Inertia React.
-    if (in_array($resource['plural'], ['lecturer-workload-rules', 'lecturer-performance-rubrics']) && ($resource['area'] ?? null) === 'organization') {
-        continue;
-    }
-
-    // Batch OR-4: unit kerja & sertifikasi/pelatihan pegawai → Inertia React.
-    if (in_array($resource['plural'], ['work-units', 'user-development-records']) && ($resource['area'] ?? null) === 'organization') {
-        continue;
-    }
-
-    // Batch OR-5: periode BKD & saldo cuti pegawai → Inertia React.
-    if (in_array($resource['plural'], ['lecturer-workload-periods', 'employee-leave-balances']) && ($resource['area'] ?? null) === 'organization') {
-        continue;
-    }
-
-    // Batch OR-6: review BKD & review performa dosen → Inertia React.
-    if (in_array($resource['plural'], ['lecturer-workload-submissions', 'lecturer-performance-reviews']) && ($resource['area'] ?? null) === 'organization') {
-        continue;
-    }
-
-    // Batch OR-7: portofolio Tridharma → Inertia React.
-    if ($resource['plural'] === 'tridharma-records' && ($resource['area'] ?? null) === 'organization') {
-        continue;
-    }
-
-    // Batch OR-8: pegawai, penugasan, approval, cuti & absensi → Inertia React.
-    if (in_array($resource['plural'], ['employee-profiles', 'employee-position-assignments', 'approval-templates', 'approval-requests', 'employee-leave-requests', 'employee-attendance-records']) && ($resource['area'] ?? null) === 'organization') {
-        continue;
-    }
-
-    Route::crudLivewire(
-        $resource['plural'],
-        $resource['component'],
-        $resource['actions'],
-        $resource['area'],
-        $resource['resource']
-    );
-}
-
-// CRUD Layanan Mahasiswa (Inertia React) — nama route & middleware paritas Livewire.
+// CRUD Layanan Mahasiswa (Inertia React) — nama route & middleware paritas route lama.
 Route::get('/student-services/service-letter-types', [ServiceLetterTypeController::class, 'index'])
     ->middleware('active_permission:service-letter-type.viewAny')
     ->name('student-services.letter-types.index');
