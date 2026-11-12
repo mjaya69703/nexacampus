@@ -1177,7 +1177,7 @@ tests/Feature/
 └── System/         # Uji sistem umum, smoke render Inertia
 ```
 
-**Status saat ini:** **818 test / 8.280 assertion** lulus (`php artisan test`, ±185 detik).
+**Status saat ini:** **818 test / 8.300 assertion** lulus (`php artisan test`, ±185 detik).
 
 ### 12.2 Konvensi Penulisan Pest Test (`*Test.php`)
 1. **Direct Namespace/Uses:** File pengujian di `tests/Feature/[Domain]/` ditulis langsung dengan `<?php \n\n use App\Models\...` tanpa deklarasi `namespace Tests\Feature\[Domain];` karena `tests/Pest.php` telah dikonfigurasikan dengan `uses(TestCase::class, RefreshDatabase::class)->in('Feature');` yang mengikat seluruh subdirektori secara rekursif.

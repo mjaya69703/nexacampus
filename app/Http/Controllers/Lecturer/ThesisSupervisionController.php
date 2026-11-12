@@ -294,7 +294,7 @@ class ThesisSupervisionController extends Controller
                 'createdAt' => $document->created_at?->format('d M Y H:i'),
                 'downloadUrl' => route('lecturer.theses.documents.download', $document),
             ])->values()->all(),
-            'defenses' => $thesis->defenses->map(function (ThesisDefense $defense) use ($lecturerProfileId) {
+            'defenses' => $thesis->defenses->map(function (ThesisDefense $defense) use ($lecturerProfileId, $thesis) {
                 $myExaminer = $defense->examiners->firstWhere('lecturer_profile_id', $lecturerProfileId);
 
                 return [

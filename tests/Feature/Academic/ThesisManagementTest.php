@@ -415,6 +415,17 @@ it('menampilkan detail bimbingan dosen dan menolak dosen yang tidak terkait', fu
     $thesis = makeThesisForTest($setup);
     app(ThesisService::class)->approve($thesis, $setup['operator'], [$setup['lecturer']->id]);
 
+    app(ThesisService::class)->scheduleDefense($thesis, [
+        'type' => 'proposal',
+        'scheduled_at' => now()->addDays(3)->format('Y-m-d H:i:s'),
+        'duration_minutes' => 90,
+        'room' => 'Ruang Seminar',
+        'examiners' => [
+            ['lecturer_profile_id' => $setup['lecturer']->id, 'role' => 'chair'],
+            ['lecturer_profile_id' => $setup['examiner']->id, 'role' => 'examiner'],
+        ],
+    ], $setup['operator']);
+
     $this->actingAs($setup['lecturerUser'])
         ->withSession(['active_role' => 'lecturer'])
         ->get(route('lecturer.theses.show', $thesis))
@@ -424,9 +435,30 @@ it('menampilkan detail bimbingan dosen dan menolak dosen yang tidak terkait', fu
             ->where('thesis.id', $thesis->id)
             ->where('thesis.student.nim', '2026TI9001')
             ->has('thesis.milestones', 5)
-            ->where('thesis.supervisors.0.isMe', true));
+            ->where('thesis.supervisors.0.isMe', true)
+            ->has('thesis.defenses', 1)
+            ->where('thesis.defenses.0.myExaminer.role', 'chair')
+            ->where('thesis.defenses.0.myExaminer.canScore', true));
 
     $this->actingAs($setup['examinerUser'])
+        ->withSession(['active_role' => 'lecturer'])
+        ->get(route('lecturer.theses.show', $thesis))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Lecturer/Theses/Show')
+            ->where('thesis.defenses.0.myExaminer.role', 'examiner')
+            ->where('thesis.defenses.0.myExaminer.canScore', true));
+
+    $outsiderUser = User::factory()->create();
+    $outsiderUser->assignRole('lecturer');
+    LecturerProfile::create([
+        'user_id' => $outsiderUser->id,
+        'nidn' => '0400000001',
+        'employment_status' => 'Tetap',
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($outsiderUser)
         ->withSession(['active_role' => 'lecturer'])
         ->get(route('lecturer.theses.show', $thesis))
         ->assertNotFound();

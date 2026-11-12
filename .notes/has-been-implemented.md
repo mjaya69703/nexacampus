@@ -1968,7 +1968,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
     - Portal mahasiswa: `Student/Thesis/Index.tsx` (pengajuan, milestone, dokumen, sidang, hasil).
     - Portal dosen: `Lecturer/Theses/{Index,Show}.tsx` (review milestone, nilai sidang, unduh dokumen).
     - Dokumen di disk `public` (`thesis/{id}`) dengan kontrol akses pemilik/pembimbing/penguji/admin.
-    - Test: `tests/Feature/Academic/ThesisManagementTest.php` (12 test, 195 assertion); suite total 818 test / 8.280 assertion.
+    - Test: `tests/Feature/Academic/ThesisManagementTest.php` (12 test, 215 assertion); suite total 818 test / 8.300 assertion.
 
 - Last updated by: AI Assistant (based on actual git commit history)
 
