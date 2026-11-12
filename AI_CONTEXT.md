@@ -8,14 +8,14 @@
 **NexaCampus** adalah Sistem Informasi Akademik (SIAKAD) perguruan tinggi terpadu berbasis **Laravel 12** + **Inertia.js** + **React 19** + **Bootstrap 5 (Tabler)**. Proyek ini full-stack single-monolith dengan multi-role access (superuser, admin, lecturer, student, academic-leader, alumni).
 
 > [!IMPORTANT]
-> **STATUS MIGRASI (per November 2026):** Seluruh modul admin — termasuk **Financial** — sudah menggunakan **Inertia.js 3 + React 19** (`resources/js/pages/Admin/**`) dengan controller `App\Http\Controllers\Admin\**`. **Livewire 4 + Blade + PowerGrid 6 hanya tersisa untuk setup wizard** (legacy). Untuk modul/fitur admin baru, **WAJIB memakai pola Inertia React di §3.1**, bukan pola Blade/PowerGrid lama.
+> **STATUS MIGRASI (per November 2026):** Seluruh UI — admin, portal, auth, halaman publik, dan setup wizard — sudah menggunakan **Inertia.js 3 + React 19** (`resources/js/pages/**`). Tidak ada lagi halaman Livewire/Blade/PowerGrid yang aktif; paket `livewire/livewire` hanya tersisa sebagai dependensi package WhatsApp tanpa UI. Untuk modul/fitur baru, **WAJIB memakai pola Inertia React di §3.1**.
 
 ### Tech Stack
 | Layer | Teknologi |
 |---|---|
 | **Backend Framework** | Laravel 12 (PHP 8.2+) |
-| **Frontend Reactivity** | **Inertia.js 3 + React 19** (utama); Livewire 4 (legacy, setup wizard) |
-| **UI Kit** | Bootstrap 5 (Tabler Admin Theme) + komponen React shared; Livewire Flux v2 (legacy) |
+| **Frontend Reactivity** | **Inertia.js 3 + React 19** (seluruh halaman; Livewire hanya dependensi WhatsApp tanpa UI) |
+| **UI Kit** | Bootstrap 5 (Tabler Admin Theme) + komponen React shared |
 | **CSS** | TailwindCSS 4 via Vite plugin + `dashboard.css`/`crud.css` + custom CSS variables |
 | **DataTable** | Komponen React `CrudTable` |
 | **Form & Navigasi** | Inertia `useForm`, `router`, `Link`/`Head` |
@@ -94,7 +94,7 @@ nexacampus/
 │   │       ├── EnsureActiveRoleHasPermission.php # middleware: active_permission:resource.action
 │   │       ├── EnsureFinancialClearance.php     # middleware: financial_clearance
 │   │       └── EnsureSystemIsInstalled.php      # middleware: is_installed
-│   ├── Livewire/                               # ⚠️ LEGACY — hanya setup wizard
+│   ├── Livewire/                               # ⚠️ LEGACY — tidak dipakai UI (menunggu cleanup)
 │   │   ├── BasePowerGridTable.php              # Base class PowerGrid (legacy, tidak dipakai modul aktif)
 │   │   └── Concerns/
 │   │       └── ExportsPowerGridWithPhpSpreadsheet.php  # Trait export XLS/CSV (legacy)
@@ -162,8 +162,8 @@ nexacampus/
 │   ├── saas/app.scss                           # SCSS (minimal)
 │   └── views/
 │       ├── app.blade.php                       # ⭐ Root Inertia (div#app + @vite)
-│       ├── layouts/                            # Layout Blade legacy (auth, setup, PDF)
-│       ├── components/{auth,admission,...}     # Blade non-admin (auth & halaman publik)
+│       ├── layouts/                            # Layout Blade legacy (PDF, error)
+│       ├── components/                         # Komponen Blade legacy (vendor powergrid, dll.)
 │       ├── templates/                          # Reusable template
 │       ├── exports/                            # PDF/export templates
 │       ├── pdf/                                # DomPDF templates
@@ -905,9 +905,9 @@ Used by: Employee leaves, financial adjustments, student service requests.
 | Portal page | `resources/js/pages/{Role}/{Feature}/{Page}.tsx` |
 | Shared CRUD component | `resources/js/components/Shared/Crud/{Component}.tsx` |
 | Shared layout/UI | `resources/js/components/Shared/{Component}.tsx` |
-| Blade auth/publik | `resources/views/components/{auth,admission}/⚡{page}.blade.php` |
-
-**⚡ prefix** = Livewire anonymous component (khusus auth/setup wizard).
+| Halaman publik | `resources/js/pages/Home/{Page}.tsx` |
+| Halaman auth | `resources/js/pages/Auth/{Login,SelectRole}.tsx` |
+| Setup wizard | `resources/js/pages/Setup/Wizard.tsx` |
 
 ### Route & Permission Naming:
 | Type | Pattern | Example |
@@ -1145,7 +1145,7 @@ Controller terpisah hanya dipakai untuk operasi non-Inertia: file download, PDF 
 | `resources/js/components/Shared/Crud/` | Saat mengubah perilaku tabel/form/filter bersama |
 | `app/Support/SidebarMenu.php` | Setiap tambah menu untuk role tertentu |
 | `app/Support/Inertia/ShellProps.php` | Saat menambah data global sidebar/topbar |
-| `app/Livewire/` | Hanya untuk setup wizard (legacy) |
+| `app/Livewire/` | Legacy PowerGrid, tidak dipakai (menunggu cleanup) |
 | `database/migrations/` | Setiap tambah/ubah schema |
 | `database/seeders/` | Setiap tambah data seeder |
 

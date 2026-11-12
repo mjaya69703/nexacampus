@@ -6,7 +6,7 @@
 
 ## 1. Golden Rules untuk AI Development
 1. **Source of Truth Utama:** `AI_CONTEXT.md` (di root) adalah dokumen induk. `.notes/has-been-implemented.md` dan `.notes/will-be-implemented.md` adalah tracker status pengerjaan fitur.
-2. **Frontend Utama = Inertia React:** Semua modul admin — termasuk Financial — memakai **Inertia.js 3 + React 19** (`resources/js/pages/Admin/**`). **Livewire 4 + Blade + PowerGrid hanya tersisa untuk setup wizard** (legacy). Jangan membuat PowerGrid/Blade untuk fitur admin baru.
+2. **Frontend Utama = Inertia React:** Seluruh UI — admin, portal, auth, halaman publik, dan setup wizard — memakai **Inertia.js 3 + React 19** (`resources/js/pages/**`). Tidak ada halaman Livewire/Blade/PowerGrid aktif; `livewire/livewire` hanya dependensi package WhatsApp tanpa UI. Jangan membuat PowerGrid/Blade untuk fitur baru.
 3. **Modular by Domain:** Jangan pernah mencampur file lintas domain tanpa alasan arsitektural yang jelas.
    - **Domain Aktif:** `Academic`, `Access`, `Admission`, `Alumni`, `Campus`, `Financial`, `Organization`, `Publication`, `Settings`, `StudentService`, `System`.
    - **Mirror Directory Structure:** Setiap domain memiliki folder terdedikasi di:
@@ -16,7 +16,7 @@
      - Services & Support: `app/Support/[Domain]/[Service].php`
      - Controllers portal/export: `app/Http/Controllers/[Domain]/[Controller].php`
      - Automated Tests: `tests/Feature/[Domain]/[TestName]Test.php`
-     - Legacy Blade (auth/setup wizard): `resources/views/components/{auth,admission}/⚡[page].blade.php`
+     - Halaman publik/auth/setup: `resources/js/pages/{Home,Auth,Setup}/[Page].tsx`
 
 ---
 
