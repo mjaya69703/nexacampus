@@ -3241,6 +3241,9 @@ Route::post('/academic/theses/{thesis}/finalize', [ThesisController::class, 'fin
 Route::post('/academic/theses/{thesis}/plagiarism', [ThesisController::class, 'updatePlagiarism'])
     ->middleware('active_permission:thesis.plagiarism')
     ->name('academic.theses.plagiarism.update');
+Route::post('/academic/theses/{thesis}/publish', [ThesisController::class, 'publishToRepository'])
+    ->middleware('active_permission:thesis.grade')
+    ->name('academic.theses.publish');
 Route::get('/academic/theses', [ThesisController::class, 'index'])
     ->middleware('active_permission:thesis.viewAny')
     ->name('academic.theses.index');

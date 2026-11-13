@@ -1,7 +1,7 @@
 // Detail skripsi — ringkasan, pembimbing, milestone, dokumen, sidang, dan finalisasi.
 import { Head, router, useForm } from '@inertiajs/react';
 import {
-    Award, BookOpen, CalendarDays, CheckCircle2, Clock, Download, FileText, GraduationCap,
+    Award, BookOpen, CalendarDays, CheckCircle2, Clock, Download, FileText, Globe2, GraduationCap,
     Link2, Pencil, Plus, ShieldCheck, Trash2, Upload, UserRound, Users, XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -75,7 +75,7 @@ type Props = {
     urls: {
         index: string; edit: string; delete: string; approve: string; reject: string;
         milestoneStore: string; defenseStore: string; documentStore: string; finalize: string;
-        plagiarism: string; searchLecturers: string;
+        plagiarism: string; publish: string; repository: string; searchLecturers: string;
     };
 };
 
@@ -593,12 +593,14 @@ export default function ThesisShow({ shell, can, thesis, options, urls }: Props)
     const [documentOpen, setDocumentOpen] = useState(false);
     const [finalizeOpen, setFinalizeOpen] = useState(false);
     const [plagiarismOpen, setPlagiarismOpen] = useState(false);
+    const [publishOpen, setPublishOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
 
     const canApprove = can.approve && ['submitted', 'rejected'].includes(thesis.status);
     const canScheduleDefense = can.defense && !['completed', 'cancelled'].includes(thesis.status);
     const canFinalize = can.grade && thesis.status === 'defended';
+    const canPublish = can.grade && thesis.status === 'completed' && !thesis.repositoryPublished && thesis.plagiarismStatus !== 'flagged';
     const canModify = can.update && !['completed', 'cancelled'].includes(thesis.status);
 
     const deleteThesis = () => {
@@ -618,6 +620,14 @@ export default function ThesisShow({ shell, can, thesis, options, urls }: Props)
     const deleteDocument = (document: Document) => {
         if (!window.confirm(`Hapus dokumen "${document.title}"?`)) return;
         router.delete(document.deleteUrl, { preserveScroll: true });
+    };
+
+    const publishToRepository = () => {
+        setProcessing(true);
+        router.post(urls.publish, {}, {
+            preserveScroll: true,
+            onFinish: () => { setProcessing(false); setPublishOpen(false); },
+        });
     };
 
     const deleteMilestone = (milestone: Milestone) => {
@@ -867,13 +877,24 @@ export default function ThesisShow({ shell, can, thesis, options, urls }: Props)
 
                     {thesis.status === 'completed' && (
                         <section className="db-card">
-                            <div className="db-card-head"><h2 className="db-card-title"><Award size={16} /> Arsip & Repositori</h2></div>
+                            <div className="db-card-head">
+                                <h2 className="db-card-title"><Award size={16} /> Arsip & Repositori</h2>
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                    {thesis.repositoryPublished && <a className="db-btn ghost sm" href={urls.repository} target="_blank" rel="noreferrer"><Globe2 size={13} /> Lihat Repositori</a>}
+                                    {canPublish && <button className="db-btn primary sm" type="button" onClick={() => setPublishOpen(true)}><Globe2 size={13} /> Publikasikan</button>}
+                                </div>
+                            </div>
                             <div className="db-card-body">
                                 <div className="crud-grid">
                                     <Info label="Nilai Akhir" value={thesis.finalScore !== null ? `${thesis.finalScore} (${thesis.finalGrade ?? '-'})` : '-'} />
                                     <Info label="Selesai" value={thesis.completedAt} />
                                     <Info label="Repositori" value={thesis.repositoryPublished ? 'Terpublikasi' : 'Belum dipublikasikan'} hint={thesis.repositoryPublishedAt} />
                                 </div>
+                                {thesis.plagiarismStatus === 'flagged' && !thesis.repositoryPublished && (
+                                    <div className="db-error" style={{ marginTop: 12 }}>
+                                        Karya ditarik dari repositori karena ditandai plagiarisme. Perbarui status cek plagiarisme menjadi "Lolos Cek" untuk mempublikasikan ulang.
+                                    </div>
+                                )}
                             </div>
                         </section>
                     )}
@@ -909,6 +930,16 @@ export default function ThesisShow({ shell, can, thesis, options, urls }: Props)
                     processing={processing}
                     onConfirm={cancelDefenseAction}
                     onCancel={() => setCancelDefense(null)}
+                />
+
+                <ConfirmModal
+                    open={publishOpen}
+                    title="Publikasikan ke repositori?"
+                    message={`"${thesis.title}" akan tampil di repositori publik dan dokumen finalnya dapat diunduh publik.`}
+                    confirmLabel="Ya, publikasikan"
+                    processing={processing}
+                    onConfirm={publishToRepository}
+                    onCancel={() => setPublishOpen(false)}
                 />
             </div>
         </AdminShell>

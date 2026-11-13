@@ -867,16 +867,17 @@ Domain `Academic` — alur: mahasiswa mengajukan proposal → admin menyetujui/m
 - `thesis_defenses.status`: `scheduled`, `completed`, `cancelled`, `postponed`; tipe `proposal` / `result`; hasil `passed` / `passed_with_revision` / `failed`
 - `theses.plagiarism_status`: `not_checked`, `pending`, `passed`, `flagged`. Status `flagged` memblokir publikasi dan otomatis menarik karya dari repositori.
 - Repositori publik hanya menampilkan thesis `completed` + `repository_published = true`; unduhan publik dibatasi pada dokumen kategori `final`.
+- Karya `completed` yang sebelumnya ditarik dapat dipublikasikan ulang lewat aksi admin `publish` setelah status plagiarisme tidak lagi `flagged`.
 
 **Service utama:** `app(ThesisService::class)` di `app/Support/Academic/ThesisService.php`:
 - `createProposal()`, `approve()`, `reject()`, `submitMilestone()`, `reviewMilestone()`
-- `scheduleDefense()`, `completeDefense()`, `finalize()`, `storeDocument()`, `updatePlagiarism()`
+- `scheduleDefense()`, `completeDefense()`, `finalize()`, `storeDocument()`, `updatePlagiarism()`, `publishToRepository()`
 - `ensureNoActiveThesis()` — mahasiswa hanya boleh punya satu thesis aktif
 - Konversi skor → huruf mutu (`gradeFromScore`) dan sinkronisasi status thesis dari milestone/sidang
 - Notifikasi otomatis via `NotificationDispatchService`: perubahan status, milestone dikirim/direview, jadwal sidang, dan metadata plagiarisme.
 
-**Route (28):**
-- Admin: `admin.academic.theses.*` (`index/create/store/show/edit/update/destroy`, `approve`, `reject`, `milestones.store/update/destroy`, `defenses.store/update/complete/cancel`, `documents.store/destroy/download`, `finalize`, `plagiarism.update`, `bulk-destroy`, `search-lecturers`, `search-students`)
+**Route utama:**
+- Admin: `admin.academic.theses.*` (`index/create/store/show/edit/update/destroy`, `approve`, `reject`, `milestones.store/update/destroy`, `defenses.store/update/complete/cancel`, `documents.store/destroy/download`, `finalize`, `plagiarism.update`, `publish`, `bulk-destroy`, `search-lecturers`, `search-students`)
 - Mahasiswa: `student.thesis.*` (`index/store/update/cancel`, `milestones.submit`, `documents.store/destroy/download`)
 - Dosen: `lecturer.theses.*` (`index/show`, `milestones.review`, `defenses.score`, `documents.download`)
 - Publik: `root.repository.*` (`index`, `show`, `documents.download`) — hanya karya `completed` + `repository_published`, unduhan dokumen `final`.
@@ -1182,7 +1183,7 @@ tests/Feature/
 └── System/         # Uji sistem umum, smoke render Inertia
 ```
 
-**Status saat ini:** **824 test / 8.427 assertion** lulus (`php artisan test`, ±102 detik).
+**Status saat ini:** **826 test / 8.438 assertion** lulus (`php artisan test`, ±107 detik).
 
 ### 12.2 Konvensi Penulisan Pest Test (`*Test.php`)
 1. **Direct Namespace/Uses:** File pengujian di `tests/Feature/[Domain]/` ditulis langsung dengan `<?php \n\n use App\Models\...` tanpa deklarasi `namespace Tests\Feature\[Domain];` karena `tests/Pest.php` telah dikonfigurasikan dengan `uses(TestCase::class, RefreshDatabase::class)->in('Feature');` yang mengikat seluruh subdirektori secara rekursif.
@@ -1191,7 +1192,7 @@ tests/Feature/
 4. **Test CRUD Inertia:** Gunakan `assertInertia(fn (Assert $page) => $page->component('Admin/{Area}/{Resources}/Index')->has('data.rows', ...))`; uji juga `can` permission, filter, create/update, guard delete, dan bulk delete. Contoh: `tests/Feature/Organization/OrganizationOr8CrudTest.php`.
 5. **Menjalankan Pengujian:**
    ```bash
-   php artisan test                                      # Seluruh 824 test (semua domain)
+   php artisan test                                      # Seluruh 826 test (semua domain)
    php artisan test tests/Feature/Organization           # Satu domain
    php artisan test --filter=AdmissionEndToEndTest       # Satu file/kelas test
    php artisan test --filter=FinancialClearanceEndToEndTest

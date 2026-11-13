@@ -301,6 +301,8 @@ class ThesisController extends Controller
                 'documentStore' => route('admin.academic.theses.documents.store', $thesis),
                 'finalize' => route('admin.academic.theses.finalize', $thesis),
                 'plagiarism' => route('admin.academic.theses.plagiarism.update', $thesis),
+                'publish' => route('admin.academic.theses.publish', $thesis),
+                'repository' => route('root.repository.show', $thesis),
                 'searchLecturers' => route('admin.academic.theses.search-lecturers'),
             ],
         ]);
@@ -559,6 +561,13 @@ class ThesisController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    public function publishToRepository(Request $request, Thesis $thesis, ThesisService $service)
+    {
+        $service->publishToRepository($thesis, $request->user());
+
+        return back()->with('success', 'Karya berhasil dipublikasikan ke repositori.');
     }
 
     public function searchStudents(Request $request)

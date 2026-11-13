@@ -791,3 +791,61 @@ it('menampilkan metadata plagiarisme pada detail admin dan portal mahasiswa', fu
             ->where('thesis.plagiarismScore', 15.5)
             ->where('thesis.plagiarismNotes', 'Menunggu verifikasi akhir.'));
 });
+
+it('mempublikasikan ulang karya selesai setelah status plagiarisme lolos', function () {
+    $setup = thesisTestSetup();
+    giveThesisPermissions(['thesis.grade']);
+    $thesis = makeThesisForTest($setup);
+    $thesis->update([
+        'status' => ThesisStatus::COMPLETED->value,
+        'final_score' => 88,
+        'final_grade' => 'A-',
+        'completed_at' => now(),
+        'repository_published' => false,
+        'repository_published_at' => null,
+        'plagiarism_status' => PlagiarismStatus::PASSED->value,
+        'plagiarism_score' => 9.5,
+    ]);
+
+    actingThesisAdmin($setup['operator'])
+        ->post(route('admin.academic.theses.publish', $thesis))
+        ->assertSessionHas('success');
+
+    $thesis->refresh();
+
+    expect($thesis->repository_published)->toBeTrue()
+        ->and($thesis->repository_published_at)->not->toBeNull();
+
+    $this->assertDatabaseHas('notification_logs', [
+        'event_key' => 'academic.thesis_status_updated',
+        'user_id' => $setup['studentUser']->id,
+    ]);
+
+    $this->get(route('root.repository.show', $thesis))->assertOk();
+});
+
+it('menolak publikasi ulang karya yang ditandai plagiarisme atau belum selesai', function () {
+    $setup = thesisTestSetup();
+    giveThesisPermissions(['thesis.grade']);
+
+    $flagged = makeThesisForTest($setup, ['title' => 'Karya Ditandai Plagiarisme']);
+    $flagged->update([
+        'status' => ThesisStatus::COMPLETED->value,
+        'completed_at' => now(),
+        'plagiarism_status' => PlagiarismStatus::FLAGGED->value,
+    ]);
+
+    actingThesisAdmin($setup['operator'])
+        ->post(route('admin.academic.theses.publish', $flagged))
+        ->assertSessionHasErrors('publish');
+
+    expect($flagged->refresh()->repository_published)->toBeFalse();
+
+    $ongoing = makeThesisForTest($setup, ['title' => 'Karya Masih Berjalan']);
+
+    actingThesisAdmin($setup['operator'])
+        ->post(route('admin.academic.theses.publish', $ongoing))
+        ->assertSessionHasErrors('publish');
+
+    expect($ongoing->refresh()->repository_published)->toBeFalse();
+});

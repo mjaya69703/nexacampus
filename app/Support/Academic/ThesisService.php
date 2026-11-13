@@ -442,6 +442,42 @@ class ThesisService
         $this->notifications->thesisPlagiarismUpdated($thesis->refresh());
     }
 
+    /**
+     * Publikasikan ulang karya yang sudah difinalisasi namun sebelumnya ditarik
+     * dari repositori (misalnya karena status plagiarisme pernah ditandai).
+     *
+     * @throws ValidationException
+     */
+    public function publishToRepository(Thesis $thesis, User $actor): void
+    {
+        if ($thesis->status !== ThesisStatus::COMPLETED->value) {
+            throw ValidationException::withMessages([
+                'publish' => 'Hanya skripsi yang sudah difinalisasi yang dapat dipublikasikan ke repositori.',
+            ]);
+        }
+
+        if ($thesis->plagiarismStatusEnum() === PlagiarismStatus::FLAGGED) {
+            throw ValidationException::withMessages([
+                'publish' => 'Karya tidak dapat dipublikasikan ke repositori karena hasil cek plagiarisme masih ditandai.',
+            ]);
+        }
+
+        if ($thesis->repository_published) {
+            return;
+        }
+
+        $thesis->update([
+            'repository_published' => true,
+            'repository_published_at' => now(),
+            'updated_by' => $actor->id,
+        ]);
+
+        $this->notifications->thesisStatusUpdated(
+            $thesis->refresh(),
+            'Skripsi telah dipublikasikan ke repositori kampus.',
+        );
+    }
+
     public function syncStatus(Thesis $thesis): void
     {
         if ($thesis->status === ThesisStatus::COMPLETED->value || $thesis->status === ThesisStatus::CANCELLED->value) {
