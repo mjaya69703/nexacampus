@@ -2,6 +2,7 @@
 
 namespace App\Support\Academic;
 
+use App\Enums\PlagiarismStatus;
 use App\Enums\ThesisDefenseStatus;
 use App\Enums\ThesisMilestoneStatus;
 use App\Enums\ThesisStatus;
@@ -12,6 +13,7 @@ use App\Models\Academic\ThesisDocument;
 use App\Models\Academic\ThesisMilestone;
 use App\Models\Academic\ThesisSupervisor;
 use App\Models\User;
+use App\Support\Notifications\NotificationDispatchService;
 use App\Support\StudentGradeCalculator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +30,10 @@ use Illuminate\Validation\ValidationException;
  */
 class ThesisService
 {
-    public function __construct(private readonly StudentGradeCalculator $gradeCalculator) {}
+    public function __construct(
+        private readonly StudentGradeCalculator $gradeCalculator,
+        private readonly NotificationDispatchService $notifications,
+    ) {}
 
     /**
      * @throws ValidationException
@@ -133,6 +138,8 @@ class ThesisService
             $this->createDefaultMilestones($thesis, $actor);
             $this->syncStatus($thesis->refresh());
         });
+
+        $this->notifications->thesisStatusUpdated($thesis->refresh(), $note);
     }
 
     /**
@@ -185,6 +192,8 @@ class ThesisService
             'approved_by' => null,
             'updated_by' => $actor->id,
         ]);
+
+        $this->notifications->thesisStatusUpdated($thesis->refresh(), $reason);
     }
 
     public function cancel(Thesis $thesis, ?User $actor = null, ?string $reason = null): void
@@ -194,6 +203,8 @@ class ThesisService
             'notes' => $reason ?? $thesis->notes,
             'updated_by' => $actor?->id,
         ]);
+
+        $this->notifications->thesisStatusUpdated($thesis->refresh(), $reason);
     }
 
     public function submitMilestone(ThesisMilestone $milestone, ?User $actor = null, ?string $note = null): void
@@ -204,6 +215,8 @@ class ThesisService
             'feedback' => $note ?? $milestone->feedback,
             'updated_by' => $actor?->id,
         ]);
+
+        $this->notifications->thesisMilestoneSubmitted($milestone->refresh());
     }
 
     public function reviewMilestone(ThesisMilestone $milestone, User $reviewer, string $status, ?string $feedback = null): void
@@ -213,6 +226,8 @@ class ThesisService
                 'status' => 'Status review milestone tidak valid.',
             ]);
         }
+
+        $previousStatus = $milestone->thesis()->value('status');
 
         DB::transaction(function () use ($milestone, $reviewer, $status, $feedback) {
             $milestone->update([
@@ -225,6 +240,19 @@ class ThesisService
 
             $this->syncStatus($milestone->thesis()->firstOrFail());
         });
+
+        $thesis = $milestone->thesis()->firstOrFail();
+
+        $this->notifications->thesisMilestoneReviewed($milestone->refresh(), $feedback);
+
+        if ($previousStatus !== $thesis->status) {
+            $this->notifications->thesisStatusUpdated(
+                $thesis,
+                $thesis->status === ThesisStatus::DEFENSE_READY->value
+                    ? 'Seluruh milestone bimbingan telah disetujui. Skripsi siap dijadwalkan sidang.'
+                    : null,
+            );
+        }
     }
 
     /**
@@ -232,7 +260,9 @@ class ThesisService
      */
     public function scheduleDefense(Thesis $thesis, array $data, User $actor): ThesisDefense
     {
-        return DB::transaction(function () use ($thesis, $data, $actor) {
+        $previousStatus = $thesis->status;
+
+        $defense = DB::transaction(function () use ($thesis, $data, $actor) {
             $defense = $thesis->defenses()->create([
                 'type' => $data['type'],
                 'scheduled_at' => $data['scheduled_at'],
@@ -261,6 +291,16 @@ class ThesisService
 
             return $defense;
         });
+
+        $this->notifications->thesisDefenseScheduled($defense->refresh());
+
+        $thesis->refresh();
+
+        if ($previousStatus !== $thesis->status) {
+            $this->notifications->thesisStatusUpdated($thesis, 'Jadwal sidang skripsi telah ditetapkan.');
+        }
+
+        return $defense;
     }
 
     /**
@@ -312,6 +352,14 @@ class ThesisService
                 $this->syncStatus($thesis);
             }
         });
+
+        $thesis = $defense->thesis()->firstOrFail();
+        $resultLabel = $defense->refresh()->resultLabel();
+
+        $this->notifications->thesisStatusUpdated(
+            $thesis,
+            trim('Hasil '.strtolower($defense->typeLabel()).': '.($resultLabel ?? 'telah dinilai').'.'),
+        );
     }
 
     public function finalize(Thesis $thesis, User $actor, ?float $score = null, bool $publish = false): void
@@ -337,6 +385,12 @@ class ThesisService
             ]);
         }
 
+        if ($publish && $thesis->plagiarismStatusEnum() === PlagiarismStatus::FLAGGED) {
+            throw ValidationException::withMessages([
+                'publish' => 'Karya tidak dapat dipublikasikan ke repositori karena hasil cek plagiarisme masih ditandai.',
+            ]);
+        }
+
         $thesis->update([
             'status' => ThesisStatus::COMPLETED->value,
             'final_score' => round((float) $score, 2),
@@ -346,6 +400,46 @@ class ThesisService
             'repository_published_at' => $publish ? now() : $thesis->repository_published_at,
             'updated_by' => $actor->id,
         ]);
+
+        $this->notifications->thesisStatusUpdated(
+            $thesis->refresh(),
+            $publish
+                ? 'Skripsi telah difinalisasi dan dipublikasikan ke repositori kampus.'
+                : 'Skripsi telah difinalisasi.',
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updatePlagiarism(Thesis $thesis, User $actor, array $data): void
+    {
+        $status = PlagiarismStatus::tryFrom((string) ($data['plagiarism_status'] ?? '')) ?? PlagiarismStatus::NOT_CHECKED;
+        $checkedAt = $data['plagiarism_checked_at'] ?? null;
+
+        if ($status === PlagiarismStatus::NOT_CHECKED) {
+            $checkedAt = null;
+        } elseif ($checkedAt === null) {
+            $checkedAt = now();
+        }
+
+        $payload = [
+            'plagiarism_status' => $status->value,
+            'plagiarism_score' => $data['plagiarism_score'] ?? null,
+            'plagiarism_tool' => $data['plagiarism_tool'] ?? null,
+            'plagiarism_checked_at' => $checkedAt,
+            'plagiarism_notes' => $data['plagiarism_notes'] ?? null,
+            'updated_by' => $actor->id,
+        ];
+
+        if ($status === PlagiarismStatus::FLAGGED) {
+            $payload['repository_published'] = false;
+            $payload['repository_published_at'] = null;
+        }
+
+        $thesis->update($payload);
+
+        $this->notifications->thesisPlagiarismUpdated($thesis->refresh());
     }
 
     public function syncStatus(Thesis $thesis): void

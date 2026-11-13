@@ -2,6 +2,7 @@
 
 namespace App\Models\Academic;
 
+use App\Enums\PlagiarismStatus;
 use App\Enums\ThesisDefenseResult;
 use App\Enums\ThesisDefenseStatus;
 use App\Enums\ThesisDocumentCategory;
@@ -63,6 +64,11 @@ class Thesis extends Model
         'completed_at',
         'repository_published',
         'repository_published_at',
+        'plagiarism_status',
+        'plagiarism_score',
+        'plagiarism_tool',
+        'plagiarism_checked_at',
+        'plagiarism_notes',
         'notes',
         'created_by',
         'updated_by',
@@ -78,6 +84,8 @@ class Thesis extends Model
             'completed_at' => 'datetime',
             'repository_published_at' => 'datetime',
             'repository_published' => 'boolean',
+            'plagiarism_checked_at' => 'datetime',
+            'plagiarism_score' => 'decimal:2',
             'final_score' => 'decimal:2',
         ];
     }
@@ -86,7 +94,10 @@ class Thesis extends Model
     {
         return LogOptions::defaults()
             ->useLogName('thesis')
-            ->logOnly(['title', 'topic', 'type', 'status', 'final_score', 'final_grade', 'repository_published'])
+            ->logOnly([
+                'title', 'topic', 'type', 'status', 'final_score', 'final_grade',
+                'repository_published', 'plagiarism_status', 'plagiarism_score',
+            ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -144,6 +155,12 @@ class Thesis extends Model
         return $query->whereIn('status', ThesisStatus::activeValues());
     }
 
+    public function scopeRepositoryPublished($query)
+    {
+        return $query->where('status', ThesisStatus::COMPLETED->value)
+            ->where('repository_published', true);
+    }
+
     public function statusEnum(): ThesisStatus
     {
         return ThesisStatus::tryFrom((string) $this->status) ?? ThesisStatus::DRAFT;
@@ -157,6 +174,26 @@ class Thesis extends Model
     public function statusTone(): string
     {
         return $this->statusEnum()->tone();
+    }
+
+    public function plagiarismStatusEnum(): PlagiarismStatus
+    {
+        return PlagiarismStatus::tryFrom((string) $this->plagiarism_status) ?? PlagiarismStatus::NOT_CHECKED;
+    }
+
+    public function plagiarismStatusLabel(): string
+    {
+        return $this->plagiarismStatusEnum()->label();
+    }
+
+    public function plagiarismStatusTone(): string
+    {
+        return $this->plagiarismStatusEnum()->tone();
+    }
+
+    public function isRepositoryPublished(): bool
+    {
+        return $this->status === ThesisStatus::COMPLETED->value && (bool) $this->repository_published;
     }
 
     public function typeLabel(): string

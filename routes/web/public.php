@@ -6,6 +6,7 @@ use App\Http\Controllers\Home\AdmissionPageController;
 use App\Http\Controllers\Home\CommunityPageController;
 use App\Http\Controllers\Home\InstitutionPageController;
 use App\Http\Controllers\Home\PublicationPageController;
+use App\Http\Controllers\Home\ThesisRepositoryController;
 use App\Http\Controllers\Student\DigitalStudentIdVerificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +31,13 @@ Route::get('/akademik/kalender', [AcademicPageController::class, 'calendar'])->n
 Route::get('/akademik/jadwal', [AcademicPageController::class, 'schedule'])->name('root.akademik.jadwal');
 Route::get('/akademik/kurikulum', [AcademicPageController::class, 'curriculum'])->name('root.akademik.kurikulum');
 Route::get('/akademik/elearning', [AcademicPageController::class, 'elearning'])->name('root.akademik.elearning');
+
+Route::get('/repositori-skripsi', [ThesisRepositoryController::class, 'index'])->name('root.repository.index');
+Route::get('/repositori-skripsi/documents/{document}/download', [ThesisRepositoryController::class, 'download'])
+    ->name('root.repository.documents.download');
+Route::get('/repositori-skripsi/{thesis}', [ThesisRepositoryController::class, 'show'])
+    ->whereNumber('thesis')
+    ->name('root.repository.show');
 
 Route::get('/beasiswa', [CommunityPageController::class, 'beasiswa'])->name('landing.beasiswa');
 Route::get('/alumni', [CommunityPageController::class, 'alumniIndex'])->name('root.alumni.index');

@@ -244,6 +244,13 @@ class ThesisSupervisionController extends Controller
             'finalGrade' => $thesis->final_grade,
             'completedAt' => $thesis->completed_at?->format('d M Y H:i'),
             'repositoryPublished' => (bool) $thesis->repository_published,
+            'plagiarismStatus' => $thesis->plagiarism_status,
+            'plagiarismStatusLabel' => $thesis->plagiarismStatusLabel(),
+            'plagiarismStatusTone' => $thesis->plagiarismStatusTone(),
+            'plagiarismScore' => $thesis->plagiarism_score !== null ? (float) $thesis->plagiarism_score : null,
+            'plagiarismTool' => $thesis->plagiarism_tool,
+            'plagiarismCheckedAt' => $thesis->plagiarism_checked_at?->format('d M Y H:i'),
+            'plagiarismNotes' => $thesis->plagiarism_notes,
             'notes' => $thesis->notes,
             'student' => [
                 'name' => $thesis->studentProfile?->user?->name,

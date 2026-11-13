@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PlagiarismStatus;
 use App\Enums\ThesisDefenseResult;
 use App\Enums\ThesisDefenseStatus;
 use App\Enums\ThesisDocumentCategory;
@@ -538,4 +539,255 @@ it('merender daftar bimbingan dosen dengan statistik', function () {
             ->where('stats.active', 1)
             ->has('data.rows', 1)
             ->where('data.rows.0.nim', '2026TI9001'));
+});
+
+/**
+ * @param  array<string, mixed>  $overrides
+ */
+function publishThesisForTest(array $setup, Thesis $thesis, array $overrides = []): Thesis
+{
+    $thesis->update(array_merge([
+        'status' => ThesisStatus::COMPLETED->value,
+        'final_score' => 88,
+        'final_grade' => 'A-',
+        'completed_at' => now(),
+        'repository_published' => true,
+        'repository_published_at' => now(),
+        'plagiarism_status' => PlagiarismStatus::PASSED->value,
+        'plagiarism_score' => 9.5,
+        'plagiarism_tool' => 'Turnitin',
+        'plagiarism_checked_at' => now(),
+    ], $overrides));
+
+    return $thesis->refresh();
+}
+
+it('menampilkan hanya karya selesai terpublikasi di repositori publik', function () {
+    $setup = thesisTestSetup();
+
+    $published = publishThesisForTest($setup, makeThesisForTest($setup, [
+        'title' => 'Sistem Informasi Publik Terpublikasi',
+        'abstract' => 'Karya ini layak diakses publik.',
+        'keywords' => 'repositori, publikasi',
+    ]));
+
+    $unpublished = publishThesisForTest(
+        $setup,
+        makeThesisForTest($setup, ['title' => 'Karya Belum Dipublikasikan']),
+        ['repository_published' => false, 'repository_published_at' => null],
+    );
+
+    makeThesisForTest($setup, ['title' => 'Karya Masih Berjalan']);
+
+    $this->get(route('root.repository.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Home/Repository/Index')
+            ->where('stats.total', 1)
+            ->has('rows', 1)
+            ->where('rows.0.id', $published->id)
+            ->where('rows.0.plagiarismStatusLabel', 'Lolos Cek')
+            ->where('rows.0.plagiarismScore', 9.5)
+            ->where('page.total', 1));
+
+    $this->get(route('root.repository.index', ['q' => 'Terpublikasi']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('rows', 1)
+            ->where('filters.q', 'Terpublikasi'));
+
+    $this->get(route('root.repository.index', ['q' => 'tidak ditemukan']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('rows', 0)
+            ->where('page.total', 0));
+
+    $this->get(route('root.repository.show', $published))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Home/Repository/Show')
+            ->where('thesis.id', $published->id)
+            ->where('thesis.student.nim', '2026TI9001')
+            ->where('thesis.plagiarismStatusLabel', 'Lolos Cek')
+            ->where('thesis.finalDocument', null));
+
+    $this->get(route('root.repository.show', $unpublished))->assertNotFound();
+});
+
+it('hanya mengizinkan unduhan publik untuk dokumen final karya terpublikasi', function () {
+    Storage::fake('public');
+    $setup = thesisTestSetup();
+    $thesis = publishThesisForTest($setup, makeThesisForTest($setup));
+
+    $final = app(ThesisService::class)->storeDocument(
+        $thesis,
+        $setup['studentUser'],
+        UploadedFile::fake()->create('laporan-final.pdf', 300, 'application/pdf'),
+        ['category' => ThesisDocumentCategory::FINAL->value, 'title' => 'Laporan Final'],
+    );
+
+    $chapter = app(ThesisService::class)->storeDocument(
+        $thesis,
+        $setup['studentUser'],
+        UploadedFile::fake()->create('bab-1.pdf', 120, 'application/pdf'),
+        ['category' => ThesisDocumentCategory::CHAPTER->value, 'title' => 'Bab I'],
+    );
+
+    $this->get(route('root.repository.documents.download', $final))->assertOk();
+    $this->get(route('root.repository.documents.download', $chapter))->assertNotFound();
+
+    $thesis->update(['repository_published' => false]);
+
+    $this->get(route('root.repository.documents.download', $final))->assertNotFound();
+});
+
+it('admin memperbarui metadata plagiarisme dan menarik karya yang ditandai', function () {
+    $setup = thesisTestSetup();
+    giveThesisPermissions(['thesis.plagiarism']);
+    $thesis = publishThesisForTest($setup, makeThesisForTest($setup));
+
+    actingThesisAdmin($setup['operator'])
+        ->post(route('admin.academic.theses.plagiarism.update', $thesis), [
+            'plagiarism_status' => PlagiarismStatus::FLAGGED->value,
+            'plagiarism_score' => 42.75,
+            'plagiarism_tool' => 'Turnitin',
+            'plagiarism_checked_at' => '2026-11-13 10:00:00',
+            'plagiarism_notes' => 'Banyak bagian belum dikutip dengan benar.',
+        ])
+        ->assertSessionHas('success');
+
+    $thesis->refresh();
+
+    expect($thesis->plagiarism_status)->toBe(PlagiarismStatus::FLAGGED->value)
+        ->and((float) $thesis->plagiarism_score)->toBe(42.75)
+        ->and($thesis->plagiarism_tool)->toBe('Turnitin')
+        ->and($thesis->plagiarism_checked_at)->not->toBeNull()
+        ->and($thesis->repository_published)->toBeFalse()
+        ->and($thesis->repository_published_at)->toBeNull();
+
+    $this->assertDatabaseHas('notification_logs', [
+        'event_key' => 'academic.thesis_plagiarism_updated',
+        'user_id' => $setup['studentUser']->id,
+    ]);
+
+    $this->get(route('root.repository.show', $thesis))->assertNotFound();
+});
+
+it('memblokir publikasi repositori saat karya ditandai plagiarisme', function () {
+    $setup = thesisTestSetup();
+    giveThesisPermissions(['thesis.grade']);
+    $thesis = makeThesisForTest($setup);
+    $thesis->update([
+        'status' => ThesisStatus::DEFENDED->value,
+        'final_score' => 85,
+        'final_grade' => 'B+',
+        'plagiarism_status' => PlagiarismStatus::FLAGGED->value,
+        'plagiarism_score' => 35,
+    ]);
+
+    actingThesisAdmin($setup['operator'])
+        ->post(route('admin.academic.theses.finalize', $thesis), [
+            'final_score' => 85,
+            'publish' => true,
+        ])
+        ->assertSessionHasErrors('publish');
+
+    $thesis->refresh();
+
+    expect($thesis->status)->toBe(ThesisStatus::DEFENDED->value)
+        ->and($thesis->repository_published)->toBeFalse();
+
+    actingThesisAdmin($setup['operator'])
+        ->post(route('admin.academic.theses.finalize', $thesis), [
+            'final_score' => 85,
+            'publish' => false,
+        ])
+        ->assertSessionHas('success');
+
+    $thesis->refresh();
+
+    expect($thesis->status)->toBe(ThesisStatus::COMPLETED->value)
+        ->and($thesis->repository_published)->toBeFalse();
+});
+
+it('mengirim notifikasi status, milestone, dan sidang ke pengguna terkait', function () {
+    $setup = thesisTestSetup();
+    $thesis = makeThesisForTest($setup);
+
+    app(ThesisService::class)->approve($thesis, $setup['operator'], [$setup['lecturer']->id]);
+
+    $this->assertDatabaseHas('notification_logs', [
+        'event_key' => 'academic.thesis_status_updated',
+        'user_id' => $setup['studentUser']->id,
+    ]);
+
+    $milestone = $thesis->milestones()->orderBy('sequence')->firstOrFail();
+    app(ThesisService::class)->submitMilestone($milestone, $setup['studentUser'], 'Proposal selesai.');
+
+    $this->assertDatabaseHas('notification_logs', [
+        'event_key' => 'academic.thesis_milestone_submitted',
+        'user_id' => $setup['lecturerUser']->id,
+    ]);
+
+    app(ThesisService::class)->reviewMilestone(
+        $milestone->refresh(),
+        $setup['lecturerUser'],
+        ThesisMilestoneStatus::APPROVED->value,
+        'Disetujui.',
+    );
+
+    $this->assertDatabaseHas('notification_logs', [
+        'event_key' => 'academic.thesis_milestone_reviewed',
+        'user_id' => $setup['studentUser']->id,
+    ]);
+
+    app(ThesisService::class)->scheduleDefense($thesis->refresh(), [
+        'type' => 'proposal',
+        'scheduled_at' => now()->addDays(3)->format('Y-m-d H:i:s'),
+        'duration_minutes' => 90,
+        'room' => 'Ruang Seminar',
+        'examiners' => [
+            ['lecturer_profile_id' => $setup['lecturer']->id, 'role' => 'chair'],
+        ],
+    ], $setup['operator']);
+
+    $this->assertDatabaseHas('notification_logs', [
+        'event_key' => 'academic.thesis_defense_scheduled',
+        'user_id' => $setup['studentUser']->id,
+    ]);
+});
+
+it('menampilkan metadata plagiarisme pada detail admin dan portal mahasiswa', function () {
+    $setup = thesisTestSetup();
+    giveThesisPermissions(['thesis.view', 'thesis.plagiarism']);
+    $thesis = makeThesisForTest($setup);
+    $thesis->update([
+        'plagiarism_status' => PlagiarismStatus::PENDING->value,
+        'plagiarism_score' => 15.5,
+        'plagiarism_tool' => 'Turnitin',
+        'plagiarism_checked_at' => now(),
+        'plagiarism_notes' => 'Menunggu verifikasi akhir.',
+    ]);
+
+    actingThesisAdmin($setup['operator'])
+        ->get(route('admin.academic.theses.show', $thesis))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Academic/Theses/Show')
+            ->where('thesis.plagiarismStatus', PlagiarismStatus::PENDING->value)
+            ->where('thesis.plagiarismStatusLabel', 'Menunggu Hasil')
+            ->where('thesis.plagiarismScore', 15.5)
+            ->where('thesis.plagiarismTool', 'Turnitin')
+            ->where('can.plagiarism', true)
+            ->has('options.plagiarismStatuses'));
+
+    $this->actingAs($setup['studentUser'])
+        ->withSession(['active_role' => 'student'])
+        ->get(route('student.thesis.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Student/Thesis/Index')
+            ->where('thesis.plagiarismStatusLabel', 'Menunggu Hasil')
+            ->where('thesis.plagiarismScore', 15.5)
+            ->where('thesis.plagiarismNotes', 'Menunggu verifikasi akhir.'));
 });

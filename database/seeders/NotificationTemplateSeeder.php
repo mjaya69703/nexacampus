@@ -82,6 +82,36 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => "Halo {{ student_name }}, {{ request_label }} {{ request_number }} berubah menjadi {{ status_label }}.\nCatatan: {{ notes }}",
                 'variables' => ['student_name', 'request_label', 'request_number', 'status_label', 'notes'],
             ],
+            [
+                'event_key' => 'academic.thesis_status_updated',
+                'title' => 'Status skripsi diperbarui',
+                'body' => "Halo {{ student_name }}, status skripsi \"{{ thesis_title }}\" berubah menjadi {{ status_label }}.\nCatatan: {{ notes }}",
+                'variables' => ['student_name', 'thesis_title', 'status_label', 'notes'],
+            ],
+            [
+                'event_key' => 'academic.thesis_milestone_submitted',
+                'title' => 'Milestone skripsi dikirim',
+                'body' => "Halo {{ lecturer_name }}, mahasiswa {{ student_name }} mengirim milestone {{ milestone_title }} untuk skripsi \"{{ thesis_title }}\".\nSilakan review melalui portal dosen.",
+                'variables' => ['lecturer_name', 'student_name', 'thesis_title', 'milestone_title'],
+            ],
+            [
+                'event_key' => 'academic.thesis_milestone_reviewed',
+                'title' => 'Review milestone skripsi',
+                'body' => "Halo {{ student_name }}, milestone {{ milestone_title }} pada skripsi \"{{ thesis_title }}\" telah direview.\nStatus: {{ status_label }}.\nCatatan: {{ feedback }}",
+                'variables' => ['student_name', 'thesis_title', 'milestone_title', 'status_label', 'feedback'],
+            ],
+            [
+                'event_key' => 'academic.thesis_defense_scheduled',
+                'title' => 'Jadwal sidang skripsi',
+                'body' => "Halo {{ student_name }}, {{ defense_type }} skripsi \"{{ thesis_title }}\" dijadwalkan pada {{ scheduled_at }}.\nLokasi: {{ room }}.",
+                'variables' => ['student_name', 'thesis_title', 'defense_type', 'scheduled_at', 'room'],
+            ],
+            [
+                'event_key' => 'academic.thesis_plagiarism_updated',
+                'title' => 'Hasil cek plagiarisme skripsi',
+                'body' => "Halo {{ student_name }}, hasil cek plagiarisme skripsi \"{{ thesis_title }}\" diperbarui.\nStatus: {{ status_label }}.\nSkor kemiripan: {{ score }}.\nAlat: {{ tool }}.\nCatatan: {{ notes }}",
+                'variables' => ['student_name', 'thesis_title', 'status_label', 'score', 'tool', 'notes'],
+            ],
         ];
     }
 }

@@ -1970,6 +1970,14 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
     - Dokumen di disk `public` (`thesis/{id}`) dengan kontrol akses pemilik/pembimbing/penguji/admin.
     - Test: `tests/Feature/Academic/ThesisManagementTest.php` (12 test, 215 assertion); suite total 818 test / 8.300 assertion.
 
+- **2026-11-13 (Polish Skripsi / Tugas Akhir):**
+  - **Repositori publik:** route `root.repository.*` + halaman `Home/Repository/{Index,Show}.tsx`; hanya thesis `completed` + `repository_published`, filter pencarian (judul/abstrak/kata kunci/nama/NIM), program studi, tahun, jenis, dan urutan. Unduhan publik dibatasi dokumen kategori `final`.
+  - **Metadata plagiarisme:** enum `PlagiarismStatus` (`not_checked`, `pending`, `passed`, `flagged`), kolom `plagiarism_status/score/tool/checked_at/notes` pada `theses`, permission `thesis.plagiarism`, aksi admin `plagiarism.update`, serta kartu read-only di portal mahasiswa/dosen.
+  - **Guard publikasi:** status `flagged` memblokir finalisasi+publikasi dan otomatis menarik karya dari repositori (`repository_published = false`).
+  - **Notifikasi:** `NotificationDispatchService` mengirim notifikasi perubahan status, milestone dikirim/direview, jadwal sidang, dan metadata plagiarisme; template ditambahkan di `NotificationTemplateSeeder`.
+  - **UI:** tab Repositori di `AcademicShell`, link footer, kartu/modal plagiarisme admin, kartu plagiarisme mahasiswa/dosen, dark mode memakai token `--adm-*`/`--db-*`.
+  - **Test:** `tests/Feature/Academic/ThesisManagementTest.php` diperluas menjadi 18 test / 342 assertion (repositori, unduhan final, update plagiarisme, guard finalisasi, notifikasi); suite total 824 test / 8.427 assertion.
+
 - Last updated by: AI Assistant (based on actual git commit history)
 
 ---

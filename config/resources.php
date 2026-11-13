@@ -305,7 +305,7 @@ return [
         'area' => 'academic',
         'component' => 'admin.academic.theses',
         'actions' => ['index', 'create', 'edit', 'show', 'delete'],
-        'permissions' => ['viewAny', 'view', 'create', 'update', 'delete', 'approve', 'defense', 'grade'],
+        'permissions' => ['viewAny', 'view', 'create', 'update', 'delete', 'approve', 'defense', 'grade', 'plagiarism'],
         'menu' => [
             'title' => 'Skripsi / Tugas Akhir',
             'icon' => 'fas fa-book-open-reader',

@@ -51,6 +51,9 @@ type Thesis = {
     approvedAt: string | null; approvedBy: string | null; rejectedAt: string | null; rejectionReason: string | null;
     finalScore: number | null; finalGrade: string | null; completedAt: string | null;
     repositoryPublished: boolean; repositoryPublishedAt: string | null; notes: string | null;
+    plagiarismStatus: string; plagiarismStatusLabel: string; plagiarismStatusTone: string;
+    plagiarismScore: number | null; plagiarismTool: string | null; plagiarismCheckedAt: string | null;
+    plagiarismCheckedAtInput: string | null; plagiarismNotes: string | null;
     student: { id: number | null; name: string | null; nim: string | null; program: string | null; entryYear: number | null; semester: number | null; email: string | null };
     proposal: { fileName: string | null; downloadUrl: string } | null;
     supervisors: Supervisor[]; milestones: Milestone[]; documents: Document[]; defenses: Defense[];
@@ -58,7 +61,7 @@ type Thesis = {
 
 type Props = {
     shell: ShellProps;
-    can: { update: boolean; delete: boolean; approve: boolean; defense: boolean; grade: boolean };
+    can: { update: boolean; delete: boolean; approve: boolean; defense: boolean; grade: boolean; plagiarism: boolean };
     thesis: Thesis;
     options: {
         types: Record<string, string>;
@@ -67,11 +70,12 @@ type Props = {
         examinerRoles: Record<string, string>;
         documentCategories: Record<string, string>;
         defenseResults: Record<string, string>;
+        plagiarismStatuses: Record<string, string>;
     };
     urls: {
         index: string; edit: string; delete: string; approve: string; reject: string;
         milestoneStore: string; defenseStore: string; documentStore: string; finalize: string;
-        searchLecturers: string;
+        plagiarism: string; searchLecturers: string;
     };
 };
 
@@ -484,9 +488,10 @@ function DocumentModal({ url, categories, onClose }: { url: string; categories: 
 }
 
 function FinalizeModal({ thesis, url, onClose }: { thesis: Thesis; url: string; onClose: () => void }) {
+    const publishBlocked = thesis.plagiarismStatus === 'flagged';
     const form = useForm({
         final_score: thesis.finalScore !== null ? String(thesis.finalScore) : '',
-        publish: thesis.repositoryPublished,
+        publish: publishBlocked ? false : thesis.repositoryPublished,
     });
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -501,16 +506,76 @@ function FinalizeModal({ thesis, url, onClose }: { thesis: Thesis; url: string; 
                     <input type="number" min={0} max={100} step="0.01" className="db-input" value={form.data.final_score} onChange={(event) => form.setData('final_score', event.target.value)} />
                     {form.errors.final_score && <div className="db-error">{form.errors.final_score}</div>}
                 </div>
-                <label className="db-summary" style={{ cursor: 'pointer' }}>
+                <label className="db-summary" style={{ cursor: publishBlocked ? 'not-allowed' : 'pointer', opacity: publishBlocked ? 0.65 : 1 }}>
                     <div>
                         <b>Publikasikan ke repositori</b>
                         <small>Karya akan ditandai siap diakses publik setelah finalisasi.</small>
                     </div>
-                    <input type="checkbox" checked={form.data.publish} onChange={(event) => form.setData('publish', event.target.checked)} />
+                    <input type="checkbox" disabled={publishBlocked} checked={form.data.publish} onChange={(event) => form.setData('publish', event.target.checked)} />
                 </label>
+                {publishBlocked && <div className="db-error">Publikasi diblokir karena hasil cek plagiarisme masih ditandai.</div>}
+                {form.errors.publish && <div className="db-error">{form.errors.publish}</div>}
                 <div className="db-modal-actions">
                     <button className="db-btn ghost" type="button" onClick={onClose} disabled={form.processing}>Batal</button>
                     <button className="db-btn primary" type="submit" disabled={form.processing}>{form.processing ? 'Menyimpan…' : 'Finalisasi'}</button>
+                </div>
+            </form>
+        </ModalShell>
+    );
+}
+
+function PlagiarismModal({ thesis, url, statuses, onClose }: { thesis: Thesis; url: string; statuses: Record<string, string>; onClose: () => void }) {
+    const form = useForm({
+        plagiarism_status: thesis.plagiarismStatus || 'not_checked',
+        plagiarism_score: thesis.plagiarismScore !== null ? String(thesis.plagiarismScore) : '',
+        plagiarism_tool: thesis.plagiarismTool ?? '',
+        plagiarism_checked_at: thesis.plagiarismCheckedAtInput ?? '',
+        plagiarism_notes: thesis.plagiarismNotes ?? '',
+    });
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        form.post(url, { preserveScroll: true, onSuccess: onClose });
+    };
+
+    return (
+        <ModalShell title="Metadata Cek Plagiarisme" onClose={onClose} wide>
+            <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+                <div className="crud-grid">
+                    <div>
+                        <label className="crud-label">Status <span>*</span></label>
+                        <select className="db-input" value={form.data.plagiarism_status} onChange={(event) => form.setData('plagiarism_status', event.target.value)}>
+                            {Object.entries(statuses).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                        </select>
+                        {form.errors.plagiarism_status && <div className="db-error">{form.errors.plagiarism_status}</div>}
+                    </div>
+                    <div>
+                        <label className="crud-label">Skor kemiripan (%)</label>
+                        <input type="number" min={0} max={100} step="0.01" className="db-input" value={form.data.plagiarism_score} onChange={(event) => form.setData('plagiarism_score', event.target.value)} placeholder="Contoh: 12.5" />
+                        {form.errors.plagiarism_score && <div className="db-error">{form.errors.plagiarism_score}</div>}
+                    </div>
+                    <div>
+                        <label className="crud-label">Alat / layanan cek</label>
+                        <input className="db-input" value={form.data.plagiarism_tool} onChange={(event) => form.setData('plagiarism_tool', event.target.value)} placeholder="Contoh: Turnitin" />
+                        {form.errors.plagiarism_tool && <div className="db-error">{form.errors.plagiarism_tool}</div>}
+                    </div>
+                    <div>
+                        <label className="crud-label">Tanggal pengecekan</label>
+                        <input type="datetime-local" className="db-input" value={form.data.plagiarism_checked_at} onChange={(event) => form.setData('plagiarism_checked_at', event.target.value)} />
+                        {form.errors.plagiarism_checked_at && <div className="db-error">{form.errors.plagiarism_checked_at}</div>}
+                    </div>
+                </div>
+                <div>
+                    <label className="crud-label">Catatan hasil</label>
+                    <textarea className="db-input" rows={3} value={form.data.plagiarism_notes} onChange={(event) => form.setData('plagiarism_notes', event.target.value)} placeholder="Bagian yang terindikasi, tindakan perbaikan, atau catatan verifikator" />
+                    {form.errors.plagiarism_notes && <div className="db-error">{form.errors.plagiarism_notes}</div>}
+                </div>
+                {form.data.plagiarism_status === 'flagged' && (
+                    <div className="db-error">Status <b>Ditandai</b> otomatis menarik karya dari repositori publik.</div>
+                )}
+                <div className="db-modal-actions">
+                    <button className="db-btn ghost" type="button" onClick={onClose} disabled={form.processing}>Batal</button>
+                    <button className="db-btn primary" type="submit" disabled={form.processing}>{form.processing ? 'Menyimpan…' : 'Simpan Metadata'}</button>
                 </div>
             </form>
         </ModalShell>
@@ -527,6 +592,7 @@ export default function ThesisShow({ shell, can, thesis, options, urls }: Props)
     const [cancelDefense, setCancelDefense] = useState<Defense | null>(null);
     const [documentOpen, setDocumentOpen] = useState(false);
     const [finalizeOpen, setFinalizeOpen] = useState(false);
+    const [plagiarismOpen, setPlagiarismOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
 
@@ -576,6 +642,7 @@ export default function ThesisShow({ shell, can, thesis, options, urls }: Props)
                                 {canModify && <a className="db-btn ghost" href={urls.edit}><Pencil size={14} /> Edit</a>}
                                 {canApprove && <button className="db-btn primary" type="button" onClick={() => setApproveOpen(true)}><CheckCircle2 size={14} /> Setujui</button>}
                                 {canApprove && <button className="db-btn danger" type="button" onClick={() => setRejectOpen(true)}><XCircle size={14} /> Tolak</button>}
+                                {can.plagiarism && <button className="db-btn light" type="button" onClick={() => setPlagiarismOpen(true)}><ShieldCheck size={14} /> Cek Plagiarisme</button>}
                                 {canFinalize && <button className="db-btn primary" type="button" onClick={() => setFinalizeOpen(true)}><Award size={14} /> Finalisasi</button>}
                                 {can.delete && thesis.status !== 'completed' && <button className="db-btn ghost" type="button" onClick={() => setDeleteOpen(true)}><Trash2 size={14} /> Hapus</button>}
                             </>
@@ -619,6 +686,23 @@ export default function ThesisShow({ shell, can, thesis, options, urls }: Props)
                                         <Download size={14} /> Proposal: {thesis.proposal.fileName ?? 'unduh'}
                                     </a>
                                 </div>
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="db-card">
+                        <div className="db-card-head">
+                            <h2 className="db-card-title"><ShieldCheck size={16} /> Cek Plagiarisme</h2>
+                            {can.plagiarism && <button className="db-btn ghost sm" type="button" onClick={() => setPlagiarismOpen(true)}><Pencil size={13} /> Edit Metadata</button>}
+                        </div>
+                        <div className="db-card-body">
+                            <div className="crud-grid">
+                                <Info label="Status" value={<span className={`db-badge ${thesis.plagiarismStatusTone}`}>{thesis.plagiarismStatusLabel}</span>} />
+                                <Info label="Skor Kemiripan" value={thesis.plagiarismScore !== null ? `${thesis.plagiarismScore}%` : '-'} hint={thesis.plagiarismTool ?? 'Alat belum dicatat'} />
+                                <Info label="Tanggal Pengecekan" value={thesis.plagiarismCheckedAt} hint={thesis.plagiarismStatus === 'flagged' ? 'Karya ditarik dari repositori publik' : undefined} />
+                            </div>
+                            {thesis.plagiarismNotes && (
+                                <div className="db-hint" style={{ marginTop: 12 }}>Catatan: {thesis.plagiarismNotes}</div>
                             )}
                         </div>
                     </section>
@@ -803,6 +887,7 @@ export default function ThesisShow({ shell, can, thesis, options, urls }: Props)
                 {completeDefense && <CompleteDefenseModal defense={completeDefense} results={options.defenseResults} onClose={() => setCompleteDefense(null)} />}
                 {documentOpen && <DocumentModal url={urls.documentStore} categories={options.documentCategories} onClose={() => setDocumentOpen(false)} />}
                 {finalizeOpen && <FinalizeModal thesis={thesis} url={urls.finalize} onClose={() => setFinalizeOpen(false)} />}
+                {plagiarismOpen && <PlagiarismModal thesis={thesis} url={urls.plagiarism} statuses={options.plagiarismStatuses} onClose={() => setPlagiarismOpen(false)} />}
 
                 <ConfirmModal
                     open={deleteOpen}

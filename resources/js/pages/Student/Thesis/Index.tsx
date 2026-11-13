@@ -2,7 +2,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import {
     BookOpen, CalendarDays, CheckCircle2, Clock, Download, FileText, GraduationCap,
-    Link2, Pencil, Plus, Send, ShieldAlert, Trash2, Upload, UserRound, XCircle,
+    Link2, Pencil, Plus, Send, ShieldAlert, ShieldCheck, Trash2, Upload, UserRound, XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
@@ -42,7 +42,10 @@ type Thesis = {
     proposalSubmittedAt: string | null; approvedAt: string | null; approvedBy: string | null;
     rejectedAt: string | null; rejectionReason: string | null; finalScore: number | null;
     finalGrade: string | null; completedAt: string | null; repositoryPublished: boolean;
-    repositoryPublishedAt: string | null; notes: string | null;
+    repositoryPublishedAt: string | null; repositoryUrl: string | null;
+    plagiarismStatus: string; plagiarismStatusLabel: string; plagiarismStatusTone: string;
+    plagiarismScore: number | null; plagiarismTool: string | null; plagiarismCheckedAt: string | null;
+    plagiarismNotes: string | null; notes: string | null;
     canEdit: boolean; canCancel: boolean; canUpload: boolean; updateUrl: string;
     proposal: { fileName: string | null; downloadUrl: string } | null;
     supervisors: Supervisor[]; milestones: Milestone[]; documents: DocumentItem[]; defenses: Defense[];
@@ -343,6 +346,20 @@ export default function StudentThesisIndex({ shell, hasProfile, student, thesis,
                     ) : (
                         <>
                             <section className="db-card">
+                                <div className="db-card-head"><h2 className="db-card-title"><ShieldCheck size={16} /> Cek Plagiarisme</h2></div>
+                                <div className="db-card-body">
+                                    <div className="crud-grid">
+                                        <Info label="Status" value={<span className={`db-badge ${thesis.plagiarismStatusTone}`}>{thesis.plagiarismStatusLabel}</span>} />
+                                        <Info label="Skor Kemiripan" value={thesis.plagiarismScore !== null ? `${thesis.plagiarismScore}%` : '-'} hint={thesis.plagiarismTool ?? 'Alat belum dicatat'} />
+                                        <Info label="Tanggal Pengecekan" value={thesis.plagiarismCheckedAt} />
+                                    </div>
+                                    {thesis.plagiarismNotes && (
+                                        <div className="db-hint" style={{ marginTop: 12 }}>Catatan: {thesis.plagiarismNotes}</div>
+                                    )}
+                                </div>
+                            </section>
+
+                            <section className="db-card">
                                 <div className="db-card-head"><h2 className="db-card-title"><UserRound size={16} /> Ringkasan</h2></div>
                                 <div className="db-card-body">
                                     <div className="crud-grid">
@@ -525,6 +542,13 @@ export default function StudentThesisIndex({ shell, hasProfile, student, thesis,
                                             <Info label="Selesai" value={thesis.completedAt} />
                                             <Info label="Repositori" value={thesis.repositoryPublished ? 'Terpublikasi' : 'Belum dipublikasikan'} hint={thesis.repositoryPublishedAt} />
                                         </div>
+                                        {thesis.repositoryUrl && (
+                                            <div style={{ marginTop: 14 }}>
+                                                <a className="db-btn ghost" href={thesis.repositoryUrl} target="_blank" rel="noreferrer">
+                                                    <BookOpen size={14} /> Lihat di repositori publik
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 </section>
                             )}

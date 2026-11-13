@@ -41,7 +41,10 @@ type Thesis = {
     typeLabel: string; status: string; statusLabel: string; statusTone: string; year: string | null;
     createdAt: string | null; proposalSubmittedAt: string | null; approvedAt: string | null;
     approvedBy: string | null; finalScore: number | null; finalGrade: string | null;
-    completedAt: string | null; repositoryPublished: boolean; notes: string | null;
+    completedAt: string | null; repositoryPublished: boolean;
+    plagiarismStatusLabel: string; plagiarismStatusTone: string; plagiarismScore: number | null;
+    plagiarismTool: string | null; plagiarismCheckedAt: string | null; plagiarismNotes: string | null;
+    notes: string | null;
     student: { name: string | null; nim: string | null; program: string | null; entryYear: number | null; semester: number | null; email: string | null };
     proposal: { fileName: string | null; downloadUrl: string } | null;
     supervisors: Supervisor[]; milestones: Milestone[]; documents: DocumentItem[]; defenses: Defense[];
@@ -219,6 +222,20 @@ export default function LecturerThesisShow({ shell, thesis, urls }: Props) {
                                         </div>
                                     ))}
                                 </div>
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="db-card">
+                        <div className="db-card-head"><h2 className="db-card-title"><ShieldCheck size={16} /> Cek Plagiarisme</h2></div>
+                        <div className="db-card-body">
+                            <div className="crud-grid">
+                                <Info label="Status" value={<span className={`db-badge ${thesis.plagiarismStatusTone}`}>{thesis.plagiarismStatusLabel}</span>} />
+                                <Info label="Skor Kemiripan" value={thesis.plagiarismScore !== null ? `${thesis.plagiarismScore}%` : '-'} hint={thesis.plagiarismTool ?? 'Alat belum dicatat'} />
+                                <Info label="Tanggal Pengecekan" value={thesis.plagiarismCheckedAt} />
+                            </div>
+                            {thesis.plagiarismNotes && (
+                                <div className="db-hint" style={{ marginTop: 12 }}>Catatan: {thesis.plagiarismNotes}</div>
                             )}
                         </div>
                     </section>

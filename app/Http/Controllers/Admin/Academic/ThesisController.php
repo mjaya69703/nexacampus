@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Academic;
 
+use App\Enums\PlagiarismStatus;
 use App\Enums\ThesisDefenseResult;
 use App\Enums\ThesisDefenseStatus;
 use App\Enums\ThesisDocumentCategory;
@@ -277,6 +278,7 @@ class ThesisController extends Controller
                 'approve' => ActivePermission::check('thesis.approve'),
                 'defense' => ActivePermission::check('thesis.defense'),
                 'grade' => ActivePermission::check('thesis.grade'),
+                'plagiarism' => ActivePermission::check('thesis.plagiarism'),
             ],
             'thesis' => $this->mapShow($thesis),
             'options' => [
@@ -286,6 +288,7 @@ class ThesisController extends Controller
                 'examinerRoles' => Thesis::EXAMINER_ROLE_LABELS,
                 'documentCategories' => ThesisDocumentCategory::options(),
                 'defenseResults' => ThesisDefenseResult::options(),
+                'plagiarismStatuses' => PlagiarismStatus::options(),
             ],
             'urls' => [
                 'index' => route('admin.academic.theses.index'),
@@ -297,6 +300,7 @@ class ThesisController extends Controller
                 'defenseStore' => route('admin.academic.theses.defenses.store', $thesis),
                 'documentStore' => route('admin.academic.theses.documents.store', $thesis),
                 'finalize' => route('admin.academic.theses.finalize', $thesis),
+                'plagiarism' => route('admin.academic.theses.plagiarism.update', $thesis),
                 'searchLecturers' => route('admin.academic.theses.search-lecturers'),
             ],
         ]);
@@ -536,6 +540,27 @@ class ThesisController extends Controller
         return back()->with('success', 'Nilai akhir difinalisasi'.(($validated['publish'] ?? false) ? ' dan karya dipublikasikan ke repositori.' : '.'));
     }
 
+    public function updatePlagiarism(Request $request, Thesis $thesis, ThesisService $service)
+    {
+        $validated = $request->validate([
+            'plagiarism_status' => ['required', Rule::in(array_keys(PlagiarismStatus::options()))],
+            'plagiarism_score' => 'nullable|numeric|min:0|max:100',
+            'plagiarism_tool' => 'nullable|string|max:100',
+            'plagiarism_checked_at' => 'nullable|date',
+            'plagiarism_notes' => 'nullable|string|max:2000',
+        ]);
+
+        $service->updatePlagiarism($thesis, $request->user(), $validated);
+
+        $message = 'Metadata cek plagiarisme berhasil diperbarui.';
+
+        if ($validated['plagiarism_status'] === PlagiarismStatus::FLAGGED->value) {
+            $message .= ' Karya otomatis ditarik dari repositori publik.';
+        }
+
+        return back()->with('success', $message);
+    }
+
     public function searchStudents(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
@@ -646,6 +671,14 @@ class ThesisController extends Controller
             'completedAt' => $thesis->completed_at?->format('d M Y H:i'),
             'repositoryPublished' => (bool) $thesis->repository_published,
             'repositoryPublishedAt' => $thesis->repository_published_at?->format('d M Y H:i'),
+            'plagiarismStatus' => $thesis->plagiarism_status,
+            'plagiarismStatusLabel' => $thesis->plagiarismStatusLabel(),
+            'plagiarismStatusTone' => $thesis->plagiarismStatusTone(),
+            'plagiarismScore' => $thesis->plagiarism_score !== null ? (float) $thesis->plagiarism_score : null,
+            'plagiarismTool' => $thesis->plagiarism_tool,
+            'plagiarismCheckedAt' => $thesis->plagiarism_checked_at?->format('d M Y H:i'),
+            'plagiarismCheckedAtInput' => $thesis->plagiarism_checked_at?->format('Y-m-d\TH:i'),
+            'plagiarismNotes' => $thesis->plagiarism_notes,
             'notes' => $thesis->notes,
             'student' => [
                 'id' => $student?->id,
