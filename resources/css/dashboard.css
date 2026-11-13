@@ -119,6 +119,7 @@
 .db-badge.green { color: var(--db-green); background: var(--db-green-soft); }
 .db-badge.red { color: var(--db-red); background: var(--db-red-soft); }
 .db-badge.amber { color: var(--db-gold); background: var(--db-gold-soft); }
+.db-badge.blue { color: var(--db-brand); background: var(--db-brand-soft); }
 .db-badge.gray { color: var(--db-muted); background: var(--db-soft); }
 
 /* ── Semester strip (angka persisten, berdenominator, bisa diklik) ───── */

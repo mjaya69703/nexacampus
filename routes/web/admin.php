@@ -58,6 +58,10 @@ use App\Http\Controllers\Admin\Financial\StudentCreditController;
 use App\Http\Controllers\Admin\Financial\StudentInvoiceController;
 use App\Http\Controllers\Admin\Financial\StudentScholarshipController;
 use App\Http\Controllers\Admin\Financial\TuitionFeeController;
+use App\Http\Controllers\Admin\Library\BookCategoryController;
+use App\Http\Controllers\Admin\Library\BookController;
+use App\Http\Controllers\Admin\Library\BookLoanController;
+use App\Http\Controllers\Admin\Library\BookReservationController;
 use App\Http\Controllers\Admin\Organization\ApprovalRequestController;
 use App\Http\Controllers\Admin\Organization\ApprovalTemplateController;
 use App\Http\Controllers\Admin\Organization\EdomPeriodController;
@@ -3265,3 +3269,113 @@ Route::put('/academic/theses/{thesis}', [ThesisController::class, 'update'])
 Route::delete('/academic/theses/{thesis}', [ThesisController::class, 'destroy'])
     ->middleware('active_permission:thesis.delete')
     ->name('academic.theses.destroy');
+
+// Perpustakaan — kategori, buku/eksemplar, peminjaman, dan reservasi.
+Route::get('/library/book-categories', [BookCategoryController::class, 'index'])
+    ->middleware('active_permission:book-category.viewAny')
+    ->name('library.book-categories.index');
+Route::get('/library/book-categories/create', [BookCategoryController::class, 'create'])
+    ->middleware('active_permission:book-category.create')
+    ->name('library.book-categories.create');
+Route::post('/library/book-categories', [BookCategoryController::class, 'store'])
+    ->middleware('active_permission:book-category.create')
+    ->name('library.book-categories.store');
+Route::post('/library/book-categories/bulk-destroy', [BookCategoryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:book-category.delete')
+    ->name('library.book-categories.bulk-destroy');
+Route::get('/library/book-categories/{id}/edit', [BookCategoryController::class, 'edit'])
+    ->whereNumber('id')
+    ->middleware('active_permission:book-category.update')
+    ->name('library.book-categories.edit');
+Route::put('/library/book-categories/{id}', [BookCategoryController::class, 'update'])
+    ->whereNumber('id')
+    ->middleware('active_permission:book-category.update')
+    ->name('library.book-categories.update');
+Route::delete('/library/book-categories/{id}', [BookCategoryController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware('active_permission:book-category.delete')
+    ->name('library.book-categories.destroy');
+
+Route::get('/library/books', [BookController::class, 'index'])
+    ->middleware('active_permission:book.viewAny')
+    ->name('library.books.index');
+Route::get('/library/books/create', [BookController::class, 'create'])
+    ->middleware('active_permission:book.create')
+    ->name('library.books.create');
+Route::post('/library/books', [BookController::class, 'store'])
+    ->middleware('active_permission:book.create')
+    ->name('library.books.store');
+Route::post('/library/books/bulk-destroy', [BookController::class, 'bulkDestroy'])
+    ->middleware('active_permission:book.delete')
+    ->name('library.books.bulk-destroy');
+Route::get('/library/books/{book}/edit', [BookController::class, 'edit'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.edit');
+Route::put('/library/books/{book}', [BookController::class, 'update'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.update');
+Route::delete('/library/books/{book}', [BookController::class, 'destroy'])
+    ->middleware('active_permission:book.delete')
+    ->name('library.books.destroy');
+Route::post('/library/books/{book}/copies', [BookController::class, 'storeCopy'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.copies.store');
+Route::put('/library/books/copies/{copy}', [BookController::class, 'updateCopy'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.copies.update');
+Route::post('/library/books/copies/{copy}/status', [BookController::class, 'updateCopyStatus'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.copies.status');
+Route::delete('/library/books/copies/{copy}', [BookController::class, 'destroyCopy'])
+    ->middleware('active_permission:book.delete')
+    ->name('library.books.copies.destroy');
+Route::get('/library/books/{book}', [BookController::class, 'show'])
+    ->middleware('active_permission:book.view')
+    ->name('library.books.show');
+
+Route::get('/library/loans', [BookLoanController::class, 'index'])
+    ->middleware('active_permission:book-loan.viewAny')
+    ->name('library.loans.index');
+Route::get('/library/loans/create', [BookLoanController::class, 'create'])
+    ->middleware('active_permission:book-loan.create')
+    ->name('library.loans.create');
+Route::post('/library/loans', [BookLoanController::class, 'store'])
+    ->middleware('active_permission:book-loan.create')
+    ->name('library.loans.store');
+Route::post('/library/loans/bulk-destroy', [BookLoanController::class, 'bulkDestroy'])
+    ->middleware('active_permission:book-loan.delete')
+    ->name('library.loans.bulk-destroy');
+Route::get('/library/loans/search-members', [BookLoanController::class, 'searchMembers'])
+    ->middleware('active_permission:book-loan.create')
+    ->name('library.loans.search-members');
+Route::get('/library/loans/search-copies', [BookLoanController::class, 'searchCopies'])
+    ->middleware('active_permission:book-loan.create')
+    ->name('library.loans.search-copies');
+Route::post('/library/loans/{loan}/return', [BookLoanController::class, 'returnBook'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.return');
+Route::post('/library/loans/{loan}/pay-fine', [BookLoanController::class, 'payFine'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.pay-fine');
+Route::delete('/library/loans/{loan}', [BookLoanController::class, 'destroy'])
+    ->middleware('active_permission:book-loan.delete')
+    ->name('library.loans.destroy');
+
+Route::get('/library/reservations', [BookReservationController::class, 'index'])
+    ->middleware('active_permission:book-reservation.viewAny')
+    ->name('library.reservations.index');
+Route::get('/library/reservations/{reservation}/available-copies', [BookReservationController::class, 'availableCopies'])
+    ->middleware('active_permission:book-reservation.update')
+    ->name('library.reservations.available-copies');
+Route::post('/library/reservations/{reservation}/ready', [BookReservationController::class, 'ready'])
+    ->middleware('active_permission:book-reservation.update')
+    ->name('library.reservations.ready');
+Route::post('/library/reservations/{reservation}/fulfill', [BookReservationController::class, 'fulfill'])
+    ->middleware('active_permission:book-reservation.update')
+    ->name('library.reservations.fulfill');
+Route::post('/library/reservations/{reservation}/cancel', [BookReservationController::class, 'cancel'])
+    ->middleware('active_permission:book-reservation.update')
+    ->name('library.reservations.cancel');
+Route::delete('/library/reservations/{reservation}', [BookReservationController::class, 'destroy'])
+    ->middleware('active_permission:book-reservation.delete')
+    ->name('library.reservations.destroy');

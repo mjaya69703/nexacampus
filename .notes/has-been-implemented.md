@@ -1979,6 +1979,18 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
   - **UI:** tab Repositori di `AcademicShell`, link footer, kartu/modal plagiarisme admin, kartu plagiarisme mahasiswa/dosen, dark mode memakai token `--adm-*`/`--db-*`.
   - **Test:** `tests/Feature/Academic/ThesisManagementTest.php` diperluas menjadi 20 test / 353 assertion (repositori, unduhan final, update plagiarisme, guard finalisasi, publikasi ulang, notifikasi); suite total 826 test / 8.438 assertion.
 
+- **2026-11-13 (Modul Perpustakaan):**
+  - **COMPLETED: Library Management** (katalog, eksemplar, sirkulasi, reservasi)
+    - Database: `book_categories`, `books`, `book_copies`, `book_loans`, `book_reservations`.
+    - Enum: `BookCopyStatus`, `BookLoanStatus`, `BookReservationStatus`.
+    - Service: `app/Support/Library/LibraryService.php` — borrow/return/fine/reservation, guard batas pinjam, denda tertunggak, promosi reservasi, auto-refresh overdue, dan expiry reservasi.
+    - Konfigurasi sirkulasi: `config/library.php` (14 hari pinjam, Rp1.000/hari denda, 3 pinjaman mahasiswa / 5 dosen, 3 reservasi aktif, tahan 3 hari).
+    - Admin: `Admin/Library/BookCategories/{Index,Form}.tsx`, `Books/{Index,Form,Show}.tsx`, `Loans/{Index,Create}.tsx`, `Reservations/Index.tsx` + permission `book-category.*`, `book.*`, `book-loan.*`, `book-reservation.*`.
+    - Portal mahasiswa: `Student/Library/Index.tsx` — katalog, ajukan/batalkan reservasi, pantau pinjaman & denda.
+    - Shared UI: `components/Shared/Library/LibraryUI.tsx`; menu group “Perpustakaan” (admin) dan “Katalog & Pinjaman” (mahasiswa).
+    - Seeder demo: `database/seeders/LibrarySeeder.php`.
+    - Test: `tests/Feature/Library/LibraryManagementTest.php` (18 test / 117 assertion); suite total 844 test / 8.555 assertion.
+
 - Last updated by: AI Assistant (based on actual git commit history)
 
 ---

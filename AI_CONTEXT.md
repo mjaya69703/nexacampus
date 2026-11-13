@@ -55,6 +55,7 @@ Domain Modules:
 ├── Alumni         → Alumni, tracer study, lowongan kerja, event
 ├── Campus         → Fasilitas kampus (gedung, ruangan)
 ├── Financial      → Keuangan (tagihan, pembayaran, beasiswa)
+├── Library        → Perpustakaan (kategori buku, buku, eksemplar, peminjaman, reservasi)
 ├── Organization   → Kepegawaian & organisasi (pegawai, approval, absensi pegawai, BKD, EDOM, tridharma)
 ├── Publication    → Pengumuman
 ├── Settings       → Pengaturan sistem (campus, menu, notification, system)
@@ -894,6 +895,39 @@ Domain `Academic` — alur: mahasiswa mengajukan proposal → admin menyetujui/m
 
 **Test:** `tests/Feature/Academic/ThesisManagementTest.php`.
 
+### 3.11 Modul Perpustakaan
+
+Domain `Library` — katalog buku, eksemplar, sirkulasi peminjaman/pengembalian, denda, dan reservasi. Peminjam mereferensikan `users` langsung (tanpa tabel anggota terpisah).
+
+**Tabel:** `book_categories`, `books`, `book_copies`, `book_loans`, `book_reservations`.
+
+**Status:**
+- `book_copies.status`: `available`, `borrowed`, `reserved`, `lost`, `damaged`, `maintenance`. Status `borrowed`/`reserved` tidak boleh diubah manual (hanya lewat transaksi).
+- `book_loans.status`: `borrowed`, `returned`, `overdue`, `lost`; status aktif = `borrowed` + `overdue`.
+- `book_reservations.status`: `pending`, `ready`, `fulfilled`, `cancelled`, `expired`.
+
+**Konfigurasi:** `config/library.php` — masa pinjam 14 hari, denda Rp1.000/hari, maksimal 3 pinjaman aktif mahasiswa / 5 dosen, maksimal 3 reservasi aktif, masa tahan reservasi siap-ambil 3 hari. Semua dapat dioverride lewat `.env` (`LIBRARY_*`).
+
+**Service utama:** `app(LibraryService::class)` di `app/Support/Library/LibraryService.php`:
+- `borrow()`, `returnBook()`, `createReservation()`, `markReservationReady()`, `fulfillReservation()`, `cancelReservation()`
+- `promoteNextReservation()` — eksemplar kembali → reservasi `pending` berikutnya menjadi `ready` + eksemplar `reserved`
+- `refreshOverdueLoans()`, `expireReservations()` — dijalankan otomatis saat daftar/borrow dibuka
+- `maxLoansFor()`, `outstandingFine()`, `calculateFine()` — guard batas pinjam dan denda
+- Aturan: anggota dengan denda belum lunas tidak boleh meminjam; reservasi `ready` yang kedaluwarsa mengembalikan eksemplar menjadi `available`.
+
+**Route utama:**
+- Admin: `admin.library.book-categories.*`, `admin.library.books.*` (+ `copies.store/update/status/destroy`), `admin.library.loans.*` (`index/create/store/return/pay-fine/destroy/bulk-destroy/search-members/search-copies`), `admin.library.reservations.*` (`index/ready/fulfill/cancel/destroy/available-copies`)
+- Mahasiswa: `student.library.*` (`index`, `reservations.store`, `reservations.cancel`)
+
+**Halaman React:**
+- Admin: `resources/js/pages/Admin/Library/BookCategories/{Index,Form}.tsx`, `Books/{Index,Form,Show}.tsx`, `Loans/{Index,Create}.tsx`, `Reservations/Index.tsx`
+- Mahasiswa: `resources/js/pages/Student/Library/Index.tsx` (tab Katalog / Pinjaman Saya / Reservasi Saya)
+- Shared: `resources/js/components/Shared/Library/LibraryUI.tsx` (helper `buildQuery`, `formatRupiah`, `libraryTone`, `LibraryStats`, `LibraryModal`)
+
+**Permission:** `book-category.*`, `book.*`, `book-loan.*`, `book-reservation.*` (terdaftar di `config/resources.php`, menu group “Perpustakaan”).
+
+**Seeder & test:** `database/seeders/LibrarySeeder.php`; `tests/Feature/Library/LibraryManagementTest.php` (18 test / 117 assertion).
+
 ---
 
 ## 4. Naming Conventions
@@ -1183,7 +1217,7 @@ tests/Feature/
 └── System/         # Uji sistem umum, smoke render Inertia
 ```
 
-**Status saat ini:** **826 test / 8.438 assertion** lulus (`php artisan test`, ±107 detik).
+**Status saat ini:** **844 test / 8.555 assertion** lulus (`php artisan test`, ±107 detik).
 
 ### 12.2 Konvensi Penulisan Pest Test (`*Test.php`)
 1. **Direct Namespace/Uses:** File pengujian di `tests/Feature/[Domain]/` ditulis langsung dengan `<?php \n\n use App\Models\...` tanpa deklarasi `namespace Tests\Feature\[Domain];` karena `tests/Pest.php` telah dikonfigurasikan dengan `uses(TestCase::class, RefreshDatabase::class)->in('Feature');` yang mengikat seluruh subdirektori secara rekursif.
@@ -1192,7 +1226,7 @@ tests/Feature/
 4. **Test CRUD Inertia:** Gunakan `assertInertia(fn (Assert $page) => $page->component('Admin/{Area}/{Resources}/Index')->has('data.rows', ...))`; uji juga `can` permission, filter, create/update, guard delete, dan bulk delete. Contoh: `tests/Feature/Organization/OrganizationOr8CrudTest.php`.
 5. **Menjalankan Pengujian:**
    ```bash
-   php artisan test                                      # Seluruh 826 test (semua domain)
+   php artisan test                                      # Seluruh 844 test (semua domain)
    php artisan test tests/Feature/Organization           # Satu domain
    php artisan test --filter=AdmissionEndToEndTest       # Satu file/kelas test
    php artisan test --filter=FinancialClearanceEndToEndTest

@@ -15,6 +15,7 @@ use App\Http\Controllers\Student\StudentFinancialController;
 use App\Http\Controllers\Student\StudentGradeAppealController;
 use App\Http\Controllers\Student\StudentGradesController;
 use App\Http\Controllers\Student\StudentLearningController;
+use App\Http\Controllers\Student\StudentLibraryController;
 use App\Http\Controllers\Student\StudentProgressController;
 use App\Http\Controllers\Student\StudentRegistrationController;
 use App\Http\Controllers\Student\StudentScheduleController;
@@ -129,3 +130,8 @@ Route::post('/thesis/milestones/{milestone}/submit', [StudentThesisController::c
 Route::post('/thesis/documents', [StudentThesisController::class, 'storeDocument'])->name('thesis.documents.store');
 Route::delete('/thesis/documents/{document}', [StudentThesisController::class, 'destroyDocument'])->name('thesis.documents.destroy');
 Route::get('/thesis/documents/{document}/download', [ThesisDocumentController::class, 'student'])->name('thesis.documents.download');
+
+// Perpustakaan (Inertia React).
+Route::get('/library', [StudentLibraryController::class, 'index'])->name('library.index');
+Route::post('/library/reservations', [StudentLibraryController::class, 'storeReservation'])->name('library.reservations.store');
+Route::post('/library/reservations/{reservation}/cancel', [StudentLibraryController::class, 'cancelReservation'])->name('library.reservations.cancel');

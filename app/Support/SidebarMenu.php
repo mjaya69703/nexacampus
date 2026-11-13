@@ -171,6 +171,9 @@ class SidebarMenu
                     static::makeChildLink('student.student-services.graduations', 'Yudisium'),
                     static::makeChildLink('student.student-services.complaints', 'Pengaduan'),
                 ]),
+                static::makeGroup('student-library', 'Perpustakaan', 'fas fa-book-open', [
+                    static::makeChildLink('student.library.index', 'Katalog & Pinjaman'),
+                ]),
                 static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
                     static::makeChildLink('student.announcements.index', 'Pengumuman'),
                 ]),
