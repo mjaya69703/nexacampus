@@ -1999,7 +1999,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
     - **Perbaikan:** `BookCopy::activeLoan()` tidak lagi memakai `latestOfMany()` (menghindari `ambiguous column name: book_copy_id`); route name menu perpustakaan diselaraskan (`admin.library.loans.*`, `admin.library.reservations.*`); closure `$loans`/`$reservations` pada controller admin diperbaiki.
     - **Konfigurasi baru:** `LIBRARY_PICKUP_PLAN_DAYS` (7), `LIBRARY_MAX_RENEWALS` (1), `LIBRARY_RENEWAL_DAYS` (14).
     - **UI:** tabel admin peminjaman menampilkan `Diperpanjang n/max×`; tabel reservasi admin menampilkan antrean, rencana ambil, masa berlaku, dan jatuh tempo pinjaman hasil fulfill.
-    - **Test:** `tests/Feature/Library/LibraryManagementTest.php` menjadi 31 test / 211 assertion (detail buku, antrean, estimasi, perpanjangan, guard reservasi, halaman admin reservasi, role pustakawan); suite total 856 test / 8.631 assertion. `npm run typecheck` dan `npm run build` lulus.
+    - **Test:** `tests/Feature/Library/LibraryManagementTest.php` menjadi 31 test / 211 assertion (detail buku, antrean, estimasi, perpanjangan, guard reservasi, halaman admin reservasi, role pustakawan); suite total 857 test / 8.651 assertion. `npm run typecheck` dan `npm run build` lulus.
 
 - Last updated by: AI Assistant (based on actual git commit history)
 
