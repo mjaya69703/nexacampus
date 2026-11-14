@@ -24,6 +24,8 @@ class BookLoan extends Model
         'due_at',
         'returned_at',
         'status',
+        'renewal_count',
+        'renewed_at',
         'fine_amount',
         'fine_paid',
         'fine_paid_at',
@@ -38,6 +40,8 @@ class BookLoan extends Model
             'borrowed_at' => 'datetime',
             'due_at' => 'datetime',
             'returned_at' => 'datetime',
+            'renewal_count' => 'integer',
+            'renewed_at' => 'datetime',
             'fine_amount' => 'decimal:2',
             'fine_paid' => 'boolean',
             'fine_paid_at' => 'datetime',
@@ -48,7 +52,7 @@ class BookLoan extends Model
     {
         return LogOptions::defaults()
             ->useLogName('book_loan')
-            ->logOnly(['status', 'due_at', 'returned_at', 'fine_amount', 'fine_paid'])
+            ->logOnly(['status', 'due_at', 'renewal_count', 'renewed_at', 'returned_at', 'fine_amount', 'fine_paid'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

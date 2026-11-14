@@ -3354,6 +3354,9 @@ Route::get('/library/loans/search-copies', [BookLoanController::class, 'searchCo
 Route::post('/library/loans/{loan}/return', [BookLoanController::class, 'returnBook'])
     ->middleware('active_permission:book-loan.update')
     ->name('library.loans.return');
+Route::post('/library/loans/{loan}/renew', [BookLoanController::class, 'renew'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.renew');
 Route::post('/library/loans/{loan}/pay-fine', [BookLoanController::class, 'payFine'])
     ->middleware('active_permission:book-loan.update')
     ->name('library.loans.pay-fine');

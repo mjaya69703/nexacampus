@@ -61,7 +61,12 @@ class BookCopy extends Model
 
     public function activeLoan(): HasOne
     {
-        return $this->hasOne(BookLoan::class)->whereIn('status', ['borrowed', 'overdue'])->latestOfMany();
+        // Sengaja tidak memakai latestOfMany(): eager loading-nya menambahkan
+        // whereIn('book_copy_id') tanpa kualifikasi tabel sehingga bentrok
+        // dengan kolom book_copy_id pada subquery agregat (ambiguous column).
+        return $this->hasOne(BookLoan::class)
+            ->whereIn('book_loans.status', ['borrowed', 'overdue'])
+            ->orderByDesc('book_loans.id');
     }
 
     public function isAvailable(): bool

@@ -58,6 +58,21 @@ class SyncPermissions extends Command
             Permission::where('guard_name', 'web')->get()
         );
 
+        // Role turunan admin untuk pengelola perpustakaan: hanya izin modul Library.
+        $librarianRole = Role::firstOrCreate([
+            'name' => 'librarian',
+            'guard_name' => 'web',
+        ]);
+
+        $libraryPermissions = collect(ResourceRegistry::all())
+            ->filter(fn (array $resource) => ($resource['area'] ?? null) === 'library')
+            ->flatMap(fn (array $resource) => ResourceRegistry::permissionsFor($resource))
+            ->unique()
+            ->values()
+            ->all();
+
+        $librarianRole->syncPermissions($libraryPermissions);
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->info('Permission sync completed.');

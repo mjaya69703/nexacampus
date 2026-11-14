@@ -1,6 +1,8 @@
 // Komponen & helper bersama modul Perpustakaan (admin dan portal mahasiswa).
+import { useForm } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { CalendarClock, Clock } from 'lucide-react';
+import type { FormEvent, ReactNode } from 'react';
 import '../../../../css/dashboard.css';
 import '../../../../css/crud.css';
 
@@ -88,5 +90,133 @@ export function LibraryModal({ title, description, onClose, children }: LibraryM
                 </div>
             </div>
         </div>
+    );
+}
+
+export type ReserveBookInfo = {
+    id: number;
+    title: string;
+    author: string | null;
+    availableCount: number;
+    queueCount: number;
+    estimatedReadyAt: string | null;
+};
+
+function toIsoDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+
+    return result;
+}
+
+function formatDate(value: string | Date): string {
+    const date = typeof value === 'string' ? new Date(`${value}T00:00:00`) : value;
+
+    return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/**
+ * Modal pengajuan reservasi dengan rencana tanggal ambil, info antrean,
+ * estimasi ketersediaan, dan perkiraan jatuh tempo peminjaman.
+ */
+export function ReserveBookModal({ book, url, loanDays, holdDays, pickupPlanDays, onClose }: {
+    book: ReserveBookInfo;
+    url: string;
+    loanDays: number;
+    holdDays: number;
+    pickupPlanDays: number;
+    onClose: () => void;
+}) {
+    const today = new Date();
+    const maxDate = toIsoDate(addDays(today, pickupPlanDays));
+    const form = useForm({
+        book_id: book.id,
+        pickup_planned_at: toIsoDate(today),
+        notes: '',
+    });
+
+    const plannedDate = form.data.pickup_planned_at || toIsoDate(today);
+    const estimatedDueDate = formatDate(addDays(new Date(`${plannedDate}T00:00:00`), loanDays));
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        form.post(url, { preserveScroll: true, onSuccess: onClose });
+    };
+
+    return (
+        <LibraryModal
+            title="Ajukan Reservasi"
+            description={`${book.title}${book.author ? ` — ${book.author}` : ''}`}
+            onClose={onClose}
+        >
+            <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+                {book.availableCount === 0 ? (
+                    <div className="db-note warning">
+                        <Clock size={15} />
+                        <span>
+                            Semua eksemplar sedang dipinjam/ditahan.
+                            {book.queueCount > 0 && <> Antrean saat ini <b>{book.queueCount} anggota</b>.</>}
+                            {book.estimatedReadyAt && <> Perkiraan tersedia <b>{book.estimatedReadyAt}</b>.</>}
+                        </span>
+                    </div>
+                ) : (
+                    <div className="db-note info">
+                        <CalendarClock size={15} />
+                        <span><b>{book.availableCount} eksemplar tersedia.</b> Petugas akan menyiapkan buku sesuai rencana tanggal ambil Anda.</span>
+                    </div>
+                )}
+
+                <div>
+                    <label className="crud-label" htmlFor="reserve-pickup">Rencana tanggal ambil <span>*</span></label>
+                    <input
+                        id="reserve-pickup"
+                        type="date"
+                        className="db-input"
+                        min={toIsoDate(today)}
+                        max={maxDate}
+                        value={form.data.pickup_planned_at}
+                        onChange={(event) => form.setData('pickup_planned_at', event.target.value)}
+                    />
+                    {form.errors.pickup_planned_at && <div className="db-error">{form.errors.pickup_planned_at}</div>}
+                </div>
+
+                <div className="db-note muted">
+                    <CalendarClock size={15} />
+                    <span>
+                        Masa pinjam <b>{loanDays} hari</b>, perkiraan jatuh tempo <b>{estimatedDueDate}</b>.
+                        Reservasi ditahan <b>{holdDays} hari</b> setelah dinyatakan siap diambil.
+                    </span>
+                </div>
+
+                <div>
+                    <label className="crud-label" htmlFor="reserve-notes">Catatan (opsional)</label>
+                    <textarea
+                        id="reserve-notes"
+                        className="db-input"
+                        rows={3}
+                        value={form.data.notes}
+                        onChange={(event) => form.setData('notes', event.target.value)}
+                        placeholder="Contoh: referensi untuk tugas mata kuliah…"
+                    />
+                    {form.errors.notes && <div className="db-error">{form.errors.notes}</div>}
+                    {form.errors.book_id && <div className="db-error">{form.errors.book_id}</div>}
+                </div>
+
+                <div className="db-modal-actions">
+                    <button className="db-btn ghost" type="button" onClick={onClose} disabled={form.processing}>Batal</button>
+                    <button className="db-btn primary" type="submit" disabled={form.processing}>
+                        {form.processing ? 'Mengajukan…' : 'Ajukan Reservasi'}
+                    </button>
+                </div>
+            </form>
+        </LibraryModal>
     );
 }

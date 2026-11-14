@@ -1422,7 +1422,7 @@ return [
         'resource' => 'book-loan',
         'plural' => 'book-loans',
         'area' => 'library',
-        'component' => 'admin.library.book-loans',
+        'component' => 'admin.library.loans',
         'actions' => ['index', 'create', 'edit', 'delete'],
         'menu' => [
             'title' => 'Peminjaman',
@@ -1437,7 +1437,7 @@ return [
         'resource' => 'book-reservation',
         'plural' => 'book-reservations',
         'area' => 'library',
-        'component' => 'admin.library.book-reservations',
+        'component' => 'admin.library.reservations',
         'actions' => ['index', 'edit', 'delete'],
         'menu' => [
             'title' => 'Reservasi',

@@ -25,8 +25,11 @@ type Row = {
     statusLabel: string;
     statusTone: string;
     reservedAt: string | null;
+    pickupPlannedAt: string | null;
     readyAt: string | null;
     expiresAt: string | null;
+    queuePosition: number;
+    loanDueAt: string | null;
     copyCode: string | null;
     notes: string | null;
     canReady: boolean;
@@ -248,6 +251,18 @@ export default function ReservationsIndex({ shell, can, stats, data, filters, op
                                         render: (row) => row.reservedAt ?? '—',
                                     },
                                     {
+                                        key: 'queue',
+                                        label: 'Antrean',
+                                        render: (row) => row.queuePosition > 0
+                                            ? <span className="db-badge blue">ke-{row.queuePosition}</span>
+                                            : <span className="db-hint">—</span>,
+                                    },
+                                    {
+                                        key: 'pickup_planned_at',
+                                        label: 'Rencana Ambil',
+                                        render: (row) => row.pickupPlannedAt ?? '—',
+                                    },
+                                    {
                                         key: 'expires_at',
                                         label: 'Masa Berlaku',
                                         sortable: true,
@@ -262,7 +277,14 @@ export default function ReservationsIndex({ shell, can, stats, data, filters, op
                                         key: 'status',
                                         label: 'Status',
                                         sortable: true,
-                                        render: (row) => <span className={`db-badge ${libraryTone(row.statusTone)}`}>{row.statusLabel}</span>,
+                                        render: (row) => (
+                                            <span>
+                                                <span className={`db-badge ${libraryTone(row.statusTone)}`}>{row.statusLabel}</span>
+                                                {row.loanDueAt && (
+                                                    <small className="db-hint" style={{ display: 'block' }}>Jatuh tempo {row.loanDueAt}</small>
+                                                )}
+                                            </span>
+                                        ),
                                     },
                                 ]}
                                 rows={data.rows}

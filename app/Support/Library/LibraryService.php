@@ -175,6 +175,7 @@ class LibraryService
                 $reservation->update([
                     'status' => BookReservationStatus::FULFILLED->value,
                     'fulfilled_at' => now(),
+                    'book_loan_id' => $loan->id,
                     'processed_by' => $actor->id,
                 ]);
             } else {
@@ -185,6 +186,7 @@ class LibraryService
                     ->update([
                         'status' => BookReservationStatus::FULFILLED->value,
                         'fulfilled_at' => now(),
+                        'book_loan_id' => $loan->id,
                         'processed_by' => $actor->id,
                     ]);
             }
@@ -257,7 +259,7 @@ class LibraryService
     /**
      * @throws ValidationException
      */
-    public function createReservation(User $user, Book $book, ?string $notes = null): BookReservation
+    public function createReservation(User $user, Book $book, ?string $notes = null, ?Carbon $pickupPlannedAt = null): BookReservation
     {
         $this->expireReservations();
 
@@ -265,6 +267,17 @@ class LibraryService
             throw ValidationException::withMessages([
                 'book_id' => 'Buku ini sedang tidak aktif dan tidak dapat direservasi.',
             ]);
+        }
+
+        if ($pickupPlannedAt) {
+            $planned = $pickupPlannedAt->copy()->startOfDay();
+            $maxPlanned = now()->addDays((int) config('library.pickup_plan_days', 7))->startOfDay();
+
+            if ($planned->lessThan(now()->startOfDay()) || $planned->greaterThan($maxPlanned)) {
+                throw ValidationException::withMessages([
+                    'pickup_planned_at' => 'Rencana tanggal ambil harus antara hari ini dan '.$maxPlanned->format('d M Y').'.',
+                ]);
+            }
         }
 
         $hasActiveLoan = BookLoan::query()
@@ -307,8 +320,139 @@ class LibraryService
             'user_id' => $user->id,
             'status' => BookReservationStatus::PENDING->value,
             'reserved_at' => now(),
+            'pickup_planned_at' => $pickupPlannedAt?->toDateString(),
             'notes' => $notes,
         ]);
+    }
+
+    /**
+     * Posisi antrean reservasi aktif untuk satu buku (1 = paling depan).
+     */
+    public function queuePosition(BookReservation $reservation): int
+    {
+        if (! $reservation->isActive() || ! $reservation->reserved_at) {
+            return 0;
+        }
+
+        // Reservasi yang sudah siap diambil tidak lagi berada dalam antrean.
+        if ($reservation->status === BookReservationStatus::READY->value) {
+            return 0;
+        }
+
+        return BookReservation::query()
+            ->where('book_id', $reservation->book_id)
+            ->active()
+            ->where(function ($query) use ($reservation) {
+                $query->where('reserved_at', '<', $reservation->reserved_at)
+                    ->orWhere(function ($sub) use ($reservation) {
+                        $sub->where('reserved_at', $reservation->reserved_at)
+                            ->where('id', '<=', $reservation->id);
+                    });
+            })
+            ->count();
+    }
+
+    public function queueSize(Book $book): int
+    {
+        return BookReservation::query()
+            ->where('book_id', $book->id)
+            ->where('status', BookReservationStatus::PENDING->value)
+            ->count();
+    }
+
+    /**
+     * Perkiraan kapan eksemplar tersedia lagi: sekarang bila ada eksemplar
+     * bebas, atau tanggal jatuh tempo/kedaluwarsa tahanan paling awal.
+     */
+    public function estimatedReadyAt(Book $book): ?Carbon
+    {
+        $hasAvailableCopy = BookCopy::query()
+            ->where('book_id', $book->id)
+            ->where('status', BookCopyStatus::AVAILABLE->value)
+            ->exists();
+
+        if ($hasAvailableCopy) {
+            return now();
+        }
+
+        $loanDueAt = BookLoan::query()
+            ->whereHas('copy', fn ($query) => $query->where('book_id', $book->id))
+            ->active()
+            ->min('due_at');
+
+        $holdExpiresAt = BookReservation::query()
+            ->where('book_id', $book->id)
+            ->where('status', BookReservationStatus::READY->value)
+            ->min('expires_at');
+
+        $candidates = collect([$loanDueAt, $holdExpiresAt])
+            ->filter()
+            ->map(fn ($value) => Carbon::parse($value))
+            ->sort()
+            ->values();
+
+        return $candidates->first();
+    }
+
+    /**
+     * @return array{allowed: bool, reason: ?string}
+     */
+    public function renewalEligibility(BookLoan $loan): array
+    {
+        if (! $loan->isActive()) {
+            return ['allowed' => false, 'reason' => 'Peminjaman ini sudah tidak aktif.'];
+        }
+
+        if ($loan->status === BookLoanStatus::OVERDUE->value || ($loan->due_at && $loan->due_at->isPast())) {
+            return ['allowed' => false, 'reason' => 'Peminjaman terlambat. Kembalikan buku terlebih dahulu sebelum memperpanjang.'];
+        }
+
+        if ((int) $loan->renewal_count >= (int) config('library.max_renewals', 1)) {
+            return ['allowed' => false, 'reason' => 'Batas perpanjangan untuk peminjaman ini sudah tercapai.'];
+        }
+
+        $bookId = $loan->copy()->value('book_id');
+
+        $hasActiveReservation = BookReservation::query()
+            ->where('book_id', $bookId)
+            ->active()
+            ->exists();
+
+        if ($hasActiveReservation) {
+            return ['allowed' => false, 'reason' => 'Buku sedang direservasi anggota lain sehingga belum dapat diperpanjang.'];
+        }
+
+        return ['allowed' => true, 'reason' => null];
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function renewLoan(BookLoan $loan, User $actor): BookLoan
+    {
+        $this->refreshOverdueLoans();
+
+        return DB::transaction(function () use ($loan) {
+            $lockedLoan = BookLoan::query()->lockForUpdate()->findOrFail($loan->id);
+
+            $eligibility = $this->renewalEligibility($lockedLoan);
+
+            if (! $eligibility['allowed']) {
+                throw ValidationException::withMessages([
+                    'loan' => $eligibility['reason'] ?? 'Peminjaman tidak dapat diperpanjang.',
+                ]);
+            }
+
+            $days = (int) config('library.renewal_days', config('library.loan_days', 14));
+
+            $lockedLoan->update([
+                'due_at' => $lockedLoan->due_at->copy()->addDays($days)->endOfDay(),
+                'renewal_count' => (int) $lockedLoan->renewal_count + 1,
+                'renewed_at' => now(),
+            ]);
+
+            return $lockedLoan->refresh();
+        });
     }
 
     /**

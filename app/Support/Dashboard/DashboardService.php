@@ -2,9 +2,11 @@
 
 namespace App\Support\Dashboard;
 
+use App\Enums\BookReservationStatus;
 use App\Models\Academic\AttendanceRecord;
 use App\Models\Academic\CourseOffering;
 use App\Models\Academic\GradeAppeal;
+use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudyPlan;
 use App\Models\Academic\StudyProgram;
 use App\Models\Academic\StudyResult;
@@ -19,6 +21,8 @@ use App\Models\Financial\InvoiceInstallmentRequest;
 use App\Models\Financial\Payment;
 use App\Models\Financial\StudentInvoice;
 use App\Models\Financial\StudentScholarship;
+use App\Models\Library\BookLoan;
+use App\Models\Library\BookReservation;
 use App\Models\Organization\EmployeeAttendanceRecord;
 use App\Models\Organization\EmployeeLeaveRequest;
 use App\Models\Organization\EmployeeProfile;
@@ -31,7 +35,6 @@ use App\Models\StudentService\ServiceLetterRequest;
 use App\Models\StudentService\StudentComplaint;
 use App\Models\StudentService\StudentLeaveApplication;
 use App\Models\User;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -254,13 +257,13 @@ class DashboardService
             $gpaLabels = ['< 2.00', '2.00 - 2.49', '2.50 - 2.99', '3.00 - 3.49', '>= 3.50'];
 
             $bucketRow = StudyResult::whereNotNull('cumulative_gpa')
-                ->selectRaw("
+                ->selectRaw('
                     sum(case when cumulative_gpa < 2.00 then 1 else 0 end) as b1,
                     sum(case when cumulative_gpa >= 2.00 and cumulative_gpa < 2.50 then 1 else 0 end) as b2,
                     sum(case when cumulative_gpa >= 2.50 and cumulative_gpa < 3.00 then 1 else 0 end) as b3,
                     sum(case when cumulative_gpa >= 3.00 and cumulative_gpa < 3.50 then 1 else 0 end) as b4,
                     sum(case when cumulative_gpa >= 3.50 then 1 else 0 end) as b5
-                ")
+                ')
                 ->first();
 
             $gpaSeries = $bucketRow
@@ -303,7 +306,7 @@ class DashboardService
 
             return [
                 'course_offerings_count' => CourseOffering::count(),
-                'active_students_count' => \App\Models\Academic\StudentProfile::where('academic_status', 'Aktif')->count(),
+                'active_students_count' => StudentProfile::where('academic_status', 'Aktif')->count(),
                 'study_programs_count' => StudyProgram::where('is_active', true)->count(),
                 'pending_krs_count' => StudyPlan::where('status', 'Submitted')->count(),
                 'attendance_rate' => $attendanceTotal > 0 ? round((($attendanceBreakdown['Present'] ?? 0) / $attendanceTotal) * 100, 1) : null,
@@ -457,6 +460,75 @@ class DashboardService
                         'deadline' => $job->deadline_date?->format('d M Y') ?? '-',
                     ])
                     ->toArray(),
+            ];
+        });
+    }
+
+    public function library(): array
+    {
+        return $this->cached('library', function () {
+            $activeLoans = BookLoan::query()->active()->count();
+            $overdueLoans = BookLoan::query()
+                ->active()
+                ->where('due_at', '<', now())
+                ->count();
+            $pendingReservations = BookReservation::query()
+                ->where('status', BookReservationStatus::PENDING->value)
+                ->count();
+            $readyReservations = BookReservation::query()
+                ->where('status', BookReservationStatus::READY->value)
+                ->count();
+            $outstandingFines = (float) BookLoan::query()
+                ->where('fine_paid', false)
+                ->sum('fine_amount');
+
+            $recentLoans = BookLoan::query()
+                ->with([
+                    'user:id,first_name,last_name',
+                    'copy:id,book_id,code',
+                    'copy.book:id,title',
+                ])
+                ->latest('borrowed_at')
+                ->limit(5)
+                ->get()
+                ->map(fn (BookLoan $loan) => [
+                    'title' => $loan->copy?->book?->title ?? 'Buku',
+                    'sub' => trim(($loan->user?->first_name ?? '').' '.($loan->user?->last_name ?? ''))
+                        .' · '.($loan->copy?->code ?? '-')
+                        .' · jatuh tempo '.($loan->due_at?->format('d M Y') ?? '-'),
+                    'badge' => $loan->statusLabel(),
+                    'badgeTone' => $loan->statusTone(),
+                ])
+                ->all();
+
+            $readyList = BookReservation::query()
+                ->where('status', BookReservationStatus::READY->value)
+                ->with([
+                    'user:id,first_name,last_name',
+                    'book:id,title',
+                    'copy:id,code',
+                ])
+                ->orderBy('expires_at')
+                ->limit(5)
+                ->get()
+                ->map(fn (BookReservation $reservation) => [
+                    'title' => $reservation->book?->title ?? 'Buku',
+                    'sub' => trim(($reservation->user?->first_name ?? '').' '.($reservation->user?->last_name ?? ''))
+                        .' · eksemplar '.($reservation->copy?->code ?? '-')
+                        .' · batas ambil '.($reservation->expires_at?->format('d M Y H:i') ?? '-'),
+                    'badge' => 'Siap diambil',
+                    'badgeTone' => 'amber',
+                ])
+                ->all();
+
+            return [
+                'active_loans_count' => $activeLoans,
+                'overdue_loans_count' => $overdueLoans,
+                'pending_reservations_count' => $pendingReservations,
+                'ready_reservations_count' => $readyReservations,
+                'outstanding_fines' => $outstandingFines,
+                'recent_loans' => $recentLoans,
+                'ready_reservations' => $readyList,
             ];
         });
     }

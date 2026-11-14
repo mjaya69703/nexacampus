@@ -42,6 +42,7 @@ type Loan = {
     statusTone: string;
     fineAmount: number;
     finePaid: boolean;
+    renewalCount: number;
 };
 
 type Reservation = {
@@ -52,6 +53,7 @@ type Reservation = {
     statusLabel: string;
     statusTone: string;
     reservedAt: string | null;
+    pickupPlannedAt: string | null;
     readyAt: string | null;
     expiresAt: string | null;
     copyCode: string | null;
@@ -377,7 +379,12 @@ export default function BookShow({ shell, can, book, stats, copies, loans, reser
                                                 </td>
                                                 <td>{loan.copyCode}</td>
                                                 <td>{loan.borrowedAt ?? '—'}</td>
-                                                <td>{loan.dueAt ?? '—'}</td>
+                                                <td>
+                                                    {loan.dueAt ?? '—'}
+                                                    {loan.renewalCount > 0 && (
+                                                        <small className="db-hint" style={{ display: 'block' }}>Diperpanjang {loan.renewalCount}×</small>
+                                                    )}
+                                                </td>
                                                 <td>{loan.returnedAt ?? '—'}</td>
                                                 <td><span className={`db-badge ${libraryTone(loan.statusTone)}`}>{loan.statusLabel}</span></td>
                                                 <td style={{ textAlign: 'right' }}>
@@ -408,6 +415,7 @@ export default function BookShow({ shell, can, book, stats, copies, loans, reser
                                             <th>Anggota</th>
                                             <th>Eksemplar</th>
                                             <th>Diajukan</th>
+                                            <th>Rencana Ambil</th>
                                             <th>Siap</th>
                                             <th>Kedaluwarsa</th>
                                             <th>Status</th>
@@ -415,7 +423,7 @@ export default function BookShow({ shell, can, book, stats, copies, loans, reser
                                     </thead>
                                     <tbody>
                                         {reservations.length === 0 && (
-                                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: 24 }}><span className="db-hint">Belum ada reservasi.</span></td></tr>
+                                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24 }}><span className="db-hint">Belum ada reservasi.</span></td></tr>
                                         )}
                                         {reservations.map((reservation) => (
                                             <tr key={reservation.id}>
@@ -425,6 +433,7 @@ export default function BookShow({ shell, can, book, stats, copies, loans, reser
                                                 </td>
                                                 <td>{reservation.copyCode ?? '—'}</td>
                                                 <td>{reservation.reservedAt ?? '—'}</td>
+                                                <td>{reservation.pickupPlannedAt ?? '—'}</td>
                                                 <td>{reservation.readyAt ?? '—'}</td>
                                                 <td>{reservation.expiresAt ?? '—'}</td>
                                                 <td><span className={`db-badge ${libraryTone(reservation.statusTone)}`}>{reservation.statusLabel}</span></td>

@@ -133,5 +133,7 @@ Route::get('/thesis/documents/{document}/download', [ThesisDocumentController::c
 
 // Perpustakaan (Inertia React).
 Route::get('/library', [StudentLibraryController::class, 'index'])->name('library.index');
+Route::get('/library/books/{book}', [StudentLibraryController::class, 'showBook'])->name('library.books.show');
 Route::post('/library/reservations', [StudentLibraryController::class, 'storeReservation'])->name('library.reservations.store');
 Route::post('/library/reservations/{reservation}/cancel', [StudentLibraryController::class, 'cancelReservation'])->name('library.reservations.cancel');
+Route::post('/library/loans/{loan}/renew', [StudentLibraryController::class, 'renewLoan'])->name('library.loans.renew');

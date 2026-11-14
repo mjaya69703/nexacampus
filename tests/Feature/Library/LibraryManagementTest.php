@@ -7,6 +7,7 @@ use App\Models\Library\Book;
 use App\Models\Library\BookCategory;
 use App\Models\Library\BookCopy;
 use App\Models\Library\BookLoan;
+use App\Models\Library\BookReservation;
 use App\Models\Settings\System;
 use App\Models\User;
 use App\Support\Library\LibraryService;
@@ -373,21 +374,26 @@ test('pengembalian eksemplar tersedia mempromosikan reservasi berikutnya', funct
         ->and($reservation->expires_at)->not->toBeNull();
 });
 
-test('mahasiswa dapat mengajukan reservasi dari portal', function () {
+test('mahasiswa dapat mengajukan reservasi dari portal dengan rencana tanggal ambil', function () {
     $setup = libraryTestSetup();
+
+    $pickup = now()->addDays(2)->toDateString();
 
     actingLibraryStudent($setup['studentUser'])
         ->post(route('student.library.reservations.store'), [
             'book_id' => $setup['book']->id,
+            'pickup_planned_at' => $pickup,
             'notes' => 'Untuk tugas kuliah.',
         ])
         ->assertRedirect();
 
-    $this->assertDatabaseHas('book_reservations', [
-        'book_id' => $setup['book']->id,
-        'user_id' => $setup['studentUser']->id,
-        'status' => BookReservationStatus::PENDING->value,
-    ]);
+    $reservation = BookReservation::query()
+        ->where('book_id', $setup['book']->id)
+        ->where('user_id', $setup['studentUser']->id)
+        ->firstOrFail();
+
+    expect($reservation->status)->toBe(BookReservationStatus::PENDING->value)
+        ->and($reservation->pickup_planned_at?->toDateString())->toBe($pickup);
 });
 
 test('admin dapat menyiapkan dan menyerahkan reservasi menjadi peminjaman', function () {
@@ -412,9 +418,35 @@ test('admin dapat menyiapkan dan menyerahkan reservasi menjadi peminjaman', func
 
     $reservation->refresh();
 
+    $loan = BookLoan::where('user_id', $setup['studentUser']->id)
+        ->where('book_copy_id', $setup['copy']->id)
+        ->firstOrFail();
+
     expect($reservation->status)->toBe(BookReservationStatus::FULFILLED->value)
-        ->and($setup['copy']->refresh()->status)->toBe(BookCopyStatus::BORROWED->value)
-        ->and(BookLoan::where('user_id', $setup['studentUser']->id)->where('book_copy_id', $setup['copy']->id)->exists())->toBeTrue();
+        ->and($reservation->book_loan_id)->toBe($loan->id)
+        ->and($setup['copy']->refresh()->status)->toBe(BookCopyStatus::BORROWED->value);
+});
+
+test('admin dapat membuka daftar reservasi dengan antrean dan rencana ambil', function () {
+    $setup = libraryTestSetup();
+
+    app(LibraryService::class)->createReservation(
+        $setup['studentUser'],
+        $setup['book'],
+        'Referensi tugas.',
+        now()->addDays(2),
+    );
+
+    actingLibraryAdmin($setup['operator'])
+        ->get(route('admin.library.reservations.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Library/Reservations/Index')
+            ->has('data.rows', 1)
+            ->where('data.rows.0.member', 'Rania Putri')
+            ->where('data.rows.0.queuePosition', 1)
+            ->where('data.rows.0.pickupPlannedAt', now()->addDays(2)->format('d M Y'))
+            ->where('data.rows.0.canReady', true));
 });
 
 test('mahasiswa dapat membatalkan reservasinya sendiri tetapi tidak reservasi orang lain', function () {
@@ -516,4 +548,191 @@ test('peminjaman terlambat otomatis ditandai overdue saat daftar dibuka', functi
             ->where('stats.overdue', 1));
 
     expect($loan->refresh()->status)->toBe(BookLoanStatus::OVERDUE->value);
+});
+
+test('mahasiswa dapat membuka halaman detail buku dari portal', function () {
+    $setup = libraryTestSetup();
+    makeLibraryLoan($setup, $setup['otherStudent'], $setup['copy']);
+
+    $reservation = app(LibraryService::class)->createReservation(
+        $setup['studentUser'],
+        $setup['book'],
+        'Referensi tugas besar.',
+        now()->addDays(2),
+    );
+
+    actingLibraryStudent($setup['studentUser'])
+        ->get(route('student.library.books.show', $setup['book']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Student/Library/Show')
+            ->where('book.title', 'Pemrograman Laravel')
+            ->where('book.author', 'Andi Nugraha')
+            ->has('copies', 2)
+            ->where('stats.borrowed', 1)
+            ->where('stats.queue', 1)
+            ->where('myReservation.id', $reservation->id)
+            ->where('myReservation.queuePosition', 1)
+            ->where('myReservation.pickupPlannedAt', now()->addDays(2)->format('d M Y'))
+            ->where('myLoan', null));
+});
+
+test('posisi antrean reservasi mengikuti urutan pengajuan', function () {
+    $setup = libraryTestSetup();
+
+    $first = app(LibraryService::class)->createReservation($setup['studentUser'], $setup['book']);
+    $second = app(LibraryService::class)->createReservation($setup['otherStudent'], $setup['book']);
+
+    $service = app(LibraryService::class);
+
+    expect($service->queuePosition($first))->toBe(1)
+        ->and($service->queuePosition($second))->toBe(2)
+        ->and($service->queueSize($setup['book']))->toBe(2);
+});
+
+test('reservasi siap diambil tidak lagi dihitung dalam antrean', function () {
+    $setup = libraryTestSetup();
+
+    $reservation = app(LibraryService::class)->createReservation($setup['studentUser'], $setup['book']);
+    app(LibraryService::class)->markReservationReady($reservation, $setup['copy'], $setup['operator']);
+
+    $service = app(LibraryService::class);
+
+    expect($service->queuePosition($reservation->refresh()))->toBe(0)
+        ->and($service->queueSize($setup['book']))->toBe(0);
+});
+
+test('rencana tanggal ambil di luar batas ditolak', function () {
+    $setup = libraryTestSetup();
+
+    actingLibraryStudent($setup['studentUser'])
+        ->post(route('student.library.reservations.store'), [
+            'book_id' => $setup['book']->id,
+            'pickup_planned_at' => now()->addDays((int) config('library.pickup_plan_days', 7) + 1)->toDateString(),
+        ])
+        ->assertSessionHasErrors('pickup_planned_at');
+
+    $this->assertDatabaseCount('book_reservations', 0);
+});
+
+test('mahasiswa dapat memperpanjang peminjaman aktifnya', function () {
+    $setup = libraryTestSetup();
+    $loan = makeLibraryLoan($setup, $setup['studentUser'], $setup['copy']);
+    $originalDue = $loan->due_at->copy();
+    $renewalDays = (int) config('library.renewal_days', 14);
+
+    actingLibraryStudent($setup['studentUser'])
+        ->post(route('student.library.loans.renew', $loan))
+        ->assertRedirect();
+
+    $loan->refresh();
+
+    expect($loan->renewal_count)->toBe(1)
+        ->and($loan->renewed_at)->not->toBeNull()
+        // Kolom DATETIME menyimpan presisi detik; bandingkan tanpa mikrodetik.
+        ->and($loan->due_at->toDateTimeString())
+        ->toBe($originalDue->copy()->addDays($renewalDays)->endOfDay()->toDateTimeString());
+});
+
+test('perpanjangan ditolak bila buku sedang direservasi anggota lain', function () {
+    $setup = libraryTestSetup();
+    $loan = makeLibraryLoan($setup, $setup['studentUser'], $setup['copy']);
+
+    app(LibraryService::class)->createReservation($setup['otherStudent'], $setup['book']);
+
+    actingLibraryStudent($setup['studentUser'])
+        ->post(route('student.library.loans.renew', $loan))
+        ->assertSessionHasErrors('loan');
+
+    expect($loan->refresh()->renewal_count)->toBe(0);
+});
+
+test('perpanjangan ditolak setelah batas maksimal tercapai', function () {
+    $setup = libraryTestSetup();
+    $loan = makeLibraryLoan($setup, $setup['studentUser'], $setup['copy']);
+
+    $loan->update(['renewal_count' => (int) config('library.max_renewals', 1)]);
+
+    actingLibraryStudent($setup['studentUser'])
+        ->post(route('student.library.loans.renew', $loan))
+        ->assertSessionHasErrors('loan');
+
+    expect($loan->refresh()->renewal_count)->toBe((int) config('library.max_renewals', 1));
+});
+
+test('mahasiswa tidak dapat memperpanjang peminjaman milik anggota lain', function () {
+    $setup = libraryTestSetup();
+    $loan = makeLibraryLoan($setup, $setup['studentUser'], $setup['copy']);
+
+    actingLibraryStudent($setup['otherStudent'])
+        ->post(route('student.library.loans.renew', $loan))
+        ->assertForbidden();
+});
+
+test('admin dapat memperpanjang peminjaman anggota', function () {
+    $setup = libraryTestSetup();
+    $loan = makeLibraryLoan($setup, $setup['studentUser'], $setup['copy']);
+
+    actingLibraryAdmin($setup['operator'])
+        ->post(route('admin.library.loans.renew', $loan))
+        ->assertRedirect();
+
+    expect($loan->refresh()->renewal_count)->toBe(1);
+});
+
+test('role pustakawan hanya menerima izin perpustakaan dari sync permissions', function () {
+    $this->artisan('permissions:sync')->assertSuccessful();
+
+    $role = SpatieRole::findByName('librarian', 'web');
+    $permissionNames = $role->permissions()->pluck('name')->all();
+
+    expect($permissionNames)
+        ->toContain('book.viewAny', 'book-loan.viewAny', 'book-reservation.viewAny')
+        ->not->toContain('user.viewAny')
+        ->not->toContain('student-invoice.viewAny');
+});
+
+test('pustakawan dapat mengakses modul perpustakaan tetapi tidak modul lain', function () {
+    $setup = libraryTestSetup();
+
+    $librarianRole = SpatieRole::firstOrCreate(['name' => 'librarian', 'guard_name' => 'web']);
+    $librarianRole->syncPermissions(libraryPermissionNames());
+
+    $librarian = User::factory()->create([
+        'first_name' => 'Pustaka',
+        'last_name' => 'Wan',
+        'username' => 'pustaka.wan.test',
+    ]);
+    $librarian->assignRole('librarian');
+
+    test()->actingAs($librarian)->withSession(['active_role' => 'librarian'])
+        ->get(route('admin.library.books.index'))
+        ->assertOk();
+
+    test()->actingAs($librarian)->withSession(['active_role' => 'librarian'])
+        ->get(route('admin.access.users.index'))
+        ->assertForbidden();
+});
+
+test('dashboard pustakawan menampilkan section perpustakaan', function () {
+    $setup = libraryTestSetup();
+
+    $librarianRole = SpatieRole::firstOrCreate(['name' => 'librarian', 'guard_name' => 'web']);
+    $librarianRole->syncPermissions(libraryPermissionNames());
+
+    $librarian = User::factory()->create([
+        'first_name' => 'Pustaka',
+        'last_name' => 'Wan',
+        'username' => 'pustaka.dashboard.test',
+    ]);
+    $librarian->assignRole('librarian');
+
+    test()->actingAs($librarian)->withSession(['active_role' => 'librarian'])
+        ->get('/admin/dashboard')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Dashboard')
+            ->has('sections', 1)
+            ->where('sections.0.key', 'library')
+            ->where('sections.0.quickLinks.0.label', 'Peminjaman'));
 });

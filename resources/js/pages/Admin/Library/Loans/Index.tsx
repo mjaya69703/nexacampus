@@ -1,7 +1,7 @@
 // Daftar peminjaman perpustakaan (admin) + pengembalian dan pembayaran denda.
 import { Head, router, useForm } from '@inertiajs/react';
 import {
-    BookMarked, BookOpen, CircleDollarSign, Clock, Plus, RotateCcw, Wallet,
+    BookMarked, BookOpen, CircleDollarSign, Clock, Plus, RefreshCw, RotateCcw, Wallet,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
@@ -30,10 +30,15 @@ type Row = {
     daysLate: number;
     fineAmount: number;
     finePaid: boolean;
+    renewalCount: number;
+    maxRenewals: number;
+    canRenew: boolean;
+    renewBlockReason: string | null;
     canReturn: boolean;
     canPayFine: boolean;
     canDelete: boolean;
     returnUrl: string;
+    renewUrl: string;
     payFineUrl: string;
     deleteUrl: string;
 };
@@ -44,11 +49,11 @@ type Props = {
     stats: { active: number; overdue: number; returnedThisMonth: number; outstandingFines: number };
     data: { rows: Row[]; currentPage: number; lastPage: number; perPage: number; total: number };
     filters: { q: string; status: string; overdue: string; sort: string; direction: 'asc' | 'desc'; perPage: number };
-    options: { statuses: Record<string, string>; copyStatuses: Record<string, string>; finePerDay: number };
+    options: { statuses: Record<string, string>; copyStatuses: Record<string, string>; finePerDay: number; maxRenewals: number; renewalDays: number };
     urls: { index: string; create: string; bulkDestroy: string };
 };
 
-type Pending = { kind: 'delete'; row: Row } | { kind: 'bulk' } | { kind: 'pay'; row: Row } | null;
+type Pending = { kind: 'delete'; row: Row } | { kind: 'bulk' } | { kind: 'pay'; row: Row } | { kind: 'renew'; row: Row } | null;
 
 function ReturnModal({ loan, copyStatuses, finePerDay, onClose }: {
     loan: Row;
@@ -185,6 +190,11 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
             return;
         }
 
+        if (pending.kind === 'renew') {
+            router.post(pending.row.renewUrl, {}, { preserveScroll: true, onFinish: done });
+            return;
+        }
+
         router.post(urls.bulkDestroy, { ids: selected }, { preserveScroll: true, onFinish: done });
     };
 
@@ -257,6 +267,11 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
                                                 {row.daysLate > 0 && (
                                                     <small className="db-hint" style={{ display: 'block', color: 'var(--db-red)' }}>
                                                         {row.daysLate} hari terlambat
+                                                    </small>
+                                                )}
+                                                {row.renewalCount > 0 && (
+                                                    <small className="db-hint" style={{ display: 'block' }}>
+                                                        Diperpanjang {row.renewalCount}/{row.maxRenewals}×
                                                     </small>
                                                 )}
                                             </span>
@@ -335,6 +350,11 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
                                                 <RotateCcw size={13} />
                                             </button>
                                         )}
+                                        {can.update && row.canRenew && (
+                                            <button className="db-btn ghost sm" type="button" onClick={() => setPending({ kind: 'renew', row })} title={`Perpanjang ${options.renewalDays} hari`}>
+                                                <RefreshCw size={13} />
+                                            </button>
+                                        )}
                                         {can.update && row.canPayFine && (
                                             <button className="db-btn ghost sm" type="button" onClick={() => setPending({ kind: 'pay', row })} title="Tandai denda lunas">
                                                 <Wallet size={13} />
@@ -364,16 +384,28 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
 
                 <ConfirmModal
                     open={pending !== null}
-                    title={pending?.kind === 'bulk' ? 'Hapus riwayat terpilih?' : pending?.kind === 'pay' ? 'Tandai denda lunas?' : 'Hapus riwayat peminjaman?'}
+                    title={
+                        pending?.kind === 'bulk' ? 'Hapus riwayat terpilih?'
+                            : pending?.kind === 'pay' ? 'Tandai denda lunas?'
+                                : pending?.kind === 'renew' ? 'Perpanjang peminjaman?'
+                                    : 'Hapus riwayat peminjaman?'
+                    }
                     message={pending?.kind === 'bulk'
                         ? `${selected.length} riwayat peminjaman akan dihapus. Peminjaman aktif akan dilewati.`
                         : pending?.kind === 'pay'
                             ? `Denda ${formatRupiah(pending.row.fineAmount)} untuk ${pending.row.member} akan ditandai lunas.`
-                            : pending?.kind === 'delete'
-                                ? `Riwayat peminjaman ${pending.row.copyCode ?? ''} oleh ${pending.row.member} akan dihapus.`
-                                : ''}
-                    confirmLabel={pending?.kind === 'bulk' ? 'Ya, hapus semua' : pending?.kind === 'pay' ? 'Ya, tandai lunas' : 'Ya, hapus'}
-                    danger={pending?.kind !== 'pay'}
+                            : pending?.kind === 'renew'
+                                ? `Peminjaman "${pending.row.bookTitle ?? ''}" oleh ${pending.row.member} akan diperpanjang ${options.renewalDays} hari dari jatuh tempo saat ini (${pending.row.dueAt ?? '—'}).`
+                                : pending?.kind === 'delete'
+                                    ? `Riwayat peminjaman ${pending.row.copyCode ?? ''} oleh ${pending.row.member} akan dihapus.`
+                                    : ''}
+                    confirmLabel={
+                        pending?.kind === 'bulk' ? 'Ya, hapus semua'
+                            : pending?.kind === 'pay' ? 'Ya, tandai lunas'
+                                : pending?.kind === 'renew' ? 'Ya, perpanjang'
+                                    : 'Ya, hapus'
+                    }
+                    danger={pending?.kind !== 'pay' && pending?.kind !== 'renew'}
                     processing={processing}
                     onConfirm={confirm}
                     onCancel={() => setPending(null)}

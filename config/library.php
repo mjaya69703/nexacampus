@@ -11,6 +11,9 @@ return [
     */
     'loan_days' => (int) env('LIBRARY_LOAN_DAYS', 14),
     'reservation_hold_days' => (int) env('LIBRARY_RESERVATION_HOLD_DAYS', 3),
+    'pickup_plan_days' => (int) env('LIBRARY_PICKUP_PLAN_DAYS', 7),
+    'max_renewals' => (int) env('LIBRARY_MAX_RENEWALS', 1),
+    'renewal_days' => (int) env('LIBRARY_RENEWAL_DAYS', 14),
     'fine_per_day' => (int) env('LIBRARY_FINE_PER_DAY', 1000),
     'max_active_reservations' => (int) env('LIBRARY_MAX_ACTIVE_RESERVATIONS', 3),
 

@@ -1,15 +1,15 @@
 // Portal mahasiswa — katalog perpustakaan, pinjaman, dan reservasi.
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
-    BookMarked, BookOpen, CalendarClock, CheckCircle2, Clock, Library,
-    Search, TriangleAlert, Wallet, XCircle,
+    BookMarked, BookOpen, CalendarClock, CheckCircle2, Clock, Eye, Library,
+    RefreshCw, Search, TriangleAlert, Wallet, XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { AdminShell, ShellProps } from '../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../components/Shared/Crud/CrudHero';
-import { LibraryModal, LibraryStats, formatRupiah, libraryTone } from '../../../components/Shared/Library/LibraryUI';
+import { LibraryStats, ReserveBookModal, formatRupiah, libraryTone } from '../../../components/Shared/Library/LibraryUI';
 import '../../../../css/dashboard.css';
 import '../../../../css/crud.css';
 
@@ -25,9 +25,12 @@ type BookRow = {
     coverUrl: string | null;
     copiesCount: number;
     availableCount: number;
+    queueCount: number;
+    estimatedReadyAt: string | null;
     hasActiveLoan: boolean;
     hasActiveReservation: boolean;
     canReserve: boolean;
+    detailUrl: string;
 };
 
 type LoanRow = {
@@ -44,6 +47,12 @@ type LoanRow = {
     daysLate: number;
     fineAmount: number;
     finePaid: boolean;
+    renewalCount: number;
+    maxRenewals: number;
+    renewalDays: number;
+    canRenew: boolean;
+    renewBlockReason: string | null;
+    renewUrl: string;
 };
 
 type ReservationRow = {
@@ -55,8 +64,12 @@ type ReservationRow = {
     statusLabel: string;
     statusTone: string;
     reservedAt: string | null;
+    pickupPlannedAt: string | null;
     readyAt: string | null;
     expiresAt: string | null;
+    queuePosition: number;
+    estimatedReadyAt: string | null;
+    loanDueAt: string | null;
     canCancel: boolean;
     cancelUrl: string;
 };
@@ -69,7 +82,7 @@ type Props = {
     myReservations: ReservationRow[];
     filters: { q: string; category_id: string; availability: string; sort: string; direction: 'asc' | 'desc' };
     categories: Array<{ id: number; name: string }>;
-    options: { loanDays: number; finePerDay: number };
+    options: { loanDays: number; finePerDay: number; holdDays: number; pickupPlanDays: number; maxRenewals: number; renewalDays: number };
     urls: { index: string; reserve: string };
 };
 
@@ -85,56 +98,12 @@ function buildQuery(filters: Props['filters'], search: string, overrides: Record
     );
 }
 
-function ReserveModal({ book, url, onClose }: { book: BookRow; url: string; onClose: () => void }) {
-    const form = useForm({ book_id: book.id, notes: '' });
-
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
-        form.post(url, { preserveScroll: true, onSuccess: onClose });
-    };
-
-    return (
-        <LibraryModal
-            title="Ajukan Reservasi"
-            description={`${book.title}${book.author ? ` — ${book.author}` : ''}`}
-            onClose={onClose}
-        >
-            <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
-                {book.availableCount === 0 && (
-                    <div className="db-note warning">
-                        <Clock size={15} />
-                        <span>Belum ada eksemplar tersedia. Reservasi akan masuk antrean dan diproses saat buku dikembalikan.</span>
-                    </div>
-                )}
-                <div>
-                    <label className="crud-label" htmlFor="reserve-notes">Catatan (opsional)</label>
-                    <textarea
-                        id="reserve-notes"
-                        className="db-input"
-                        rows={3}
-                        value={form.data.notes}
-                        onChange={(event) => form.setData('notes', event.target.value)}
-                        placeholder="Contoh: referensi untuk tugas mata kuliah…"
-                    />
-                    {form.errors.notes && <div className="db-error">{form.errors.notes}</div>}
-                    {form.errors.book_id && <div className="db-error">{form.errors.book_id}</div>}
-                </div>
-                <div className="db-modal-actions">
-                    <button className="db-btn ghost" type="button" onClick={onClose} disabled={form.processing}>Batal</button>
-                    <button className="db-btn primary" type="submit" disabled={form.processing}>
-                        {form.processing ? 'Mengajukan…' : 'Ajukan Reservasi'}
-                    </button>
-                </div>
-            </form>
-        </LibraryModal>
-    );
-}
-
 export default function StudentLibraryIndex({ shell, stats, books, myLoans, myReservations, filters, categories, options, urls }: Props) {
     const [tab, setTab] = useState<Tab>('catalog');
     const [search, setSearch] = useState(filters.q);
     const [reserveBook, setReserveBook] = useState<BookRow | null>(null);
     const [cancelReservation, setCancelReservation] = useState<ReservationRow | null>(null);
+    const [renewLoan, setRenewLoan] = useState<LoanRow | null>(null);
     const [processing, setProcessing] = useState(false);
 
     const visit = (overrides: Record<string, string | number | undefined>) => {
@@ -152,6 +121,15 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
         router.post(cancelReservation.cancelUrl, {}, {
             preserveScroll: true,
             onFinish: () => { setProcessing(false); setCancelReservation(null); },
+        });
+    };
+
+    const confirmRenew = () => {
+        if (!renewLoan) return;
+        setProcessing(true);
+        router.post(renewLoan.renewUrl, {}, {
+            preserveScroll: true,
+            onFinish: () => { setProcessing(false); setRenewLoan(null); },
         });
     };
 
@@ -276,7 +254,12 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                                                             </span>
                                                         )}
                                                         <div style={{ minWidth: 0 }}>
-                                                            <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13, lineHeight: 1.35 }}>{book.title}</b>
+                                                            <a
+                                                                href={book.detailUrl}
+                                                                style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13, lineHeight: 1.35, fontWeight: 700, textDecoration: 'none' }}
+                                                            >
+                                                                {book.title}
+                                                            </a>
                                                             <small className="db-hint">{book.author || 'Tanpa penulis'}</small>
                                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                                                                 <span className="db-badge gray">{book.category || 'Umum'}</span>
@@ -293,12 +276,22 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
 
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                                         <span className={`db-badge ${book.availableCount > 0 ? 'green' : 'amber'}`}>
-                                                            {book.availableCount > 0 ? `${book.availableCount} tersedia` : 'Antrean'}
+                                                            {book.availableCount > 0 ? `${book.availableCount} tersedia` : 'Tidak tersedia'}
                                                         </span>
+                                                        {book.queueCount > 0 && (
+                                                            <span className="db-badge blue"><Clock size={11} /> {book.queueCount} antre</span>
+                                                        )}
                                                         {book.shelfLocation && <span className="db-badge gray">Rak {book.shelfLocation}</span>}
                                                     </div>
 
-                                                    <div style={{ marginTop: 'auto' }}>
+                                                    {book.availableCount === 0 && book.estimatedReadyAt && (
+                                                        <small className="db-hint">Perkiraan tersedia: {book.estimatedReadyAt}</small>
+                                                    )}
+
+                                                    <div style={{ marginTop: 'auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                                                        <a className="db-btn ghost sm" href={book.detailUrl}>
+                                                            <Eye size={13} /> Detail
+                                                        </a>
                                                         {book.hasActiveLoan ? (
                                                             <span className="db-badge blue"><BookMarked size={11} /> Sedang Anda pinjam</span>
                                                         ) : book.hasActiveReservation ? (
@@ -358,6 +351,7 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                                                     <th>Kembali</th>
                                                     <th>Status</th>
                                                     <th style={{ textAlign: 'right' }}>Denda</th>
+                                                    <th style={{ textAlign: 'right' }}>Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -372,6 +366,11 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                                                         <td>
                                                             {loan.dueAt ?? '—'}
                                                             {loan.daysLate > 0 && <small className="db-hint" style={{ display: 'block', color: 'var(--db-red)' }}>{loan.daysLate} hari terlambat</small>}
+                                                            {loan.renewalCount > 0 && (
+                                                                <small className="db-hint" style={{ display: 'block' }}>
+                                                                    Diperpanjang {loan.renewalCount}× ({loan.renewalDays} hari)
+                                                                </small>
+                                                            )}
                                                         </td>
                                                         <td>{loan.returnedAt ?? '—'}</td>
                                                         <td><span className={`db-badge ${libraryTone(loan.statusTone)}`}>{loan.statusLabel}</span></td>
@@ -382,6 +381,24 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                                                                     <small className="db-hint" style={{ display: 'block' }}>{loan.finePaid ? 'Lunas' : 'Belum lunas'}</small>
                                                                 </span>
                                                             ) : '—'}
+                                                        </td>
+                                                        <td>
+                                                            <div className="crud-row-actions" style={{ justifyContent: 'flex-end' }}>
+                                                                {loan.canRenew ? (
+                                                                    <button
+                                                                        className="db-btn ghost sm"
+                                                                        type="button"
+                                                                        onClick={() => setRenewLoan(loan)}
+                                                                        title={`Perpanjang ${loan.renewalDays} hari`}
+                                                                    >
+                                                                        <RefreshCw size={13} />
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className="db-hint" title={loan.renewBlockReason ?? undefined}>
+                                                                        {loan.renewalCount >= loan.maxRenewals ? 'Maks.' : '—'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -412,6 +429,7 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                                                     <th>Buku</th>
                                                     <th>Eksemplar</th>
                                                     <th>Diajukan</th>
+                                                    <th>Rencana Ambil</th>
                                                     <th>Siap Diambil</th>
                                                     <th>Batas Ambil</th>
                                                     <th>Status</th>
@@ -426,10 +444,30 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                                                             <small className="db-hint">{reservation.author || '—'}</small>
                                                         </td>
                                                         <td>{reservation.copyCode ?? '—'}</td>
-                                                        <td>{reservation.reservedAt ?? '—'}</td>
-                                                        <td>{reservation.readyAt ?? '—'}</td>
+                                                        <td>
+                                                            {reservation.reservedAt ?? '—'}
+                                                            {reservation.queuePosition > 0 && (
+                                                                <small className="db-hint" style={{ display: 'block' }}>
+                                                                    Antrean ke-{reservation.queuePosition}
+                                                                </small>
+                                                            )}
+                                                        </td>
+                                                        <td>{reservation.pickupPlannedAt ?? '—'}</td>
+                                                        <td>
+                                                            {reservation.readyAt ?? (reservation.estimatedReadyAt ? `~ ${reservation.estimatedReadyAt}` : '—')}
+                                                            {!reservation.readyAt && reservation.estimatedReadyAt && (
+                                                                <small className="db-hint" style={{ display: 'block' }}>Perkiraan</small>
+                                                            )}
+                                                        </td>
                                                         <td>{reservation.expiresAt ?? '—'}</td>
-                                                        <td><span className={`db-badge ${libraryTone(reservation.statusTone)}`}>{reservation.statusLabel}</span></td>
+                                                        <td>
+                                                            <span className={`db-badge ${libraryTone(reservation.statusTone)}`}>{reservation.statusLabel}</span>
+                                                            {reservation.loanDueAt && (
+                                                                <small className="db-hint" style={{ display: 'block' }}>
+                                                                    Jatuh tempo {reservation.loanDueAt}
+                                                                </small>
+                                                            )}
+                                                        </td>
                                                         <td>
                                                             <div className="crud-row-actions" style={{ justifyContent: 'flex-end' }}>
                                                                 {reservation.canCancel && (
@@ -451,7 +489,16 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                     )}
                 </div>
 
-                {reserveBook && <ReserveModal book={reserveBook} url={urls.reserve} onClose={() => setReserveBook(null)} />}
+                {reserveBook && (
+                    <ReserveBookModal
+                        book={reserveBook}
+                        url={urls.reserve}
+                        loanDays={options.loanDays}
+                        holdDays={options.holdDays}
+                        pickupPlanDays={options.pickupPlanDays}
+                        onClose={() => setReserveBook(null)}
+                    />
+                )}
 
                 <ConfirmModal
                     open={cancelReservation !== null}
@@ -462,6 +509,18 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                     processing={processing}
                     onConfirm={confirmCancel}
                     onCancel={() => setCancelReservation(null)}
+                />
+
+                <ConfirmModal
+                    open={renewLoan !== null}
+                    title="Perpanjang peminjaman?"
+                    message={renewLoan
+                        ? `"${renewLoan.bookTitle ?? ''}" akan diperpanjang ${renewLoan.renewalDays} hari dari jatuh tempo saat ini (${renewLoan.dueAt ?? '—'}).`
+                        : ''}
+                    confirmLabel="Ya, perpanjang"
+                    processing={processing}
+                    onConfirm={confirmRenew}
+                    onCancel={() => setRenewLoan(null)}
                 />
             </div>
         </AdminShell>

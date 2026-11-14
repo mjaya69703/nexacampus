@@ -897,36 +897,42 @@ Domain `Academic` — alur: mahasiswa mengajukan proposal → admin menyetujui/m
 
 ### 3.11 Modul Perpustakaan
 
-Domain `Library` — katalog buku, eksemplar, sirkulasi peminjaman/pengembalian, denda, dan reservasi. Peminjam mereferensikan `users` langsung (tanpa tabel anggota terpisah).
+Domain `Library` — katalog buku, eksemplar, sirkulasi peminjaman/pengembalian, denda, reservasi berantrean, dan perpanjangan pinjaman. Peminjam mereferensikan `users` langsung (tanpa tabel anggota terpisah).
 
 **Tabel:** `book_categories`, `books`, `book_copies`, `book_loans`, `book_reservations`.
+- `book_reservations.pickup_planned_at` — rencana tanggal ambil oleh anggota.
+- `book_reservations.book_loan_id` — terisi saat reservasi `fulfilled` menjadi peminjaman.
+- `book_loans.renewal_count`, `book_loans.renewed_at` — jumlah & waktu perpanjangan.
 
 **Status:**
 - `book_copies.status`: `available`, `borrowed`, `reserved`, `lost`, `damaged`, `maintenance`. Status `borrowed`/`reserved` tidak boleh diubah manual (hanya lewat transaksi).
 - `book_loans.status`: `borrowed`, `returned`, `overdue`, `lost`; status aktif = `borrowed` + `overdue`.
 - `book_reservations.status`: `pending`, `ready`, `fulfilled`, `cancelled`, `expired`.
 
-**Konfigurasi:** `config/library.php` — masa pinjam 14 hari, denda Rp1.000/hari, maksimal 3 pinjaman aktif mahasiswa / 5 dosen, maksimal 3 reservasi aktif, masa tahan reservasi siap-ambil 3 hari. Semua dapat dioverride lewat `.env` (`LIBRARY_*`).
+**Konfigurasi:** `config/library.php` — masa pinjam 14 hari, denda Rp1.000/hari, maksimal 3 pinjaman aktif mahasiswa / 5 dosen, maksimal 3 reservasi aktif, masa tahan reservasi siap-ambil 3 hari, rencana ambil default 7 hari, maksimal 1 perpanjangan × 14 hari. Semua dapat dioverride lewat `.env` (`LIBRARY_*`).
 
 **Service utama:** `app(LibraryService::class)` di `app/Support/Library/LibraryService.php`:
 - `borrow()`, `returnBook()`, `createReservation()`, `markReservationReady()`, `fulfillReservation()`, `cancelReservation()`
 - `promoteNextReservation()` — eksemplar kembali → reservasi `pending` berikutnya menjadi `ready` + eksemplar `reserved`
+- `queuePosition()`, `queueSize()`, `estimatedReadyAt()` — posisi antrean (hanya `pending`), ukuran antrean, dan estimasi siap ambil dihitung dinamis (tidak disimpan)
+- `renewalEligibility()`, `renewLoan()` — perpanjangan ditolak bila pinjaman tidak aktif/terlambat, batas perpanjangan tercapai, atau buku sedang direservasi anggota lain; jatuh tempo digeser `renewal_days` dari due date berjalan
 - `refreshOverdueLoans()`, `expireReservations()` — dijalankan otomatis saat daftar/borrow dibuka
 - `maxLoansFor()`, `outstandingFine()`, `calculateFine()` — guard batas pinjam dan denda
 - Aturan: anggota dengan denda belum lunas tidak boleh meminjam; reservasi `ready` yang kedaluwarsa mengembalikan eksemplar menjadi `available`.
 
 **Route utama:**
-- Admin: `admin.library.book-categories.*`, `admin.library.books.*` (+ `copies.store/update/status/destroy`), `admin.library.loans.*` (`index/create/store/return/pay-fine/destroy/bulk-destroy/search-members/search-copies`), `admin.library.reservations.*` (`index/ready/fulfill/cancel/destroy/available-copies`)
-- Mahasiswa: `student.library.*` (`index`, `reservations.store`, `reservations.cancel`)
+- Admin: `admin.library.book-categories.*`, `admin.library.books.*` (+ `copies.store/update/status/destroy`), `admin.library.loans.*` (`index/create/store/return/renew/pay-fine/destroy/bulk-destroy/search-members/search-copies`), `admin.library.reservations.*` (`index/ready/fulfill/cancel/destroy/available-copies`)
+- Mahasiswa: `student.library.*` (`index`, `books.show`, `reservations.store`, `reservations.cancel`, `loans.renew`)
 
 **Halaman React:**
 - Admin: `resources/js/pages/Admin/Library/BookCategories/{Index,Form}.tsx`, `Books/{Index,Form,Show}.tsx`, `Loans/{Index,Create}.tsx`, `Reservations/Index.tsx`
-- Mahasiswa: `resources/js/pages/Student/Library/Index.tsx` (tab Katalog / Pinjaman Saya / Reservasi Saya)
-- Shared: `resources/js/components/Shared/Library/LibraryUI.tsx` (helper `buildQuery`, `formatRupiah`, `libraryTone`, `LibraryStats`, `LibraryModal`)
+- Mahasiswa: `resources/js/pages/Student/Library/Index.tsx` (tab Katalog / Pinjaman Saya / Reservasi Saya) dan `Student/Library/Show.tsx` (detail buku: bibliografi, status eksemplar + jatuh tempo, antrean, reservasi/pinjaman saya, aksi perpanjang/batal, buku terkait)
+- Shared: `resources/js/components/Shared/Library/LibraryUI.tsx` (helper `buildQuery`, `formatRupiah`, `libraryTone`, `LibraryStats`, `LibraryModal`, `ReserveBookModal`)
+- Modal reservasi menampilkan rencana tanggal ambil, jumlah antrean, estimasi siap ambil, masa tahan, dan estimasi jatuh tempo pinjaman.
 
-**Permission:** `book-category.*`, `book.*`, `book-loan.*`, `book-reservation.*` (terdaftar di `config/resources.php`, menu group “Perpustakaan”).
+**Permission & role:** `book-category.*`, `book.*`, `book-loan.*`, `book-reservation.*` (terdaftar di `config/resources.php`, menu group “Perpustakaan”). `php artisan permissions:sync` membuat role turunan `librarian` (label “Pustakawan”) yang hanya menerima permission resource ber-`area === 'library'`. Dashboard admin menampilkan section “Perpustakaan” adaptif bila user memegang permission library, sehingga login pustakawan tidak kosong.
 
-**Seeder & test:** `database/seeders/LibrarySeeder.php`; `tests/Feature/Library/LibraryManagementTest.php` (18 test / 117 assertion).
+**Seeder & test:** `database/seeders/LibrarySeeder.php`, demo pustakawan `pustakawan` / `librarian123` di `UserSeeder`; `tests/Feature/Library/LibraryManagementTest.php` (31 test / 211 assertion).
 
 ---
 

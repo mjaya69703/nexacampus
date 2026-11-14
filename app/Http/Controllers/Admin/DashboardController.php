@@ -55,6 +55,10 @@ class DashboardController extends Controller
             $sections[] = $this->publicationAlumniSection($service->publicationAlumni());
         }
 
+        if (ActivePermission::any(['book-loan.viewAny', 'book-reservation.viewAny', 'book.viewAny'])) {
+            $sections[] = $this->librarySection($service->library());
+        }
+
         if (ActivePermission::check('dashboard.manage')) {
             $sections[] = $this->systemHealthSection($service->systemHealth());
         }
@@ -420,6 +424,72 @@ class DashboardController extends Controller
                 ],
             ],
             'alerts' => [],
+        ];
+    }
+
+    private function librarySection(array $stats): array
+    {
+        $overdue = (int) ($stats['overdue_loans_count'] ?? 0);
+
+        return [
+            'key' => 'library',
+            'title' => 'Perpustakaan',
+            'subtitle' => 'Peminjaman, antrean reservasi, dan denda',
+            'icon' => 'fas fa-book-open',
+            'accent' => 'green',
+            'stats' => [
+                ['label' => 'Peminjaman aktif', 'value' => (int) ($stats['active_loans_count'] ?? 0), 'tone' => '', 'icon' => 'fas fa-book'],
+                ['label' => 'Terlambat', 'value' => $overdue, 'tone' => $overdue > 0 ? 'red' : 'green', 'icon' => 'fas fa-clock'],
+                ['label' => 'Reservasi siap', 'value' => (int) ($stats['ready_reservations_count'] ?? 0), 'tone' => 'amber', 'icon' => 'fas fa-bookmark'],
+                ['label' => 'Denda belum lunas', 'value' => $this->rupiahShort((float) ($stats['outstanding_fines'] ?? 0)), 'tone' => 'gold', 'icon' => 'fas fa-money-bill-wave'],
+            ],
+            'quickLinks' => $this->links([
+                ['Peminjaman', 'admin.library.loans.index'],
+                ['Reservasi', 'admin.library.reservations.index'],
+                ['Buku', 'admin.library.books.index'],
+            ]),
+            'bars' => [],
+            'donuts' => [],
+            'progress' => [
+                [
+                    'title' => 'Antrean reservasi',
+                    'items' => [
+                        [
+                            'label' => 'Menunggu diproses',
+                            'sub' => null,
+                            'value' => (int) ($stats['pending_reservations_count'] ?? 0),
+                            'max' => max((int) ($stats['pending_reservations_count'] ?? 0) + (int) ($stats['ready_reservations_count'] ?? 0), 1),
+                            'display' => (string) ($stats['pending_reservations_count'] ?? 0),
+                        ],
+                        [
+                            'label' => 'Siap diambil',
+                            'sub' => null,
+                            'value' => (int) ($stats['ready_reservations_count'] ?? 0),
+                            'max' => max((int) ($stats['pending_reservations_count'] ?? 0) + (int) ($stats['ready_reservations_count'] ?? 0), 1),
+                            'display' => (string) ($stats['ready_reservations_count'] ?? 0),
+                        ],
+                    ],
+                ],
+            ],
+            'rows' => [
+                [
+                    'title' => 'Peminjaman terbaru',
+                    'actionLabel' => 'Kelola peminjaman',
+                    'actionUrl' => $this->url('admin.library.loans.index'),
+                    'items' => $stats['recent_loans'] ?? [],
+                ],
+                [
+                    'title' => 'Reservasi siap diambil',
+                    'actionLabel' => 'Kelola reservasi',
+                    'actionUrl' => $this->url('admin.library.reservations.index'),
+                    'items' => $stats['ready_reservations'] ?? [],
+                ],
+            ],
+            'alerts' => [
+                $overdue > 0
+                    ? ['tone' => 'red', 'title' => $overdue.' peminjaman terlambat', 'message' => 'Tindak lanjuti pengembalian dan denda anggota.', 'items' => []]
+                    : ['tone' => 'green', 'title' => 'Sirkulasi aman', 'message' => 'Tidak ada peminjaman terlambat.', 'items' => []],
+            ],
         ];
     }
 

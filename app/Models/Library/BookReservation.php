@@ -19,9 +19,11 @@ class BookReservation extends Model
     protected $fillable = [
         'book_id',
         'book_copy_id',
+        'book_loan_id',
         'user_id',
         'status',
         'reserved_at',
+        'pickup_planned_at',
         'ready_at',
         'expires_at',
         'fulfilled_at',
@@ -35,6 +37,7 @@ class BookReservation extends Model
     {
         return [
             'reserved_at' => 'datetime',
+            'pickup_planned_at' => 'date',
             'ready_at' => 'datetime',
             'expires_at' => 'datetime',
             'fulfilled_at' => 'datetime',
@@ -47,7 +50,7 @@ class BookReservation extends Model
     {
         return LogOptions::defaults()
             ->useLogName('book_reservation')
-            ->logOnly(['status', 'book_copy_id', 'ready_at', 'expires_at'])
+            ->logOnly(['status', 'book_copy_id', 'book_loan_id', 'pickup_planned_at', 'ready_at', 'expires_at'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -60,6 +63,11 @@ class BookReservation extends Model
     public function copy(): BelongsTo
     {
         return $this->belongsTo(BookCopy::class, 'book_copy_id');
+    }
+
+    public function loan(): BelongsTo
+    {
+        return $this->belongsTo(BookLoan::class, 'book_loan_id');
     }
 
     public function user(): BelongsTo

@@ -83,29 +83,38 @@ class BookLoanController extends Controller
                 'outstandingFines' => (float) BookLoan::where('fine_paid', false)->sum('fine_amount'),
             ],
             'data' => [
-                'rows' => collect($loans->items())->values()->map(fn (BookLoan $loan, int $i) => [
-                    'id' => $loan->id,
-                    'no' => ($loans->firstItem() ?? 0) + $i,
-                    'bookTitle' => $loan->copy?->book?->title,
-                    'copyCode' => $loan->copy?->code,
-                    'member' => trim(($loan->user?->first_name ?? '').' '.($loan->user?->last_name ?? '')),
-                    'username' => $loan->user?->username,
-                    'borrowedAt' => $loan->borrowed_at?->format('d M Y'),
-                    'dueAt' => $loan->due_at?->format('d M Y'),
-                    'returnedAt' => $loan->returned_at?->format('d M Y'),
-                    'status' => $loan->status,
-                    'statusLabel' => $loan->statusLabel(),
-                    'statusTone' => $loan->statusTone(),
-                    'daysLate' => $loan->isActive() ? $loan->daysLate() : 0,
-                    'fineAmount' => (float) $loan->fine_amount,
-                    'finePaid' => (bool) $loan->fine_paid,
-                    'canReturn' => $loan->isActive(),
-                    'canPayFine' => ! $loan->fine_paid && (float) $loan->fine_amount > 0,
-                    'canDelete' => ! $loan->isActive(),
-                    'returnUrl' => route('admin.library.loans.return', $loan),
-                    'payFineUrl' => route('admin.library.loans.pay-fine', $loan),
-                    'deleteUrl' => route('admin.library.loans.destroy', $loan),
-                ])->all(),
+                'rows' => collect($loans->items())->values()->map(function (BookLoan $loan, int $i) use ($service, $loans) {
+                    $eligibility = $service->renewalEligibility($loan);
+
+                    return [
+                        'id' => $loan->id,
+                        'no' => ($loans->firstItem() ?? 0) + $i,
+                        'bookTitle' => $loan->copy?->book?->title,
+                        'copyCode' => $loan->copy?->code,
+                        'member' => trim(($loan->user?->first_name ?? '').' '.($loan->user?->last_name ?? '')),
+                        'username' => $loan->user?->username,
+                        'borrowedAt' => $loan->borrowed_at?->format('d M Y'),
+                        'dueAt' => $loan->due_at?->format('d M Y'),
+                        'returnedAt' => $loan->returned_at?->format('d M Y'),
+                        'status' => $loan->status,
+                        'statusLabel' => $loan->statusLabel(),
+                        'statusTone' => $loan->statusTone(),
+                        'daysLate' => $loan->isActive() ? $loan->daysLate() : 0,
+                        'fineAmount' => (float) $loan->fine_amount,
+                        'finePaid' => (bool) $loan->fine_paid,
+                        'renewalCount' => (int) $loan->renewal_count,
+                        'maxRenewals' => (int) config('library.max_renewals', 1),
+                        'canRenew' => $eligibility['allowed'],
+                        'renewBlockReason' => $eligibility['reason'],
+                        'canReturn' => $loan->isActive(),
+                        'canPayFine' => ! $loan->fine_paid && (float) $loan->fine_amount > 0,
+                        'canDelete' => ! $loan->isActive(),
+                        'returnUrl' => route('admin.library.loans.return', $loan),
+                        'renewUrl' => route('admin.library.loans.renew', $loan),
+                        'payFineUrl' => route('admin.library.loans.pay-fine', $loan),
+                        'deleteUrl' => route('admin.library.loans.destroy', $loan),
+                    ];
+                })->all(),
                 'currentPage' => $loans->currentPage(),
                 'lastPage' => $loans->lastPage(),
                 'perPage' => $loans->perPage(),
@@ -125,6 +134,8 @@ class BookLoanController extends Controller
                     ->mapWithKeys(fn (string $status) => [$status => BookCopyStatus::from($status)->label()])
                     ->all(),
                 'finePerDay' => (int) config('library.fine_per_day', 1000),
+                'maxRenewals' => (int) config('library.max_renewals', 1),
+                'renewalDays' => (int) config('library.renewal_days', 14),
             ],
             'urls' => [
                 'index' => route('admin.library.loans.index'),
@@ -223,6 +234,13 @@ class BookLoanController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    public function renew(Request $request, BookLoan $loan, LibraryService $service)
+    {
+        $service->renewLoan($loan, $request->user());
+
+        return back()->with('success', 'Peminjaman diperpanjang sampai '.$loan->refresh()->due_at?->format('d M Y').'.');
     }
 
     public function payFine(Request $request, BookLoan $loan)
