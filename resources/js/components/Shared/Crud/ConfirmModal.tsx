@@ -1,4 +1,5 @@
 // Modal konfirmasi kit CRUD shared (gaya db-modal dashboard).
+import type { ReactNode } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import '../../../../css/dashboard.css';
 
@@ -11,9 +12,10 @@ type Props = {
     processing?: boolean;
     onConfirm: () => void;
     onCancel: () => void;
+    children?: ReactNode;
 };
 
-export function ConfirmModal({ open, title, message, confirmLabel = 'Ya, lanjutkan', danger = true, processing, onConfirm, onCancel }: Props) {
+export function ConfirmModal({ open, title, message, confirmLabel = 'Ya, lanjutkan', danger = true, processing, onConfirm, onCancel, children }: Props) {
     if (!open) return null;
 
     // Bungkus db-root sendiri agar token --db-* selalu tersedia
@@ -27,6 +29,7 @@ export function ConfirmModal({ open, title, message, confirmLabel = 'Ya, lanjutk
                 </span>
                 <h3>{title}</h3>
                 <p>{message}</p>
+                {children}
                 <div className="db-modal-actions">
                     <button className="db-btn ghost" type="button" onClick={onCancel} disabled={processing}>
                         Batal

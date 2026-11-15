@@ -6,6 +6,7 @@ use App\Models\Academic\StudyProgram;
 use App\Models\Financial\InvoiceItem;
 use App\Models\Financial\Payment;
 use App\Models\Financial\StudentInvoice;
+use App\Models\Settings\System;
 use App\Models\User;
 use App\Support\Dashboard\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +21,7 @@ function adminDashboardSetup(): array
     Role::firstOrCreate(['name' => 'superuser', 'guard_name' => 'web']);
     Role::firstOrCreate(['name' => 'operator', 'guard_name' => 'web']);
 
-    App\Models\Settings\System::create([
+    System::create([
         'app_name' => 'NexaCampus Test',
         'app_version' => '1.0.0',
         'app_description' => 'Test',
@@ -193,13 +194,14 @@ it('menampilkan aktivitas sistem untuk pemegang activity-log.viewAny', function 
     expect(collect($items)->pluck('title')->all())->toContain('Uji aktivitas');
 });
 
-it('menampilkan seluruh 8 section untuk peran berizin penuh', function () {
+it('menampilkan seluruh 9 section untuk peran berizin penuh', function () {
     $setup = adminDashboardSetup();
     giveSuperuserPermissions([
         'admission-application.viewAny', 'student-invoice.viewAny', 'payment.viewAny',
         'course-offering.viewAny', 'study-plan.viewAny', 'service-letter-request.viewAny',
         'student-complaint.viewAny', 'employee-profile.viewAny', 'tridharma-record.viewAny',
-        'announcement.viewAny', 'alumni-profile.viewAny', 'dashboard.manage', 'activity-log.viewAny',
+        'announcement.viewAny', 'alumni-profile.viewAny', 'book-loan.viewAny',
+        'dashboard.manage', 'activity-log.viewAny',
     ]);
 
     $this->actingAs($setup['superuser'])
@@ -208,16 +210,17 @@ it('menampilkan seluruh 8 section untuk peran berizin penuh', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('Admin/Dashboard')
-            ->where('hero.sectionCount', 8)
-            ->has('sections', 8)
+            ->where('hero.sectionCount', 9)
+            ->has('sections', 9)
             ->where('sections.0.key', 'admission')
             ->where('sections.1.key', 'financial')
             ->where('sections.2.key', 'academic')
             ->where('sections.3.key', 'student-services')
             ->where('sections.4.key', 'organization')
             ->where('sections.5.key', 'publication-alumni')
-            ->where('sections.6.key', 'system-health')
-            ->where('sections.7.key', 'activity'));
+            ->where('sections.6.key', 'library')
+            ->where('sections.7.key', 'system-health')
+            ->where('sections.8.key', 'activity'));
 
     expect(route('admin.dashboard.index'))->toBe(url('/admin/dashboard'));
 });

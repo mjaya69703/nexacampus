@@ -49,6 +49,7 @@ jobs:
       - name: Install Node Dependencies & Build Frontend
         run: |
           npm install
+          npm run typecheck
           npm run build
 
       - name: Prepare Environment
@@ -60,6 +61,15 @@ jobs:
 
       - name: Create SQLite Database
         run: touch database/database.sqlite
+
+      - name: Verify Config, Route & Blade Caching
+        run: |
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
 
       - name: Execute Migrations & Seeders
         env:

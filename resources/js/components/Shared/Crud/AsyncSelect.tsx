@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import '../../../../css/crud.css';
 
-export type AsyncOption = { id: number | string; label: string };
+export type AsyncOption = { id: number | string; label: string; meta?: Record<string, number | string | null> };
 
 type Props = {
     label: string;
@@ -41,7 +41,8 @@ export function AsyncSelect({ label, required, error, hint, fetchUrl, value, onC
         timer.current = setTimeout(async () => {
             setLoading(true);
             try {
-                const response = await fetch(`${fetchUrl}?q=${encodeURIComponent(query)}`, {
+                const separator = fetchUrl.includes('?') ? '&' : '?';
+                const response = await fetch(`${fetchUrl}${separator}q=${encodeURIComponent(query)}`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
                 const json = await response.json();

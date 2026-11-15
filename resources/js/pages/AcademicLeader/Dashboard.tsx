@@ -118,7 +118,7 @@ export default function AcademicLeaderDashboard({
                     </section>
 
                     {!hasScope && (
-                        <div className="db-note gold"><ShieldCheck size={15} /><span><b>Scope belum tersedia.</b> Akun ini belum memiliki jabatan fakultas atau program studi aktif, jadi data pemantauan belum bisa ditampilkan.</span></div>
+                        <div className="db-note warning"><ShieldCheck size={15} /><span><b>Scope belum tersedia.</b> Akun ini belum memiliki jabatan fakultas atau program studi aktif, jadi data pemantauan belum bisa ditampilkan.</span></div>
                     )}
 
                     <section className="db-stats" aria-label="Ringkasan pimpinan">

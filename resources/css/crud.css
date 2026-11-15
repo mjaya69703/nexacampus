@@ -148,3 +148,66 @@ table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .crud-filter-grid { grid-template-columns: 1fr; }
     .cx-sem-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* RichTextField (Jodit) — border mengikuti kit, area tulis terang agar
+   konten WYSIWYG tetap terbaca; adaptasi dark mode di bawahnya. */
+.crud-richtext .jodit-container { border: 1px solid var(--db-line) !important; border-radius: 10px; overflow: hidden; }
+.crud-richtext .jodit-wysiwyg { background: #fff; color: #1f2937; }
+
+/* WAJIB — adaptasi dark mode. Editor memakai tema gelap bawaan Jodit
+   (jodit_theme_dark, diaktifkan dari RichTextField mengikuti data-bs-theme);
+   variabel --jd-dark-* di bawah menunjuk langsung ke variabel palet db-*
+   (dashboard.css) agar menyatu dengan kartu/input lain. Ikon Jodit memakai
+   fill/stroke hardcoded #212529 sehingga harus di-override eksplisit. */
+[data-bs-theme=dark] .crud-richtext .jodit-container,
+body[data-bs-theme=dark] .crud-richtext .jodit-container {
+    --jd-dark-background-color: var(--db-card);
+    --jd-dark-background-darknes: var(--db-soft);
+    --jd-dark-background-ligher: var(--db-brand-soft);
+    --jd-dark-toolbar-color: var(--db-soft);
+    --jd-dark-toolbar-seperator-color1: var(--db-line);
+    --jd-dark-toolbar-seperator-color2: var(--db-line);
+    --jd-dark-toolbar-seperator-color3: var(--db-brand-soft);
+    --jd-dark-border-color: var(--db-line);
+    --jd-dark-text-color: var(--db-ink);
+    --jd-dark-text-color-opacity80: var(--db-muted);
+    border-color: var(--db-line) !important;
+}
+[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button svg,
+body[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button svg,
+[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button__button,
+body[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button__button,
+[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button__text,
+body[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button__text {
+    fill: var(--db-ink) !important;
+    stroke: var(--db-ink) !important;
+    color: var(--db-ink) !important;
+}
+[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button:hover:not([disabled]),
+body[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button:hover:not([disabled]) {
+    background-color: var(--db-brand-soft) !important;
+    border-color: var(--db-line) !important;
+}
+[data-bs-theme=dark] .jodit-popup,
+body[data-bs-theme=dark] .jodit-popup,
+[data-bs-theme=dark] .jodit-dialog__panel,
+body[data-bs-theme=dark] .jodit-dialog__panel {
+    --jd-dark-background-color: var(--db-card);
+    --jd-dark-background-darknes: var(--db-soft);
+    --jd-color-panel: var(--db-card);
+    --jd-color-background-default: var(--db-card);
+    --jd-color-text: var(--db-ink);
+    --jd-color-icon: var(--db-ink);
+    --jd-color-border: var(--db-line);
+}
+[data-bs-theme=dark] .jodit-popup .jodit-toolbar-button svg,
+body[data-bs-theme=dark] .jodit-popup .jodit-toolbar-button svg,
+[data-bs-theme=dark] .jodit-dialog__panel .jodit-toolbar-button svg,
+body[data-bs-theme=dark] .jodit-dialog__panel .jodit-toolbar-button svg {
+    fill: var(--db-ink) !important;
+    stroke: var(--db-ink) !important;
+}
+[data-bs-theme=dark] .crud-richtext .jodit-statusbar,
+body[data-bs-theme=dark] .crud-richtext .jodit-statusbar {
+    color: var(--db-muted) !important;
+}

@@ -179,8 +179,8 @@ class WindowsAwareSidecarManager extends SidecarManager
         }
 
         foreach (array_filter([
-            env('NODE_BINARY'),
-            env('WHATSAPP_WEB_NODE_BINARY'),
+            config('whatsapp.node_binary'),
+            config('whatsapp.web_node_binary'),
             'C:\\wumpus\\bin\\nodejs\\node-v22\\node.exe',
             'C:\\Program Files\\nodejs\\node.exe',
             'C:\\Program Files (x86)\\nodejs\\node.exe',

@@ -78,7 +78,10 @@ class Announcement extends Model
     {
         return $query->where('is_published', true)
             ->whereNotNull('published_at')
-            ->where('published_at', '<=', now());
+            ->where('published_at', '<=', now())
+            ->where(fn ($sub) => $sub
+                ->whereNull('scheduled_at')
+                ->orWhere('scheduled_at', '<=', now()));
     }
 
     public function scopePinned($query)
@@ -162,14 +165,18 @@ class Announcement extends Model
                     });
                 }
 
-                // Course offerings (enrolled)
+                // Course offerings (currently enrolled only)
                 $query->orWhere(function ($q) use ($studentProfile) {
                     $q->where('target_type', AnnouncementTargetType::COURSE_OFFERING->value)
                         ->whereIn('target_id', function ($sub) use ($studentProfile) {
-                            $sub->select('course_offering_id')
+                            $sub->select('study_plan_details.course_offering_id')
                                 ->from('study_plan_details')
                                 ->join('study_plans', 'study_plan_details.study_plan_id', '=', 'study_plans.id')
-                                ->where('study_plans.student_profile_id', $studentProfile->id);
+                                ->where('study_plans.student_profile_id', $studentProfile->id)
+                                ->whereIn('study_plan_details.status', ['Draft', 'Taken'])
+                                ->whereIn('study_plans.status', ['Draft', 'Submitted', 'Approved'])
+                                ->whereNull('study_plan_details.deleted_at')
+                                ->whereNull('study_plans.deleted_at');
                         });
                 });
 

@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Alumni\AlumniEvent;
 use App\Models\Alumni\JobPosting;
 use App\Models\Alumni\TracerStudyCampaign;
+use App\Support\Alumni\TracerStudyService;
 use App\Support\Inertia\ShellProps;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,6 +17,8 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly TracerStudyService $tracerStudyService) {}
+
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -50,6 +53,7 @@ class DashboardController extends Controller
             ->whereDoesntHave('responses', fn ($query) => $query->where('alumni_profile_id', $profileId))
             ->orderBy('end_date')
             ->get()
+            ->filter(fn (TracerStudyCampaign $campaign) => $this->tracerStudyService->isAvailableFor($campaign, $profile))
             ->map(fn ($campaign) => [
                 'id' => $campaign->id,
                 'title' => $campaign->title,

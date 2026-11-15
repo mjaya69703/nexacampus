@@ -321,6 +321,19 @@ class CourseOfferingController extends Controller
     {
         $validated = $this->validatePayload($request, true, $courseOffering->id);
 
+        $activeEnrollmentCount = StudyPlanDetail::query()
+            ->where('course_offering_id', $courseOffering->id)
+            ->activeEnrollment()
+            ->count();
+
+        if ($validated['capacity'] !== null && (int) $validated['capacity'] < $activeEnrollmentCount) {
+            return back()
+                ->withErrors([
+                    'capacity' => "Kapasitas tidak boleh lebih kecil dari {$activeEnrollmentCount} mahasiswa yang sudah memegang kursi.",
+                ])
+                ->withInput();
+        }
+
         $courseOffering->update(array_merge($validated, ['updated_by' => $request->user()->id]));
 
         return redirect()->route('admin.academic.course-offerings.show', $courseOffering)
@@ -818,8 +831,7 @@ class CourseOfferingController extends Controller
     {
         return StudyPlanDetail::query()
             ->where('course_offering_id', $offeringId)
-            ->where('status', 'Taken')
-            ->whereHas('studyPlan', fn ($q) => $q->where('status', 'Approved'))
+            ->officiallyEnrolled()
             ->with(['studyPlan.studentProfile.user:id,first_name,last_name', 'studyPlan.studentProfile.studyProgram:id,name', 'studyPlan.studentProfile:id,nim,user_id,study_program_id'])
             ->get()
             ->map(fn ($detail) => $detail->studyPlan?->studentProfile)

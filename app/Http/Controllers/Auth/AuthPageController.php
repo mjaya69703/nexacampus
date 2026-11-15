@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Settings\Campus;
 use App\Models\Settings\System;
+use App\Models\User;
 use App\Support\Inertia\PublicUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -163,7 +164,7 @@ class AuthPageController extends Controller
     /**
      * @return array{campus: array{name: string, logo: string, description: string}, links: array<string,string>, user: null}
      */
-    private function sharedProps(?\App\Models\User $user = null): array
+    private function sharedProps(?User $user = null): array
     {
         return [
             'campus' => [
@@ -185,7 +186,7 @@ class AuthPageController extends Controller
         ];
     }
 
-    private function dashboardUrl(\App\Models\User $user): string
+    private function dashboardUrl(User $user): string
     {
         // Untuk halaman auth, dashboardUrl hanya dipakai avatar/menu — fallback ke select-role.
         $dashboardRoute = $user->prefix.'dashboard.index';
@@ -196,17 +197,18 @@ class AuthPageController extends Controller
     }
 
     /**
-     * @return array<string, array{desc: string, icon: string}>
+     * @return array<string, array{label: string, desc: string, icon: string}>
      */
     private function roleMeta(): array
     {
         return [
-            'superuser' => ['desc' => 'Akses superuser dengan semua izin', 'icon' => 'shield'],
-            'admin' => ['desc' => 'Akses penuh ke sistem', 'icon' => 'shield'],
-            'lecturer' => ['desc' => 'Akses dosen & pengajaran', 'icon' => 'presentation'],
-            'academic-leader' => ['desc' => 'Akses pemantauan akademik sesuai jabatan', 'icon' => 'briefcase'],
-            'student' => ['desc' => 'Akses mahasiswa aktif', 'icon' => 'graduation'],
-            'alumni' => ['desc' => 'Akses khusus alumni', 'icon' => 'users'],
+            'superuser' => ['label' => 'Superuser', 'desc' => 'Akses superuser dengan semua izin', 'icon' => 'shield'],
+            'admin' => ['label' => 'Admin', 'desc' => 'Akses penuh ke sistem', 'icon' => 'shield'],
+            'librarian' => ['label' => 'Pustakawan', 'desc' => 'Akses pengelolaan perpustakaan', 'icon' => 'library'],
+            'lecturer' => ['label' => 'Dosen', 'desc' => 'Akses dosen & pengajaran', 'icon' => 'presentation'],
+            'academic-leader' => ['label' => 'Pimpinan Akademik', 'desc' => 'Akses pemantauan akademik sesuai jabatan', 'icon' => 'briefcase'],
+            'student' => ['label' => 'Mahasiswa', 'desc' => 'Akses mahasiswa aktif', 'icon' => 'graduation'],
+            'alumni' => ['label' => 'Alumni', 'desc' => 'Akses khusus alumni', 'icon' => 'users'],
         ];
     }
 }

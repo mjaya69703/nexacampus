@@ -1,6 +1,6 @@
 // Home academic shell.
 import { Link } from '@inertiajs/react';
-import { ArrowUpRight, BookOpen, CalendarDays, GraduationCap, Laptop, Library, LucideIcon, Search } from 'lucide-react';
+import { ArrowUpRight, BookMarked, BookOpen, CalendarDays, GraduationCap, Laptop, Library, LucideIcon, Search } from 'lucide-react';
 import { ReactNode, useMemo, useState } from 'react';
 import { Campus, PublicLinks, PublicShell } from '../PublicShell';
 import '../../../../css/academic.css';
@@ -25,6 +25,7 @@ const tabs = [
     { label: 'Jadwal Kuliah', href: '/akademik/jadwal', icon: BookOpen },
     { label: 'Kurikulum', href: '/akademik/kurikulum', icon: Library },
     { label: 'E-Learning', href: '/akademik/elearning', icon: Laptop },
+    { label: 'Repositori', href: '/repositori-skripsi', icon: BookMarked },
 ];
 
 export function AcademicShell({ campus, links, user, eyebrow, title, description, icon: Icon, children, action, activeTab = eyebrow }: Props) {
@@ -33,7 +34,7 @@ export function AcademicShell({ campus, links, user, eyebrow, title, description
     const searchResults = useMemo(() => tabs.filter((tab) => tab.label.toLowerCase().includes(query.toLowerCase())), [query]);
 
     return <PublicShell campus={campus} links={links} user={user} activeNav="Akademik">
-        <div className="academic-page">
+        <div className="academic-page adm-root">
             <div className="academic-subnav"><div className="public-container academic-subnav-inner"><div className="academic-subnav-title"><BookOpen size={16} /><span>Pusat Akademik</span></div><nav aria-label="Navigasi akademik">{tabs.map(({ label, href, icon: TabIcon }) => <Link href={href} key={label} className={label === activeTab ? 'active' : ''}><TabIcon size={14} />{label}</Link>)}</nav><div className="academic-search-wrap"><button type="button" className="academic-search" onClick={() => setSearchOpen(!searchOpen)} aria-label="Cari informasi akademik" aria-expanded={searchOpen}><Search size={15} /></button>{searchOpen && <div className="academic-search-popover"><label htmlFor="academic-search-input">Cari halaman akademik</label><input id="academic-search-input" autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Contoh: kalender" />{query && (searchResults.length ? searchResults.map(({ label, href, icon: ResultIcon }) => <Link href={href} key={label} onClick={() => { setSearchOpen(false); setQuery(''); }}><ResultIcon size={13} />{label}</Link>) : <span className="academic-search-empty">Tidak ada halaman yang cocok.</span>)}</div>}</div></div></div>
             <header className="academic-heading"><div className="public-container academic-heading-inner"><div className="academic-heading-copy"><span className="academic-breadcrumb">Akademik <span>/</span> {eyebrow}</span><div className="academic-title-row"><span className="academic-title-icon"><Icon size={25} /></span><div><h1>{title}</h1><p>{description}</p></div></div></div>{action}</div></header>
             <main className="public-container academic-content">{children}</main>

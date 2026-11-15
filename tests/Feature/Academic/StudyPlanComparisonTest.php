@@ -9,7 +9,9 @@ use App\Models\Academic\StudyPlan;
 use App\Models\Academic\StudyPlanDetail;
 use App\Models\Academic\StudyProgram;
 use App\Models\Settings\Campus;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 
 function ensureStudyPlanComparisonInstalled(): void
@@ -40,7 +42,7 @@ function createComparisonStudent(): array
     ensureStudyPlanComparisonInstalled();
 
     $role = Role::findOrCreate('student', 'web');
-    $user = \App\Models\User::factory()->create(['first_name' => 'Ari', 'last_name' => 'KRS']);
+    $user = User::factory()->create(['first_name' => 'Ari', 'last_name' => 'KRS']);
     $user->assignRole($role);
 
     $faculty = Faculty::create(['name' => 'Fakultas Teknik', 'code' => 'FTK', 'is_active' => true]);
@@ -87,7 +89,7 @@ function createComparisonStudent(): array
         ]);
     }
 
-    return compact('user');
+    return compact('user', 'oldPlan', 'newPlan');
 }
 
 it('renders study plan comparison for a student', function () {
@@ -97,7 +99,48 @@ it('renders study plan comparison for a student', function () {
         ->withSession(['active_role' => 'student'])
         ->get(route('student.study-plan.comparison'))
         ->assertOk()
-        ->assertSee('Perbandingan KRS')
-        ->assertSee('Basis Data')
-        ->assertSee('Matematika Diskrit');
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Student/StudyPlan/Comparison')
+            ->where('hasProfile', true)
+            ->has('plans', 2)
+            ->where('left.title', '2025/2026')
+            ->where('right.title', '2026/2027')
+            ->where('comparison.sameCount', 1)
+            ->where('comparison.addedCount', 1)
+            ->where('comparison.removedCount', 1)
+            ->where('comparison.creditDelta', 1)
+            ->where('comparison.added.0.name', 'Basis Data')
+            ->where('comparison.removed.0.name', 'Matematika Diskrit'));
+});
+
+it('compares the plans explicitly requested through the query string', function () {
+    ['user' => $user, 'oldPlan' => $oldPlan, 'newPlan' => $newPlan] = createComparisonStudent();
+
+    $this->actingAs($user)
+        ->withSession(['active_role' => 'student'])
+        ->get(route('student.study-plan.comparison', [
+            'left' => $newPlan->id,
+            'right' => $oldPlan->id,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('left.id', $newPlan->id)
+            ->where('right.id', $oldPlan->id)
+            ->where('comparison.addedCount', 1)
+            ->where('comparison.removedCount', 1)
+            ->where('comparison.creditDelta', -1)
+            ->where('comparison.added.0.name', 'Matematika Diskrit')
+            ->where('comparison.removed.0.name', 'Basis Data'));
+});
+
+it('falls back to the default plans when the requested plan belongs to another student', function () {
+    ['user' => $user, 'oldPlan' => $oldPlan] = createComparisonStudent();
+
+    $this->actingAs($user)
+        ->withSession(['active_role' => 'student'])
+        ->get(route('student.study-plan.comparison', ['left' => 99999, 'right' => $oldPlan->id]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('left.title', '2025/2026')
+            ->where('right.id', $oldPlan->id));
 });

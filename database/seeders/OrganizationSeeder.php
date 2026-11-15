@@ -9,9 +9,9 @@ use App\Models\Academic\Faculty;
 use App\Models\Academic\StudentProfile;
 use App\Models\Academic\StudyProgram;
 use App\Models\Organization\ApprovalTemplate;
+use App\Models\Campus\CampusLocation;
 use App\Models\Organization\EdomPeriod;
 use App\Models\Organization\EdomQuestion;
-use App\Models\Organization\EmployeeAttendanceLocation;
 use App\Models\Organization\EmployeeLeaveBalance;
 use App\Models\Organization\EmployeeLeaveType;
 use App\Models\Organization\EmployeeProfile;
@@ -65,7 +65,7 @@ class OrganizationSeeder extends Seeder
             ],
         );
 
-        EmployeeAttendanceLocation::updateOrCreate(
+        \App\Models\Campus\CampusLocation::updateOrCreate(
             ['code' => 'MAIN_CAMPUS'],
             [
                 'name' => 'Kampus Utama',
@@ -73,6 +73,8 @@ class OrganizationSeeder extends Seeder
                 'latitude' => -6.2000000,
                 'longitude' => 106.8166660,
                 'radius_meters' => 500,
+                'is_main' => true,
+                'is_attendance_point' => true,
                 'is_active' => true,
                 'created_by' => $admin->id,
             ],

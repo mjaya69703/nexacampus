@@ -45,6 +45,8 @@ export default function Berita({ campus, links, user, featured, articles, catego
     const [sort, setSort] = useState<SortChoice>('terbaru');
     const [category, setCategory] = useState('');
     const [page, setPage] = useState(1);
+    const [brokenImages, setBrokenImages] = useState<string[]>([]);
+    const markBroken = (url: string) => setBrokenImages((prev) => prev.includes(url) ? prev : [...prev, url]);
 
     const query = search.trim().toLowerCase();
 
@@ -195,9 +197,9 @@ export default function Berita({ campus, links, user, featured, articles, catego
                             flex:'1 1 250px', minWidth:230, minHeight:240, position:'relative',
                             background:'var(--adm-soft)', overflow:'hidden',
                         }}>
-                            {featured.image === null
+                            {featured.image === null || brokenImages.includes(featured.image)
                                 ? <span style={{ position:'absolute', inset:0, display:'grid', placeItems:'center', color:'var(--adm-muted)' }}><Newspaper size={42} /></span>
-                                : <img src={featured.image} alt={featured.title} loading="lazy" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transition:'transform .35s ease' }}
+                                : <img src={featured.image} alt={featured.title} loading="lazy" onError={() => markBroken(featured.image as string)} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transition:'transform .35s ease' }}
                                     onMouseEnter={(e) => { (e.target as HTMLImageElement).style.transform='scale(1.04)'; }}
                                     onMouseLeave={(e) => { (e.target as HTMLImageElement).style.transform=''; }}
                                 />}
@@ -231,9 +233,9 @@ export default function Berita({ campus, links, user, featured, articles, catego
                                     onMouseLeave={(e) => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow='0 1px 3px rgba(20,39,63,.04)'; e.currentTarget.style.borderColor='var(--adm-line)'; }}
                                     >
                                         <span style={{ display:'block', height:150, borderBottom:'1px solid var(--adm-line)', background:'var(--adm-soft)', overflow:'hidden' }}>
-                                            {article.image === null
+                                            {article.image === null || brokenImages.includes(article.image)
                                                 ? <span style={{ display:'grid', placeItems:'center', height:'100%', color:'var(--adm-muted)' }}><Newspaper size={30} /></span>
-                                                : <img src={article.image} alt={article.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transition:'transform .35s ease' }}
+                                                : <img src={article.image} alt={article.title} loading="lazy" onError={() => markBroken(article.image as string)} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transition:'transform .35s ease' }}
                                                     onMouseEnter={(e) => { (e.target as HTMLImageElement).style.transform='scale(1.04)'; }}
                                                     onMouseLeave={(e) => { (e.target as HTMLImageElement).style.transform=''; }}
                                                 />}
@@ -352,7 +354,7 @@ export default function Berita({ campus, links, user, featured, articles, catego
                     </div>
                     <div style={{ padding:'16px 20px', display:'flex', flexWrap:'wrap', gap:8 }}>
                         <button type="button" className={category === '' ? 'adm-chip active' : 'adm-chip'} onClick={() => { setCategory(''); setPage(1); }}>
-                            Semua<b>{articles.length}</b>
+                            Semua<b>{totalArticles}</b>
                         </button>
                         {categories.map((item) => (
                             <button type="button" key={item.slug} className={category === item.slug ? 'adm-chip active' : 'adm-chip'} onClick={() => { setCategory(item.slug); setPage(1); }}>

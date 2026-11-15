@@ -1,7 +1,6 @@
 /* @import 'tailwindcss'; */
 @import "flatpickr/dist/flatpickr.min.css";
 @import "leaflet/dist/leaflet.css";
-@import './../../vendor/power-components/livewire-powergrid/dist/bootstrap5.css';
 @import './admission.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -11,7 +10,7 @@
 @source '../../config/**/*.php';
 
 /* BOOTLE */
-/* PowerGrid Bootstrap */
+/* Tabel & kontrol tema */
 /*resources/css/app.css*/
 
 :root {
@@ -152,14 +151,6 @@ body,
 }
 
 /* Table Styling */
-/* CARD WRAPPER */
-.pg-wrapper {
-    background: var(--pg-card-bg);
-    border: 1px solid var(--pg-card-border);
-    border-radius: 12px;
-    padding: 16px;
-}
-
 /* TABLE */
 .table {
     border-radius: 10px;
@@ -222,122 +213,6 @@ input[type="search"] {
     color: var(--pg-control-color) !important;
     /* color: #e2e8f0 !important; */
     border-radius: 6px !important;
-}
-
-.powergrid-search {
-    text-align: right;
-}
-
-.powergrid-search label {
-    max-width: 540px;
-}
-
-.powergrid-search__group {
-    position: relative;
-    align-items: center;
-}
-
-.powergrid-search__icon {
-    position: absolute;
-    left: 14px;
-    z-index: 4;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    color: #64748b;
-    pointer-events: none;
-}
-
-.powergrid-search__input.form-control,
-.powergrid-search__input {
-    height: 34px;
-    padding-left: 40px !important;
-    background: var(--pg-control-bg) !important;
-    border: 1px solid var(--pg-control-border) !important;
-    color: var(--pg-control-color) !important;
-    border-radius: 7px !important;
-    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.04), 0 1px 2px rgba(2, 6, 23, 0.28);
-}
-
-.powergrid-search__input::placeholder {
-    color: var(--app-text-muted) !important;
-}
-
-.powergrid-search__input:focus {
-    border-color: var(--app-primary-bright) !important;
-    box-shadow: 0 0 0 3px rgba(104, 66, 244, 0.18) !important;
-}
-
-.powergrid-search__group:focus-within .powergrid-search__icon {
-    color: var(--app-primary-bright);
-}
-
-.powergrid-trash-filter__button {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    min-width: 46px;
-    height: 34px;
-    padding: 0 10px !important;
-    color: #ffffff !important;
-    background: linear-gradient(135deg, var(--app-primary), var(--app-primary-deep)) !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
-    border-radius: 7px !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(2, 6, 23, 0.25);
-}
-
-.powergrid-trash-filter {
-    margin-right: 8px;
-}
-
-.powergrid-trash-filter__button:hover,
-.powergrid-trash-filter__button:focus {
-    color: #ffffff !important;
-    background: linear-gradient(135deg, var(--app-primary-bright), var(--app-primary)) !important;
-    border-color: rgba(255, 255, 255, 0.28) !important;
-}
-
-.powergrid-trash-filter__button:focus {
-    box-shadow: 0 0 0 3px rgba(104, 66, 244, 0.22) !important;
-}
-
-.powergrid-trash-filter__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    font-size: 15px;
-    line-height: 1;
-}
-
-.powergrid-trash-filter .dropdown-menu {
-    background: var(--pg-card-bg);
-    border: 1px solid var(--pg-card-border);
-    border-radius: 8px;
-    box-shadow: 0 14px 30px rgba(2, 6, 23, 0.32);
-}
-
-.powergrid-trash-filter .dropdown-item {
-    color: var(--pg-control-color);
-}
-
-.powergrid-trash-filter .dropdown-item:hover,
-.powergrid-trash-filter .dropdown-item:focus {
-    color: #ffffff;
-    background: var(--app-primary);
-}
-
-.powergrid-user-photo {
-    display: inline-block !important;
-    width: 34px !important;
-    height: 34px !important;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 1px solid #475569;
-    box-shadow: 0 2px 6px rgba(2, 6, 23, 0.24);
 }
 
 .app-dashboard {
@@ -459,13 +334,8 @@ body[data-bs-theme=dark] .app-dashboard .list-group-item-action:hover {
     -webkit-overflow-scrolling: touch;
 }
 
-.table-responsive .power-grid-table,
 .table-responsive > table {
     min-width: max-content;
-}
-
-.table-responsive .power-grid-table {
-    margin-bottom: 0;
 }
 
 /* LABEL */

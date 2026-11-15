@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Shared\Employee;
 
 use App\Http\Controllers\Controller;
-use App\Models\Organization\EmployeeAttendanceLocation;
+use App\Models\Campus\CampusLocation;
 use App\Models\Organization\EmployeeAttendanceRecord;
 use App\Models\Organization\EmployeeLeaveBalance;
 use App\Models\Organization\EmployeeLeaveRequest;
@@ -65,7 +65,7 @@ class AttendanceController extends Controller
             ->take(15)
             ->all();
 
-        $locations = EmployeeAttendanceLocation::where('is_active', true)
+        $locations = CampusLocation::attendancePoints()->where('is_active', true)
             ->orderBy('name')
             ->get()
             ->map(fn ($location) => [

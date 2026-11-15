@@ -6,6 +6,7 @@ use App\Http\Controllers\Home\AdmissionPageController;
 use App\Http\Controllers\Home\CommunityPageController;
 use App\Http\Controllers\Home\InstitutionPageController;
 use App\Http\Controllers\Home\PublicationPageController;
+use App\Http\Controllers\Home\ThesisRepositoryController;
 use App\Http\Controllers\Student\DigitalStudentIdVerificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +32,13 @@ Route::get('/akademik/jadwal', [AcademicPageController::class, 'schedule'])->nam
 Route::get('/akademik/kurikulum', [AcademicPageController::class, 'curriculum'])->name('root.akademik.kurikulum');
 Route::get('/akademik/elearning', [AcademicPageController::class, 'elearning'])->name('root.akademik.elearning');
 
+Route::get('/repositori-skripsi', [ThesisRepositoryController::class, 'index'])->name('root.repository.index');
+Route::get('/repositori-skripsi/documents/{document}/download', [ThesisRepositoryController::class, 'download'])
+    ->name('root.repository.documents.download');
+Route::get('/repositori-skripsi/{thesis}', [ThesisRepositoryController::class, 'show'])
+    ->whereNumber('thesis')
+    ->name('root.repository.show');
+
 Route::get('/beasiswa', [CommunityPageController::class, 'beasiswa'])->name('landing.beasiswa');
 Route::get('/alumni', [CommunityPageController::class, 'alumniIndex'])->name('root.alumni.index');
 Route::get('/alumni/karir', [CommunityPageController::class, 'alumniKarir'])->name('root.alumni.karir');
@@ -46,6 +54,7 @@ Route::get('/institusi/akreditasi', [InstitutionPageController::class, 'akredita
 Route::get('/institusi/kerjasama', [InstitutionPageController::class, 'kerjasama'])->name('root.institusi.kerjasama');
 
 Route::get('/pengumuman', [PublicationPageController::class, 'announcements'])->name('root.publication.announcements');
+Route::get('/pengumuman/{id}', [PublicationPageController::class, 'pengumumanShow'])->whereNumber('id')->name('root.publication.announcement-show');
 Route::get('/faq', [PublicationPageController::class, 'faq'])->name('root.faq');
 Route::get('/berita', [PublicationPageController::class, 'news'])->name('root.publication.news');
 Route::get('/berita/{slug}', [PublicationPageController::class, 'newsShow'])->name('root.publication.news-show');

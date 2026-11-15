@@ -1,0 +1,33 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Aturan sirkulasi perpustakaan
+    |--------------------------------------------------------------------------
+    |
+    | Nilai dapat dioverride lewat .env tanpa mengubah kode.
+    |
+    */
+    'loan_days' => (int) env('LIBRARY_LOAN_DAYS', 14),
+    'reservation_hold_days' => (int) env('LIBRARY_RESERVATION_HOLD_DAYS', 3),
+    'pickup_plan_days' => (int) env('LIBRARY_PICKUP_PLAN_DAYS', 7),
+    'max_renewals' => (int) env('LIBRARY_MAX_RENEWALS', 1),
+    'renewal_days' => (int) env('LIBRARY_RENEWAL_DAYS', 14),
+    'fine_per_day' => (int) env('LIBRARY_FINE_PER_DAY', 1000),
+    'max_active_reservations' => (int) env('LIBRARY_MAX_ACTIVE_RESERVATIONS', 3),
+
+    // Pengingat jatuh tempo (hari sebelum due date) dan interval peringatan terlambat.
+    'reminder_days' => array_values(array_filter(
+        array_map('intval', explode(',', (string) env('LIBRARY_REMINDER_DAYS', '3,1'))),
+        fn (int $day) => $day > 0,
+    )),
+    'overdue_reminder_days' => (int) env('LIBRARY_OVERDUE_REMINDER_DAYS', 3),
+    'fine_proof_max_kb' => (int) env('LIBRARY_FINE_PROOF_MAX_KB', 5120),
+
+    'max_active_loans' => [
+        'student' => (int) env('LIBRARY_MAX_LOANS_STUDENT', 3),
+        'lecturer' => (int) env('LIBRARY_MAX_LOANS_LECTURER', 5),
+        'default' => (int) env('LIBRARY_MAX_LOANS_DEFAULT', 3),
+    ],
+];

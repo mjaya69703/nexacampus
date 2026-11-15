@@ -38,9 +38,10 @@ export default function Faq({ campus, links, user, faqs, types, typeCounts }: Pr
     const typeFiltered = useMemo(() => (selectedType === 'all' ? faqs : faqs.filter((item) => item.type === selectedType)), [faqs, selectedType]);
     const categories = useMemo(() => Array.from(new Set(typeFiltered.map((item) => item.category))).sort((a, b) => a.localeCompare(b)), [typeFiltered]);
     const groups = useMemo(() => categories
+        .filter((category) => selectedCategory === null || category === selectedCategory)
         .map((category) => ({ category, items: typeFiltered.filter((item) => item.category === category && matchesTerm(item, term)) }))
         .filter((group) => group.items.length > 0),
-    [categories, term, typeFiltered]);
+    [categories, term, typeFiltered, selectedCategory]);
     const resultCount = groups.reduce((sum, group) => sum + group.items.length, 0);
     const hasNarrowFilters = term !== '' || selectedCategory !== null;
 

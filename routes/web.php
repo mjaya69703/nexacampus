@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Home\WelcomeController;
+use App\Http\Controllers\Setup\SetupWizardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class)->name('root.home-index');
-Route::livewire('/welcome', 'setup-wizard')->name('system.setup-wizard');
+Route::get('/welcome', [SetupWizardController::class, 'show'])->name('system.setup-wizard');
+Route::post('/welcome', [SetupWizardController::class, 'store'])->name('system.setup-wizard.store');
 
 Route::middleware('is_installed')->group(function () {
     require __DIR__.'/web/public.php';

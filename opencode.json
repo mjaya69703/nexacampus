@@ -1,4 +1,27 @@
 {
-  "$schema": "https://opencode.ai/config.json",
-  "instructions": ["AI_CONTEXT.md"]
+    "$schema": "https://opencode.ai/config.json",
+    "instructions": [
+        "AI_CONTEXT.md"
+    ],
+    "mcp": {
+        "laravel-boost": {
+            "type": "local",
+            "enabled": true,
+            "command": [
+                "php",
+                "artisan",
+                "boost:mcp"
+            ]
+        },
+        "nexacampus": {
+            "type": "local",
+            "enabled": true,
+            "command": [
+                "php",
+                "artisan",
+                "mcp:start",
+                "nexacampus"
+            ]
+        }
+    }
 }

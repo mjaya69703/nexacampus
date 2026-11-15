@@ -1,30 +1,107 @@
 <?php
 
-use App\Http\Controllers\Admin\Access\PermissionController;
-use App\Http\Controllers\Admin\Access\RoleController;
-use App\Http\Controllers\Admin\Access\UserController;
-use App\Http\Controllers\Admin\System\ActivityLogController;
-use App\Http\Controllers\Admin\System\MenuController;
-use App\Http\Controllers\Admin\System\NotificationLogController;
-use App\Http\Controllers\Admin\System\SettingController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
+use App\Http\Controllers\Academic\ThesisDocumentController;
+use App\Http\Controllers\Admin\Academic\AcademicAdvisorAssignmentController;
 use App\Http\Controllers\Admin\Academic\AcademicPeriodController;
 use App\Http\Controllers\Admin\Academic\AcademicYearController;
-use App\Http\Controllers\Admin\Academic\AcademicAdvisorAssignmentController;
+use App\Http\Controllers\Admin\Academic\AdminAcademicExportController;
 use App\Http\Controllers\Admin\Academic\AttendanceSessionController;
 use App\Http\Controllers\Admin\Academic\CourseController;
 use App\Http\Controllers\Admin\Academic\CourseOfferingController;
 use App\Http\Controllers\Admin\Academic\CourseScheduleController;
 use App\Http\Controllers\Admin\Academic\CurriculumController;
+use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudentGradeController;
-use App\Http\Controllers\Admin\Academic\TranscriptController;
 use App\Http\Controllers\Admin\Academic\StudentRegistrationController;
 use App\Http\Controllers\Admin\Academic\StudyPlanController;
-use App\Http\Controllers\Admin\Academic\FacultyController;
 use App\Http\Controllers\Admin\Academic\StudyProgramController;
+use App\Http\Controllers\Admin\Academic\ThesisController;
+use App\Http\Controllers\Admin\Academic\TranscriptController;
+use App\Http\Controllers\Admin\Access\PermissionController;
+use App\Http\Controllers\Admin\Access\RoleController;
+use App\Http\Controllers\Admin\Access\UserController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\Admission\AcceptanceLetterController;
+use App\Http\Controllers\Admin\Admission\AdmissionApplicationController;
 use App\Http\Controllers\Admin\Admission\AdmissionDocumentController;
+use App\Http\Controllers\Admin\Admission\AdmissionExamScheduleController;
+use App\Http\Controllers\Admin\Admission\AdmissionPeriodController;
+use App\Http\Controllers\Admin\Admission\AdmissionQuotaController;
+use App\Http\Controllers\Admin\Admission\AdmissionSelectionController;
+use App\Http\Controllers\Admin\Admission\NimGenerationRuleController;
+use App\Http\Controllers\Admin\Alumni\AlumniEventController;
+use App\Http\Controllers\Admin\Alumni\AlumniProfileController;
+use App\Http\Controllers\Admin\Alumni\EmployerPartnerController;
+use App\Http\Controllers\Admin\Alumni\JobPostingController;
+use App\Http\Controllers\Admin\Alumni\TracerStudyCampaignController;
+use App\Http\Controllers\Admin\Alumni\TracerStudyResponseController;
+use App\Http\Controllers\Admin\Campus\AdminCampusExportController;
+use App\Http\Controllers\Admin\Campus\AssetCategoryController;
+use App\Http\Controllers\Admin\Campus\BuildingController;
+use App\Http\Controllers\Admin\Campus\CampusAssetController;
+use App\Http\Controllers\Admin\Campus\CampusLocationController;
+use App\Http\Controllers\Admin\Campus\MaintenanceController;
+use App\Http\Controllers\Admin\Campus\RoomController;
+use App\Http\Controllers\Admin\Campus\RoomReservationController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\Financial\AdminFinancialExportController;
+use App\Http\Controllers\Admin\Financial\ClearancePolicyController;
+use App\Http\Controllers\Admin\Financial\FinancialDashboardController;
+use App\Http\Controllers\Admin\Financial\FinancialHoldController;
+use App\Http\Controllers\Admin\Financial\FinancialReportController;
+use App\Http\Controllers\Admin\Financial\InstallmentRequestController;
+use App\Http\Controllers\Admin\Financial\InvoiceAdjustmentController;
+use App\Http\Controllers\Admin\Financial\InvoiceScheduleController;
+use App\Http\Controllers\Admin\Financial\PaymentController;
+use App\Http\Controllers\Admin\Financial\ScholarshipController;
+use App\Http\Controllers\Admin\Financial\StudentCreditController;
+use App\Http\Controllers\Admin\Financial\StudentInvoiceController;
+use App\Http\Controllers\Admin\Financial\StudentScholarshipController;
+use App\Http\Controllers\Admin\Financial\TuitionFeeController;
+use App\Http\Controllers\Admin\Library\BookCategoryController;
+use App\Http\Controllers\Admin\Library\BookController;
+use App\Http\Controllers\Admin\Library\BookLoanController;
+use App\Http\Controllers\Admin\Library\BookReservationController;
+use App\Http\Controllers\Admin\Organization\ApprovalRequestController;
+use App\Http\Controllers\Admin\Organization\ApprovalTemplateController;
+use App\Http\Controllers\Admin\Organization\EdomPeriodController;
+use App\Http\Controllers\Admin\Organization\EdomQuestionController;
+use App\Http\Controllers\Admin\Organization\EmployeeAttendanceRecordController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveBalanceController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveRequestController;
+use App\Http\Controllers\Admin\Organization\EmployeeLeaveTypeController;
+use App\Http\Controllers\Admin\Organization\EmployeePositionAssignmentController;
+use App\Http\Controllers\Admin\Organization\EmployeeProfileController;
+use App\Http\Controllers\Admin\Organization\LecturerPerformanceReviewController;
+use App\Http\Controllers\Admin\Organization\LecturerPerformanceRubricController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadPeriodController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadRuleController;
+use App\Http\Controllers\Admin\Organization\LecturerWorkloadSubmissionController;
+use App\Http\Controllers\Admin\Organization\OrganizationalPositionController;
+use App\Http\Controllers\Admin\Organization\TridharmaRecordController;
+use App\Http\Controllers\Admin\Organization\UserDevelopmentRecordController;
+use App\Http\Controllers\Admin\Organization\WorkUnitController;
+use App\Http\Controllers\Admin\Publication\AdminPublicationExportController;
+use App\Http\Controllers\Admin\Publication\AgendaController;
+use App\Http\Controllers\Admin\Publication\AnnouncementController;
+use App\Http\Controllers\Admin\Publication\FaqController;
+use App\Http\Controllers\Admin\Publication\GalleryController;
+use App\Http\Controllers\Admin\Publication\NewsController;
+use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
+use App\Http\Controllers\Admin\StudentService\GraduationApplicationController;
+use App\Http\Controllers\Admin\StudentService\GraduationBatchController;
+use App\Http\Controllers\Admin\StudentService\GraduationDocumentRequirementController;
+use App\Http\Controllers\Admin\StudentService\GraduationPolicyController;
+use App\Http\Controllers\Admin\StudentService\ServiceLetterRequestController;
+use App\Http\Controllers\Admin\StudentService\ServiceLetterTypeController;
+use App\Http\Controllers\Admin\StudentService\StudentComplaintCategoryController;
+use App\Http\Controllers\Admin\StudentService\StudentComplaintController;
+use App\Http\Controllers\Admin\StudentService\StudentLeaveApplicationController;
+use App\Http\Controllers\Admin\StudentService\StudentTransferRequestController;
+use App\Http\Controllers\Admin\System\ActivityLogController;
+use App\Http\Controllers\Admin\System\MenuController;
+use App\Http\Controllers\Admin\System\NotificationLogController;
+use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Alumni\AlumniConversionController;
 use App\Http\Controllers\Alumni\TracerStudyAnalyticsController;
 use App\Http\Controllers\Financial\FinancialReportExportController;
@@ -35,23 +112,711 @@ use App\Http\Controllers\Organization\UserDevelopmentAttachmentController;
 use App\Http\Controllers\StudentService\ComplaintAttachmentController;
 use App\Http\Controllers\StudentService\GraduationDocumentController;
 use App\Http\Controllers\StudentService\ServiceLetterDownloadController;
-use App\Support\ResourceRegistry;
 use Illuminate\Support\Facades\Route;
 
-foreach (ResourceRegistry::all() as $resource) {
-    // users, permissions, roles, menus, settings, faculties, notification-logs & activity-logs → Inertia React.
-    if (in_array($resource['plural'], ['permissions', 'roles', 'users', 'menus', 'settings', 'faculties', 'study-programs', 'courses', 'academic-years', 'academic-periods', 'academic-advisor-assignments', 'curriculums', 'course-offerings', 'course-schedules', 'student-registrations', 'study-plans', 'student-grades', 'transcripts', 'notification-logs', 'activity-logs']) && in_array($resource['area'], ['access', 'system', 'academic'])) {
-        continue;
-    }
+// CRUD Layanan Mahasiswa (Inertia React) — nama route & middleware paritas route lama.
+Route::get('/student-services/service-letter-types', [ServiceLetterTypeController::class, 'index'])
+    ->middleware('active_permission:service-letter-type.viewAny')
+    ->name('student-services.letter-types.index');
+Route::get('/student-services/service-letter-types/create', [ServiceLetterTypeController::class, 'create'])
+    ->middleware('active_permission:service-letter-type.create')
+    ->name('student-services.letter-types.create');
+Route::post('/student-services/service-letter-types', [ServiceLetterTypeController::class, 'store'])
+    ->middleware('active_permission:service-letter-type.create')
+    ->name('student-services.letter-types.store');
+Route::post('/student-services/service-letter-types/bulk-destroy', [ServiceLetterTypeController::class, 'bulkDestroy'])
+    ->middleware('active_permission:service-letter-type.delete')
+    ->name('student-services.letter-types.bulk-destroy');
+Route::get('/student-services/service-letter-types/{id}/edit', [ServiceLetterTypeController::class, 'edit'])
+    ->middleware('active_permission:service-letter-type.update')
+    ->name('student-services.letter-types.edit');
+Route::put('/student-services/service-letter-types/{id}', [ServiceLetterTypeController::class, 'update'])
+    ->middleware('active_permission:service-letter-type.update')
+    ->name('student-services.letter-types.update');
+Route::post('/student-services/service-letter-types/{id}/toggle', [ServiceLetterTypeController::class, 'toggle'])
+    ->middleware('active_permission:service-letter-type.update')
+    ->name('student-services.letter-types.toggle');
+Route::delete('/student-services/service-letter-types/{id}', [ServiceLetterTypeController::class, 'destroy'])
+    ->middleware('active_permission:service-letter-type.delete')
+    ->name('student-services.letter-types.destroy');
 
-    Route::crudLivewire(
-        $resource['plural'],
-        $resource['component'],
-        $resource['actions'],
-        $resource['area'],
-        $resource['resource']
-    );
-}
+Route::get('/student-services/service-letter-requests', [ServiceLetterRequestController::class, 'index'])
+    ->middleware('active_permission:service-letter-request.viewAny')
+    ->name('student-services.letter-requests.index');
+Route::get('/student-services/service-letter-requests/{id}', [ServiceLetterRequestController::class, 'show'])
+    ->middleware('active_permission:service-letter-request.view')
+    ->name('student-services.letter-requests.show');
+Route::post('/student-services/service-letter-requests/{id}/mark-under-review', [ServiceLetterRequestController::class, 'markUnderReview'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.mark-under-review');
+Route::post('/student-services/service-letter-requests/{id}/approve', [ServiceLetterRequestController::class, 'approve'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.approve');
+Route::post('/student-services/service-letter-requests/{id}/request-revision', [ServiceLetterRequestController::class, 'requestRevision'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.request-revision');
+Route::post('/student-services/service-letter-requests/{id}/reject', [ServiceLetterRequestController::class, 'reject'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.reject');
+Route::post('/student-services/service-letter-requests/{id}/issue', [ServiceLetterRequestController::class, 'issue'])
+    ->middleware('active_permission:service-letter-request.update')
+    ->name('student-services.letter-requests.issue');
+
+Route::get('/student-services/leave-applications', [StudentLeaveApplicationController::class, 'index'])
+    ->middleware('active_permission:leave-application.viewAny')
+    ->name('student-services.leave-applications.index');
+Route::get('/student-services/leave-applications/{id}', [StudentLeaveApplicationController::class, 'show'])
+    ->middleware('active_permission:leave-application.view')
+    ->name('student-services.leave-applications.show');
+Route::post('/student-services/leave-applications/{id}/mark-under-review', [StudentLeaveApplicationController::class, 'markUnderReview'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.mark-under-review');
+Route::post('/student-services/leave-applications/{id}/approve', [StudentLeaveApplicationController::class, 'approve'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.approve');
+Route::post('/student-services/leave-applications/{id}/request-revision', [StudentLeaveApplicationController::class, 'requestRevision'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.request-revision');
+Route::post('/student-services/leave-applications/{id}/reject', [StudentLeaveApplicationController::class, 'reject'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.reject');
+Route::post('/student-services/leave-applications/{id}/activate', [StudentLeaveApplicationController::class, 'activate'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.activate');
+Route::post('/student-services/leave-applications/{id}/return-to-active', [StudentLeaveApplicationController::class, 'returnToActive'])
+    ->middleware('active_permission:leave-application.update')
+    ->name('student-services.leave-applications.return-to-active');
+
+Route::get('/student-services/transfer-requests', [StudentTransferRequestController::class, 'index'])
+    ->middleware('active_permission:transfer-request.viewAny')
+    ->name('student-services.transfer-requests.index');
+Route::get('/student-services/transfer-requests/{id}', [StudentTransferRequestController::class, 'show'])
+    ->middleware('active_permission:transfer-request.view')
+    ->name('student-services.transfer-requests.show');
+Route::post('/student-services/transfer-requests/{id}/mark-under-review', [StudentTransferRequestController::class, 'markUnderReview'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.mark-under-review');
+Route::post('/student-services/transfer-requests/{id}/approve', [StudentTransferRequestController::class, 'approve'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.approve');
+Route::post('/student-services/transfer-requests/{id}/request-revision', [StudentTransferRequestController::class, 'requestRevision'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.request-revision');
+Route::post('/student-services/transfer-requests/{id}/reject', [StudentTransferRequestController::class, 'reject'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.reject');
+Route::post('/student-services/transfer-requests/{id}/apply-transfer', [StudentTransferRequestController::class, 'applyTransfer'])
+    ->middleware('active_permission:transfer-request.update')
+    ->name('student-services.transfer-requests.apply-transfer');
+
+Route::get('/student-services/graduation-batches', [GraduationBatchController::class, 'index'])
+    ->middleware('active_permission:graduation-batch.viewAny')
+    ->name('student-services.graduation-batches.index');
+Route::get('/student-services/graduation-batches/create', [GraduationBatchController::class, 'create'])
+    ->middleware('active_permission:graduation-batch.create')
+    ->name('student-services.graduation-batches.create');
+Route::post('/student-services/graduation-batches', [GraduationBatchController::class, 'store'])
+    ->middleware('active_permission:graduation-batch.create')
+    ->name('student-services.graduation-batches.store');
+Route::get('/student-services/graduation-batches/{id}', [GraduationBatchController::class, 'show'])
+    ->middleware('active_permission:graduation-batch.view')
+    ->name('student-services.graduation-batches.show');
+Route::get('/student-services/graduation-batches/{id}/edit', [GraduationBatchController::class, 'edit'])
+    ->middleware('active_permission:graduation-batch.update')
+    ->name('student-services.graduation-batches.edit');
+Route::put('/student-services/graduation-batches/{id}', [GraduationBatchController::class, 'update'])
+    ->middleware('active_permission:graduation-batch.update')
+    ->name('student-services.graduation-batches.update');
+Route::post('/student-services/graduation-batches/{id}/bulk-finalize', [GraduationBatchController::class, 'bulkFinalize'])
+    ->middleware('active_permission:graduation-batch.update')
+    ->name('student-services.graduation-batches.bulk-finalize');
+
+Route::get('/student-services/graduation-applications', [GraduationApplicationController::class, 'index'])
+    ->middleware('active_permission:graduation-application.viewAny')
+    ->name('student-services.graduation-applications.index');
+Route::get('/student-services/graduation-applications/{id}', [GraduationApplicationController::class, 'show'])
+    ->middleware('active_permission:graduation-application.view')
+    ->name('student-services.graduation-applications.show');
+Route::post('/student-services/graduation-applications/{id}/mark-under-review', [GraduationApplicationController::class, 'markUnderReview'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.mark-under-review');
+Route::post('/student-services/graduation-applications/{id}/save-checklist', [GraduationApplicationController::class, 'saveChecklist'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.save-checklist');
+Route::post('/student-services/graduation-applications/{id}/verify-document', [GraduationApplicationController::class, 'verifyDocument'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.verify-document');
+Route::post('/student-services/graduation-applications/{id}/approve', [GraduationApplicationController::class, 'approve'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.approve');
+Route::post('/student-services/graduation-applications/{id}/request-revision', [GraduationApplicationController::class, 'requestRevision'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.request-revision');
+Route::post('/student-services/graduation-applications/{id}/reject', [GraduationApplicationController::class, 'reject'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.reject');
+Route::post('/student-services/graduation-applications/{id}/finalize', [GraduationApplicationController::class, 'finalize'])
+    ->middleware('active_permission:graduation-application.update')
+    ->name('student-services.graduation-applications.finalize');
+
+Route::get('/student-services/graduation-policies', [GraduationPolicyController::class, 'index'])
+    ->middleware('active_permission:graduation-policy.viewAny')
+    ->name('student-services.graduation-policies.index');
+Route::get('/student-services/graduation-policies/create', [GraduationPolicyController::class, 'create'])
+    ->middleware('active_permission:graduation-policy.create')
+    ->name('student-services.graduation-policies.create');
+Route::post('/student-services/graduation-policies', [GraduationPolicyController::class, 'store'])
+    ->middleware('active_permission:graduation-policy.create')
+    ->name('student-services.graduation-policies.store');
+Route::get('/student-services/graduation-policies/{id}/edit', [GraduationPolicyController::class, 'edit'])
+    ->middleware('active_permission:graduation-policy.update')
+    ->name('student-services.graduation-policies.edit');
+Route::put('/student-services/graduation-policies/{id}', [GraduationPolicyController::class, 'update'])
+    ->middleware('active_permission:graduation-policy.update')
+    ->name('student-services.graduation-policies.update');
+Route::post('/student-services/graduation-policies/{id}/toggle', [GraduationPolicyController::class, 'toggle'])
+    ->middleware('active_permission:graduation-policy.update')
+    ->name('student-services.graduation-policies.toggle');
+
+Route::get('/student-services/graduation-document-requirements', [GraduationDocumentRequirementController::class, 'index'])
+    ->middleware('active_permission:graduation-document-requirement.viewAny')
+    ->name('student-services.graduation-document-requirements.index');
+Route::get('/student-services/graduation-document-requirements/create', [GraduationDocumentRequirementController::class, 'create'])
+    ->middleware('active_permission:graduation-document-requirement.create')
+    ->name('student-services.graduation-document-requirements.create');
+Route::post('/student-services/graduation-document-requirements', [GraduationDocumentRequirementController::class, 'store'])
+    ->middleware('active_permission:graduation-document-requirement.create')
+    ->name('student-services.graduation-document-requirements.store');
+Route::get('/student-services/graduation-document-requirements/{id}/edit', [GraduationDocumentRequirementController::class, 'edit'])
+    ->middleware('active_permission:graduation-document-requirement.update')
+    ->name('student-services.graduation-document-requirements.edit');
+Route::put('/student-services/graduation-document-requirements/{id}', [GraduationDocumentRequirementController::class, 'update'])
+    ->middleware('active_permission:graduation-document-requirement.update')
+    ->name('student-services.graduation-document-requirements.update');
+Route::post('/student-services/graduation-document-requirements/{id}/toggle', [GraduationDocumentRequirementController::class, 'toggle'])
+    ->middleware('active_permission:graduation-document-requirement.update')
+    ->name('student-services.graduation-document-requirements.toggle');
+
+Route::get('/student-services/student-complaint-categories', [StudentComplaintCategoryController::class, 'index'])
+    ->middleware('active_permission:student-complaint-category.viewAny')
+    ->name('student-services.complaint-categories.index');
+Route::get('/student-services/student-complaint-categories/create', [StudentComplaintCategoryController::class, 'create'])
+    ->middleware('active_permission:student-complaint-category.create')
+    ->name('student-services.complaint-categories.create');
+Route::post('/student-services/student-complaint-categories', [StudentComplaintCategoryController::class, 'store'])
+    ->middleware('active_permission:student-complaint-category.create')
+    ->name('student-services.complaint-categories.store');
+Route::post('/student-services/student-complaint-categories/bulk-destroy', [StudentComplaintCategoryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-complaint-category.delete')
+    ->name('student-services.complaint-categories.bulk-destroy');
+Route::get('/student-services/student-complaint-categories/{id}/edit', [StudentComplaintCategoryController::class, 'edit'])
+    ->middleware('active_permission:student-complaint-category.update')
+    ->name('student-services.complaint-categories.edit');
+Route::put('/student-services/student-complaint-categories/{id}', [StudentComplaintCategoryController::class, 'update'])
+    ->middleware('active_permission:student-complaint-category.update')
+    ->name('student-services.complaint-categories.update');
+Route::post('/student-services/student-complaint-categories/{id}/toggle', [StudentComplaintCategoryController::class, 'toggle'])
+    ->middleware('active_permission:student-complaint-category.update')
+    ->name('student-services.complaint-categories.toggle');
+Route::delete('/student-services/student-complaint-categories/{id}', [StudentComplaintCategoryController::class, 'destroy'])
+    ->middleware('active_permission:student-complaint-category.delete')
+    ->name('student-services.complaint-categories.destroy');
+
+Route::get('/student-services/student-complaints', [StudentComplaintController::class, 'index'])
+    ->middleware('active_permission:student-complaint.viewAny')
+    ->name('student-services.complaints.index');
+Route::get('/student-services/student-complaints/{id}', [StudentComplaintController::class, 'show'])
+    ->middleware('active_permission:student-complaint.view')
+    ->name('student-services.complaints.show');
+Route::post('/student-services/student-complaints/{id}/assign', [StudentComplaintController::class, 'assign'])
+    ->middleware('active_permission:student-complaint.assign|student-complaint.update')
+    ->name('student-services.complaints.assign');
+Route::post('/student-services/student-complaints/{id}/claim', [StudentComplaintController::class, 'claim'])
+    ->middleware('active_permission:student-complaint.assign|student-complaint.update')
+    ->name('student-services.complaints.claim');
+Route::post('/student-services/student-complaints/{id}/reply', [StudentComplaintController::class, 'reply'])
+    ->middleware('active_permission:student-complaint.respond|student-complaint.update')
+    ->name('student-services.complaints.reply');
+Route::post('/student-services/student-complaints/{id}/set-status', [StudentComplaintController::class, 'setStatus'])
+    ->middleware('active_permission:student-complaint.resolve|student-complaint.update')
+    ->name('student-services.complaints.set-status');
+
+// CRUD Kepegawaian (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/organization/organizational-positions', [OrganizationalPositionController::class, 'index'])
+    ->middleware('active_permission:organizational-position.viewAny')
+    ->name('organization.organizational-positions.index');
+Route::get('/organization/organizational-positions/create', [OrganizationalPositionController::class, 'create'])
+    ->middleware('active_permission:organizational-position.create')
+    ->name('organization.organizational-positions.create');
+Route::post('/organization/organizational-positions', [OrganizationalPositionController::class, 'store'])
+    ->middleware('active_permission:organizational-position.create')
+    ->name('organization.organizational-positions.store');
+Route::post('/organization/organizational-positions/bulk-destroy', [OrganizationalPositionController::class, 'bulkDestroy'])
+    ->middleware('active_permission:organizational-position.delete')
+    ->name('organization.organizational-positions.bulk-destroy');
+Route::get('/organization/organizational-positions/{id}/edit', [OrganizationalPositionController::class, 'edit'])
+    ->middleware('active_permission:organizational-position.update')
+    ->name('organization.organizational-positions.edit');
+Route::put('/organization/organizational-positions/{id}', [OrganizationalPositionController::class, 'update'])
+    ->middleware('active_permission:organizational-position.update')
+    ->name('organization.organizational-positions.update');
+Route::post('/organization/organizational-positions/{id}/toggle', [OrganizationalPositionController::class, 'toggle'])
+    ->middleware('active_permission:organizational-position.update')
+    ->name('organization.organizational-positions.toggle');
+Route::delete('/organization/organizational-positions/{id}', [OrganizationalPositionController::class, 'destroy'])
+    ->middleware('active_permission:organizational-position.delete')
+    ->name('organization.organizational-positions.destroy');
+
+Route::get('/organization/employee-leave-types', [EmployeeLeaveTypeController::class, 'index'])
+    ->middleware('active_permission:employee-leave-type.viewAny')
+    ->name('organization.employee-leave-types.index');
+Route::get('/organization/employee-leave-types/create', [EmployeeLeaveTypeController::class, 'create'])
+    ->middleware('active_permission:employee-leave-type.create')
+    ->name('organization.employee-leave-types.create');
+Route::post('/organization/employee-leave-types', [EmployeeLeaveTypeController::class, 'store'])
+    ->middleware('active_permission:employee-leave-type.create')
+    ->name('organization.employee-leave-types.store');
+Route::post('/organization/employee-leave-types/bulk-destroy', [EmployeeLeaveTypeController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-leave-type.delete')
+    ->name('organization.employee-leave-types.bulk-destroy');
+Route::get('/organization/employee-leave-types/{id}/edit', [EmployeeLeaveTypeController::class, 'edit'])
+    ->middleware('active_permission:employee-leave-type.update')
+    ->name('organization.employee-leave-types.edit');
+Route::put('/organization/employee-leave-types/{id}', [EmployeeLeaveTypeController::class, 'update'])
+    ->middleware('active_permission:employee-leave-type.update')
+    ->name('organization.employee-leave-types.update');
+Route::post('/organization/employee-leave-types/{id}/toggle', [EmployeeLeaveTypeController::class, 'toggle'])
+    ->middleware('active_permission:employee-leave-type.update')
+    ->name('organization.employee-leave-types.toggle');
+Route::delete('/organization/employee-leave-types/{id}', [EmployeeLeaveTypeController::class, 'destroy'])
+    ->middleware('active_permission:employee-leave-type.delete')
+    ->name('organization.employee-leave-types.destroy');
+
+Route::get('/organization/edom-periods', [EdomPeriodController::class, 'index'])
+    ->middleware('active_permission:edom-period.viewAny')
+    ->name('organization.edom-periods.index');
+Route::get('/organization/edom-periods/create', [EdomPeriodController::class, 'create'])
+    ->middleware('active_permission:edom-period.create')
+    ->name('organization.edom-periods.create');
+Route::post('/organization/edom-periods', [EdomPeriodController::class, 'store'])
+    ->middleware('active_permission:edom-period.create')
+    ->name('organization.edom-periods.store');
+Route::post('/organization/edom-periods/bulk-destroy', [EdomPeriodController::class, 'bulkDestroy'])
+    ->middleware('active_permission:edom-period.delete')
+    ->name('organization.edom-periods.bulk-destroy');
+Route::get('/organization/edom-periods/{id}/edit', [EdomPeriodController::class, 'edit'])
+    ->middleware('active_permission:edom-period.update')
+    ->name('organization.edom-periods.edit');
+Route::put('/organization/edom-periods/{id}', [EdomPeriodController::class, 'update'])
+    ->middleware('active_permission:edom-period.update')
+    ->name('organization.edom-periods.update');
+Route::delete('/organization/edom-periods/{id}', [EdomPeriodController::class, 'destroy'])
+    ->middleware('active_permission:edom-period.delete')
+    ->name('organization.edom-periods.destroy');
+
+Route::get('/organization/edom-questions', [EdomQuestionController::class, 'index'])
+    ->middleware('active_permission:edom-question.viewAny')
+    ->name('organization.edom-questions.index');
+Route::get('/organization/edom-questions/create', [EdomQuestionController::class, 'create'])
+    ->middleware('active_permission:edom-question.create')
+    ->name('organization.edom-questions.create');
+Route::post('/organization/edom-questions', [EdomQuestionController::class, 'store'])
+    ->middleware('active_permission:edom-question.create')
+    ->name('organization.edom-questions.store');
+Route::post('/organization/edom-questions/bulk-destroy', [EdomQuestionController::class, 'bulkDestroy'])
+    ->middleware('active_permission:edom-question.delete')
+    ->name('organization.edom-questions.bulk-destroy');
+Route::get('/organization/edom-questions/{id}/edit', [EdomQuestionController::class, 'edit'])
+    ->middleware('active_permission:edom-question.update')
+    ->name('organization.edom-questions.edit');
+Route::put('/organization/edom-questions/{id}', [EdomQuestionController::class, 'update'])
+    ->middleware('active_permission:edom-question.update')
+    ->name('organization.edom-questions.update');
+Route::post('/organization/edom-questions/{id}/toggle', [EdomQuestionController::class, 'toggle'])
+    ->middleware('active_permission:edom-question.update')
+    ->name('organization.edom-questions.toggle');
+Route::delete('/organization/edom-questions/{id}', [EdomQuestionController::class, 'destroy'])
+    ->middleware('active_permission:edom-question.delete')
+    ->name('organization.edom-questions.destroy');
+
+Route::get('/organization/lecturer-workload-rules', [LecturerWorkloadRuleController::class, 'index'])
+    ->middleware('active_permission:lecturer-workload-rule.viewAny')
+    ->name('organization.lecturer-workload-rules.index');
+Route::get('/organization/lecturer-workload-rules/create', [LecturerWorkloadRuleController::class, 'create'])
+    ->middleware('active_permission:lecturer-workload-rule.create')
+    ->name('organization.lecturer-workload-rules.create');
+Route::post('/organization/lecturer-workload-rules', [LecturerWorkloadRuleController::class, 'store'])
+    ->middleware('active_permission:lecturer-workload-rule.create')
+    ->name('organization.lecturer-workload-rules.store');
+Route::post('/organization/lecturer-workload-rules/bulk-destroy', [LecturerWorkloadRuleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:lecturer-workload-rule.delete')
+    ->name('organization.lecturer-workload-rules.bulk-destroy');
+Route::get('/organization/lecturer-workload-rules/{id}/edit', [LecturerWorkloadRuleController::class, 'edit'])
+    ->middleware('active_permission:lecturer-workload-rule.update')
+    ->name('organization.lecturer-workload-rules.edit');
+Route::put('/organization/lecturer-workload-rules/{id}', [LecturerWorkloadRuleController::class, 'update'])
+    ->middleware('active_permission:lecturer-workload-rule.update')
+    ->name('organization.lecturer-workload-rules.update');
+Route::delete('/organization/lecturer-workload-rules/{id}', [LecturerWorkloadRuleController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-workload-rule.delete')
+    ->name('organization.lecturer-workload-rules.destroy');
+
+Route::get('/organization/lecturer-performance-rubrics', [LecturerPerformanceRubricController::class, 'index'])
+    ->middleware('active_permission:lecturer-performance-rubric.viewAny')
+    ->name('organization.lecturer-performance-rubrics.index');
+Route::get('/organization/lecturer-performance-rubrics/create', [LecturerPerformanceRubricController::class, 'create'])
+    ->middleware('active_permission:lecturer-performance-rubric.create')
+    ->name('organization.lecturer-performance-rubrics.create');
+Route::post('/organization/lecturer-performance-rubrics', [LecturerPerformanceRubricController::class, 'store'])
+    ->middleware('active_permission:lecturer-performance-rubric.create')
+    ->name('organization.lecturer-performance-rubrics.store');
+Route::get('/organization/lecturer-performance-rubrics/{id}/edit', [LecturerPerformanceRubricController::class, 'edit'])
+    ->middleware('active_permission:lecturer-performance-rubric.update')
+    ->name('organization.lecturer-performance-rubrics.edit');
+Route::put('/organization/lecturer-performance-rubrics/{id}', [LecturerPerformanceRubricController::class, 'update'])
+    ->middleware('active_permission:lecturer-performance-rubric.update')
+    ->name('organization.lecturer-performance-rubrics.update');
+Route::post('/organization/lecturer-performance-rubrics/{id}/toggle', [LecturerPerformanceRubricController::class, 'toggle'])
+    ->middleware('active_permission:lecturer-performance-rubric.update')
+    ->name('organization.lecturer-performance-rubrics.toggle');
+Route::delete('/organization/lecturer-performance-rubrics/{id}', [LecturerPerformanceRubricController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-performance-rubric.delete')
+    ->name('organization.lecturer-performance-rubrics.destroy');
+
+Route::get('/organization/work-units', [WorkUnitController::class, 'index'])
+    ->middleware('active_permission:work-unit.viewAny')
+    ->name('organization.work-units.index');
+Route::get('/organization/work-units/create', [WorkUnitController::class, 'create'])
+    ->middleware('active_permission:work-unit.create')
+    ->name('organization.work-units.create');
+Route::get('/organization/work-units/search-users', [WorkUnitController::class, 'searchUsers'])
+    ->middleware('active_permission:work-unit.create|work-unit.update')
+    ->name('organization.work-units.search-users');
+Route::post('/organization/work-units', [WorkUnitController::class, 'store'])
+    ->middleware('active_permission:work-unit.create')
+    ->name('organization.work-units.store');
+Route::post('/organization/work-units/bulk-destroy', [WorkUnitController::class, 'bulkDestroy'])
+    ->middleware('active_permission:work-unit.delete')
+    ->name('organization.work-units.bulk-destroy');
+Route::get('/organization/work-units/{id}/edit', [WorkUnitController::class, 'edit'])
+    ->middleware('active_permission:work-unit.update')
+    ->name('organization.work-units.edit');
+Route::put('/organization/work-units/{id}', [WorkUnitController::class, 'update'])
+    ->middleware('active_permission:work-unit.update')
+    ->name('organization.work-units.update');
+Route::post('/organization/work-units/{id}/toggle', [WorkUnitController::class, 'toggle'])
+    ->middleware('active_permission:work-unit.update')
+    ->name('organization.work-units.toggle');
+Route::delete('/organization/work-units/{id}', [WorkUnitController::class, 'destroy'])
+    ->middleware('active_permission:work-unit.delete')
+    ->name('organization.work-units.destroy');
+
+Route::get('/organization/user-development-records', [UserDevelopmentRecordController::class, 'index'])
+    ->middleware('active_permission:user-development-record.viewAny')
+    ->name('organization.user-development-records.index');
+Route::get('/organization/user-development-records/create', [UserDevelopmentRecordController::class, 'create'])
+    ->middleware('active_permission:user-development-record.create')
+    ->name('organization.user-development-records.create');
+Route::get('/organization/user-development-records/search-users', [UserDevelopmentRecordController::class, 'searchUsers'])
+    ->middleware('active_permission:user-development-record.create')
+    ->name('organization.user-development-records.search-users');
+Route::post('/organization/user-development-records', [UserDevelopmentRecordController::class, 'store'])
+    ->middleware('active_permission:user-development-record.create')
+    ->name('organization.user-development-records.store');
+Route::post('/organization/user-development-records/bulk-destroy', [UserDevelopmentRecordController::class, 'bulkDestroy'])
+    ->middleware('active_permission:user-development-record.delete')
+    ->name('organization.user-development-records.bulk-destroy');
+Route::get('/organization/user-development-records/{id}/edit', [UserDevelopmentRecordController::class, 'edit'])
+    ->middleware('active_permission:user-development-record.update')
+    ->name('organization.user-development-records.edit');
+Route::put('/organization/user-development-records/{id}', [UserDevelopmentRecordController::class, 'update'])
+    ->middleware('active_permission:user-development-record.update')
+    ->name('organization.user-development-records.update');
+Route::post('/organization/user-development-records/{id}/verify', [UserDevelopmentRecordController::class, 'verify'])
+    ->middleware('active_permission:user-development-record.update')
+    ->name('organization.user-development-records.verify');
+Route::post('/organization/user-development-records/{id}/unverify', [UserDevelopmentRecordController::class, 'unverify'])
+    ->middleware('active_permission:user-development-record.update')
+    ->name('organization.user-development-records.unverify');
+Route::delete('/organization/user-development-records/{id}', [UserDevelopmentRecordController::class, 'destroy'])
+    ->middleware('active_permission:user-development-record.delete')
+    ->name('organization.user-development-records.destroy');
+
+Route::get('/organization/lecturer-workload-periods', [LecturerWorkloadPeriodController::class, 'index'])
+    ->middleware('active_permission:lecturer-workload-period.viewAny')
+    ->name('organization.lecturer-workload-periods.index');
+Route::get('/organization/lecturer-workload-periods/create', [LecturerWorkloadPeriodController::class, 'create'])
+    ->middleware('active_permission:lecturer-workload-period.create')
+    ->name('organization.lecturer-workload-periods.create');
+Route::post('/organization/lecturer-workload-periods', [LecturerWorkloadPeriodController::class, 'store'])
+    ->middleware('active_permission:lecturer-workload-period.create')
+    ->name('organization.lecturer-workload-periods.store');
+Route::post('/organization/lecturer-workload-periods/bulk-destroy', [LecturerWorkloadPeriodController::class, 'bulkDestroy'])
+    ->middleware('active_permission:lecturer-workload-period.delete')
+    ->name('organization.lecturer-workload-periods.bulk-destroy');
+Route::get('/organization/lecturer-workload-periods/{id}', [LecturerWorkloadPeriodController::class, 'show'])
+    ->middleware('active_permission:lecturer-workload-period.view')
+    ->name('organization.lecturer-workload-periods.show');
+Route::get('/organization/lecturer-workload-periods/{id}/edit', [LecturerWorkloadPeriodController::class, 'edit'])
+    ->middleware('active_permission:lecturer-workload-period.update')
+    ->name('organization.lecturer-workload-periods.edit');
+Route::put('/organization/lecturer-workload-periods/{id}', [LecturerWorkloadPeriodController::class, 'update'])
+    ->middleware('active_permission:lecturer-workload-period.update')
+    ->name('organization.lecturer-workload-periods.update');
+Route::delete('/organization/lecturer-workload-periods/{id}', [LecturerWorkloadPeriodController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-workload-period.delete')
+    ->name('organization.lecturer-workload-periods.destroy');
+
+Route::get('/organization/employee-leave-balances', [EmployeeLeaveBalanceController::class, 'index'])
+    ->middleware('active_permission:employee-leave-balance.viewAny')
+    ->name('organization.employee-leave-balances.index');
+Route::get('/organization/employee-leave-balances/search-employees', [EmployeeLeaveBalanceController::class, 'searchEmployees'])
+    ->middleware('active_permission:employee-leave-balance.create|employee-leave-balance.update')
+    ->name('organization.employee-leave-balances.search-employees');
+Route::post('/organization/employee-leave-balances', [EmployeeLeaveBalanceController::class, 'save'])
+    ->middleware('active_permission:employee-leave-balance.create|employee-leave-balance.update')
+    ->name('organization.employee-leave-balances.save');
+
+Route::get('/organization/lecturer-workload-submissions', [LecturerWorkloadSubmissionController::class, 'index'])
+    ->middleware('active_permission:lecturer-workload-submission.viewAny')
+    ->name('organization.lecturer-workload-submissions.index');
+Route::get('/organization/lecturer-workload-submissions/{id}', [LecturerWorkloadSubmissionController::class, 'show'])
+    ->middleware('active_permission:lecturer-workload-submission.view')
+    ->name('organization.lecturer-workload-submissions.show');
+Route::post('/organization/lecturer-workload-submissions/{id}/request-revision', [LecturerWorkloadSubmissionController::class, 'requestRevision'])
+    ->middleware('active_permission:lecturer-workload-submission.update')
+    ->name('organization.lecturer-workload-submissions.request-revision');
+Route::delete('/organization/lecturer-workload-submissions/{id}', [LecturerWorkloadSubmissionController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-workload-submission.delete')
+    ->name('organization.lecturer-workload-submissions.destroy');
+
+Route::get('/organization/lecturer-performance-reviews', [LecturerPerformanceReviewController::class, 'index'])
+    ->middleware('active_permission:lecturer-performance-review.viewAny')
+    ->name('organization.lecturer-performance-reviews.index');
+Route::post('/organization/lecturer-performance-reviews/calculate-all', [LecturerPerformanceReviewController::class, 'calculateAll'])
+    ->middleware('active_permission:lecturer-performance-review.update')
+    ->name('organization.lecturer-performance-reviews.calculate-all');
+Route::get('/organization/lecturer-performance-reviews/{id}', [LecturerPerformanceReviewController::class, 'show'])
+    ->middleware('active_permission:lecturer-performance-review.view')
+    ->name('organization.lecturer-performance-reviews.show');
+Route::post('/organization/lecturer-performance-reviews/{id}/publish', [LecturerPerformanceReviewController::class, 'publish'])
+    ->middleware('active_permission:lecturer-performance-review.update')
+    ->name('organization.lecturer-performance-reviews.publish');
+Route::delete('/organization/lecturer-performance-reviews/{id}', [LecturerPerformanceReviewController::class, 'destroy'])
+    ->middleware('active_permission:lecturer-performance-review.delete')
+    ->name('organization.lecturer-performance-reviews.destroy');
+
+Route::get('/organization/tridharma-records', [TridharmaRecordController::class, 'index'])
+    ->middleware('active_permission:tridharma-record.viewAny')
+    ->name('organization.tridharma-records.index');
+Route::get('/organization/tridharma-records/create', [TridharmaRecordController::class, 'create'])
+    ->middleware('active_permission:tridharma-record.create')
+    ->name('organization.tridharma-records.create');
+Route::get('/organization/tridharma-records/search-users', [TridharmaRecordController::class, 'searchUsers'])
+    ->middleware('active_permission:tridharma-record.create|tridharma-record.update')
+    ->name('organization.tridharma-records.search-users');
+Route::post('/organization/tridharma-records', [TridharmaRecordController::class, 'store'])
+    ->middleware('active_permission:tridharma-record.create')
+    ->name('organization.tridharma-records.store');
+Route::post('/organization/tridharma-records/bulk-destroy', [TridharmaRecordController::class, 'bulkDestroy'])
+    ->middleware('active_permission:tridharma-record.delete')
+    ->name('organization.tridharma-records.bulk-destroy');
+Route::get('/organization/tridharma-records/{id}/edit', [TridharmaRecordController::class, 'edit'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.edit');
+Route::put('/organization/tridharma-records/{id}', [TridharmaRecordController::class, 'update'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.update');
+Route::get('/organization/tridharma-records/{id}', [TridharmaRecordController::class, 'show'])
+    ->middleware('active_permission:tridharma-record.view')
+    ->name('organization.tridharma-records.show');
+Route::post('/organization/tridharma-records/{id}/submit-approval', [TridharmaRecordController::class, 'submitApproval'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.submit-approval');
+Route::post('/organization/tridharma-records/{id}/verify', [TridharmaRecordController::class, 'verify'])
+    ->middleware('active_permission:tridharma-record.verify')
+    ->name('organization.tridharma-records.verify');
+Route::post('/organization/tridharma-records/{id}/complete', [TridharmaRecordController::class, 'complete'])
+    ->middleware('active_permission:tridharma-record.complete')
+    ->name('organization.tridharma-records.complete');
+Route::post('/organization/tridharma-records/{id}/archive', [TridharmaRecordController::class, 'archive'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.archive');
+Route::post('/organization/tridharma-records/{id}/members', [TridharmaRecordController::class, 'storeMember'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.members.store');
+Route::post('/organization/tridharma-records/{id}/milestones', [TridharmaRecordController::class, 'storeMilestone'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.milestones.store');
+Route::post('/organization/tridharma-records/{id}/budgets', [TridharmaRecordController::class, 'storeBudget'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.budgets.store');
+Route::post('/organization/tridharma-records/{id}/outputs', [TridharmaRecordController::class, 'storeOutput'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.outputs.store');
+Route::post('/organization/tridharma-records/{id}/attachments', [TridharmaRecordController::class, 'storeAttachment'])
+    ->middleware('active_permission:tridharma-record.update')
+    ->name('organization.tridharma-records.attachments.store');
+Route::delete('/organization/tridharma-records/{id}', [TridharmaRecordController::class, 'destroy'])
+    ->middleware('active_permission:tridharma-record.delete')
+    ->name('organization.tridharma-records.destroy');
+
+// Batch OR-8: pegawai, penugasan jabatan, template/request approval, cuti & absensi pegawai (Inertia React).
+Route::get('/organization/employee-profiles', [EmployeeProfileController::class, 'index'])
+    ->middleware('active_permission:employee-profile.viewAny')
+    ->name('organization.employee-profiles.index');
+Route::get('/organization/employee-profiles/create', [EmployeeProfileController::class, 'create'])
+    ->middleware('active_permission:employee-profile.create')
+    ->name('organization.employee-profiles.create');
+Route::get('/organization/employee-profiles/search-users', [EmployeeProfileController::class, 'searchUsers'])
+    ->middleware('active_permission:employee-profile.create|employee-profile.update')
+    ->name('organization.employee-profiles.search-users');
+Route::post('/organization/employee-profiles', [EmployeeProfileController::class, 'store'])
+    ->middleware('active_permission:employee-profile.create')
+    ->name('organization.employee-profiles.store');
+Route::post('/organization/employee-profiles/bulk-destroy', [EmployeeProfileController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-profile.delete')
+    ->name('organization.employee-profiles.bulk-destroy');
+Route::get('/organization/employee-profiles/{id}/edit', [EmployeeProfileController::class, 'edit'])
+    ->middleware('active_permission:employee-profile.update')
+    ->name('organization.employee-profiles.edit');
+Route::put('/organization/employee-profiles/{id}', [EmployeeProfileController::class, 'update'])
+    ->middleware('active_permission:employee-profile.update')
+    ->name('organization.employee-profiles.update');
+Route::post('/organization/employee-profiles/{id}/toggle', [EmployeeProfileController::class, 'toggle'])
+    ->middleware('active_permission:employee-profile.update')
+    ->name('organization.employee-profiles.toggle');
+Route::delete('/organization/employee-profiles/{id}', [EmployeeProfileController::class, 'destroy'])
+    ->middleware('active_permission:employee-profile.delete')
+    ->name('organization.employee-profiles.destroy');
+
+Route::get('/organization/employee-position-assignments', [EmployeePositionAssignmentController::class, 'index'])
+    ->middleware('active_permission:employee-position-assignment.viewAny')
+    ->name('organization.employee-position-assignments.index');
+Route::get('/organization/employee-position-assignments/create', [EmployeePositionAssignmentController::class, 'create'])
+    ->middleware('active_permission:employee-position-assignment.create')
+    ->name('organization.employee-position-assignments.create');
+Route::get('/organization/employee-position-assignments/search-employees', [EmployeePositionAssignmentController::class, 'searchEmployees'])
+    ->middleware('active_permission:employee-position-assignment.create|employee-position-assignment.update')
+    ->name('organization.employee-position-assignments.search-employees');
+Route::post('/organization/employee-position-assignments', [EmployeePositionAssignmentController::class, 'store'])
+    ->middleware('active_permission:employee-position-assignment.create')
+    ->name('organization.employee-position-assignments.store');
+Route::post('/organization/employee-position-assignments/bulk-destroy', [EmployeePositionAssignmentController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-position-assignment.delete')
+    ->name('organization.employee-position-assignments.bulk-destroy');
+Route::get('/organization/employee-position-assignments/{id}/edit', [EmployeePositionAssignmentController::class, 'edit'])
+    ->middleware('active_permission:employee-position-assignment.update')
+    ->name('organization.employee-position-assignments.edit');
+Route::put('/organization/employee-position-assignments/{id}', [EmployeePositionAssignmentController::class, 'update'])
+    ->middleware('active_permission:employee-position-assignment.update')
+    ->name('organization.employee-position-assignments.update');
+Route::post('/organization/employee-position-assignments/{id}/toggle', [EmployeePositionAssignmentController::class, 'toggle'])
+    ->middleware('active_permission:employee-position-assignment.update')
+    ->name('organization.employee-position-assignments.toggle');
+Route::delete('/organization/employee-position-assignments/{id}', [EmployeePositionAssignmentController::class, 'destroy'])
+    ->middleware('active_permission:employee-position-assignment.delete')
+    ->name('organization.employee-position-assignments.destroy');
+
+Route::get('/organization/approval-templates', [ApprovalTemplateController::class, 'index'])
+    ->middleware('active_permission:approval-template.viewAny')
+    ->name('organization.approval-templates.index');
+Route::get('/organization/approval-templates/create', [ApprovalTemplateController::class, 'create'])
+    ->middleware('active_permission:approval-template.create')
+    ->name('organization.approval-templates.create');
+Route::post('/organization/approval-templates', [ApprovalTemplateController::class, 'store'])
+    ->middleware('active_permission:approval-template.create')
+    ->name('organization.approval-templates.store');
+Route::post('/organization/approval-templates/bulk-destroy', [ApprovalTemplateController::class, 'bulkDestroy'])
+    ->middleware('active_permission:approval-template.delete')
+    ->name('organization.approval-templates.bulk-destroy');
+Route::get('/organization/approval-templates/{id}/edit', [ApprovalTemplateController::class, 'edit'])
+    ->middleware('active_permission:approval-template.update')
+    ->name('organization.approval-templates.edit');
+Route::put('/organization/approval-templates/{id}', [ApprovalTemplateController::class, 'update'])
+    ->middleware('active_permission:approval-template.update')
+    ->name('organization.approval-templates.update');
+Route::post('/organization/approval-templates/{id}/toggle', [ApprovalTemplateController::class, 'toggle'])
+    ->middleware('active_permission:approval-template.update')
+    ->name('organization.approval-templates.toggle');
+Route::delete('/organization/approval-templates/{id}', [ApprovalTemplateController::class, 'destroy'])
+    ->middleware('active_permission:approval-template.delete')
+    ->name('organization.approval-templates.destroy');
+
+Route::get('/organization/approval-requests', [ApprovalRequestController::class, 'index'])
+    ->middleware('active_permission:approval-request.viewAny')
+    ->name('organization.approval-requests.index');
+Route::get('/organization/approval-requests/create', [ApprovalRequestController::class, 'create'])
+    ->middleware('active_permission:approval-request.create')
+    ->name('organization.approval-requests.create');
+Route::post('/organization/approval-requests', [ApprovalRequestController::class, 'store'])
+    ->middleware('active_permission:approval-request.create')
+    ->name('organization.approval-requests.store');
+Route::post('/organization/approval-requests/bulk-destroy', [ApprovalRequestController::class, 'bulkDestroy'])
+    ->middleware('active_permission:approval-request.delete')
+    ->name('organization.approval-requests.bulk-destroy');
+Route::get('/organization/approval-requests/{id}', [ApprovalRequestController::class, 'show'])
+    ->middleware('active_permission:approval-request.view')
+    ->name('organization.approval-requests.show');
+Route::post('/organization/approval-requests/{id}/approve', [ApprovalRequestController::class, 'approve'])
+    ->middleware('active_permission:approval-request.update')
+    ->name('organization.approval-requests.approve');
+Route::post('/organization/approval-requests/{id}/reject', [ApprovalRequestController::class, 'reject'])
+    ->middleware('active_permission:approval-request.update')
+    ->name('organization.approval-requests.reject');
+Route::post('/organization/approval-requests/{id}/cancel', [ApprovalRequestController::class, 'cancel'])
+    ->middleware('active_permission:approval-request.update')
+    ->name('organization.approval-requests.cancel');
+Route::delete('/organization/approval-requests/{id}', [ApprovalRequestController::class, 'destroy'])
+    ->middleware('active_permission:approval-request.delete')
+    ->name('organization.approval-requests.destroy');
+
+Route::get('/organization/employee-leave-requests', [EmployeeLeaveRequestController::class, 'index'])
+    ->middleware('active_permission:employee-leave-request.viewAny')
+    ->name('organization.employee-leave-requests.index');
+Route::get('/organization/employee-leave-requests/create', [EmployeeLeaveRequestController::class, 'create'])
+    ->middleware('active_permission:employee-leave-request.create')
+    ->name('organization.employee-leave-requests.create');
+Route::get('/organization/employee-leave-requests/search-employees', [EmployeeLeaveRequestController::class, 'searchEmployees'])
+    ->middleware('active_permission:employee-leave-request.create|employee-leave-request.update')
+    ->name('organization.employee-leave-requests.search-employees');
+Route::post('/organization/employee-leave-requests', [EmployeeLeaveRequestController::class, 'store'])
+    ->middleware('active_permission:employee-leave-request.create')
+    ->name('organization.employee-leave-requests.store');
+Route::post('/organization/employee-leave-requests/bulk-destroy', [EmployeeLeaveRequestController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-leave-request.delete')
+    ->name('organization.employee-leave-requests.bulk-destroy');
+Route::get('/organization/employee-leave-requests/{id}', [EmployeeLeaveRequestController::class, 'show'])
+    ->middleware('active_permission:employee-leave-request.view')
+    ->name('organization.employee-leave-requests.show');
+Route::post('/organization/employee-leave-requests/{id}/cancel', [EmployeeLeaveRequestController::class, 'cancel'])
+    ->middleware('active_permission:employee-leave-request.update')
+    ->name('organization.employee-leave-requests.cancel');
+Route::delete('/organization/employee-leave-requests/{id}', [EmployeeLeaveRequestController::class, 'destroy'])
+    ->middleware('active_permission:employee-leave-request.delete')
+    ->name('organization.employee-leave-requests.destroy');
+
+Route::get('/organization/employee-attendance-records', [EmployeeAttendanceRecordController::class, 'index'])
+    ->middleware('active_permission:employee-attendance-record.viewAny')
+    ->name('organization.employee-attendance-records.index');
+Route::get('/organization/employee-attendance-records/create', [EmployeeAttendanceRecordController::class, 'create'])
+    ->middleware('active_permission:employee-attendance-record.create')
+    ->name('organization.employee-attendance-records.create');
+Route::get('/organization/employee-attendance-records/search-employees', [EmployeeAttendanceRecordController::class, 'searchEmployees'])
+    ->middleware('active_permission:employee-attendance-record.create|employee-attendance-record.update')
+    ->name('organization.employee-attendance-records.search-employees');
+Route::post('/organization/employee-attendance-records', [EmployeeAttendanceRecordController::class, 'store'])
+    ->middleware('active_permission:employee-attendance-record.create')
+    ->name('organization.employee-attendance-records.store');
+Route::post('/organization/employee-attendance-records/bulk-destroy', [EmployeeAttendanceRecordController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employee-attendance-record.delete')
+    ->name('organization.employee-attendance-records.bulk-destroy');
+Route::get('/organization/employee-attendance-records/{id}', [EmployeeAttendanceRecordController::class, 'show'])
+    ->middleware('active_permission:employee-attendance-record.view')
+    ->name('organization.employee-attendance-records.show');
+Route::delete('/organization/employee-attendance-records/{id}', [EmployeeAttendanceRecordController::class, 'destroy'])
+    ->middleware('active_permission:employee-attendance-record.delete')
+    ->name('organization.employee-attendance-records.destroy');
 
 // CRUD Hak Akses (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/access/permissions/export', [PermissionController::class, 'export'])
@@ -230,6 +995,680 @@ Route::post('/system/settings/sidecar-refresh', [SettingController::class, 'side
 Route::post('/system/settings/use-session', [SettingController::class, 'useSession'])
     ->middleware('active_permission:setting.viewAny')
     ->name('system.settings.use-session');
+
+// CRUD Kategori Publikasi (Inertia React) — Batch-1, nama route & middleware paritas Livewire.
+Route::get('/publication/categories/export', [PublicationCategoryController::class, 'export'])
+    ->middleware('active_permission:publication-category.viewAny')
+    ->name('publication.categories.export');
+Route::get('/publication/categories/import/template', [PublicationCategoryController::class, 'importTemplate'])
+    ->middleware('active_permission:publication-category.create')
+    ->name('publication.categories.import-template');
+Route::post('/publication/categories/import', [PublicationCategoryController::class, 'import'])
+    ->middleware('active_permission:publication-category.create')
+    ->name('publication.categories.import');
+Route::post('/publication/categories/bulk-destroy', [PublicationCategoryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:publication-category.delete')
+    ->name('publication.categories.bulk-destroy');
+Route::post('/publication/categories/bulk-restore', [PublicationCategoryController::class, 'bulkRestore'])
+    ->middleware('active_permission:publication-category.update|publication-category.delete')
+    ->name('publication.categories.bulk-restore');
+Route::post('/publication/categories/bulk-force-destroy', [PublicationCategoryController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:publication-category.update|publication-category.delete')
+    ->name('publication.categories.bulk-force-destroy');
+Route::post('/publication/categories/{id}/restore', [PublicationCategoryController::class, 'restore'])
+    ->middleware('active_permission:publication-category.update|publication-category.delete')
+    ->name('publication.categories.restore');
+Route::delete('/publication/categories/{id}/force', [PublicationCategoryController::class, 'forceDestroy'])
+    ->middleware('active_permission:publication-category.update|publication-category.delete')
+    ->name('publication.categories.force-destroy');
+Route::post('/publication/categories/{category}/toggle', [PublicationCategoryController::class, 'toggle'])
+    ->middleware('active_permission:publication-category.update')
+    ->name('publication.categories.toggle');
+Route::get('/publication/categories', [PublicationCategoryController::class, 'index'])
+    ->middleware('active_permission:publication-category.viewAny')
+    ->name('publication.categories.index');
+Route::get('/publication/categories/create', [PublicationCategoryController::class, 'create'])
+    ->middleware('active_permission:publication-category.create')
+    ->name('publication.categories.create');
+Route::post('/publication/categories', [PublicationCategoryController::class, 'store'])
+    ->middleware('active_permission:publication-category.create')
+    ->name('publication.categories.store');
+Route::get('/publication/categories/{category}/edit', [PublicationCategoryController::class, 'edit'])
+    ->middleware('active_permission:publication-category.update')
+    ->name('publication.categories.edit');
+Route::put('/publication/categories/{category}', [PublicationCategoryController::class, 'update'])
+    ->middleware('active_permission:publication-category.update')
+    ->name('publication.categories.update');
+Route::delete('/publication/categories/{category}', [PublicationCategoryController::class, 'destroy'])
+    ->middleware('active_permission:publication-category.delete')
+    ->name('publication.categories.destroy');
+
+// CRUD FAQ (Inertia React) — Batch-1, nama route & middleware paritas Livewire.
+Route::get('/publication/faqs/export', [FaqController::class, 'export'])
+    ->middleware('active_permission:faq.viewAny')
+    ->name('publication.faqs.export');
+Route::get('/publication/faqs/import/template', [FaqController::class, 'importTemplate'])
+    ->middleware('active_permission:faq.create')
+    ->name('publication.faqs.import-template');
+Route::post('/publication/faqs/import', [FaqController::class, 'import'])
+    ->middleware('active_permission:faq.create')
+    ->name('publication.faqs.import');
+Route::post('/publication/faqs/bulk-destroy', [FaqController::class, 'bulkDestroy'])
+    ->middleware('active_permission:faq.delete')
+    ->name('publication.faqs.bulk-destroy');
+Route::post('/publication/faqs/bulk-restore', [FaqController::class, 'bulkRestore'])
+    ->middleware('active_permission:faq.update|faq.delete')
+    ->name('publication.faqs.bulk-restore');
+Route::post('/publication/faqs/bulk-force-destroy', [FaqController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:faq.update|faq.delete')
+    ->name('publication.faqs.bulk-force-destroy');
+Route::post('/publication/faqs/{id}/restore', [FaqController::class, 'restore'])
+    ->middleware('active_permission:faq.update|faq.delete')
+    ->name('publication.faqs.restore');
+Route::delete('/publication/faqs/{id}/force', [FaqController::class, 'forceDestroy'])
+    ->middleware('active_permission:faq.update|faq.delete')
+    ->name('publication.faqs.force-destroy');
+Route::post('/publication/faqs/{faq}/toggle', [FaqController::class, 'toggle'])
+    ->middleware('active_permission:faq.update')
+    ->name('publication.faqs.toggle');
+Route::get('/publication/faqs', [FaqController::class, 'index'])
+    ->middleware('active_permission:faq.viewAny')
+    ->name('publication.faqs.index');
+Route::get('/publication/faqs/create', [FaqController::class, 'create'])
+    ->middleware('active_permission:faq.create')
+    ->name('publication.faqs.create');
+Route::post('/publication/faqs', [FaqController::class, 'store'])
+    ->middleware('active_permission:faq.create')
+    ->name('publication.faqs.store');
+Route::get('/publication/faqs/{faq}/edit', [FaqController::class, 'edit'])
+    ->middleware('active_permission:faq.update')
+    ->name('publication.faqs.edit');
+Route::put('/publication/faqs/{faq}', [FaqController::class, 'update'])
+    ->middleware('active_permission:faq.update')
+    ->name('publication.faqs.update');
+Route::delete('/publication/faqs/{faq}', [FaqController::class, 'destroy'])
+    ->middleware('active_permission:faq.delete')
+    ->name('publication.faqs.destroy');
+
+// CRUD Pengumuman (Inertia React) — Batch-2, nama route & middleware paritas Livewire + publish.
+Route::get('/publication/announcements/export', [AnnouncementController::class, 'export'])
+    ->middleware('active_permission:announcement.viewAny')
+    ->name('publication.announcements.export');
+Route::get('/publication/announcements/import/template', [AnnouncementController::class, 'importTemplate'])
+    ->middleware('active_permission:announcement.create')
+    ->name('publication.announcements.import-template');
+Route::post('/publication/announcements/import', [AnnouncementController::class, 'import'])
+    ->middleware('active_permission:announcement.create')
+    ->name('publication.announcements.import');
+Route::post('/publication/announcements/bulk-destroy', [AnnouncementController::class, 'bulkDestroy'])
+    ->middleware('active_permission:announcement.delete')
+    ->name('publication.announcements.bulk-destroy');
+Route::post('/publication/announcements/bulk-restore', [AnnouncementController::class, 'bulkRestore'])
+    ->middleware('active_permission:announcement.update|announcement.delete')
+    ->name('publication.announcements.bulk-restore');
+Route::post('/publication/announcements/bulk-force-destroy', [AnnouncementController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:announcement.update|announcement.delete')
+    ->name('publication.announcements.bulk-force-destroy');
+Route::post('/publication/announcements/bulk-publish', [AnnouncementController::class, 'bulkPublish'])
+    ->middleware('active_permission:announcement.publish')
+    ->name('publication.announcements.bulk-publish');
+Route::post('/publication/announcements/{id}/restore', [AnnouncementController::class, 'restore'])
+    ->middleware('active_permission:announcement.update|announcement.delete')
+    ->name('publication.announcements.restore');
+Route::delete('/publication/announcements/{id}/force', [AnnouncementController::class, 'forceDestroy'])
+    ->middleware('active_permission:announcement.update|announcement.delete')
+    ->name('publication.announcements.force-destroy');
+Route::get('/publication/announcements/search-targets/{type}', [AnnouncementController::class, 'searchTargets'])
+    ->middleware('active_permission:announcement.create|announcement.update')
+    ->name('publication.announcements.search-targets');
+Route::post('/publication/announcements/{announcement}/toggle-pin', [AnnouncementController::class, 'togglePin'])
+    ->middleware('active_permission:announcement.update')
+    ->name('publication.announcements.toggle-pin');
+Route::post('/publication/announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])
+    ->middleware('active_permission:announcement.publish')
+    ->name('publication.announcements.publish');
+Route::post('/publication/announcements/{announcement}/unpublish', [AnnouncementController::class, 'unpublish'])
+    ->middleware('active_permission:announcement.publish')
+    ->name('publication.announcements.unpublish');
+Route::get('/publication/announcements', [AnnouncementController::class, 'index'])
+    ->middleware('active_permission:announcement.viewAny')
+    ->name('publication.announcements.index');
+Route::get('/publication/announcements/create', [AnnouncementController::class, 'create'])
+    ->middleware('active_permission:announcement.create')
+    ->name('publication.announcements.create');
+Route::post('/publication/announcements', [AnnouncementController::class, 'store'])
+    ->middleware('active_permission:announcement.create')
+    ->name('publication.announcements.store');
+Route::get('/publication/announcements/{announcement}/edit', [AnnouncementController::class, 'edit'])
+    ->middleware('active_permission:announcement.update')
+    ->name('publication.announcements.edit');
+Route::get('/publication/announcements/{announcement}', [AnnouncementController::class, 'show'])
+    ->middleware('active_permission:announcement.view')
+    ->name('publication.announcements.show');
+Route::put('/publication/announcements/{announcement}', [AnnouncementController::class, 'update'])
+    ->middleware('active_permission:announcement.update')
+    ->name('publication.announcements.update');
+Route::delete('/publication/announcements/{announcement}', [AnnouncementController::class, 'destroy'])
+    ->middleware('active_permission:announcement.delete')
+    ->name('publication.announcements.destroy');
+
+// CRUD Berita (Inertia React) — Batch-3, nama route & middleware paritas Livewire.
+Route::get('/publication/news/export', [NewsController::class, 'export'])
+    ->middleware('active_permission:news.viewAny')
+    ->name('publication.news.export');
+Route::get('/publication/news/import/template', [NewsController::class, 'importTemplate'])
+    ->middleware('active_permission:news.create')
+    ->name('publication.news.import-template');
+Route::post('/publication/news/import', [NewsController::class, 'import'])
+    ->middleware('active_permission:news.create')
+    ->name('publication.news.import');
+Route::post('/publication/news/bulk-destroy', [NewsController::class, 'bulkDestroy'])
+    ->middleware('active_permission:news.delete')
+    ->name('publication.news.bulk-destroy');
+Route::post('/publication/news/bulk-restore', [NewsController::class, 'bulkRestore'])
+    ->middleware('active_permission:news.update|news.delete')
+    ->name('publication.news.bulk-restore');
+Route::post('/publication/news/bulk-force-destroy', [NewsController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:news.update|news.delete')
+    ->name('publication.news.bulk-force-destroy');
+Route::post('/publication/news/{id}/restore', [NewsController::class, 'restore'])
+    ->middleware('active_permission:news.update|news.delete')
+    ->name('publication.news.restore');
+Route::delete('/publication/news/{id}/force', [NewsController::class, 'forceDestroy'])
+    ->middleware('active_permission:news.update|news.delete')
+    ->name('publication.news.force-destroy');
+Route::post('/publication/news/{news}/toggle', [NewsController::class, 'toggle'])
+    ->middleware('active_permission:news.update')
+    ->name('publication.news.toggle');
+Route::get('/publication/news', [NewsController::class, 'index'])
+    ->middleware('active_permission:news.viewAny')
+    ->name('publication.news.index');
+Route::get('/publication/news/create', [NewsController::class, 'create'])
+    ->middleware('active_permission:news.create')
+    ->name('publication.news.create');
+Route::post('/publication/news', [NewsController::class, 'store'])
+    ->middleware('active_permission:news.create')
+    ->name('publication.news.store');
+Route::get('/publication/news/{news}/edit', [NewsController::class, 'edit'])
+    ->middleware('active_permission:news.update')
+    ->name('publication.news.edit');
+Route::get('/publication/news/{news}', [NewsController::class, 'show'])
+    ->middleware('active_permission:news.view')
+    ->name('publication.news.show');
+Route::put('/publication/news/{news}', [NewsController::class, 'update'])
+    ->middleware('active_permission:news.update')
+    ->name('publication.news.update');
+Route::delete('/publication/news/{news}', [NewsController::class, 'destroy'])
+    ->middleware('active_permission:news.delete')
+    ->name('publication.news.destroy');
+
+// CRUD Agenda (Inertia React) — Batch-3, nama route & middleware paritas Livewire.
+Route::get('/publication/agendas/export', [AgendaController::class, 'export'])
+    ->middleware('active_permission:agenda.viewAny')
+    ->name('publication.agendas.export');
+Route::get('/publication/agendas/import/template', [AgendaController::class, 'importTemplate'])
+    ->middleware('active_permission:agenda.create')
+    ->name('publication.agendas.import-template');
+Route::post('/publication/agendas/import', [AgendaController::class, 'import'])
+    ->middleware('active_permission:agenda.create')
+    ->name('publication.agendas.import');
+Route::post('/publication/agendas/bulk-destroy', [AgendaController::class, 'bulkDestroy'])
+    ->middleware('active_permission:agenda.delete')
+    ->name('publication.agendas.bulk-destroy');
+Route::post('/publication/agendas/bulk-restore', [AgendaController::class, 'bulkRestore'])
+    ->middleware('active_permission:agenda.update|agenda.delete')
+    ->name('publication.agendas.bulk-restore');
+Route::post('/publication/agendas/bulk-force-destroy', [AgendaController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:agenda.update|agenda.delete')
+    ->name('publication.agendas.bulk-force-destroy');
+Route::post('/publication/agendas/{id}/restore', [AgendaController::class, 'restore'])
+    ->middleware('active_permission:agenda.update|agenda.delete')
+    ->name('publication.agendas.restore');
+Route::delete('/publication/agendas/{id}/force', [AgendaController::class, 'forceDestroy'])
+    ->middleware('active_permission:agenda.update|agenda.delete')
+    ->name('publication.agendas.force-destroy');
+Route::post('/publication/agendas/{agenda}/toggle', [AgendaController::class, 'toggle'])
+    ->middleware('active_permission:agenda.update')
+    ->name('publication.agendas.toggle');
+Route::get('/publication/agendas', [AgendaController::class, 'index'])
+    ->middleware('active_permission:agenda.viewAny')
+    ->name('publication.agendas.index');
+Route::get('/publication/agendas/create', [AgendaController::class, 'create'])
+    ->middleware('active_permission:agenda.create')
+    ->name('publication.agendas.create');
+Route::post('/publication/agendas', [AgendaController::class, 'store'])
+    ->middleware('active_permission:agenda.create')
+    ->name('publication.agendas.store');
+Route::get('/publication/agendas/{agenda}/edit', [AgendaController::class, 'edit'])
+    ->middleware('active_permission:agenda.update')
+    ->name('publication.agendas.edit');
+Route::get('/publication/agendas/{agenda}', [AgendaController::class, 'show'])
+    ->middleware('active_permission:agenda.view')
+    ->name('publication.agendas.show');
+Route::put('/publication/agendas/{agenda}', [AgendaController::class, 'update'])
+    ->middleware('active_permission:agenda.update')
+    ->name('publication.agendas.update');
+Route::delete('/publication/agendas/{agenda}', [AgendaController::class, 'destroy'])
+    ->middleware('active_permission:agenda.delete')
+    ->name('publication.agendas.destroy');
+
+// CRUD Album Galeri (Inertia React) — Batch-4, nama route & middleware paritas Livewire.
+Route::get('/publication/galleries/export', [GalleryController::class, 'export'])
+    ->middleware('active_permission:gallery.viewAny')
+    ->name('publication.galleries.export');
+Route::get('/publication/galleries/import/template', [GalleryController::class, 'importTemplate'])
+    ->middleware('active_permission:gallery.create')
+    ->name('publication.galleries.import-template');
+Route::post('/publication/galleries/import', [GalleryController::class, 'import'])
+    ->middleware('active_permission:gallery.create')
+    ->name('publication.galleries.import');
+Route::post('/publication/galleries/bulk-destroy', [GalleryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:gallery.delete')
+    ->name('publication.galleries.bulk-destroy');
+Route::post('/publication/galleries/bulk-restore', [GalleryController::class, 'bulkRestore'])
+    ->middleware('active_permission:gallery.update|gallery.delete')
+    ->name('publication.galleries.bulk-restore');
+Route::post('/publication/galleries/bulk-force-destroy', [GalleryController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:gallery.update|gallery.delete')
+    ->name('publication.galleries.bulk-force-destroy');
+Route::post('/publication/galleries/{id}/restore', [GalleryController::class, 'restore'])
+    ->middleware('active_permission:gallery.update|gallery.delete')
+    ->name('publication.galleries.restore');
+Route::delete('/publication/galleries/{id}/force', [GalleryController::class, 'forceDestroy'])
+    ->middleware('active_permission:gallery.update|gallery.delete')
+    ->name('publication.galleries.force-destroy');
+Route::post('/publication/galleries/{gallery}/toggle', [GalleryController::class, 'toggle'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.galleries.toggle');
+Route::get('/publication/galleries', [GalleryController::class, 'index'])
+    ->middleware('active_permission:gallery.viewAny')
+    ->name('publication.galleries.index');
+Route::get('/publication/galleries/create', [GalleryController::class, 'create'])
+    ->middleware('active_permission:gallery.create')
+    ->name('publication.galleries.create');
+Route::post('/publication/galleries', [GalleryController::class, 'store'])
+    ->middleware('active_permission:gallery.create')
+    ->name('publication.galleries.store');
+Route::post('/publication/galleries/{gallery}/images', [GalleryController::class, 'storeImages'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.galleries.images.store');
+Route::get('/publication/galleries/{gallery}/edit', [GalleryController::class, 'edit'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.galleries.edit');
+Route::get('/publication/galleries/{gallery}', [GalleryController::class, 'show'])
+    ->middleware('active_permission:gallery.view')
+    ->name('publication.galleries.show');
+Route::put('/publication/galleries/{gallery}', [GalleryController::class, 'update'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.galleries.update');
+Route::delete('/publication/galleries/{gallery}', [GalleryController::class, 'destroy'])
+    ->middleware('active_permission:gallery.delete')
+    ->name('publication.galleries.destroy');
+Route::patch('/publication/gallery-images/{image}', [GalleryController::class, 'updateImage'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.gallery-images.update');
+Route::delete('/publication/gallery-images/{image}', [GalleryController::class, 'destroyImage'])
+    ->middleware('active_permission:gallery.delete')
+    ->name('publication.gallery-images.destroy');
+Route::post('/publication/gallery-images/{image}/cover', [GalleryController::class, 'setCover'])
+    ->middleware('active_permission:gallery.update')
+    ->name('publication.gallery-images.cover');
+
+// CRUD Lokasi Kampus (Inertia React) — Batch-C1, nama route & middleware paritas Livewire.
+Route::get('/campus/campus-locations/export', [CampusLocationController::class, 'export'])
+    ->middleware('active_permission:campus-location.viewAny')
+    ->name('campus.locations.export');
+Route::get('/campus/campus-locations/import/template', [CampusLocationController::class, 'importTemplate'])
+    ->middleware('active_permission:campus-location.create')
+    ->name('campus.locations.import-template');
+Route::post('/campus/campus-locations/import', [CampusLocationController::class, 'import'])
+    ->middleware('active_permission:campus-location.create')
+    ->name('campus.locations.import');
+Route::post('/campus/campus-locations/bulk-destroy', [CampusLocationController::class, 'bulkDestroy'])
+    ->middleware('active_permission:campus-location.delete')
+    ->name('campus.locations.bulk-destroy');
+Route::post('/campus/campus-locations/bulk-restore', [CampusLocationController::class, 'bulkRestore'])
+    ->middleware('active_permission:campus-location.update|campus-location.delete')
+    ->name('campus.locations.bulk-restore');
+Route::post('/campus/campus-locations/bulk-force-destroy', [CampusLocationController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:campus-location.update|campus-location.delete')
+    ->name('campus.locations.bulk-force-destroy');
+Route::post('/campus/campus-locations/{id}/restore', [CampusLocationController::class, 'restore'])
+    ->middleware('active_permission:campus-location.update|campus-location.delete')
+    ->name('campus.locations.restore');
+Route::delete('/campus/campus-locations/{id}/force', [CampusLocationController::class, 'forceDestroy'])
+    ->middleware('active_permission:campus-location.update|campus-location.delete')
+    ->name('campus.locations.force-destroy');
+Route::post('/campus/campus-locations/{location}/toggle', [CampusLocationController::class, 'toggle'])
+    ->middleware('active_permission:campus-location.update')
+    ->name('campus.locations.toggle');
+Route::post('/campus/campus-locations/{location}/main', [CampusLocationController::class, 'setMain'])
+    ->middleware('active_permission:campus-location.update')
+    ->name('campus.locations.main');
+Route::get('/campus/campus-locations', [CampusLocationController::class, 'index'])
+    ->middleware('active_permission:campus-location.viewAny')
+    ->name('campus.locations.index');
+Route::get('/campus/campus-locations/create', [CampusLocationController::class, 'create'])
+    ->middleware('active_permission:campus-location.create')
+    ->name('campus.locations.create');
+Route::post('/campus/campus-locations', [CampusLocationController::class, 'store'])
+    ->middleware('active_permission:campus-location.create')
+    ->name('campus.locations.store');
+Route::get('/campus/campus-locations/{location}/edit', [CampusLocationController::class, 'edit'])
+    ->middleware('active_permission:campus-location.update')
+    ->name('campus.locations.edit');
+Route::put('/campus/campus-locations/{location}', [CampusLocationController::class, 'update'])
+    ->middleware('active_permission:campus-location.update')
+    ->name('campus.locations.update');
+Route::delete('/campus/campus-locations/{location}', [CampusLocationController::class, 'destroy'])
+    ->middleware('active_permission:campus-location.delete')
+    ->name('campus.locations.destroy');
+
+// CRUD Gedung (Inertia React) — Batch-C1, nama route & middleware paritas Livewire.
+Route::get('/campus/buildings/export', [BuildingController::class, 'export'])
+    ->middleware('active_permission:building.viewAny')
+    ->name('campus.buildings.export');
+Route::get('/campus/buildings/import/template', [BuildingController::class, 'importTemplate'])
+    ->middleware('active_permission:building.create')
+    ->name('campus.buildings.import-template');
+Route::post('/campus/buildings/import', [BuildingController::class, 'import'])
+    ->middleware('active_permission:building.create')
+    ->name('campus.buildings.import');
+Route::post('/campus/buildings/bulk-destroy', [BuildingController::class, 'bulkDestroy'])
+    ->middleware('active_permission:building.delete')
+    ->name('campus.buildings.bulk-destroy');
+Route::post('/campus/buildings/bulk-restore', [BuildingController::class, 'bulkRestore'])
+    ->middleware('active_permission:building.update|building.delete')
+    ->name('campus.buildings.bulk-restore');
+Route::post('/campus/buildings/bulk-force-destroy', [BuildingController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:building.update|building.delete')
+    ->name('campus.buildings.bulk-force-destroy');
+Route::post('/campus/buildings/{id}/restore', [BuildingController::class, 'restore'])
+    ->middleware('active_permission:building.update|building.delete')
+    ->name('campus.buildings.restore');
+Route::delete('/campus/buildings/{id}/force', [BuildingController::class, 'forceDestroy'])
+    ->middleware('active_permission:building.update|building.delete')
+    ->name('campus.buildings.force-destroy');
+Route::post('/campus/buildings/{building}/toggle', [BuildingController::class, 'toggle'])
+    ->middleware('active_permission:building.update')
+    ->name('campus.buildings.toggle');
+Route::get('/campus/buildings', [BuildingController::class, 'index'])
+    ->middleware('active_permission:building.viewAny')
+    ->name('campus.buildings.index');
+Route::get('/campus/buildings/create', [BuildingController::class, 'create'])
+    ->middleware('active_permission:building.create')
+    ->name('campus.buildings.create');
+Route::post('/campus/buildings', [BuildingController::class, 'store'])
+    ->middleware('active_permission:building.create')
+    ->name('campus.buildings.store');
+Route::get('/campus/buildings/{building}/edit', [BuildingController::class, 'edit'])
+    ->middleware('active_permission:building.update')
+    ->name('campus.buildings.edit');
+Route::put('/campus/buildings/{building}', [BuildingController::class, 'update'])
+    ->middleware('active_permission:building.update')
+    ->name('campus.buildings.update');
+Route::delete('/campus/buildings/{building}', [BuildingController::class, 'destroy'])
+    ->middleware('active_permission:building.delete')
+    ->name('campus.buildings.destroy');
+
+// CRUD Ruangan (Inertia React) — Batch-C2, nama route & middleware paritas Livewire.
+Route::get('/campus/rooms/export', [RoomController::class, 'export'])
+    ->middleware('active_permission:room.viewAny')
+    ->name('campus.rooms.export');
+Route::get('/campus/rooms/import/template', [RoomController::class, 'importTemplate'])
+    ->middleware('active_permission:room.create')
+    ->name('campus.rooms.import-template');
+Route::post('/campus/rooms/import', [RoomController::class, 'import'])
+    ->middleware('active_permission:room.create')
+    ->name('campus.rooms.import');
+Route::post('/campus/rooms/bulk-destroy', [RoomController::class, 'bulkDestroy'])
+    ->middleware('active_permission:room.delete')
+    ->name('campus.rooms.bulk-destroy');
+Route::post('/campus/rooms/bulk-restore', [RoomController::class, 'bulkRestore'])
+    ->middleware('active_permission:room.update|room.delete')
+    ->name('campus.rooms.bulk-restore');
+Route::post('/campus/rooms/bulk-force-destroy', [RoomController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:room.update|room.delete')
+    ->name('campus.rooms.bulk-force-destroy');
+Route::post('/campus/rooms/{id}/restore', [RoomController::class, 'restore'])
+    ->middleware('active_permission:room.update|room.delete')
+    ->name('campus.rooms.restore');
+Route::delete('/campus/rooms/{id}/force', [RoomController::class, 'forceDestroy'])
+    ->middleware('active_permission:room.update|room.delete')
+    ->name('campus.rooms.force-destroy');
+Route::post('/campus/rooms/{room}/toggle', [RoomController::class, 'toggle'])
+    ->middleware('active_permission:room.update')
+    ->name('campus.rooms.toggle');
+Route::get('/campus/rooms', [RoomController::class, 'index'])
+    ->middleware('active_permission:room.viewAny')
+    ->name('campus.rooms.index');
+Route::get('/campus/rooms/create', [RoomController::class, 'create'])
+    ->middleware('active_permission:room.create')
+    ->name('campus.rooms.create');
+Route::post('/campus/rooms', [RoomController::class, 'store'])
+    ->middleware('active_permission:room.create')
+    ->name('campus.rooms.store');
+Route::get('/campus/rooms/{room}/edit', [RoomController::class, 'edit'])
+    ->middleware('active_permission:room.update')
+    ->name('campus.rooms.edit');
+Route::put('/campus/rooms/{room}', [RoomController::class, 'update'])
+    ->middleware('active_permission:room.update')
+    ->name('campus.rooms.update');
+Route::delete('/campus/rooms/{room}', [RoomController::class, 'destroy'])
+    ->middleware('active_permission:room.delete')
+    ->name('campus.rooms.destroy');
+
+// CRUD Aset Kampus (Inertia React) — Batch-C2, nama route & middleware paritas Livewire.
+Route::get('/campus/campus-assets/export', [CampusAssetController::class, 'export'])
+    ->middleware('active_permission:campus-asset.viewAny')
+    ->name('campus.assets.export');
+Route::get('/campus/campus-assets/import/template', [CampusAssetController::class, 'importTemplate'])
+    ->middleware('active_permission:campus-asset.create')
+    ->name('campus.assets.import-template');
+Route::post('/campus/campus-assets/import', [CampusAssetController::class, 'import'])
+    ->middleware('active_permission:campus-asset.create')
+    ->name('campus.assets.import');
+Route::post('/campus/campus-assets/bulk-destroy', [CampusAssetController::class, 'bulkDestroy'])
+    ->middleware('active_permission:campus-asset.delete')
+    ->name('campus.assets.bulk-destroy');
+Route::post('/campus/campus-assets/bulk-restore', [CampusAssetController::class, 'bulkRestore'])
+    ->middleware('active_permission:campus-asset.update|campus-asset.delete')
+    ->name('campus.assets.bulk-restore');
+Route::post('/campus/campus-assets/bulk-force-destroy', [CampusAssetController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:campus-asset.update|campus-asset.delete')
+    ->name('campus.assets.bulk-force-destroy');
+Route::post('/campus/campus-assets/{id}/restore', [CampusAssetController::class, 'restore'])
+    ->middleware('active_permission:campus-asset.update|campus-asset.delete')
+    ->name('campus.assets.restore');
+Route::delete('/campus/campus-assets/{id}/force', [CampusAssetController::class, 'forceDestroy'])
+    ->middleware('active_permission:campus-asset.update|campus-asset.delete')
+    ->name('campus.assets.force-destroy');
+Route::get('/campus/campus-assets', [CampusAssetController::class, 'index'])
+    ->middleware('active_permission:campus-asset.viewAny')
+    ->name('campus.assets.index');
+Route::get('/campus/campus-assets/create', [CampusAssetController::class, 'create'])
+    ->middleware('active_permission:campus-asset.create')
+    ->name('campus.assets.create');
+Route::post('/campus/campus-assets', [CampusAssetController::class, 'store'])
+    ->middleware('active_permission:campus-asset.create')
+    ->name('campus.assets.store');
+Route::get('/campus/campus-assets/bulk-create', [CampusAssetController::class, 'bulkCreate'])
+    ->middleware('active_permission:campus-asset.create')
+    ->name('campus.assets.bulk-create');
+Route::post('/campus/campus-assets/bulk-store', [CampusAssetController::class, 'bulkStore'])
+    ->middleware('active_permission:campus-asset.create')
+    ->name('campus.assets.bulk-store');
+Route::get('/campus/products', [CampusAssetController::class, 'showProduct'])
+    ->middleware('active_permission:campus-asset.view')
+    ->name('campus.products.show');
+Route::get('/campus/campus-assets/{asset}/edit', [CampusAssetController::class, 'edit'])
+    ->middleware('active_permission:campus-asset.update')
+    ->name('campus.assets.edit');
+Route::get('/campus/campus-assets/{asset}', [CampusAssetController::class, 'show'])
+    ->middleware('active_permission:campus-asset.view')
+    ->name('campus.assets.show');
+Route::put('/campus/campus-assets/{asset}', [CampusAssetController::class, 'update'])
+    ->middleware('active_permission:campus-asset.update')
+    ->name('campus.assets.update');
+Route::delete('/campus/campus-assets/{asset}', [CampusAssetController::class, 'destroy'])
+    ->middleware('active_permission:campus-asset.delete')
+    ->name('campus.assets.destroy');
+Route::post('/campus/campus-assets/{asset}/report-damage', [CampusAssetController::class, 'reportDamage'])
+    ->middleware('active_permission:campus-asset.update')
+    ->name('campus.assets.report-damage');
+
+// CRUD Peminjaman Ruangan (Inertia React) — Batch-C3, state machine approve.
+Route::get('/campus/room-reservations/export', [RoomReservationController::class, 'export'])
+    ->middleware('active_permission:room-reservation.viewAny')
+    ->name('campus.reservations.export');
+Route::post('/campus/room-reservations/bulk-destroy', [RoomReservationController::class, 'bulkDestroy'])
+    ->middleware('active_permission:room-reservation.delete')
+    ->name('campus.reservations.bulk-destroy');
+Route::post('/campus/room-reservations/bulk-restore', [RoomReservationController::class, 'bulkRestore'])
+    ->middleware('active_permission:room-reservation.update|room-reservation.delete')
+    ->name('campus.reservations.bulk-restore');
+Route::post('/campus/room-reservations/bulk-force-destroy', [RoomReservationController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:room-reservation.update|room-reservation.delete')
+    ->name('campus.reservations.bulk-force-destroy');
+Route::post('/campus/room-reservations/{id}/restore', [RoomReservationController::class, 'restore'])
+    ->middleware('active_permission:room-reservation.update|room-reservation.delete')
+    ->name('campus.reservations.restore');
+Route::delete('/campus/room-reservations/{id}/force', [RoomReservationController::class, 'forceDestroy'])
+    ->middleware('active_permission:room-reservation.update|room-reservation.delete')
+    ->name('campus.reservations.force-destroy');
+Route::get('/campus/room-reservations/search-users', [RoomReservationController::class, 'searchUsers'])
+    ->middleware('active_permission:room-reservation.create|room-reservation.update')
+    ->name('campus.reservations.search-users');
+Route::post('/campus/room-reservations/{reservation}/approve', [RoomReservationController::class, 'approve'])
+    ->middleware('active_permission:room-reservation.approve')
+    ->name('campus.reservations.approve');
+Route::post('/campus/room-reservations/{reservation}/reject', [RoomReservationController::class, 'reject'])
+    ->middleware('active_permission:room-reservation.approve')
+    ->name('campus.reservations.reject');
+Route::post('/campus/room-reservations/{reservation}/cancel', [RoomReservationController::class, 'cancel'])
+    ->middleware('active_permission:room-reservation.update')
+    ->name('campus.reservations.cancel');
+Route::get('/campus/room-reservations', [RoomReservationController::class, 'index'])
+    ->middleware('active_permission:room-reservation.viewAny')
+    ->name('campus.reservations.index');
+Route::get('/campus/room-reservations/create', [RoomReservationController::class, 'create'])
+    ->middleware('active_permission:room-reservation.create')
+    ->name('campus.reservations.create');
+Route::post('/campus/room-reservations', [RoomReservationController::class, 'store'])
+    ->middleware('active_permission:room-reservation.create')
+    ->name('campus.reservations.store');
+Route::get('/campus/room-reservations/{reservation}/edit', [RoomReservationController::class, 'edit'])
+    ->middleware('active_permission:room-reservation.update')
+    ->name('campus.reservations.edit');
+Route::get('/campus/room-reservations/{reservation}', [RoomReservationController::class, 'show'])
+    ->middleware('active_permission:room-reservation.view')
+    ->name('campus.reservations.show');
+Route::put('/campus/room-reservations/{reservation}', [RoomReservationController::class, 'update'])
+    ->middleware('active_permission:room-reservation.update')
+    ->name('campus.reservations.update');
+Route::delete('/campus/room-reservations/{reservation}', [RoomReservationController::class, 'destroy'])
+    ->middleware('active_permission:room-reservation.delete')
+    ->name('campus.reservations.destroy');
+
+// CRUD Laporan Kerusakan (Inertia React) — Batch-C4, lifecycle resolve.
+Route::get('/campus/facility-maintenances/export', [MaintenanceController::class, 'export'])
+    ->middleware('active_permission:facility-maintenance.viewAny')
+    ->name('campus.maintenance.export');
+Route::post('/campus/facility-maintenances/bulk-destroy', [MaintenanceController::class, 'bulkDestroy'])
+    ->middleware('active_permission:facility-maintenance.delete')
+    ->name('campus.maintenance.bulk-destroy');
+Route::post('/campus/facility-maintenances/bulk-restore', [MaintenanceController::class, 'bulkRestore'])
+    ->middleware('active_permission:facility-maintenance.update|facility-maintenance.delete')
+    ->name('campus.maintenance.bulk-restore');
+Route::post('/campus/facility-maintenances/bulk-force-destroy', [MaintenanceController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:facility-maintenance.update|facility-maintenance.delete')
+    ->name('campus.maintenance.bulk-force-destroy');
+Route::post('/campus/facility-maintenances/{id}/restore', [MaintenanceController::class, 'restore'])
+    ->middleware('active_permission:facility-maintenance.update|facility-maintenance.delete')
+    ->name('campus.maintenance.restore');
+Route::delete('/campus/facility-maintenances/{id}/force', [MaintenanceController::class, 'forceDestroy'])
+    ->middleware('active_permission:facility-maintenance.update|facility-maintenance.delete')
+    ->name('campus.maintenance.force-destroy');
+Route::get('/campus/facility-maintenances/search-users', [MaintenanceController::class, 'searchUsers'])
+    ->middleware('active_permission:facility-maintenance.create|facility-maintenance.update')
+    ->name('campus.maintenance.search-users');
+Route::get('/campus/facility-maintenances/search-rooms', [MaintenanceController::class, 'searchRooms'])
+    ->middleware('active_permission:facility-maintenance.create|facility-maintenance.update')
+    ->name('campus.maintenance.search-rooms');
+Route::get('/campus/facility-maintenances/search-assets', [MaintenanceController::class, 'searchAssets'])
+    ->middleware('active_permission:facility-maintenance.create|facility-maintenance.update')
+    ->name('campus.maintenance.search-assets');
+Route::post('/campus/facility-maintenances/{ticket}/resolve', [MaintenanceController::class, 'resolve'])
+    ->middleware('active_permission:facility-maintenance.resolve')
+    ->name('campus.maintenance.resolve');
+Route::get('/campus/facility-maintenances', [MaintenanceController::class, 'index'])
+    ->middleware('active_permission:facility-maintenance.viewAny')
+    ->name('campus.maintenance.index');
+Route::get('/campus/facility-maintenances/create', [MaintenanceController::class, 'create'])
+    ->middleware('active_permission:facility-maintenance.create')
+    ->name('campus.maintenance.create');
+Route::post('/campus/facility-maintenances', [MaintenanceController::class, 'store'])
+    ->middleware('active_permission:facility-maintenance.create')
+    ->name('campus.maintenance.store');
+Route::get('/campus/facility-maintenances/{ticket}/edit', [MaintenanceController::class, 'edit'])
+    ->middleware('active_permission:facility-maintenance.update')
+    ->name('campus.maintenance.edit');
+Route::get('/campus/facility-maintenances/{ticket}', [MaintenanceController::class, 'show'])
+    ->middleware('active_permission:facility-maintenance.view')
+    ->name('campus.maintenance.show');
+Route::put('/campus/facility-maintenances/{ticket}', [MaintenanceController::class, 'update'])
+    ->middleware('active_permission:facility-maintenance.update')
+    ->name('campus.maintenance.update');
+Route::delete('/campus/facility-maintenances/{ticket}', [MaintenanceController::class, 'destroy'])
+    ->middleware('active_permission:facility-maintenance.delete')
+    ->name('campus.maintenance.destroy');
+
+// CRUD Kategori Aset (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/campus/asset-categories/export', [AssetCategoryController::class, 'export'])
+    ->middleware('active_permission:asset-category.viewAny')
+    ->name('campus.asset-categories.export');
+Route::get('/campus/asset-categories/import/template', [AssetCategoryController::class, 'importTemplate'])
+    ->middleware('active_permission:asset-category.create')
+    ->name('campus.asset-categories.import-template');
+Route::post('/campus/asset-categories/import', [AssetCategoryController::class, 'import'])
+    ->middleware('active_permission:asset-category.create')
+    ->name('campus.asset-categories.import');
+Route::post('/campus/asset-categories/bulk-destroy', [AssetCategoryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:asset-category.delete')
+    ->name('campus.asset-categories.bulk-destroy');
+Route::post('/campus/asset-categories/bulk-restore', [AssetCategoryController::class, 'bulkRestore'])
+    ->middleware('active_permission:asset-category.update|asset-category.delete')
+    ->name('campus.asset-categories.bulk-restore');
+Route::post('/campus/asset-categories/bulk-force-destroy', [AssetCategoryController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:asset-category.update|asset-category.delete')
+    ->name('campus.asset-categories.bulk-force-destroy');
+Route::post('/campus/asset-categories/{id}/restore', [AssetCategoryController::class, 'restore'])
+    ->middleware('active_permission:asset-category.update|asset-category.delete')
+    ->name('campus.asset-categories.restore');
+Route::delete('/campus/asset-categories/{id}/force', [AssetCategoryController::class, 'forceDestroy'])
+    ->middleware('active_permission:asset-category.update|asset-category.delete')
+    ->name('campus.asset-categories.force-destroy');
+Route::post('/campus/asset-categories/{category}/toggle', [AssetCategoryController::class, 'toggle'])
+    ->middleware('active_permission:asset-category.update')
+    ->name('campus.asset-categories.toggle');
+Route::get('/campus/asset-categories', [AssetCategoryController::class, 'index'])
+    ->middleware('active_permission:asset-category.viewAny')
+    ->name('campus.asset-categories.index');
+Route::get('/campus/asset-categories/create', [AssetCategoryController::class, 'create'])
+    ->middleware('active_permission:asset-category.create')
+    ->name('campus.asset-categories.create');
+Route::post('/campus/asset-categories', [AssetCategoryController::class, 'store'])
+    ->middleware('active_permission:asset-category.create')
+    ->name('campus.asset-categories.store');
+Route::get('/campus/asset-categories/{category}/edit', [AssetCategoryController::class, 'edit'])
+    ->middleware('active_permission:asset-category.update')
+    ->name('campus.asset-categories.edit');
+Route::put('/campus/asset-categories/{category}', [AssetCategoryController::class, 'update'])
+    ->middleware('active_permission:asset-category.update')
+    ->name('campus.asset-categories.update');
+Route::delete('/campus/asset-categories/{category}', [AssetCategoryController::class, 'destroy'])
+    ->middleware('active_permission:asset-category.delete')
+    ->name('campus.asset-categories.destroy');
 
 // CRUD Fakultas (Inertia React) — nama route & middleware paritas Livewire.
 Route::get('/academic/faculties/export', [FacultyController::class, 'export'])
@@ -932,16 +2371,32 @@ Route::delete('/access/permissions/{permission}', [PermissionController::class, 
     ->middleware('active_permission:permission.delete')
     ->name('access.permissions.destroy');
 
-Route::livewire('/financial/dashboard', 'admin.financial.dashboard.index')
+Route::get('/financial/dashboard', [FinancialDashboardController::class, 'index'])
     ->middleware('active_permission:financial-dashboard.viewAny')
     ->name('financial.dashboard.index');
-Route::livewire('/student-services/dashboard', 'admin.student-services.dashboard.index')
+
+// PDF laporan tabel per resource financial (kop + tanda tangan, paritas akademik).
+Route::get('/financial/{resource}/export/pdf', [AdminFinancialExportController::class, 'pdf'])
+    ->whereIn('resource', ['tuition-fees', 'clearance-policies', 'scholarships', 'invoice-schedules', 'student-invoices', 'payments', 'invoice-adjustments', 'installment-requests', 'student-scholarships', 'student-credits', 'financial-holds'])
+    ->name('financial.exports.pdf');
+Route::get('/financial/financial-reports', [FinancialReportController::class, 'index'])
+    ->middleware('active_permission:financial-report.viewAny')
+    ->name('financial.financial-reports.index');
+Route::get('/student-services/dashboard', [AdminDashboardController::class, 'studentServicesDashboard'])
     ->middleware('active_permission:student-service-dashboard.viewAny')
     ->name('student-services.dashboard.index');
 Route::get('/academic/{resource}/export/pdf', [AdminAcademicExportController::class, 'pdf'])
     ->name('academic.exports.pdf');
 Route::get('/academic/{resource}/imports/template', [AdminAcademicExportController::class, 'importTemplate'])
     ->name('academic.import-template');
+Route::get('/publication/{resource}/export/pdf', [AdminPublicationExportController::class, 'pdf'])
+    ->name('publication.exports.pdf');
+Route::get('/publication/{resource}/imports/template', [AdminPublicationExportController::class, 'importTemplate'])
+    ->name('publication.import-template');
+Route::get('/campus/{resource}/export/pdf', [AdminCampusExportController::class, 'pdf'])
+    ->name('campus.exports.pdf');
+Route::get('/campus/{resource}/imports/template', [AdminCampusExportController::class, 'importTemplate'])
+    ->name('campus.import-template');
 
 Route::get('/admission/documents/{document}/preview', [AdmissionDocumentController::class, 'adminPreview'])
     ->middleware('active_permission:admission-application.view')
@@ -959,6 +2414,213 @@ Route::get('/admission/applications/{application}/acceptance-letter', [Acceptanc
     ->middleware('active_permission:admission-application.view')
     ->name('admission.applications.acceptance-letter');
 
+// CRUD Periode & Gelombang PMB (Inertia React) — Batch AD-1.
+Route::get('/admission/admission-periods/export', [AdmissionPeriodController::class, 'export'])
+    ->middleware('active_permission:admission-period.viewAny')
+    ->name('admission.admission-periods.export');
+Route::post('/admission/admission-periods/bulk-destroy', [AdmissionPeriodController::class, 'bulkDestroy'])
+    ->middleware('active_permission:admission-period.delete')
+    ->name('admission.admission-periods.bulk-destroy');
+Route::post('/admission/admission-periods/bulk-restore', [AdmissionPeriodController::class, 'bulkRestore'])
+    ->middleware('active_permission:admission-period.update|admission-period.delete')
+    ->name('admission.admission-periods.bulk-restore');
+Route::post('/admission/admission-periods/bulk-force-destroy', [AdmissionPeriodController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:admission-period.update|admission-period.delete')
+    ->name('admission.admission-periods.bulk-force-destroy');
+Route::post('/admission/admission-periods/{id}/restore', [AdmissionPeriodController::class, 'restore'])
+    ->middleware('active_permission:admission-period.update|admission-period.delete')
+    ->name('admission.admission-periods.restore');
+Route::delete('/admission/admission-periods/{id}/force', [AdmissionPeriodController::class, 'forceDestroy'])
+    ->middleware('active_permission:admission-period.update|admission-period.delete')
+    ->name('admission.admission-periods.force-destroy');
+Route::post('/admission/admission-periods/{period}/toggle', [AdmissionPeriodController::class, 'toggle'])
+    ->middleware('active_permission:admission-period.update')
+    ->name('admission.admission-periods.toggle');
+Route::get('/admission/admission-periods', [AdmissionPeriodController::class, 'index'])
+    ->middleware('active_permission:admission-period.viewAny')
+    ->name('admission.admission-periods.index');
+Route::get('/admission/admission-periods/create', [AdmissionPeriodController::class, 'create'])
+    ->middleware('active_permission:admission-period.create')
+    ->name('admission.admission-periods.create');
+Route::post('/admission/admission-periods', [AdmissionPeriodController::class, 'store'])
+    ->middleware('active_permission:admission-period.create')
+    ->name('admission.admission-periods.store');
+Route::get('/admission/admission-periods/{period}/edit', [AdmissionPeriodController::class, 'edit'])
+    ->middleware('active_permission:admission-period.update')
+    ->name('admission.admission-periods.edit');
+Route::put('/admission/admission-periods/{period}', [AdmissionPeriodController::class, 'update'])
+    ->middleware('active_permission:admission-period.update')
+    ->name('admission.admission-periods.update');
+Route::delete('/admission/admission-periods/{period}', [AdmissionPeriodController::class, 'destroy'])
+    ->middleware('active_permission:admission-period.delete')
+    ->name('admission.admission-periods.destroy');
+
+// CRUD Kuota Penerimaan PMB (Inertia React) — Batch AD-1 (tanpa soft delete).
+Route::get('/admission/admission-quotas/export', [AdmissionQuotaController::class, 'export'])
+    ->middleware('active_permission:admission-quota.viewAny')
+    ->name('admission.admission-quotas.export');
+Route::post('/admission/admission-quotas/bulk-destroy', [AdmissionQuotaController::class, 'bulkDestroy'])
+    ->middleware('active_permission:admission-quota.delete')
+    ->name('admission.admission-quotas.bulk-destroy');
+Route::get('/admission/admission-quotas', [AdmissionQuotaController::class, 'index'])
+    ->middleware('active_permission:admission-quota.viewAny')
+    ->name('admission.admission-quotas.index');
+Route::get('/admission/admission-quotas/create', [AdmissionQuotaController::class, 'create'])
+    ->middleware('active_permission:admission-quota.create')
+    ->name('admission.admission-quotas.create');
+Route::post('/admission/admission-quotas', [AdmissionQuotaController::class, 'store'])
+    ->middleware('active_permission:admission-quota.create')
+    ->name('admission.admission-quotas.store');
+Route::get('/admission/admission-quotas/{quota}/edit', [AdmissionQuotaController::class, 'edit'])
+    ->middleware('active_permission:admission-quota.update')
+    ->name('admission.admission-quotas.edit');
+Route::put('/admission/admission-quotas/{quota}', [AdmissionQuotaController::class, 'update'])
+    ->middleware('active_permission:admission-quota.update')
+    ->name('admission.admission-quotas.update');
+Route::delete('/admission/admission-quotas/{quota}', [AdmissionQuotaController::class, 'destroy'])
+    ->middleware('active_permission:admission-quota.delete')
+    ->name('admission.admission-quotas.destroy');
+
+// CRUD Aturan Penomoran NIM (Inertia React) — Batch AD-1 (tanpa soft delete).
+Route::get('/admission/nim-generation-rules/export', [NimGenerationRuleController::class, 'export'])
+    ->middleware('active_permission:nim-generation-rule.viewAny')
+    ->name('admission.nim-generation-rules.export');
+Route::post('/admission/nim-generation-rules/bulk-destroy', [NimGenerationRuleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:nim-generation-rule.delete')
+    ->name('admission.nim-generation-rules.bulk-destroy');
+Route::post('/admission/nim-generation-rules/{rule}/toggle', [NimGenerationRuleController::class, 'toggle'])
+    ->middleware('active_permission:nim-generation-rule.update')
+    ->name('admission.nim-generation-rules.toggle');
+Route::get('/admission/nim-generation-rules', [NimGenerationRuleController::class, 'index'])
+    ->middleware('active_permission:nim-generation-rule.viewAny')
+    ->name('admission.nim-generation-rules.index');
+Route::get('/admission/nim-generation-rules/create', [NimGenerationRuleController::class, 'create'])
+    ->middleware('active_permission:nim-generation-rule.create')
+    ->name('admission.nim-generation-rules.create');
+Route::post('/admission/nim-generation-rules', [NimGenerationRuleController::class, 'store'])
+    ->middleware('active_permission:nim-generation-rule.create')
+    ->name('admission.nim-generation-rules.store');
+Route::get('/admission/nim-generation-rules/{rule}/edit', [NimGenerationRuleController::class, 'edit'])
+    ->middleware('active_permission:nim-generation-rule.update')
+    ->name('admission.nim-generation-rules.edit');
+Route::put('/admission/nim-generation-rules/{rule}', [NimGenerationRuleController::class, 'update'])
+    ->middleware('active_permission:nim-generation-rule.update')
+    ->name('admission.nim-generation-rules.update');
+Route::delete('/admission/nim-generation-rules/{rule}', [NimGenerationRuleController::class, 'destroy'])
+    ->middleware('active_permission:nim-generation-rule.delete')
+    ->name('admission.nim-generation-rules.destroy');
+
+// CRUD Jadwal Ujian & Seleksi PMB (Inertia React) — Batch AD-2.
+Route::get('/admission/admission-exam-schedules/export', [AdmissionExamScheduleController::class, 'export'])
+    ->middleware('active_permission:admission-exam-schedule.viewAny')
+    ->name('admission.admission-exam-schedules.export');
+Route::post('/admission/admission-exam-schedules/bulk-destroy', [AdmissionExamScheduleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.bulk-destroy');
+Route::post('/admission/admission-exam-schedules/bulk-restore', [AdmissionExamScheduleController::class, 'bulkRestore'])
+    ->middleware('active_permission:admission-exam-schedule.update|admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.bulk-restore');
+Route::post('/admission/admission-exam-schedules/bulk-force-destroy', [AdmissionExamScheduleController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:admission-exam-schedule.update|admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.bulk-force-destroy');
+Route::post('/admission/admission-exam-schedules/{id}/restore', [AdmissionExamScheduleController::class, 'restore'])
+    ->middleware('active_permission:admission-exam-schedule.update|admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.restore');
+Route::delete('/admission/admission-exam-schedules/{id}/force', [AdmissionExamScheduleController::class, 'forceDestroy'])
+    ->middleware('active_permission:admission-exam-schedule.update|admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.force-destroy');
+Route::post('/admission/admission-exam-schedules/{schedule}/toggle', [AdmissionExamScheduleController::class, 'toggle'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.toggle');
+Route::get('/admission/admission-exam-schedules', [AdmissionExamScheduleController::class, 'index'])
+    ->middleware('active_permission:admission-exam-schedule.viewAny')
+    ->name('admission.admission-exam-schedules.index');
+Route::get('/admission/admission-exam-schedules/create', [AdmissionExamScheduleController::class, 'create'])
+    ->middleware('active_permission:admission-exam-schedule.create')
+    ->name('admission.admission-exam-schedules.create');
+Route::post('/admission/admission-exam-schedules', [AdmissionExamScheduleController::class, 'store'])
+    ->middleware('active_permission:admission-exam-schedule.create')
+    ->name('admission.admission-exam-schedules.store');
+Route::get('/admission/admission-exam-schedules/{schedule}/edit', [AdmissionExamScheduleController::class, 'edit'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.edit');
+Route::put('/admission/admission-exam-schedules/{schedule}', [AdmissionExamScheduleController::class, 'update'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.update');
+Route::delete('/admission/admission-exam-schedules/{schedule}', [AdmissionExamScheduleController::class, 'destroy'])
+    ->middleware('active_permission:admission-exam-schedule.delete')
+    ->name('admission.admission-exam-schedules.destroy');
+Route::post('/admission/admission-exam-schedules/{schedule}/participants', [AdmissionExamScheduleController::class, 'assignParticipant'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.store');
+Route::post('/admission/admission-exam-schedules/{schedule}/participants/assign-all', [AdmissionExamScheduleController::class, 'assignAllFromPeriod'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.assign-all');
+Route::patch('/admission/admission-exam-schedules/{schedule}/participants/{participant}/attendance', [AdmissionExamScheduleController::class, 'updateAttendance'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.attendance');
+Route::post('/admission/admission-exam-schedules/{schedule}/participants/{participant}/score', [AdmissionExamScheduleController::class, 'saveScore'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.score');
+Route::delete('/admission/admission-exam-schedules/{schedule}/participants/{participant}', [AdmissionExamScheduleController::class, 'removeParticipant'])
+    ->middleware('active_permission:admission-exam-schedule.update')
+    ->name('admission.admission-exam-schedules.participants.destroy');
+Route::get('/admission/admission-exam-schedules/{schedule}', [AdmissionExamScheduleController::class, 'show'])
+    ->middleware('active_permission:admission-exam-schedule.view')
+    ->name('admission.admission-exam-schedules.show');
+
+// Pendaftar PMB (Inertia React) — Batch AD-2.
+Route::get('/admission/admission-applications/export', [AdmissionApplicationController::class, 'export'])
+    ->middleware('active_permission:admission-application.viewAny')
+    ->name('admission.admission-applications.export');
+Route::post('/admission/admission-applications/bulk-destroy', [AdmissionApplicationController::class, 'bulkDestroy'])
+    ->middleware('active_permission:admission-application.delete')
+    ->name('admission.admission-applications.bulk-destroy');
+Route::post('/admission/admission-applications/bulk-restore', [AdmissionApplicationController::class, 'bulkRestore'])
+    ->middleware('active_permission:admission-application.update|admission-application.delete')
+    ->name('admission.admission-applications.bulk-restore');
+Route::post('/admission/admission-applications/bulk-force-destroy', [AdmissionApplicationController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:admission-application.update|admission-application.delete')
+    ->name('admission.admission-applications.bulk-force-destroy');
+Route::post('/admission/admission-applications/bulk-convert', [AdmissionApplicationController::class, 'bulkConvert'])
+    ->middleware('active_permission:admission-application.update')
+    ->name('admission.admission-applications.bulk-convert');
+Route::post('/admission/admission-applications/{id}/restore', [AdmissionApplicationController::class, 'restore'])
+    ->middleware('active_permission:admission-application.update|admission-application.delete')
+    ->name('admission.admission-applications.restore');
+Route::delete('/admission/admission-applications/{id}/force', [AdmissionApplicationController::class, 'forceDestroy'])
+    ->middleware('active_permission:admission-application.update|admission-application.delete')
+    ->name('admission.admission-applications.force-destroy');
+Route::get('/admission/admission-applications', [AdmissionApplicationController::class, 'index'])
+    ->middleware('active_permission:admission-application.viewAny')
+    ->name('admission.admission-applications.index');
+Route::get('/admission/admission-applications/{application}', [AdmissionApplicationController::class, 'show'])
+    ->middleware('active_permission:admission-application.view')
+    ->name('admission.admission-applications.show');
+Route::put('/admission/admission-applications/{application}/review', [AdmissionApplicationController::class, 'updateReview'])
+    ->middleware('active_permission:admission-application.update')
+    ->name('admission.admission-applications.update-review');
+Route::patch('/admission/admission-applications/{application}/documents/{document}/verify', [AdmissionApplicationController::class, 'verifyDocument'])
+    ->middleware('active_permission:admission-application.update')
+    ->name('admission.admission-applications.documents.verify');
+Route::post('/admission/admission-applications/{application}/convert', [AdmissionApplicationController::class, 'convert'])
+    ->middleware('active_permission:admission-application.update')
+    ->name('admission.admission-applications.convert');
+Route::delete('/admission/admission-applications/{application}', [AdmissionApplicationController::class, 'destroy'])
+    ->middleware('active_permission:admission-application.delete')
+    ->name('admission.admission-applications.destroy');
+
+// Perankingan & keputusan seleksi PMB (Inertia React) — Batch AD-2.
+Route::get('/admission/admission-selection', [AdmissionSelectionController::class, 'index'])
+    ->middleware('active_permission:admission-selection.viewAny')
+    ->name('admission.admission-selection.index');
+Route::post('/admission/admission-selection/bulk-decision', [AdmissionSelectionController::class, 'bulkDecision'])
+    ->middleware('active_permission:admission-selection.update')
+    ->name('admission.admission-selection.bulk-decision');
+Route::post('/admission/admission-selection/{application}/decision', [AdmissionSelectionController::class, 'updateDecision'])
+    ->middleware('active_permission:admission-selection.update')
+    ->name('admission.admission-selection.decision');
+
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
 Route::get('/financial/payments/{payment}/receipt', [PaymentReceiptController::class, 'admin'])
@@ -970,6 +2632,319 @@ foreach (['csv', 'xlsx', 'pdf'] as $format) {
         ->name("financial.reports.export.{$format}");
 }
 
+// CRUD Tarif Biaya Kuliah (Inertia React) — nama route & middleware paritas Livewire.
+Route::get('/financial/tuition-fees/export', [TuitionFeeController::class, 'export'])
+    ->middleware('active_permission:tuition-fee.viewAny')
+    ->name('financial.tuition-fees.export');
+Route::post('/financial/tuition-fees/bulk-destroy', [TuitionFeeController::class, 'bulkDestroy'])
+    ->middleware('active_permission:tuition-fee.delete')
+    ->name('financial.tuition-fees.bulk-destroy');
+Route::post('/financial/tuition-fees/bulk-restore', [TuitionFeeController::class, 'bulkRestore'])
+    ->middleware('active_permission:tuition-fee.update|tuition-fee.delete')
+    ->name('financial.tuition-fees.bulk-restore');
+Route::post('/financial/tuition-fees/bulk-force-destroy', [TuitionFeeController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:tuition-fee.delete')
+    ->name('financial.tuition-fees.bulk-force-destroy');
+Route::post('/financial/tuition-fees/{id}/restore', [TuitionFeeController::class, 'restore'])
+    ->middleware('active_permission:tuition-fee.update|tuition-fee.delete')
+    ->name('financial.tuition-fees.restore');
+Route::delete('/financial/tuition-fees/{id}/force', [TuitionFeeController::class, 'forceDestroy'])
+    ->middleware('active_permission:tuition-fee.delete')
+    ->name('financial.tuition-fees.force-destroy');
+Route::get('/financial/tuition-fees/import/template', [TuitionFeeController::class, 'importTemplate'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.import-template');
+Route::post('/financial/tuition-fees/import', [TuitionFeeController::class, 'import'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.import');
+Route::get('/financial/tuition-fees', [TuitionFeeController::class, 'index'])
+    ->middleware('active_permission:tuition-fee.viewAny')
+    ->name('financial.tuition-fees.index');
+Route::get('/financial/tuition-fees/create', [TuitionFeeController::class, 'create'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.create');
+Route::post('/financial/tuition-fees', [TuitionFeeController::class, 'store'])
+    ->middleware('active_permission:tuition-fee.create')
+    ->name('financial.tuition-fees.store');
+Route::get('/financial/tuition-fees/{tuitionFee}/edit', [TuitionFeeController::class, 'edit'])
+    ->middleware('active_permission:tuition-fee.update')
+    ->name('financial.tuition-fees.edit');
+Route::put('/financial/tuition-fees/{tuitionFee}', [TuitionFeeController::class, 'update'])
+    ->middleware('active_permission:tuition-fee.update')
+    ->name('financial.tuition-fees.update');
+Route::post('/financial/tuition-fees/{tuitionFee}/toggle', [TuitionFeeController::class, 'toggle'])
+    ->middleware('active_permission:tuition-fee.update')
+    ->name('financial.tuition-fees.toggle');
+Route::delete('/financial/tuition-fees/{tuitionFee}', [TuitionFeeController::class, 'destroy'])
+    ->middleware('active_permission:tuition-fee.delete')
+    ->name('financial.tuition-fees.destroy');
+
+// CRUD Kebijakan Bebas Tanggungan (Inertia React) — paritas Livewire.
+Route::get('/financial/clearance-policies/export', [ClearancePolicyController::class, 'export'])
+    ->middleware('active_permission:clearance-policy.viewAny')
+    ->name('financial.clearance-policies.export');
+Route::post('/financial/clearance-policies/bulk-destroy', [ClearancePolicyController::class, 'bulkDestroy'])
+    ->middleware('active_permission:clearance-policy.delete')
+    ->name('financial.clearance-policies.bulk-destroy');
+Route::get('/financial/clearance-policies/import/template', [ClearancePolicyController::class, 'importTemplate'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.import-template');
+Route::post('/financial/clearance-policies/import', [ClearancePolicyController::class, 'import'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.import');
+Route::get('/financial/clearance-policies', [ClearancePolicyController::class, 'index'])
+    ->middleware('active_permission:clearance-policy.viewAny')
+    ->name('financial.clearance-policies.index');
+Route::get('/financial/clearance-policies/create', [ClearancePolicyController::class, 'create'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.create');
+Route::post('/financial/clearance-policies', [ClearancePolicyController::class, 'store'])
+    ->middleware('active_permission:clearance-policy.create')
+    ->name('financial.clearance-policies.store');
+Route::get('/financial/clearance-policies/{clearancePolicy}/edit', [ClearancePolicyController::class, 'edit'])
+    ->middleware('active_permission:clearance-policy.update')
+    ->name('financial.clearance-policies.edit');
+Route::put('/financial/clearance-policies/{clearancePolicy}', [ClearancePolicyController::class, 'update'])
+    ->middleware('active_permission:clearance-policy.update')
+    ->name('financial.clearance-policies.update');
+Route::post('/financial/clearance-policies/{clearancePolicy}/toggle', [ClearancePolicyController::class, 'toggle'])
+    ->middleware('active_permission:clearance-policy.update')
+    ->name('financial.clearance-policies.toggle');
+Route::delete('/financial/clearance-policies/{clearancePolicy}', [ClearancePolicyController::class, 'destroy'])
+    ->middleware('active_permission:clearance-policy.delete')
+    ->name('financial.clearance-policies.destroy');
+
+// CRUD Program Beasiswa (Inertia React) — paritas Livewire.
+Route::get('/financial/scholarships/export', [ScholarshipController::class, 'export'])
+    ->middleware('active_permission:scholarship.viewAny')
+    ->name('financial.scholarships.export');
+Route::post('/financial/scholarships/bulk-destroy', [ScholarshipController::class, 'bulkDestroy'])
+    ->middleware('active_permission:scholarship.delete')
+    ->name('financial.scholarships.bulk-destroy');
+Route::post('/financial/scholarships/bulk-restore', [ScholarshipController::class, 'bulkRestore'])
+    ->middleware('active_permission:scholarship.update|scholarship.delete')
+    ->name('financial.scholarships.bulk-restore');
+Route::post('/financial/scholarships/bulk-force-destroy', [ScholarshipController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:scholarship.delete')
+    ->name('financial.scholarships.bulk-force-destroy');
+Route::get('/financial/scholarships/import/template', [ScholarshipController::class, 'importTemplate'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.import-template');
+Route::post('/financial/scholarships/import', [ScholarshipController::class, 'import'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.import');
+Route::post('/financial/scholarships/{id}/restore', [ScholarshipController::class, 'restore'])
+    ->middleware('active_permission:scholarship.update|scholarship.delete')
+    ->name('financial.scholarships.restore');
+Route::delete('/financial/scholarships/{id}/force', [ScholarshipController::class, 'forceDestroy'])
+    ->middleware('active_permission:scholarship.delete')
+    ->name('financial.scholarships.force-destroy');
+Route::get('/financial/scholarships', [ScholarshipController::class, 'index'])
+    ->middleware('active_permission:scholarship.viewAny')
+    ->name('financial.scholarships.index');
+Route::get('/financial/scholarships/create', [ScholarshipController::class, 'create'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.create');
+Route::post('/financial/scholarships', [ScholarshipController::class, 'store'])
+    ->middleware('active_permission:scholarship.create')
+    ->name('financial.scholarships.store');
+Route::get('/financial/scholarships/{scholarship}/edit', [ScholarshipController::class, 'edit'])
+    ->middleware('active_permission:scholarship.update')
+    ->name('financial.scholarships.edit');
+Route::put('/financial/scholarships/{scholarship}', [ScholarshipController::class, 'update'])
+    ->middleware('active_permission:scholarship.update')
+    ->name('financial.scholarships.update');
+Route::post('/financial/scholarships/{scholarship}/toggle', [ScholarshipController::class, 'toggle'])
+    ->middleware('active_permission:scholarship.update')
+    ->name('financial.scholarships.toggle');
+Route::delete('/financial/scholarships/{scholarship}', [ScholarshipController::class, 'destroy'])
+    ->middleware('active_permission:scholarship.delete')
+    ->name('financial.scholarships.destroy');
+
+// CRUD Jadwal Penerbitan Tagihan (Inertia React) — paritas Livewire.
+Route::get('/financial/invoice-schedules/export', [InvoiceScheduleController::class, 'export'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.export');
+Route::get('/financial/invoice-schedules/search-students', [InvoiceScheduleController::class, 'searchStudents'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.search-students');
+Route::post('/financial/invoice-schedules/bulk-destroy', [InvoiceScheduleController::class, 'bulkDestroy'])
+    ->middleware('active_permission:invoice-schedule.delete')
+    ->name('financial.invoice-schedules.bulk-destroy');
+Route::get('/financial/invoice-schedules', [InvoiceScheduleController::class, 'index'])
+    ->middleware('active_permission:invoice-schedule.viewAny')
+    ->name('financial.invoice-schedules.index');
+Route::get('/financial/invoice-schedules/create', [InvoiceScheduleController::class, 'create'])
+    ->middleware('active_permission:invoice-schedule.create')
+    ->name('financial.invoice-schedules.create');
+Route::post('/financial/invoice-schedules', [InvoiceScheduleController::class, 'store'])
+    ->middleware('active_permission:invoice-schedule.create')
+    ->name('financial.invoice-schedules.store');
+Route::get('/financial/invoice-schedules/{invoiceSchedule}/edit', [InvoiceScheduleController::class, 'edit'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.edit');
+Route::put('/financial/invoice-schedules/{invoiceSchedule}', [InvoiceScheduleController::class, 'update'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.update');
+Route::post('/financial/invoice-schedules/{invoiceSchedule}/run', [InvoiceScheduleController::class, 'run'])
+    ->middleware('active_permission:invoice-schedule.update')
+    ->name('financial.invoice-schedules.run');
+Route::delete('/financial/invoice-schedules/{invoiceSchedule}', [InvoiceScheduleController::class, 'destroy'])
+    ->middleware('active_permission:invoice-schedule.delete')
+    ->name('financial.invoice-schedules.destroy');
+
+// CRUD Tagihan Mahasiswa (Inertia React) — paritas Livewire.
+Route::get('/financial/student-invoices/export', [StudentInvoiceController::class, 'export'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.export');
+Route::get('/financial/student-invoices/search-students', [StudentInvoiceController::class, 'searchStudents'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.search-students');
+Route::post('/financial/student-invoices/bulk-cancel', [StudentInvoiceController::class, 'bulkCancel'])
+    ->middleware('active_permission:student-invoice.delete')
+    ->name('financial.student-invoices.bulk-cancel');
+Route::get('/financial/student-invoices', [StudentInvoiceController::class, 'index'])
+    ->middleware('active_permission:student-invoice.viewAny')
+    ->name('financial.student-invoices.index');
+Route::get('/financial/student-invoices/create', [StudentInvoiceController::class, 'create'])
+    ->middleware('active_permission:student-invoice.create')
+    ->name('financial.student-invoices.create');
+Route::post('/financial/student-invoices', [StudentInvoiceController::class, 'store'])
+    ->middleware('active_permission:student-invoice.create')
+    ->name('financial.student-invoices.store');
+Route::get('/financial/student-invoices/{studentInvoice}/edit', [StudentInvoiceController::class, 'edit'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.edit');
+Route::put('/financial/student-invoices/{studentInvoice}', [StudentInvoiceController::class, 'update'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.update');
+Route::get('/financial/student-invoices/{studentInvoice}', [StudentInvoiceController::class, 'show'])
+    ->middleware('active_permission:student-invoice.view')
+    ->name('financial.student-invoices.show');
+Route::post('/financial/student-invoices/{studentInvoice}/issue', [StudentInvoiceController::class, 'issue'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.issue');
+Route::post('/financial/student-invoices/{studentInvoice}/cancel', [StudentInvoiceController::class, 'cancel'])
+    ->middleware('active_permission:student-invoice.delete')
+    ->name('financial.student-invoices.cancel');
+Route::get('/financial/student-invoices/{studentInvoice}/pdf', [StudentInvoiceController::class, 'pdf'])
+    ->middleware('active_permission:student-invoice.view')
+    ->name('financial.student-invoices.pdf');
+Route::post('/financial/student-invoices/{studentInvoice}/adjust', [StudentInvoiceController::class, 'adjust'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.adjust');
+Route::post('/financial/student-invoices/{studentInvoice}/apply-scholarship', [StudentInvoiceController::class, 'applyScholarship'])
+    ->middleware('active_permission:student-invoice.update')
+    ->name('financial.student-invoices.apply-scholarship');
+
+// Pembayaran (Inertia React, read-only + verifikasi) — paritas Livewire.
+Route::get('/financial/payments/export', [PaymentController::class, 'export'])
+    ->middleware('active_permission:payment.viewAny')
+    ->name('financial.payments.export');
+Route::get('/financial/payments', [PaymentController::class, 'index'])
+    ->middleware('active_permission:payment.viewAny')
+    ->name('financial.payments.index');
+Route::get('/financial/payments/{payment}', [PaymentController::class, 'show'])
+    ->middleware('active_permission:payment.view')
+    ->name('financial.payments.show');
+Route::post('/financial/payments/{payment}/verify', [PaymentController::class, 'verify'])
+    ->middleware('active_permission:payment.update')
+    ->name('financial.payments.verify');
+Route::post('/financial/payments/{payment}/reject', [PaymentController::class, 'reject'])
+    ->middleware('active_permission:payment.update')
+    ->name('financial.payments.reject');
+
+// Log Penyesuaian Tagihan (Inertia React, read-only) — paritas Livewire.
+Route::get('/financial/invoice-adjustments/export', [InvoiceAdjustmentController::class, 'export'])
+    ->middleware('active_permission:invoice-adjustment.viewAny')
+    ->name('financial.invoice-adjustments.export');
+Route::get('/financial/invoice-adjustments', [InvoiceAdjustmentController::class, 'index'])
+    ->middleware('active_permission:invoice-adjustment.viewAny')
+    ->name('financial.invoice-adjustments.index');
+
+// Pengajuan Cicilan (Inertia React, tinjau + putusan) — paritas Livewire.
+Route::get('/financial/installment-requests/export', [InstallmentRequestController::class, 'export'])
+    ->middleware('active_permission:installment-request.viewAny')
+    ->name('financial.installment-requests.export');
+Route::get('/financial/installment-requests', [InstallmentRequestController::class, 'index'])
+    ->middleware('active_permission:installment-request.viewAny')
+    ->name('financial.installment-requests.index');
+Route::get('/financial/installment-requests/{installmentRequest}', [InstallmentRequestController::class, 'show'])
+    ->middleware('active_permission:installment-request.view')
+    ->name('financial.installment-requests.show');
+Route::post('/financial/installment-requests/{installmentRequest}/approve', [InstallmentRequestController::class, 'approve'])
+    ->middleware('active_permission:installment-request.update')
+    ->name('financial.installment-requests.approve');
+Route::post('/financial/installment-requests/{installmentRequest}/reject', [InstallmentRequestController::class, 'reject'])
+    ->middleware('active_permission:installment-request.update')
+    ->name('financial.installment-requests.reject');
+
+// CRUD Penerima Beasiswa (Inertia React) — paritas Livewire.
+Route::get('/financial/student-scholarships/export', [StudentScholarshipController::class, 'export'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.export');
+Route::get('/financial/student-scholarships/search-students', [StudentScholarshipController::class, 'searchStudents'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.search-students');
+Route::post('/financial/student-scholarships/bulk-destroy', [StudentScholarshipController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-scholarship.delete')
+    ->name('financial.student-scholarships.bulk-destroy');
+Route::get('/financial/student-scholarships/import/template', [StudentScholarshipController::class, 'importTemplate'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.import-template');
+Route::post('/financial/student-scholarships/import', [StudentScholarshipController::class, 'import'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.import');
+Route::get('/financial/student-scholarships', [StudentScholarshipController::class, 'index'])
+    ->middleware('active_permission:student-scholarship.viewAny')
+    ->name('financial.student-scholarships.index');
+Route::get('/financial/student-scholarships/create', [StudentScholarshipController::class, 'create'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.create');
+Route::post('/financial/student-scholarships', [StudentScholarshipController::class, 'store'])
+    ->middleware('active_permission:student-scholarship.create')
+    ->name('financial.student-scholarships.store');
+Route::get('/financial/student-scholarships/{studentScholarship}/edit', [StudentScholarshipController::class, 'edit'])
+    ->middleware('active_permission:student-scholarship.update')
+    ->name('financial.student-scholarships.edit');
+Route::put('/financial/student-scholarships/{studentScholarship}', [StudentScholarshipController::class, 'update'])
+    ->middleware('active_permission:student-scholarship.update')
+    ->name('financial.student-scholarships.update');
+Route::delete('/financial/student-scholarships/{studentScholarship}', [StudentScholarshipController::class, 'destroy'])
+    ->middleware('active_permission:student-scholarship.delete')
+    ->name('financial.student-scholarships.destroy');
+
+// Saldo Deposit (Inertia React) — paritas Livewire.
+Route::get('/financial/student-credits/export', [StudentCreditController::class, 'export'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.export');
+Route::get('/financial/student-credits/search-students', [StudentCreditController::class, 'searchStudents'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.search-students');
+Route::post('/financial/student-credits/record', [StudentCreditController::class, 'record'])
+    ->middleware('active_permission:student-credit.create')
+    ->name('financial.student-credits.record');
+Route::get('/financial/student-credits', [StudentCreditController::class, 'index'])
+    ->middleware('active_permission:student-credit.viewAny')
+    ->name('financial.student-credits.index');
+
+// Blokir Akademik (Inertia React, tinjau + penanganan) — paritas Livewire.
+Route::get('/financial/financial-holds/export', [FinancialHoldController::class, 'export'])
+    ->middleware('active_permission:financial-hold.viewAny')
+    ->name('financial.financial-holds.export');
+Route::get('/financial/financial-holds', [FinancialHoldController::class, 'index'])
+    ->middleware('active_permission:financial-hold.viewAny')
+    ->name('financial.financial-holds.index');
+Route::get('/financial/financial-holds/{financialHold}', [FinancialHoldController::class, 'show'])
+    ->middleware('active_permission:financial-hold.view')
+    ->name('financial.financial-holds.show');
+Route::post('/financial/financial-holds/{financialHold}/release', [FinancialHoldController::class, 'release'])
+    ->middleware('active_permission:financial-hold.update')
+    ->name('financial.financial-holds.release');
+Route::post('/financial/financial-holds/{financialHold}/waive', [FinancialHoldController::class, 'waive'])
+    ->middleware('active_permission:financial-hold.update')
+    ->name('financial.financial-holds.waive');
+
 Route::get('/student-services/letter-requests/{request}/download', [ServiceLetterDownloadController::class, 'admin'])
     ->middleware('active_permission:service-letter-request.view')
     ->name('student-services.letter-requests.download');
@@ -980,57 +2955,439 @@ Route::get('/student-services/complaint-attachments/{attachment}/download', [Com
     ->middleware('active_permission:student-complaint.view')
     ->name('student-services.complaint-attachments.download');
 
-Route::livewire('/alumni/profiles', 'admin.alumni.alumni-profiles.index')
-    ->middleware('active_permission:alumni-profile.viewAny')->name('alumni.profiles.index');
-Route::livewire('/alumni/profiles/create', 'admin.alumni.alumni-profiles.create')
-    ->middleware('active_permission:alumni-profile.create')->name('alumni.profiles.create');
-Route::livewire('/alumni/profiles/{id}/edit', 'admin.alumni.alumni-profiles.edit')
-    ->middleware('active_permission:alumni-profile.update')->name('alumni.profiles.edit');
-Route::livewire('/alumni/profiles/{id}', 'admin.alumni.alumni-profiles.show')
-    ->middleware('active_permission:alumni-profile.view')->name('alumni.profiles.show');
-Route::post('/alumni/profiles/batch-convert', [AlumniConversionController::class, 'batchConvert'])
-    ->middleware('active_permission:alumni-profile.create')->name('alumni.profiles.batch-convert');
+// CRUD Profil Alumni (Inertia React) — Batch AL-1.
+Route::get('/alumni/alumni-profiles/export', [AlumniProfileController::class, 'export'])
+    ->middleware('active_permission:alumni-profile.viewAny')
+    ->name('alumni.alumni-profiles.export');
+Route::post('/alumni/alumni-profiles/bulk-destroy', [AlumniProfileController::class, 'bulkDestroy'])
+    ->middleware('active_permission:alumni-profile.delete')
+    ->name('alumni.alumni-profiles.bulk-destroy');
+Route::post('/alumni/alumni-profiles/bulk-restore', [AlumniProfileController::class, 'bulkRestore'])
+    ->middleware('active_permission:alumni-profile.update|alumni-profile.delete')
+    ->name('alumni.alumni-profiles.bulk-restore');
+Route::post('/alumni/alumni-profiles/bulk-force-destroy', [AlumniProfileController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:alumni-profile.update|alumni-profile.delete')
+    ->name('alumni.alumni-profiles.bulk-force-destroy');
+Route::post('/alumni/alumni-profiles/batch-convert', [AlumniConversionController::class, 'batchConvert'])
+    ->middleware('active_permission:alumni-profile.create')
+    ->name('alumni.alumni-profiles.batch-convert');
+Route::post('/alumni/alumni-profiles/{id}/restore', [AlumniProfileController::class, 'restore'])
+    ->middleware('active_permission:alumni-profile.update|alumni-profile.delete')
+    ->name('alumni.alumni-profiles.restore');
+Route::delete('/alumni/alumni-profiles/{id}/force', [AlumniProfileController::class, 'forceDestroy'])
+    ->middleware('active_permission:alumni-profile.update|alumni-profile.delete')
+    ->name('alumni.alumni-profiles.force-destroy');
+Route::post('/alumni/alumni-profiles/{profile}/toggle', [AlumniProfileController::class, 'toggle'])
+    ->middleware('active_permission:alumni-profile.update')
+    ->name('alumni.alumni-profiles.toggle');
+Route::get('/alumni/alumni-profiles', [AlumniProfileController::class, 'index'])
+    ->middleware('active_permission:alumni-profile.viewAny')
+    ->name('alumni.alumni-profiles.index');
+Route::get('/alumni/alumni-profiles/create', [AlumniProfileController::class, 'create'])
+    ->middleware('active_permission:alumni-profile.create')
+    ->name('alumni.alumni-profiles.create');
+Route::post('/alumni/alumni-profiles', [AlumniProfileController::class, 'store'])
+    ->middleware('active_permission:alumni-profile.create')
+    ->name('alumni.alumni-profiles.store');
+Route::get('/alumni/alumni-profiles/{profile}/edit', [AlumniProfileController::class, 'edit'])
+    ->middleware('active_permission:alumni-profile.update')
+    ->name('alumni.alumni-profiles.edit');
+Route::put('/alumni/alumni-profiles/{profile}', [AlumniProfileController::class, 'update'])
+    ->middleware('active_permission:alumni-profile.update')
+    ->name('alumni.alumni-profiles.update');
+Route::delete('/alumni/alumni-profiles/{profile}', [AlumniProfileController::class, 'destroy'])
+    ->middleware('active_permission:alumni-profile.delete')
+    ->name('alumni.alumni-profiles.destroy');
+Route::get('/alumni/alumni-profiles/{profile}', [AlumniProfileController::class, 'show'])
+    ->middleware('active_permission:alumni-profile.view')
+    ->name('alumni.alumni-profiles.show');
 
-Route::livewire('/alumni/employer-partners', 'admin.alumni.employer-partners.index')
-    ->middleware('active_permission:employer-partner.viewAny')->name('alumni.employer-partners.index');
-Route::livewire('/alumni/employer-partners/create', 'admin.alumni.employer-partners.create')
-    ->middleware('active_permission:employer-partner.create')->name('alumni.employer-partners.create');
-Route::livewire('/alumni/employer-partners/{id}/edit', 'admin.alumni.employer-partners.edit')
-    ->middleware('active_permission:employer-partner.update')->name('alumni.employer-partners.edit');
+// CRUD Mitra Perusahaan Alumni (Inertia React) — Batch AL-1.
+Route::get('/alumni/employer-partners/export', [EmployerPartnerController::class, 'export'])
+    ->middleware('active_permission:employer-partner.viewAny')
+    ->name('alumni.employer-partners.export');
+Route::post('/alumni/employer-partners/bulk-destroy', [EmployerPartnerController::class, 'bulkDestroy'])
+    ->middleware('active_permission:employer-partner.delete')
+    ->name('alumni.employer-partners.bulk-destroy');
+Route::post('/alumni/employer-partners/bulk-restore', [EmployerPartnerController::class, 'bulkRestore'])
+    ->middleware('active_permission:employer-partner.update|employer-partner.delete')
+    ->name('alumni.employer-partners.bulk-restore');
+Route::post('/alumni/employer-partners/bulk-force-destroy', [EmployerPartnerController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:employer-partner.update|employer-partner.delete')
+    ->name('alumni.employer-partners.bulk-force-destroy');
+Route::post('/alumni/employer-partners/{id}/restore', [EmployerPartnerController::class, 'restore'])
+    ->middleware('active_permission:employer-partner.update|employer-partner.delete')
+    ->name('alumni.employer-partners.restore');
+Route::delete('/alumni/employer-partners/{id}/force', [EmployerPartnerController::class, 'forceDestroy'])
+    ->middleware('active_permission:employer-partner.update|employer-partner.delete')
+    ->name('alumni.employer-partners.force-destroy');
+Route::post('/alumni/employer-partners/{employerPartner}/toggle', [EmployerPartnerController::class, 'toggle'])
+    ->middleware('active_permission:employer-partner.update')
+    ->name('alumni.employer-partners.toggle');
+Route::get('/alumni/employer-partners', [EmployerPartnerController::class, 'index'])
+    ->middleware('active_permission:employer-partner.viewAny')
+    ->name('alumni.employer-partners.index');
+Route::get('/alumni/employer-partners/create', [EmployerPartnerController::class, 'create'])
+    ->middleware('active_permission:employer-partner.create')
+    ->name('alumni.employer-partners.create');
+Route::post('/alumni/employer-partners', [EmployerPartnerController::class, 'store'])
+    ->middleware('active_permission:employer-partner.create')
+    ->name('alumni.employer-partners.store');
+Route::get('/alumni/employer-partners/{employerPartner}/edit', [EmployerPartnerController::class, 'edit'])
+    ->middleware('active_permission:employer-partner.update')
+    ->name('alumni.employer-partners.edit');
+Route::put('/alumni/employer-partners/{employerPartner}', [EmployerPartnerController::class, 'update'])
+    ->middleware('active_permission:employer-partner.update')
+    ->name('alumni.employer-partners.update');
+Route::delete('/alumni/employer-partners/{employerPartner}', [EmployerPartnerController::class, 'destroy'])
+    ->middleware('active_permission:employer-partner.delete')
+    ->name('alumni.employer-partners.destroy');
 
-Route::livewire('/alumni/job-postings', 'admin.alumni.job-postings.index')
-    ->middleware('active_permission:job-posting.viewAny')->name('alumni.job-postings.index');
-Route::livewire('/alumni/job-postings/create', 'admin.alumni.job-postings.create')
-    ->middleware('active_permission:job-posting.create')->name('alumni.job-postings.create');
-Route::livewire('/alumni/job-postings/{id}/edit', 'admin.alumni.job-postings.edit')
-    ->middleware('active_permission:job-posting.update')->name('alumni.job-postings.edit');
-Route::livewire('/alumni/job-postings/{id}', 'admin.alumni.job-postings.show')
-    ->middleware('active_permission:job-posting.view')->name('alumni.job-postings.show');
+// CRUD Lowongan Kerja Alumni (Inertia React) — Batch AL-1.
+Route::get('/alumni/job-postings/export', [JobPostingController::class, 'export'])
+    ->middleware('active_permission:job-posting.viewAny')
+    ->name('alumni.job-postings.export');
+Route::post('/alumni/job-postings/bulk-destroy', [JobPostingController::class, 'bulkDestroy'])
+    ->middleware('active_permission:job-posting.delete')
+    ->name('alumni.job-postings.bulk-destroy');
+Route::post('/alumni/job-postings/bulk-restore', [JobPostingController::class, 'bulkRestore'])
+    ->middleware('active_permission:job-posting.update|job-posting.delete')
+    ->name('alumni.job-postings.bulk-restore');
+Route::post('/alumni/job-postings/bulk-force-destroy', [JobPostingController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:job-posting.update|job-posting.delete')
+    ->name('alumni.job-postings.bulk-force-destroy');
+Route::post('/alumni/job-postings/{id}/restore', [JobPostingController::class, 'restore'])
+    ->middleware('active_permission:job-posting.update|job-posting.delete')
+    ->name('alumni.job-postings.restore');
+Route::delete('/alumni/job-postings/{id}/force', [JobPostingController::class, 'forceDestroy'])
+    ->middleware('active_permission:job-posting.update|job-posting.delete')
+    ->name('alumni.job-postings.force-destroy');
+Route::post('/alumni/job-postings/{jobPosting}/toggle', [JobPostingController::class, 'toggle'])
+    ->middleware('active_permission:job-posting.update')
+    ->name('alumni.job-postings.toggle');
+Route::get('/alumni/job-postings', [JobPostingController::class, 'index'])
+    ->middleware('active_permission:job-posting.viewAny')
+    ->name('alumni.job-postings.index');
+Route::get('/alumni/job-postings/create', [JobPostingController::class, 'create'])
+    ->middleware('active_permission:job-posting.create')
+    ->name('alumni.job-postings.create');
+Route::post('/alumni/job-postings', [JobPostingController::class, 'store'])
+    ->middleware('active_permission:job-posting.create')
+    ->name('alumni.job-postings.store');
+Route::get('/alumni/job-postings/{jobPosting}/edit', [JobPostingController::class, 'edit'])
+    ->middleware('active_permission:job-posting.update')
+    ->name('alumni.job-postings.edit');
+Route::put('/alumni/job-postings/{jobPosting}', [JobPostingController::class, 'update'])
+    ->middleware('active_permission:job-posting.update')
+    ->name('alumni.job-postings.update');
+Route::delete('/alumni/job-postings/{jobPosting}', [JobPostingController::class, 'destroy'])
+    ->middleware('active_permission:job-posting.delete')
+    ->name('alumni.job-postings.destroy');
+Route::get('/alumni/job-postings/{jobPosting}', [JobPostingController::class, 'show'])
+    ->middleware('active_permission:job-posting.view')
+    ->name('alumni.job-postings.show');
 
-Route::livewire('/alumni/events', 'admin.alumni.alumni-events.index')
-    ->middleware('active_permission:alumni-event.viewAny')->name('alumni.events.index');
-Route::livewire('/alumni/events/create', 'admin.alumni.alumni-events.create')
-    ->middleware('active_permission:alumni-event.create')->name('alumni.events.create');
-Route::livewire('/alumni/events/{id}/edit', 'admin.alumni.alumni-events.edit')
-    ->middleware('active_permission:alumni-event.update')->name('alumni.events.edit');
-Route::livewire('/alumni/events/{id}', 'admin.alumni.alumni-events.show')
-    ->middleware('active_permission:alumni-event.view')->name('alumni.events.show');
+// CRUD Event / Agenda Alumni (Inertia React) - Batch AL-2.
+Route::get('/alumni/alumni-events/export', [AlumniEventController::class, 'export'])
+    ->middleware('active_permission:alumni-event.viewAny')
+    ->name('alumni.alumni-events.export');
+Route::post('/alumni/alumni-events/bulk-destroy', [AlumniEventController::class, 'bulkDestroy'])
+    ->middleware('active_permission:alumni-event.delete')
+    ->name('alumni.alumni-events.bulk-destroy');
+Route::post('/alumni/alumni-events/bulk-restore', [AlumniEventController::class, 'bulkRestore'])
+    ->middleware('active_permission:alumni-event.update|alumni-event.delete')
+    ->name('alumni.alumni-events.bulk-restore');
+Route::post('/alumni/alumni-events/bulk-force-destroy', [AlumniEventController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:alumni-event.update|alumni-event.delete')
+    ->name('alumni.alumni-events.bulk-force-destroy');
+Route::post('/alumni/alumni-events/{id}/restore', [AlumniEventController::class, 'restore'])
+    ->middleware('active_permission:alumni-event.update|alumni-event.delete')
+    ->name('alumni.alumni-events.restore');
+Route::delete('/alumni/alumni-events/{id}/force', [AlumniEventController::class, 'forceDestroy'])
+    ->middleware('active_permission:alumni-event.update|alumni-event.delete')
+    ->name('alumni.alumni-events.force-destroy');
+Route::post('/alumni/alumni-events/{alumniEvent}/toggle', [AlumniEventController::class, 'toggle'])
+    ->middleware('active_permission:alumni-event.update')
+    ->name('alumni.alumni-events.toggle');
+Route::get('/alumni/alumni-events', [AlumniEventController::class, 'index'])
+    ->middleware('active_permission:alumni-event.viewAny')
+    ->name('alumni.alumni-events.index');
+Route::get('/alumni/alumni-events/create', [AlumniEventController::class, 'create'])
+    ->middleware('active_permission:alumni-event.create')
+    ->name('alumni.alumni-events.create');
+Route::post('/alumni/alumni-events', [AlumniEventController::class, 'store'])
+    ->middleware('active_permission:alumni-event.create')
+    ->name('alumni.alumni-events.store');
+Route::get('/alumni/alumni-events/{alumniEvent}/edit', [AlumniEventController::class, 'edit'])
+    ->middleware('active_permission:alumni-event.update')
+    ->name('alumni.alumni-events.edit');
+Route::put('/alumni/alumni-events/{alumniEvent}', [AlumniEventController::class, 'update'])
+    ->middleware('active_permission:alumni-event.update')
+    ->name('alumni.alumni-events.update');
+Route::delete('/alumni/alumni-events/{alumniEvent}', [AlumniEventController::class, 'destroy'])
+    ->middleware('active_permission:alumni-event.delete')
+    ->name('alumni.alumni-events.destroy');
+Route::get('/alumni/alumni-events/{alumniEvent}', [AlumniEventController::class, 'show'])
+    ->middleware('active_permission:alumni-event.view')
+    ->name('alumni.alumni-events.show');
 
-Route::livewire('/alumni/tracer-study', 'admin.alumni.tracer-study-campaigns.index')
-    ->middleware('active_permission:tracer-study-campaign.viewAny')->name('alumni.tracer-study.index');
-Route::livewire('/alumni/tracer-study/create', 'admin.alumni.tracer-study-campaigns.create')
-    ->middleware('active_permission:tracer-study-campaign.create')->name('alumni.tracer-study.create');
-Route::livewire('/alumni/tracer-study/{id}/edit', 'admin.alumni.tracer-study-campaigns.edit')
-    ->middleware('active_permission:tracer-study-campaign.update')->name('alumni.tracer-study.edit');
-Route::livewire('/alumni/tracer-study/{id}', 'admin.alumni.tracer-study-campaigns.show')
-    ->middleware('active_permission:tracer-study-campaign.view')->name('alumni.tracer-study.show');
-Route::livewire('/alumni/tracer-study/{id}/responses', 'admin.alumni.tracer-study-responses.index')
-    ->middleware('active_permission:tracer-study-response.viewAny')->name('alumni.tracer-study.responses');
-Route::livewire('/alumni/tracer-study-responses/{id}', 'admin.alumni.tracer-study-responses.show')
-    ->middleware('active_permission:tracer-study-response.view')->name('alumni.tracer-study-responses.show');
-Route::get('/alumni/tracer-study/{id}/analytics', [TracerStudyAnalyticsController::class, 'show'])
-    ->middleware('active_permission:tracer-study-campaign.view')->name('alumni.tracer-study.analytics');
-Route::get('/alumni/tracer-study/{id}/export/{format}', [TracerStudyAnalyticsController::class, 'export'])
+// CRUD Kampanye Tracer Study (Inertia React) - Batch AL-2.
+Route::get('/alumni/tracer-study-campaigns/export', [TracerStudyCampaignController::class, 'export'])
+    ->middleware('active_permission:tracer-study-campaign.viewAny')
+    ->name('alumni.tracer-study-campaigns.export');
+Route::post('/alumni/tracer-study-campaigns/bulk-destroy', [TracerStudyCampaignController::class, 'bulkDestroy'])
+    ->middleware('active_permission:tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.bulk-destroy');
+Route::post('/alumni/tracer-study-campaigns/bulk-restore', [TracerStudyCampaignController::class, 'bulkRestore'])
+    ->middleware('active_permission:tracer-study-campaign.update|tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.bulk-restore');
+Route::post('/alumni/tracer-study-campaigns/bulk-force-destroy', [TracerStudyCampaignController::class, 'bulkForceDestroy'])
+    ->middleware('active_permission:tracer-study-campaign.update|tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.bulk-force-destroy');
+Route::post('/alumni/tracer-study-campaigns/{id}/restore', [TracerStudyCampaignController::class, 'restore'])
+    ->middleware('active_permission:tracer-study-campaign.update|tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.restore');
+Route::delete('/alumni/tracer-study-campaigns/{id}/force', [TracerStudyCampaignController::class, 'forceDestroy'])
+    ->middleware('active_permission:tracer-study-campaign.update|tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.force-destroy');
+Route::post('/alumni/tracer-study-campaigns/{tracerStudyCampaign}/activate', [TracerStudyCampaignController::class, 'activate'])
+    ->middleware('active_permission:tracer-study-campaign.update')
+    ->name('alumni.tracer-study-campaigns.activate');
+Route::get('/alumni/tracer-study-campaigns/{tracerStudyCampaign}/analytics', [TracerStudyAnalyticsController::class, 'show'])
+    ->middleware('active_permission:tracer-study-campaign.view')
+    ->name('alumni.tracer-study.analytics');
+Route::get('/alumni/tracer-study-campaigns/{id}/export/{format}', [TracerStudyAnalyticsController::class, 'export'])
     ->middleware('active_permission:tracer-study-campaign.view')
     ->whereIn('format', ['csv', 'xlsx', 'pdf'])
     ->name('alumni.tracer-study.export');
+Route::get('/alumni/tracer-study-campaigns', [TracerStudyCampaignController::class, 'index'])
+    ->middleware('active_permission:tracer-study-campaign.viewAny')
+    ->name('alumni.tracer-study-campaigns.index');
+Route::get('/alumni/tracer-study-campaigns/create', [TracerStudyCampaignController::class, 'create'])
+    ->middleware('active_permission:tracer-study-campaign.create')
+    ->name('alumni.tracer-study-campaigns.create');
+Route::post('/alumni/tracer-study-campaigns', [TracerStudyCampaignController::class, 'store'])
+    ->middleware('active_permission:tracer-study-campaign.create')
+    ->name('alumni.tracer-study-campaigns.store');
+Route::get('/alumni/tracer-study-campaigns/{tracerStudyCampaign}/edit', [TracerStudyCampaignController::class, 'edit'])
+    ->middleware('active_permission:tracer-study-campaign.update')
+    ->name('alumni.tracer-study-campaigns.edit');
+Route::put('/alumni/tracer-study-campaigns/{tracerStudyCampaign}', [TracerStudyCampaignController::class, 'update'])
+    ->middleware('active_permission:tracer-study-campaign.update')
+    ->name('alumni.tracer-study-campaigns.update');
+Route::delete('/alumni/tracer-study-campaigns/{tracerStudyCampaign}', [TracerStudyCampaignController::class, 'destroy'])
+    ->middleware('active_permission:tracer-study-campaign.delete')
+    ->name('alumni.tracer-study-campaigns.destroy');
+Route::get('/alumni/tracer-study-campaigns/{tracerStudyCampaign}', [TracerStudyCampaignController::class, 'show'])
+    ->middleware('active_permission:tracer-study-campaign.view')
+    ->name('alumni.tracer-study-campaigns.show');
+
+// Respon Tracer Study (Inertia React) - Batch AL-2.
+Route::get('/alumni/tracer-study-responses/export', [TracerStudyResponseController::class, 'export'])
+    ->middleware('active_permission:tracer-study-response.viewAny')
+    ->name('alumni.tracer-study-responses.export');
+Route::get('/alumni/tracer-study-responses', [TracerStudyResponseController::class, 'index'])
+    ->middleware('active_permission:tracer-study-response.viewAny')
+    ->name('alumni.tracer-study-responses.index');
+Route::get('/alumni/tracer-study-responses/{tracerStudyResponse}', [TracerStudyResponseController::class, 'show'])
+    ->middleware('active_permission:tracer-study-response.view')
+    ->name('alumni.tracer-study-responses.show');
+
+// Skripsi / Tugas Akhir (Inertia React).
+Route::get('/academic/theses/search-students', [ThesisController::class, 'searchStudents'])
+    ->middleware('active_permission:thesis.viewAny')
+    ->name('academic.theses.search-students');
+Route::get('/academic/theses/search-lecturers', [ThesisController::class, 'searchLecturers'])
+    ->middleware('active_permission:thesis.viewAny')
+    ->name('academic.theses.search-lecturers');
+Route::post('/academic/theses/bulk-destroy', [ThesisController::class, 'bulkDestroy'])
+    ->middleware('active_permission:thesis.delete')
+    ->name('academic.theses.bulk-destroy');
+Route::post('/academic/theses/{thesis}/approve', [ThesisController::class, 'approve'])
+    ->middleware('active_permission:thesis.approve')
+    ->name('academic.theses.approve');
+Route::post('/academic/theses/{thesis}/reject', [ThesisController::class, 'reject'])
+    ->middleware('active_permission:thesis.approve')
+    ->name('academic.theses.reject');
+Route::post('/academic/theses/{thesis}/milestones', [ThesisController::class, 'storeMilestone'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.milestones.store');
+Route::put('/academic/theses/milestones/{milestone}', [ThesisController::class, 'updateMilestone'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.milestones.update');
+Route::delete('/academic/theses/milestones/{milestone}', [ThesisController::class, 'destroyMilestone'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.milestones.destroy');
+Route::post('/academic/theses/{thesis}/defenses', [ThesisController::class, 'storeDefense'])
+    ->middleware('active_permission:thesis.defense')
+    ->name('academic.theses.defenses.store');
+Route::put('/academic/theses/defenses/{defense}', [ThesisController::class, 'updateDefense'])
+    ->middleware('active_permission:thesis.defense')
+    ->name('academic.theses.defenses.update');
+Route::post('/academic/theses/defenses/{defense}/cancel', [ThesisController::class, 'cancelDefense'])
+    ->middleware('active_permission:thesis.defense')
+    ->name('academic.theses.defenses.cancel');
+Route::post('/academic/theses/defenses/{defense}/complete', [ThesisController::class, 'completeDefense'])
+    ->middleware('active_permission:thesis.grade')
+    ->name('academic.theses.defenses.complete');
+Route::post('/academic/theses/{thesis}/documents', [ThesisController::class, 'storeDocument'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.documents.store');
+Route::delete('/academic/theses/documents/{document}', [ThesisController::class, 'destroyDocument'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.documents.destroy');
+Route::get('/academic/theses/documents/{document}/download', [ThesisDocumentController::class, 'admin'])
+    ->middleware('active_permission:thesis.view')
+    ->name('academic.theses.documents.download');
+Route::post('/academic/theses/{thesis}/finalize', [ThesisController::class, 'finalize'])
+    ->middleware('active_permission:thesis.grade')
+    ->name('academic.theses.finalize');
+Route::post('/academic/theses/{thesis}/plagiarism', [ThesisController::class, 'updatePlagiarism'])
+    ->middleware('active_permission:thesis.plagiarism')
+    ->name('academic.theses.plagiarism.update');
+Route::post('/academic/theses/{thesis}/publish', [ThesisController::class, 'publishToRepository'])
+    ->middleware('active_permission:thesis.grade')
+    ->name('academic.theses.publish');
+Route::get('/academic/theses', [ThesisController::class, 'index'])
+    ->middleware('active_permission:thesis.viewAny')
+    ->name('academic.theses.index');
+Route::get('/academic/theses/create', [ThesisController::class, 'create'])
+    ->middleware('active_permission:thesis.create')
+    ->name('academic.theses.create');
+Route::post('/academic/theses', [ThesisController::class, 'store'])
+    ->middleware('active_permission:thesis.create')
+    ->name('academic.theses.store');
+Route::get('/academic/theses/{thesis}/edit', [ThesisController::class, 'edit'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.edit');
+Route::get('/academic/theses/{thesis}', [ThesisController::class, 'show'])
+    ->middleware('active_permission:thesis.view')
+    ->name('academic.theses.show');
+Route::put('/academic/theses/{thesis}', [ThesisController::class, 'update'])
+    ->middleware('active_permission:thesis.update')
+    ->name('academic.theses.update');
+Route::delete('/academic/theses/{thesis}', [ThesisController::class, 'destroy'])
+    ->middleware('active_permission:thesis.delete')
+    ->name('academic.theses.destroy');
+
+// Perpustakaan — kategori, buku/eksemplar, peminjaman, dan reservasi.
+Route::get('/library/book-categories', [BookCategoryController::class, 'index'])
+    ->middleware('active_permission:book-category.viewAny')
+    ->name('library.book-categories.index');
+Route::get('/library/book-categories/create', [BookCategoryController::class, 'create'])
+    ->middleware('active_permission:book-category.create')
+    ->name('library.book-categories.create');
+Route::post('/library/book-categories', [BookCategoryController::class, 'store'])
+    ->middleware('active_permission:book-category.create')
+    ->name('library.book-categories.store');
+Route::post('/library/book-categories/bulk-destroy', [BookCategoryController::class, 'bulkDestroy'])
+    ->middleware('active_permission:book-category.delete')
+    ->name('library.book-categories.bulk-destroy');
+Route::get('/library/book-categories/{id}/edit', [BookCategoryController::class, 'edit'])
+    ->whereNumber('id')
+    ->middleware('active_permission:book-category.update')
+    ->name('library.book-categories.edit');
+Route::put('/library/book-categories/{id}', [BookCategoryController::class, 'update'])
+    ->whereNumber('id')
+    ->middleware('active_permission:book-category.update')
+    ->name('library.book-categories.update');
+Route::delete('/library/book-categories/{id}', [BookCategoryController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware('active_permission:book-category.delete')
+    ->name('library.book-categories.destroy');
+
+Route::get('/library/books', [BookController::class, 'index'])
+    ->middleware('active_permission:book.viewAny')
+    ->name('library.books.index');
+Route::get('/library/books/create', [BookController::class, 'create'])
+    ->middleware('active_permission:book.create')
+    ->name('library.books.create');
+Route::post('/library/books', [BookController::class, 'store'])
+    ->middleware('active_permission:book.create')
+    ->name('library.books.store');
+Route::post('/library/books/bulk-destroy', [BookController::class, 'bulkDestroy'])
+    ->middleware('active_permission:book.delete')
+    ->name('library.books.bulk-destroy');
+Route::get('/library/books/{book}/edit', [BookController::class, 'edit'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.edit');
+Route::put('/library/books/{book}', [BookController::class, 'update'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.update');
+Route::delete('/library/books/{book}', [BookController::class, 'destroy'])
+    ->middleware('active_permission:book.delete')
+    ->name('library.books.destroy');
+Route::post('/library/books/{book}/copies', [BookController::class, 'storeCopy'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.copies.store');
+Route::put('/library/books/copies/{copy}', [BookController::class, 'updateCopy'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.copies.update');
+Route::post('/library/books/copies/{copy}/status', [BookController::class, 'updateCopyStatus'])
+    ->middleware('active_permission:book.update')
+    ->name('library.books.copies.status');
+Route::delete('/library/books/copies/{copy}', [BookController::class, 'destroyCopy'])
+    ->middleware('active_permission:book.delete')
+    ->name('library.books.copies.destroy');
+Route::get('/library/books/{book}', [BookController::class, 'show'])
+    ->middleware('active_permission:book.view')
+    ->name('library.books.show');
+
+Route::get('/library/loans', [BookLoanController::class, 'index'])
+    ->middleware('active_permission:book-loan.viewAny')
+    ->name('library.loans.index');
+Route::get('/library/loans/create', [BookLoanController::class, 'create'])
+    ->middleware('active_permission:book-loan.create')
+    ->name('library.loans.create');
+Route::post('/library/loans', [BookLoanController::class, 'store'])
+    ->middleware('active_permission:book-loan.create')
+    ->name('library.loans.store');
+Route::post('/library/loans/bulk-destroy', [BookLoanController::class, 'bulkDestroy'])
+    ->middleware('active_permission:book-loan.delete')
+    ->name('library.loans.bulk-destroy');
+Route::get('/library/loans/search-members', [BookLoanController::class, 'searchMembers'])
+    ->middleware('active_permission:book-loan.create')
+    ->name('library.loans.search-members');
+Route::get('/library/loans/search-copies', [BookLoanController::class, 'searchCopies'])
+    ->middleware('active_permission:book-loan.create')
+    ->name('library.loans.search-copies');
+Route::post('/library/loans/{loan}/return', [BookLoanController::class, 'returnBook'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.return');
+Route::post('/library/loans/{loan}/renew', [BookLoanController::class, 'renew'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.renew');
+Route::post('/library/loans/{loan}/pay-fine', [BookLoanController::class, 'payFine'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.pay-fine');
+Route::get('/library/loans/{loan}/fine/proof', [BookLoanController::class, 'downloadFineProof'])
+    ->middleware('active_permission:book-loan.viewAny')
+    ->name('library.loans.fine.proof');
+Route::post('/library/loans/{loan}/fine/verify', [BookLoanController::class, 'verifyFine'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.fine.verify');
+Route::post('/library/loans/{loan}/fine/reject', [BookLoanController::class, 'rejectFine'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.fine.reject');
+Route::delete('/library/loans/{loan}', [BookLoanController::class, 'destroy'])
+    ->middleware('active_permission:book-loan.delete')
+    ->name('library.loans.destroy');
+
+Route::get('/library/reservations', [BookReservationController::class, 'index'])
+    ->middleware('active_permission:book-reservation.viewAny')
+    ->name('library.reservations.index');
+Route::get('/library/reservations/{reservation}/available-copies', [BookReservationController::class, 'availableCopies'])
+    ->middleware('active_permission:book-reservation.update')
+    ->name('library.reservations.available-copies');
+Route::post('/library/reservations/{reservation}/ready', [BookReservationController::class, 'ready'])
+    ->middleware('active_permission:book-reservation.update')
+    ->name('library.reservations.ready');
+Route::post('/library/reservations/{reservation}/fulfill', [BookReservationController::class, 'fulfill'])
+    ->middleware('active_permission:book-reservation.update')
+    ->name('library.reservations.fulfill');
+Route::post('/library/reservations/{reservation}/cancel', [BookReservationController::class, 'cancel'])
+    ->middleware('active_permission:book-reservation.update')
+    ->name('library.reservations.cancel');
+Route::delete('/library/reservations/{reservation}', [BookReservationController::class, 'destroy'])
+    ->middleware('active_permission:book-reservation.delete')
+    ->name('library.reservations.destroy');

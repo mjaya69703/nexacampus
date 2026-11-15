@@ -76,12 +76,17 @@ class StudentProgressAnalyticsService
                 'passed' => $passedCredits,
                 'remaining' => max(0, $targetCredits - $passedCredits),
                 'progress' => $creditProgress,
-                'current' => (int) ($currentStudyPlan?->details?->sum('credits') ?? 0),
+                // Kredit semester berjalan hanya menghitung mata kuliah yang
+                // masih diambil; detail berstatus Dropped/Cancelled tidak boleh
+                // menggelembungkan beban studi yang ditampilkan.
+                'current' => (int) ($currentStudyPlan?->details?->whereIn('status', ['Draft', 'Taken'])->sum('credits') ?? 0),
                 'current_status' => $currentStudyPlan?->status ?? '-',
             ],
             'gpa' => [
-                'semester' => $latestResult?->semester_gpa,
-                'cumulative' => $latestResult?->cumulative_gpa ?? $this->computedGpa($transcriptEntries),
+                'semester' => $latestResult?->semester_gpa !== null ? (float) $latestResult->semester_gpa : null,
+                'cumulative' => $latestResult?->cumulative_gpa !== null
+                    ? (float) $latestResult->cumulative_gpa
+                    : $this->computedGpa($transcriptEntries),
                 'latest_semester' => $latestResult?->semester_no,
             ],
             'trend' => $studyResults

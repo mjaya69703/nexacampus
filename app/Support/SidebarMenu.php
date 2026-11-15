@@ -149,6 +149,7 @@ class SidebarMenu
                     static::makeChildLink('student.study-plan.comparison', 'Banding KRS'),
                     static::makeChildLink('student.schedule.index', 'Jadwal'),
                     static::makeChildLink('student.progress.index', 'Progress'),
+                    static::makeChildLink('student.thesis.index', 'Skripsi'),
                 ]),
                 static::makeGroup('student-learning', 'Pembelajaran', 'fas fa-book-open', [
                     static::makeChildLink('student.course-materials.index', 'Materi'),
@@ -169,6 +170,9 @@ class SidebarMenu
                     static::makeChildLink('student.student-services.transfers', 'Pindah Program'),
                     static::makeChildLink('student.student-services.graduations', 'Yudisium'),
                     static::makeChildLink('student.student-services.complaints', 'Pengaduan'),
+                ]),
+                static::makeGroup('student-library', 'Perpustakaan', 'fas fa-book-open', [
+                    static::makeChildLink('student.library.index', 'Katalog & Pinjaman'),
                 ]),
                 static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
                     static::makeChildLink('student.announcements.index', 'Pengumuman'),
@@ -229,6 +233,7 @@ class SidebarMenu
 
         $advisingChildren = [
             static::makeChildLink('lecturer.consultations.index', 'Konsultasi'),
+            static::makeChildLink('lecturer.theses.index', 'Bimbingan Skripsi'),
         ];
 
         if (static::lecturerHasAdvisorAssignments()) {

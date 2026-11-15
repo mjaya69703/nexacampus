@@ -1,43 +1,55 @@
-// Public announcements page (Inertia migration of the Livewire Volt announcements component).
-import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, ChevronDown, Clock3, FileText, HelpCircle, Hourglass, LucideIcon, Megaphone, Pin, ShieldCheck, Star, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+// Public announcements page — server pagination + priority/search filter,
+// detail links and attachment downloads.
+import { Head, Link, router } from '@inertiajs/react';
+import { CalendarDays, ChevronDown, Clock3, Download, FileText, HelpCircle, Hourglass, LucideIcon, Megaphone, Pin, Search, ShieldCheck, Star, X } from 'lucide-react';
+import { useState } from 'react';
 import { PublicationBaseProps, PublicationShell } from '../../../components/Home/Publication/PublicationShell';
 import { EmptyState } from '../../../components/Shared/EmptyState';
+import { Pagination } from '../../../components/Shared/Pagination';
 
-type Announcement = { id: number; title: string; content: string; priority: string; publishedAt: string | null; hasAttachment: boolean };
-type Props = PublicationBaseProps & { total: number; pinned: Announcement[]; regulars: Announcement[] };
+type Announcement = {
+    id: number; title: string; content: string; priority: string; isPinned: boolean;
+    publishedAt: string | null; hasAttachment: boolean; attachmentUrl: string | null; attachmentType: string | null;
+};
+type PageInfo = { currentPage: number; lastPage: number; perPage: number; total: number };
+type Props = PublicationBaseProps & {
+    total: number; pinned: Announcement[]; regulars: Announcement[];
+    page: PageInfo; filters: { prioritas: string; q: string }; priorities: Array<{ value: string; label: string }>;
+};
 
 type Tone = '' | 'red' | 'amber' | 'gray';
 
 const priorityMeta: Record<string, { label: string; tone: Tone; icon: LucideIcon }> = {
-    urgent: { label: 'Penting', tone: 'red', icon: Hourglass },
-    high: { label: 'Tinggi', tone: 'amber', icon: Star },
+    urgent: { label: 'Mendesak', tone: 'red', icon: Hourglass },
+    important: { label: 'Penting', tone: 'amber', icon: Star },
     normal: { label: 'Normal', tone: 'gray', icon: Clock3 },
+    high: { label: 'Tinggi', tone: 'amber', icon: Star },
     low: { label: 'Rendah', tone: 'gray', icon: ChevronDown },
 };
 const priorityBadge = (priority: string): { label: string; tone: Tone; icon: LucideIcon } =>
     priorityMeta[priority] ?? { label: priority.replace(/_/g, ' '), tone: 'gray', icon: Clock3 };
 
-const sidebarHeaderStyle = {
-    padding:'16px 20px', borderBottom:'1px solid var(--adm-line)', background:'var(--adm-soft)',
-    display:'flex', alignItems:'center', gap:8,
-} as const;
-
-export default function Pengumuman({ campus, links, user, total, pinned, regulars }: Props) {
-    const [priorityFilter, setPriorityFilter] = useState('all');
-
-    const attachmentCount = useMemo(() => [...pinned, ...regulars].filter((item) => item.hasAttachment).length, [pinned, regulars]);
-    const priorityCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        for (const item of regulars) counts[item.priority] = (counts[item.priority] ?? 0) + 1;
-        return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    }, [regulars]);
-    const visibleRegulars = useMemo(
-        () => (priorityFilter === 'all' ? regulars : regulars.filter((item) => item.priority === priorityFilter)),
-        [priorityFilter, regulars],
-    );
+export default function Pengumuman({ campus, links, user, total, pinned, regulars, page, filters, priorities }: Props) {
+    const [search, setSearch] = useState(filters.q);
     const isEmpty = pinned.length === 0 && regulars.length === 0;
+    const showPinned = pinned.length > 0;
+    const attachmentCount = [...pinned, ...regulars].filter((item) => item.hasAttachment).length;
+
+    const visit = (overrides: Record<string, string | number>) => {
+        router.get('/pengumuman', { q: search, prioritas: filters.prioritas, ...overrides }, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const pickPriority = (value: string) => {
+        router.get('/pengumuman', { q: search, prioritas: value, page: 1 }, { preserveState: true, replace: true });
+    };
+
+    const submitSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.get('/pengumuman', { q: search, prioritas: filters.prioritas, page: 1 }, { preserveState: true, replace: true });
+    };
 
     return <PublicationShell campus={campus} links={links} user={user} activeTab="Pengumuman" eyebrow="Pengumuman" title="Pengumuman resmi kampus." description="Kanal tunggal informasi resmi akademik, kemahasiswaan, dan administrasi NexaCampus." icon={Megaphone}
         action={<div className="adm-hero-cta">
@@ -102,19 +114,25 @@ export default function Pengumuman({ campus, links, user, total, pinned, regular
         </div>
 
         {!isEmpty && <>
-            {/* Priority filter chips */}
-            {priorityCounts.length > 0 && <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:20 }}>
+            {/* Search + priority filter */}
+            <form onSubmit={submitSearch} style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:14 }}>
+                <span style={{ position:'relative', flex:'1 1 220px', maxWidth:340 }}>
+                    <Search size={14} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--adm-muted)' }} />
+                    <input className="adm-input" style={{ paddingLeft:34 }} value={search}
+                        onChange={(e) => setSearch(e.target.value)} placeholder="Cari judul pengumuman…" aria-label="Cari pengumuman" />
+                </span>
+                <button type="submit" className="adm-btn primary sm">Cari</button>
                 <span style={{ display:'inline-flex', alignItems:'center', gap:6, color:'var(--adm-brand)', fontSize:10.5, fontWeight:800, textTransform:'uppercase', letterSpacing:'.1em' }}><Star size={12} /> Filter Prioritas</span>
-                <button type="button" className={priorityFilter === 'all' ? 'adm-chip active' : 'adm-chip'} onClick={() => setPriorityFilter('all')}>Semua<b>{regulars.length}</b></button>
-                {priorityCounts.map(([priority, count]) => {
-                    const meta = priorityBadge(priority);
-                    return <button key={priority} type="button" className={priorityFilter === priority ? 'adm-chip active' : 'adm-chip'} onClick={() => setPriorityFilter(priority)}>{meta.label}<b>{count}</b></button>;
+                <button type="button" className={filters.prioritas === '' ? 'adm-chip active' : 'adm-chip'} onClick={() => pickPriority('')}>Semua<b>{total}</b></button>
+                {priorities.map((item) => {
+                    const meta = priorityBadge(item.value);
+                    return <button key={item.value} type="button" className={filters.prioritas === item.value ? 'adm-chip active' : 'adm-chip'} onClick={() => pickPriority(item.value)}>{meta.label}</button>;
                 })}
-                {priorityFilter !== 'all' && <button type="button" className="adm-btn ghost sm" onClick={() => setPriorityFilter('all')}><X size={13} /> Reset Filter</button>}
-            </div>}
+                {(filters.prioritas !== '' || filters.q !== '') && <button type="button" className="adm-btn ghost sm" onClick={() => { setSearch(''); router.get('/pengumuman', {}, { preserveState: true, replace: true }); }}><X size={13} /> Reset</button>}
+            </form>
 
             {/* Pinned announcements */}
-            {pinned.length > 0 && <section style={{ display:'grid', gap:12, marginBottom:20 }}>
+            {showPinned && <section style={{ display:'grid', gap:12, marginBottom:20 }}>
                 <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10 }}>
                     <span style={{ display:'grid', placeItems:'center', width:34, height:34, borderRadius:10, color:'var(--adm-red)', background:'var(--adm-red-soft)' }}><Pin size={16} /></span>
                     <h2 className="adm-card-title">Disematkan</h2>
@@ -130,10 +148,16 @@ export default function Pengumuman({ campus, links, user, total, pinned, regular
                             <span className="adm-badge red"><Pin size={12} /> Disematkan</span>
                         </div>
                         <div className="adm-card-body tight" style={{ display:'grid', gap:9 }}>
-                            <h3 className="adm-card-title">{item.title}</h3>
+                            <Link href={`/pengumuman/${item.id}`} style={{ textDecoration:'none' }}>
+                                <h3 className="adm-card-title">{item.title}</h3>
+                            </Link>
                             <p className="adm-hint" style={{ margin:0 }}>{item.content}</p>
                             <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8 }}>
-                                {item.hasAttachment && <span className="adm-badge"><FileText size={12} /> Lampiran</span>}
+                                {item.hasAttachment && item.attachmentUrl && (
+                                    <a className="adm-badge" href={item.attachmentUrl} download style={{ textDecoration:'none' }}>
+                                        <Download size={12} /> Unduh Lampiran
+                                    </a>
+                                )}
                                 {item.publishedAt && <small className="adm-hint" style={{ display:'inline-flex', alignItems:'center', gap:5 }}><CalendarDays size={13} /> {item.publishedAt}</small>}
                             </div>
                         </div>
@@ -147,17 +171,10 @@ export default function Pengumuman({ campus, links, user, total, pinned, regular
                     <span style={{ display:'grid', placeItems:'center', width:34, height:34, borderRadius:10, color:'var(--adm-brand)', background:'var(--adm-brand-soft)' }}><Megaphone size={16} /></span>
                     <h2 className="adm-card-title">Pengumuman Terbaru</h2>
                     <hr className="adm-divider" style={{ flex:1, margin:0 }} />
-                    <span className="adm-badge">{visibleRegulars.length} Ditampilkan</span>
+                    <span className="adm-badge">{page.total} Ditampilkan</span>
                 </div>
-                {visibleRegulars.length === 0 ? <EmptyState
-                    icon={Clock3}
-                    iconSize={26}
-                    title="Tidak Ada pada Prioritas Ini"
-                    description="Tidak ada pengumuman terbaru dengan tingkat prioritas yang dipilih. Coba pilih prioritas lain atau reset filter."
-                    action={<button type="button" className="adm-btn primary sm" onClick={() => setPriorityFilter('all')}><X size={13} /> Reset Filter Prioritas</button>}
-                    style={{ minHeight: 0, padding: '30px 22px' }}
-                /> : <div className="adm-grid adm-cols-2">
-                    {visibleRegulars.map((item) => {
+                <div className="adm-grid adm-cols-2">
+                    {regulars.map((item) => {
                         const meta = priorityBadge(item.priority);
                         const Icon = meta.icon;
                         return <article key={item.id} style={{
@@ -171,15 +188,24 @@ export default function Pengumuman({ campus, links, user, total, pinned, regular
                         >
                             <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                                 <span className={meta.tone ? `adm-badge ${meta.tone}` : 'adm-badge'}><Icon size={12} /> {meta.label}</span>
-                                {item.hasAttachment && <span className="adm-badge"><FileText size={12} /> Lampiran</span>}
+                                {item.hasAttachment && item.attachmentUrl && (
+                                    <a className="adm-badge" href={item.attachmentUrl} download style={{ textDecoration:'none' }}>
+                                        <Download size={12} /> Lampiran
+                                    </a>
+                                )}
                             </div>
-                            <b style={{ color:'var(--adm-heading)', lineHeight:1.45, fontSize:14 }}>{item.title}</b>
+                            <Link href={`/pengumuman/${item.id}`} style={{ textDecoration:'none' }}>
+                                <b style={{ color:'var(--adm-heading)', lineHeight:1.45, fontSize:14 }}>{item.title}</b>
+                            </Link>
                             <p className="adm-hint" style={{ margin:0 }}>{item.content}</p>
                             {item.publishedAt && <small className="adm-hint" style={{ display:'inline-flex', alignItems:'center', gap:5, marginTop:'auto', paddingTop:8, borderTop:'1px dashed var(--adm-line)' }}><CalendarDays size={13} /> {item.publishedAt}</small>}
                         </article>;
                     })}
-                </div>}
+                </div>
             </section>}
+
+            <Pagination page={page.currentPage} totalPages={page.lastPage} total={page.total} unit="pengumuman"
+                onPrev={() => visit({ page: page.currentPage - 1 })} onNext={() => visit({ page: page.currentPage + 1 })} />
         </>}
 
         {isEmpty && <EmptyState

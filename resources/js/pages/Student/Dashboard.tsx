@@ -5,6 +5,7 @@ import {
     GraduationCap, Info, MapPin, Megaphone, Pin, TrendingUp, Wallet,
 } from 'lucide-react';
 import { AdminShell, ShellProps } from '../../components/Shared/AdminShell';
+import { GpaTrendChart, GpaTrendPoint } from '../../components/Shared/GpaTrendChart';
 import '../../../css/dashboard.css';
 
 type Tile = { label: string; value: string | number | null };
@@ -35,6 +36,7 @@ type Props = {
     tiles: Tile[];
     stats: { courses: number; credits: number; publishedGrades: number; passedCourses: number };
     academic: { ips: string; ipk: string; programName: string; activeYear: string };
+    gradeTrend: { points: GpaTrendPoint[]; maxSemester: number; filled: number };
     attendance: { total: number; attended: number; absent: number; rate: number | null };
     grades: Grade[];
     schedules: Schedule[];
@@ -72,7 +74,7 @@ const priorityTone = (priority: string): string => {
 };
 
 export default function StudentDashboard({
-    shell, hasProfile, student, tiles, stats, academic, attendance,
+    shell, hasProfile, student, tiles, stats, academic, gradeTrend, attendance,
     grades, schedules, finance, announcements, urls,
 }: Props) {
     return (
@@ -163,6 +165,16 @@ export default function StudentDashboard({
                                             <small className="db-hint">Tahun aktif</small><b style={{ fontSize: 13 }}>{academic.activeYear}</b>
                                         </div>
                                     </div>
+                                </div>
+                            </section>
+
+                            <section className="db-card">
+                                <div className="db-card-head">
+                                    <h2 className="db-card-title"><TrendingUp size={16} /> Tren IPS &amp; IPK</h2>
+                                    <span className="db-badge gray">{gradeTrend.maxSemester} semester</span>
+                                </div>
+                                <div className="db-card-body">
+                                    <GpaTrendChart points={gradeTrend.points} />
                                 </div>
                             </section>
 

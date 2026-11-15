@@ -79,14 +79,15 @@ class RoomReservation extends Model
         }
 
         // 1. Check overlapping approved room reservations
+        // (whereTime agar 'HH:MM' lama vs 'HH:MM:SS' konsisten di semua driver)
         $existingReservation = static::query()
             ->where('room_id', $roomId)
-            ->where('reservation_date', $date)
+            ->whereDate('reservation_date', $date)
             ->where('status', 'approved')
             ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
             ->where(function ($q) use ($start, $end) {
-                $q->where('start_time', '<', $end)
-                    ->where('end_time', '>', $start);
+                $q->whereTime('start_time', '<', $end)
+                    ->whereTime('end_time', '>', $start);
             })
             ->first();
 
@@ -104,8 +105,8 @@ class RoomReservation extends Model
             ->where('day_of_week', $dayName)
             ->where('is_active', true)
             ->where(function ($q) use ($start, $end) {
-                $q->where('start_time', '<', $end)
-                    ->where('end_time', '>', $start);
+                $q->whereTime('start_time', '<', $end)
+                    ->whereTime('end_time', '>', $start);
             })
             ->first();
 

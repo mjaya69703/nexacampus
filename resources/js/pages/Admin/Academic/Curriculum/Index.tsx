@@ -184,7 +184,10 @@ export default function CurriculumIndex({ shell, can, stats, data, filters, prog
         if (pending.kind === 'bulk-delete') {
             return { title: 'Hapus terpilih?', message: `${selected.length} kurikulum dipindah ke sampah. Yang masih punya MK akan dilewati.`, confirm: 'Ya, hapus', danger: true };
         }
-        return { title: 'Hapus kurikulum?', message: `"${pending.row.name}" dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+        if (pending.kind === 'delete') {
+            return { title: 'Hapus kurikulum?', message: `"${pending.row.name}" dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+        }
+        return { title: '', message: '', confirm: 'Ya', danger: true };
     })();
 
     return (

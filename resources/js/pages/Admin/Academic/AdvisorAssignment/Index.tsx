@@ -184,7 +184,10 @@ export default function AdvisorAssignmentIndex({ shell, can, stats, data, filter
         if (pending.kind === 'bulk-delete') {
             return { title: 'Hapus terpilih?', message: `${selected.length} penugasan dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
         }
-        return { title: 'Hapus penugasan?', message: `Penugasan ${pending.row.student} → ${pending.row.advisor} dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+        if (pending.kind === 'delete') {
+            return { title: 'Hapus penugasan?', message: `Penugasan ${pending.row.student} → ${pending.row.advisor} dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+        }
+        return { title: '', message: '', confirm: 'Ya', danger: true };
     })();
 
     return (

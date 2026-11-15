@@ -130,8 +130,7 @@ class AttendanceSessionController extends Controller
     {
         return StudyPlanDetail::query()
             ->where('course_offering_id', $offeringId)
-            ->where('status', 'Taken')
-            ->whereHas('studyPlan', fn ($q) => $q->where('status', 'Approved'))
+            ->officiallyEnrolled()
             ->with(['studyPlan.studentProfile.user:id,first_name,last_name', 'studyPlan.studentProfile:id,nim,user_id'])
             ->get()
             ->map(fn ($detail) => $detail->studyPlan?->studentProfile)

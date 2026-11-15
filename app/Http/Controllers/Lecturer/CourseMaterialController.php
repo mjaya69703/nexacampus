@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Academic\CourseMaterial;
 use App\Models\Academic\CourseMaterialDownload;
 use App\Models\Academic\CourseMaterialFile;
-use App\Models\Academic\StudyPlan;
+use App\Models\Academic\StudyPlanDetail;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -54,6 +54,7 @@ class CourseMaterialController extends Controller
 
         // Update download count
         $file->increment('download_count');
+        $this->trackStudentDownload($material, $user);
 
         // Download the file
         return response()->download($filePath, $file->file_name);
@@ -83,6 +84,7 @@ class CourseMaterialController extends Controller
         // Update last accessed timestamp for students
         if ($user->hasRole('student')) {
             $material->update(['last_accessed_at' => now()]);
+            $this->trackStudentDownload($material, $user);
         }
 
         // Download the file
@@ -187,11 +189,10 @@ class CourseMaterialController extends Controller
 
         $studentProfileId = $user->studentProfile?->id;
         $isStudent = $user->hasRole('student') && $studentProfileId
-            ? StudyPlan::query()
-                ->where('student_profile_id', $studentProfileId)
-                ->whereHas('details', function ($query) use ($material) {
-                    $query->where('course_offering_id', $material->course_offering_id);
-                })
+            ? StudyPlanDetail::query()
+                ->activeEnrollment()
+                ->where('course_offering_id', $material->course_offering_id)
+                ->whereHas('studyPlan', fn ($query) => $query->where('student_profile_id', $studentProfileId))
                 ->exists()
             : false;
 

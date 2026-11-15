@@ -9,10 +9,8 @@ use App\Support\WhatsApp\WindowsAwareSidecarManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
 
 class AppServiceProvider extends ServiceProvider
@@ -72,48 +70,6 @@ class AppServiceProvider extends ServiceProvider
 
         Blade::if('activecanall', function (array $permissions) {
             return ActivePermission::all($permissions);
-        });
-
-        // Route macro for CRUD Livewire components
-        Route::macro('crudLivewire', function (
-            string $resource,
-            string $componentPrefix,
-            array $only = ['index', 'create', 'edit', 'delete'],
-            string $uriPrefix = '/manage',
-            ?string $permissionResource = null
-        ) {
-            $permissionResource ??= Str::singular($resource);
-            $baseName = Str::after($componentPrefix, 'admin.');
-
-            if (in_array('index', $only)) {
-                Route::livewire("{$uriPrefix}/{$resource}", "{$componentPrefix}.index")
-                    ->middleware("active_permission:{$permissionResource}.viewAny")
-                    ->name("{$baseName}.index");
-            }
-
-            if (in_array('create', $only)) {
-                Route::livewire("{$uriPrefix}/{$resource}/create", "{$componentPrefix}.create")
-                    ->middleware("active_permission:{$permissionResource}.create")
-                    ->name("{$baseName}.create");
-            }
-
-            if (in_array('edit', $only)) {
-                Route::livewire("{$uriPrefix}/{$resource}/{id}/edit", "{$componentPrefix}.edit")
-                    ->middleware("active_permission:{$permissionResource}.update")
-                    ->name("{$baseName}.edit");
-            }
-
-            if (in_array('show', $only)) {
-                Route::livewire("{$uriPrefix}/{$resource}/{id}", "{$componentPrefix}.show")
-                    ->middleware("active_permission:{$permissionResource}.view")
-                    ->name("{$baseName}.show");
-            }
-
-            if (in_array('delete', $only)) {
-                Route::livewire("{$uriPrefix}/{$resource}/{id}/delete", "{$componentPrefix}.delete")
-                    ->middleware("active_permission:{$permissionResource}.delete")
-                    ->name("{$baseName}.delete");
-            }
         });
     }
 }

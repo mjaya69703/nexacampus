@@ -40,6 +40,7 @@ class GradeBookExportService
                 'studentGrade.components',
             ])
             ->whereIn('course_offering_id', $offeringIds)
+            ->officiallyEnrolled()
             ->when(filled($filters['course_offering_id'] ?? null), fn ($query) => $query->where('course_offering_id', $filters['course_offering_id']))
             ->when(filled($filters['academic_year_id'] ?? null), fn ($query) => $query->whereHas('courseOffering', fn ($offering) => $offering->where('academic_year_id', $filters['academic_year_id'])))
             ->when(filled($filters['semester_no'] ?? null), fn ($query) => $query->whereHas('courseOffering', fn ($offering) => $offering->where('semester_no', $filters['semester_no'])));

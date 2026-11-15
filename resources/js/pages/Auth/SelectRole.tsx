@@ -2,6 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     ArrowRight,
+    BookOpen,
     Briefcase,
     Check,
     GraduationCap,
@@ -18,11 +19,13 @@ type Props = {
     links: PublicLinks;
     user: AuthUser;
     roles: string[];
-    roleMeta: Record<string, { desc: string; icon: string }>;
+    roleMeta: Record<string, { label?: string; desc: string; icon: string }>;
 };
 
 const iconFor = (key: string) => {
     switch (key) {
+        case 'library':
+            return BookOpen;
         case 'presentation':
             return Presentation;
         case 'briefcase':
@@ -86,7 +89,7 @@ export default function SelectRole({ campus, links, user, roles, roleMeta }: Pro
                                                     <Icon size={17} />
                                                 </span>
                                                 <span>
-                                                    <b>{role.replace('-', ' ')}</b>
+                                                    <b>{meta.label ?? role.replace('-', ' ')}</b>
                                                     <small>{meta.desc}</small>
                                                 </span>
                                                 {selected && (

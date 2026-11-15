@@ -128,6 +128,7 @@ it('renders the action inbox from real lecturer queues', function () {
     $detailId = DB::table('study_plan_details')->insertGetId([
         'study_plan_id' => $planId,
         'course_offering_id' => $setup['offeringId'],
+        'status' => 'Taken',
     ]);
     $gradeId = DB::table('student_grades')->insertGetId([
         'study_plan_detail_id' => $detailId,

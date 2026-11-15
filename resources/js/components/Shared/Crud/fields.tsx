@@ -39,13 +39,15 @@ export function SelectField({ label, required, error, hint, id, children, ...pro
     );
 }
 
-export function SwitchField({ label, hint, error, checked, onChange, disabled }: {
+export function SwitchField({ label, hint, error, checked, onChange, disabled, onLabel = 'Aktif', offLabel = 'Nonaktif' }: {
     label: string;
     hint?: string;
     error?: string;
     checked: boolean;
     onChange: (value: boolean) => void;
     disabled?: boolean;
+    onLabel?: string;
+    offLabel?: string;
 }) {
     return (
         <div>
@@ -58,7 +60,7 @@ export function SwitchField({ label, hint, error, checked, onChange, disabled }:
                     onChange={(e) => onChange(e.target.checked)}
                     style={{ width: 18, height: 18, accentColor: 'var(--db-brand)', cursor: disabled ? 'not-allowed' : 'pointer' }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--db-ink)' }}>{checked ? 'Aktif' : 'Nonaktif'}</span>
+                <span style={{ fontSize: 13, color: 'var(--db-ink)' }}>{checked ? onLabel : offLabel}</span>
             </label>
             {error && <div className="db-error">{error}</div>}
             {hint && <div className="crud-hint">{hint}</div>}

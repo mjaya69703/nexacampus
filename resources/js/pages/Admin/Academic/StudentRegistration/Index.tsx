@@ -173,7 +173,10 @@ export default function StudentRegistrationIndex({ shell, can, stats, data, filt
         if (pending.kind === 'bulk-delete') {
             return { title: 'Hapus terpilih?', message: `${selected.length} registrasi dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
         }
-        return { title: 'Hapus registrasi?', message: `Registrasi ${pending.row.student} dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+        if (pending.kind === 'delete') {
+            return { title: 'Hapus registrasi?', message: `Registrasi ${pending.row.student} dipindah ke sampah.`, confirm: 'Ya, hapus', danger: true };
+        }
+        return { title: '', message: '', confirm: 'Ya', danger: true };
     })();
 
     const constApprovable = (row: Row) => !isTrash && can.approve && (row.registrationStatus === 'Draft' || row.registrationStatus === 'Submitted');

@@ -109,12 +109,17 @@
 .db-note { display: flex; gap: 9px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; font-size: 12.5px; line-height: 1.65; }
 .db-note svg { flex: 0 0 auto; margin-top: 2px; }
 .db-note.info { color: var(--db-brand); background: var(--db-brand-soft); }
+.db-note.success { color: var(--db-green); background: var(--db-green-soft); }
+.db-note.warning { color: var(--db-gold); background: var(--db-gold-soft); }
+.db-note.danger { color: var(--db-red); background: var(--db-red-soft); }
+.db-note.muted { color: var(--db-muted); background: var(--db-soft); }
 
 /* ── Badge ───────────────────────────────────────────────────────────── */
 .db-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; color: var(--db-brand); background: var(--db-brand-soft); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
 .db-badge.green { color: var(--db-green); background: var(--db-green-soft); }
 .db-badge.red { color: var(--db-red); background: var(--db-red-soft); }
 .db-badge.amber { color: var(--db-gold); background: var(--db-gold-soft); }
+.db-badge.blue { color: var(--db-brand); background: var(--db-brand-soft); }
 .db-badge.gray { color: var(--db-muted); background: var(--db-soft); }
 
 /* ── Semester strip (angka persisten, berdenominator, bisa diklik) ───── */
@@ -168,6 +173,8 @@ a.db-stat:hover { background: var(--db-soft); text-decoration: none; }
 }
 .db-modal {
     width: min(26rem, 100%);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
     padding: 22px;
     border: 1px solid var(--db-line);
     border-radius: 16px;
@@ -175,6 +182,7 @@ a.db-stat:hover { background: var(--db-soft); text-decoration: none; }
     box-shadow: 0 24px 60px rgba(13, 22, 38, .4);
     text-align: center;
 }
+.db-modal.wide { width: min(30rem, 100%); }
 .db-modal-icon {
     display: inline-grid;
     place-items: center;
@@ -190,6 +198,32 @@ a.db-stat:hover { background: var(--db-soft); text-decoration: none; }
 .db-modal p { margin: 8px 0 0; color: var(--db-muted); font-size: 12.5px; line-height: 1.65; }
 .db-modal-actions { display: flex; gap: 10px; margin-top: 18px; }
 .db-modal-actions .db-btn { flex: 1; }
+
+/* QR absensi dosen: bingkai putih disengaja agar kamera mahasiswa tetap bisa memindai. */
+.db-qr-panel { display: grid; gap: 10px; margin-top: 14px; }
+.db-qr-frame {
+    display: grid;
+    place-items: center;
+    padding: 12px;
+    border: 1px solid var(--db-line);
+    border-radius: 14px;
+    background: #ffffff;
+}
+.db-qr-frame svg { display: block; width: 100%; max-width: 240px; height: auto; }
+[data-theme='dark'] .db-qr-frame { background: #ffffff; border-color: #d7dee8; }
+.db-qr-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 14px;
+    color: var(--db-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+}
+.db-qr-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.db-qr-link { display: flex; gap: 8px; align-items: center; }
+.db-qr-link .db-input { flex: 1; min-width: 0; font-size: 11.5px; }
+.db-qr-link .db-btn { flex: 0 0 auto; }
 
 /* ── Action inbox ────────────────────────────────────────────────────── */
 .db-inbox-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--db-line); }
@@ -282,10 +316,90 @@ a.db-stat:hover { background: var(--db-soft); text-decoration: none; }
 .cx-legend b { color: var(--db-heading); font-size: 12px; }
 
 /* ── Responsive ──────────────────────────────────────────────────────── */
+/* ── Layanan mahasiswa: form, detail, riwayat, thread ───────────────── */
+.db-label { display: block; margin-bottom: 6px; color: var(--db-heading); font-size: 12.5px; font-weight: 700; }
+.db-label > span { color: var(--db-red); }
+
+.db-form { display: grid; gap: 14px; }
+.db-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.db-form-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+.db-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.db-fact { min-width: 0; padding: 10px 12px; border: 1px solid var(--db-line); border-radius: 10px; background: var(--db-soft); }
+.db-fact.wide { grid-column: 1 / -1; }
+.db-fact > span { display: block; color: var(--db-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.db-fact > b { display: block; margin-top: 3px; color: var(--db-heading); font-size: 12.5px; font-weight: 700; line-height: 1.6; overflow-wrap: anywhere; }
+
+.db-class-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--db-muted); font-size: 11.5px; }
+.db-class-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.db-class-reason { margin: 8px 0 0; color: var(--db-ink); font-size: 12px; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.db-messages { display: grid; gap: 10px; }
+.db-message { padding: 12px 14px; border: 1px solid var(--db-line); border-radius: 12px; background: var(--db-card); }
+.db-message.staff { border-left: 3px solid var(--db-brand); background: var(--db-soft); }
+.db-message-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.db-message-head b { color: var(--db-heading); font-size: 12.5px; }
+.db-message-head small { color: var(--db-muted); font-size: 11px; }
+.db-message-body { margin-top: 6px; color: var(--db-ink); font-size: 12.5px; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
+.db-message-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+.db-checklist { display: grid; }
+.db-check { display: flex; align-items: flex-start; gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--db-line); }
+.db-check:last-child { border-bottom: 0; }
+.db-check-icon { display: grid; place-items: center; width: 22px; height: 22px; flex: 0 0 auto; margin-top: 1px; border-radius: 50%; color: var(--db-muted); background: var(--db-soft); }
+.db-check-icon.ok { color: var(--db-green); background: var(--db-green-soft); }
+.db-check > div { min-width: 0; }
+.db-check b { display: block; color: var(--db-heading); font-size: 12.5px; font-weight: 700; }
+.db-check small { display: block; color: var(--db-muted); font-size: 11px; line-height: 1.6; }
+
+.db-file-list { display: grid; gap: 8px; }
+.db-file { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--db-line); border-radius: 10px; background: var(--db-card); }
+.db-file > div { min-width: 0; }
+.db-file b { display: block; color: var(--db-heading); font-size: 12.5px; font-weight: 700; overflow-wrap: anywhere; }
+.db-file small { display: block; color: var(--db-muted); font-size: 11px; }
+
+.db-invoice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--db-line); border-radius: 12px; background: var(--db-soft); }
+.db-invoice b { display: block; color: var(--db-heading); font-size: 14px; }
+.db-invoice small { display: block; color: var(--db-muted); font-size: 11.5px; }
+
+/* Grafik tren IPS/IPK — SVG memakai token tema agar aman dark mode. */
+.db-chart svg { display: block; width: 100%; height: auto; }
+.db-chart-grid { stroke: var(--db-line); stroke-width: 1; }
+.db-chart-axis { fill: var(--db-muted); font-size: 10px; font-weight: 600; }
+.db-chart-line { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.db-chart-line.ips { stroke: var(--db-chart-1); }
+.db-chart-line.ipk { stroke: var(--db-chart-3); }
+.db-chart-point { stroke: var(--db-card); stroke-width: 1.5; }
+.db-chart-point.ips { fill: var(--db-chart-1); }
+.db-chart-point.ipk { fill: var(--db-chart-3); }
+.db-chart-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 6px; }
+.db-chart-legend-item { display: inline-flex; align-items: center; gap: 6px; color: var(--db-muted); font-size: 11.5px; font-weight: 700; }
+.db-chart-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.db-chart-swatch.ips { background: var(--db-chart-1); }
+.db-chart-swatch.ipk { background: var(--db-chart-3); }
+.db-chart-empty { display: flex; align-items: center; gap: 12px; padding: 16px 0; color: var(--db-muted); }
+.db-chart-empty svg { flex: 0 0 auto; color: var(--db-brand); }
+.db-chart-empty b { display: block; color: var(--db-heading); font-size: 13px; }
+.db-chart-empty small { display: block; font-size: 11.5px; }
+.db-chart-readout { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; min-height: 34px; margin-bottom: 8px; padding: 7px 12px; border: 1px dashed var(--db-line); border-radius: 9px; background: var(--db-soft); color: var(--db-muted); font-size: 12px; }
+.db-chart-readout b { color: var(--db-heading); font-size: 12.5px; }
+.db-chart-readout-item { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.db-chart-readout-item::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+.db-chart-readout-item.ips { color: var(--db-chart-1); }
+.db-chart-readout-item.ipk { color: var(--db-chart-3); }
+.db-chart-readout-empty { color: var(--db-muted); }
+.db-chart-guide { stroke: var(--db-line); stroke-width: 1.4; stroke-dasharray: 4 4; pointer-events: none; }
+.db-chart-hit { fill: transparent; cursor: pointer; pointer-events: all; outline: none; }
+.db-chart-hit:focus-visible { stroke: var(--db-brand); stroke-width: 1.5; }
+.db-chart-line, .db-chart-point, .db-chart-axis { pointer-events: none; }
+.db-chart-point.is-active { stroke-width: 2; }
+
 @media (max-width: 960px) {
     .cx-blocks { grid-template-columns: 1fr; }
     .db-layout { grid-template-columns: 1fr; }
     .db-grid-2 { grid-template-columns: 1fr; }
+    .db-facts { grid-template-columns: 1fr; }
+    .db-form-row { grid-template-columns: 1fr; }
     .db-stats { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
     .db-stat + .db-stat { border-left: 0; border-top: 1px solid var(--db-line); }
     .db-stat:nth-child(even) { border-left: 1px solid var(--db-line); }

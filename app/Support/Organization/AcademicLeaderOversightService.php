@@ -36,6 +36,20 @@ class AcademicLeaderOversightService
             ]);
     }
 
+    public function workloadQuery(?User $user = null): Builder
+    {
+        return LecturerWorkloadSubmission::query()
+            ->with(['owner', 'period', 'lecturerProfile.studyProgram'])
+            ->whereHas('lecturerProfile', fn (Builder $query) => $this->context->applyLecturerProfileScope($query, $user));
+    }
+
+    public function reviewQuery(?User $user = null): Builder
+    {
+        return LecturerPerformanceReview::query()
+            ->with(['owner', 'edomPeriod', 'lecturerProfile.studyProgram'])
+            ->whereHas('lecturerProfile', fn (Builder $query) => $this->context->applyLecturerProfileScope($query, $user));
+    }
+
     public function lecturerRows(?User $user = null): Collection
     {
         return $this->lecturerQuery($user)
@@ -88,12 +102,19 @@ class AcademicLeaderOversightService
             ->map(function (CourseOffering $offering) {
                 $studentCount = $this->studentCount($offering->id);
                 $sessions = $offering->attendanceSessions;
-                $validRecords = $sessions
+                // Sesi batal tidak boleh menurunkan tingkat kehadiran; sesi yang
+                // masih berjalan tanpa satu pun rekaman juga belum bisa dinilai.
+                $countedSessions = $sessions
+                    ->where('status', '!=', 'Cancelled')
+                    ->filter(fn ($session) => $session->status === 'Closed' || $session->records->isNotEmpty());
+                $validRecords = $countedSessions
                     ->flatMap->records
                     ->whereIn('status', ['Present', 'Late', 'Excused', 'Sick'])
                     ->count();
-                $possibleRecords = max(1, $studentCount * max(1, $sessions->count()));
-                $attendanceRate = $sessions->isEmpty() || $studentCount === 0 ? null : round(($validRecords / $possibleRecords) * 100, 2);
+                $possibleRecords = $studentCount * $countedSessions->count();
+                $attendanceRate = $possibleRecords === 0
+                    ? null
+                    : round(min(100, ($validRecords / $possibleRecords) * 100), 2);
                 $openedTooLong = $sessions
                     ->where('status', 'Opened')
                     ->filter(fn ($session) => $session->opened_at && $session->opened_at->lt(now()->subHours(3)))
@@ -167,6 +188,20 @@ class AcademicLeaderOversightService
         return $alerts->values();
     }
 
+    /**
+     * Alert dengan level paling berat lebih dulu agar ringkasan pimpinan
+     * tidak tenggelam oleh temuan informational saat jumlah alert banyak.
+     */
+    public function prioritizedAlerts(?User $user = null, int $limit = 8): Collection
+    {
+        $weight = ['danger' => 0, 'warning' => 1, 'info' => 2];
+
+        return $this->alerts($user)
+            ->sortBy(fn (array $alert) => $weight[$alert['level']] ?? 3)
+            ->take($limit)
+            ->values();
+    }
+
     public function dashboardStats(?User $user = null): array
     {
         $classes = $this->classRows($user);
@@ -189,7 +224,7 @@ class AcademicLeaderOversightService
     {
         return StudyPlanDetail::query()
             ->where('course_offering_id', $courseOfferingId)
-            ->whereHas('studyPlan', fn (Builder $query) => $query->where('status', 'Approved'))
+            ->officiallyEnrolled()
             ->with('studyPlan.studentProfile')
             ->get()
             ->pluck('studyPlan.studentProfile.id')

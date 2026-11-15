@@ -8,6 +8,7 @@ use App\Models\Academic\CourseOfferingLecturer;
 use App\Models\Academic\CourseSchedule;
 use App\Models\Academic\LecturerProfile;
 use App\Models\Campus\Room;
+use App\Models\Campus\RoomReservation;
 use App\Support\ActivePermission;
 use App\Support\Inertia\ShellProps;
 use Illuminate\Http\Request;
@@ -763,6 +764,31 @@ class CourseScheduleController extends Controller
                 $label = $clash->courseOffering?->course?->code ?? 'kelas lain';
 
                 return "Ruang bentrok dengan {$label} ({$clash->start_time?->format('H:i')}–{$clash->end_time?->format('H:i')}).";
+            }
+
+            // Konflik dua arah: jadwal rutin tidak boleh menimpa reservasi approved.
+            $reservationClash = RoomReservation::query()
+                ->where('room_id', $data['room_id'])
+                ->where('status', 'approved')
+                ->whereDate('reservation_date', '>=', now()->toDateString())
+                ->orderBy('reservation_date')
+                ->limit(100)
+                ->get(['id', 'title', 'reservation_date', 'start_time', 'end_time'])
+                ->first(function ($reservation) use ($data, $start, $end) {
+                    if (\Carbon\Carbon::parse($reservation->reservation_date)->format('l') !== $data['day_of_week']) {
+                        return false;
+                    }
+
+                    $reservationStart = substr((string) $reservation->start_time, 0, 8);
+                    $reservationEnd = substr((string) $reservation->end_time, 0, 8);
+
+                    return $reservationStart < $end && $reservationEnd > $start;
+                });
+
+            if ($reservationClash) {
+                $date = \Carbon\Carbon::parse($reservationClash->reservation_date)->format('d M Y');
+
+                return "Ruang bentrok dengan reservasi '{$reservationClash->title}' ({$date}, ".substr((string) $reservationClash->start_time, 0, 5).'–'.substr((string) $reservationClash->end_time, 0, 5).').';
             }
         }
 
