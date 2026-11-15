@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Schema;
+
 /**
  * Portabilitas query.
  *
@@ -34,4 +36,28 @@ it('tidak memakai fungsi SQL MySQL-only di kode aplikasi', function () {
     }
 
     expect($offenders)->toBe([], "Gunakan PortableOrder/parameter terikat alih-alih fungsi MySQL-only:\n".implode("\n", $offenders));
+});
+
+it('menjaga nama index dan foreign key di bawah batas identifier MySQL', function () {
+    $offenders = [];
+
+    foreach (Schema::getTableListing() as $table) {
+        foreach (Schema::getIndexes($table) as $index) {
+            $name = $index['name'] ?? '';
+
+            if (strlen($name) > 64) {
+                $offenders[] = "{$table} [index] {$name} (".strlen($name).' karakter)';
+            }
+        }
+
+        foreach (Schema::getForeignKeys($table) as $foreignKey) {
+            $name = $foreignKey['name'] ?? '';
+
+            if (strlen($name) > 64) {
+                $offenders[] = "{$table} [foreign key] {$name} (".strlen($name).' karakter)';
+            }
+        }
+    }
+
+    expect($offenders)->toBe([], "Nama index/foreign key melebihi 64 karakter sehingga gagal di MySQL:\n".implode("\n", $offenders));
 });

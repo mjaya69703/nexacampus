@@ -52,8 +52,8 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->unique(['student_organization_id', 'user_id', 'period'], 'student_org_member_unique');
-            $table->index(['user_id', 'is_active']);
-            $table->index(['student_organization_id', 'is_active']);
+            $table->index(['user_id', 'is_active'], 'student_org_members_user_active_index');
+            $table->index(['student_organization_id', 'is_active'], 'student_org_members_org_active_index');
         });
 
         Schema::create('student_achievements', function (Blueprint $table) {
