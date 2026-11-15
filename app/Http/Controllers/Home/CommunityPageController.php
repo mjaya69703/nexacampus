@@ -2,20 +2,28 @@
 
 namespace App\Http\Controllers\Home;
 
+use App\Enums\AchievementLevel;
+use App\Enums\AchievementStatus;
+use App\Enums\OrganizationType;
+use App\Http\Controllers\Controller;
 use App\Models\Academic\StudyProgram;
 use App\Models\Alumni\AlumniProfile;
 use App\Models\Alumni\JobPosting;
 use App\Models\Financial\Scholarship;
 use App\Models\Settings\Campus;
 use App\Models\Settings\System;
+use App\Models\StudentAffairs\StudentAchievement;
+use App\Models\StudentAffairs\StudentOrganization;
+use App\Models\StudentAffairs\StudentOrganizationMember;
 use App\Support\Inertia\PublicUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class CommunityPageController extends \App\Http\Controllers\Controller
+class CommunityPageController extends Controller
 {
     public function beasiswa(Request $request): Response
     {
@@ -38,12 +46,104 @@ class CommunityPageController extends \App\Http\Controllers\Controller
 
     public function organisasi(Request $request): Response
     {
-        return $this->render($request, 'Home/Kemahasiswaan/Organisasi');
+        $organizations = StudentOrganization::with([
+            'faculty:id,name,short_name',
+            'studyProgram:id,name',
+            'advisor:id,first_name,last_name',
+        ])
+            ->withCount('activeMembers')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (StudentOrganization $organization) => [
+                'id' => $organization->id,
+                'name' => $organization->name,
+                'type' => $organization->type->value,
+                'typeLabel' => $organization->type->label(),
+                'typeShort' => $organization->type->shortLabel(),
+                'typeTone' => $organization->type->tone(),
+                'faculty' => $organization->faculty?->short_name ?? $organization->faculty?->name,
+                'studyProgram' => $organization->studyProgram?->name,
+                'advisor' => $organization->advisor?->name,
+                'description' => Str::limit(strip_tags((string) $organization->description), 180),
+                'foundedAt' => $organization->founded_at?->format('Y'),
+                'activeMembers' => (int) $organization->active_members_count,
+                'logoUrl' => $organization->logo_path ? Storage::disk('public')->url($organization->logo_path) : null,
+                'instagramUrl' => $organization->instagram_url,
+                'contactEmail' => $organization->contact_email,
+            ]);
+
+        $stats = [
+            'organizations' => StudentOrganization::where('is_active', true)->count(),
+            'members' => StudentOrganizationMember::where('is_active', true)->count(),
+            'types' => StudentOrganization::where('is_active', true)->distinct()->count('type'),
+            'achievements' => StudentAchievement::where('status', AchievementStatus::VERIFIED->value)->count(),
+        ];
+
+        return $this->render($request, 'Home/Kemahasiswaan/Organisasi', [
+            'organizations' => $organizations->values(),
+            'stats' => $stats,
+            'types' => OrganizationType::options(),
+        ]);
     }
 
     public function prestasi(Request $request): Response
     {
-        return $this->render($request, 'Home/Kemahasiswaan/Prestasi');
+        $achievements = StudentAchievement::with([
+            'user:id,first_name,last_name',
+            'user.studentProfile:id,user_id,nim,study_program_id',
+            'user.studentProfile.studyProgram:id,name',
+            'organization:id,name',
+        ])
+            ->where('status', AchievementStatus::VERIFIED->value)
+            ->orderByDesc('is_featured')
+            ->orderByDesc('achieved_at')
+            ->limit(60)
+            ->get()
+            ->map(fn (StudentAchievement $achievement) => [
+                'id' => $achievement->id,
+                'title' => $achievement->title,
+                'student' => $achievement->user?->name ?? '-',
+                'nim' => $achievement->user?->studentProfile?->nim,
+                'program' => $achievement->user?->studentProfile?->studyProgram?->name,
+                'initials' => collect(explode(' ', (string) $achievement->user?->name))
+                    ->filter()
+                    ->take(2)
+                    ->map(fn (string $word) => strtoupper($word[0] ?? ''))
+                    ->implode(''),
+                'organization' => $achievement->organization?->name,
+                'category' => $achievement->category->value,
+                'categoryLabel' => $achievement->category->label(),
+                'categoryTone' => $achievement->category->tone(),
+                'level' => $achievement->level->value,
+                'levelLabel' => $achievement->level->label(),
+                'levelTone' => $achievement->level->tone(),
+                'rankLabel' => $achievement->rank->label(),
+                'rankTone' => $achievement->rank->tone(),
+                'achievedAt' => $achievement->achieved_at?->format('d M Y'),
+                'year' => $achievement->achieved_at?->format('Y'),
+                'organizer' => $achievement->organizer,
+                'description' => Str::limit(strip_tags((string) $achievement->description), 220),
+                'isFeatured' => (bool) $achievement->is_featured,
+            ]);
+
+        $verified = StudentAchievement::where('status', AchievementStatus::VERIFIED->value);
+
+        $stats = [
+            'total' => (clone $verified)->count(),
+            'featured' => (clone $verified)->where('is_featured', true)->count(),
+            'national' => (clone $verified)->whereIn('level', [
+                AchievementLevel::NATIONAL->value,
+                AchievementLevel::INTERNATIONAL->value,
+            ])->count(),
+            'students' => (clone $verified)->distinct()->count('user_id'),
+        ];
+
+        return $this->render($request, 'Home/Kemahasiswaan/Prestasi', [
+            'achievements' => $achievements->values(),
+            'stats' => $stats,
+            'levels' => AchievementLevel::options(),
+        ]);
     }
 
     public function layanan(Request $request): Response

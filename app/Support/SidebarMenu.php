@@ -174,6 +174,9 @@ class SidebarMenu
                 static::makeGroup('student-library', 'Perpustakaan', 'fas fa-book-open', [
                     static::makeChildLink('student.library.index', 'Katalog & Pinjaman'),
                 ]),
+                static::makeGroup('student-affairs', 'Kemahasiswaan', 'fas fa-user-graduate', [
+                    static::makeChildLink('student.student-affairs.index', 'Organisasi & Prestasi'),
+                ]),
                 static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
                     static::makeChildLink('student.announcements.index', 'Pengumuman'),
                 ]),

@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             FinancialSeeder::class,
             StudentServiceSeeder::class,
             LibrarySeeder::class,
+            StudentAffairsSeeder::class,
             AlumniSeeder::class,
             FaqSeeder::class,
             PublicationCategorySeeder::class,

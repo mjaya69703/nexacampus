@@ -6,6 +6,7 @@ use App\Http\Controllers\Academic\ThesisDocumentController;
 use App\Http\Controllers\Financial\PaymentReceiptController;
 use App\Http\Controllers\Lecturer\CourseMaterialController;
 use App\Http\Controllers\Student\DashboardController;
+use App\Http\Controllers\Student\StudentAffairsController;
 use App\Http\Controllers\Student\StudentAnnouncementController;
 use App\Http\Controllers\Student\StudentAssignmentController;
 use App\Http\Controllers\Student\StudentConsultationController;
@@ -139,3 +140,9 @@ Route::post('/library/reservations/{reservation}/cancel', [StudentLibraryControl
 Route::post('/library/loans/{loan}/renew', [StudentLibraryController::class, 'renewLoan'])->name('library.loans.renew');
 Route::post('/library/loans/{loan}/fine', [StudentLibraryController::class, 'submitFineProof'])->name('library.loans.fine.store');
 Route::get('/library/loans/{loan}/fine/proof', [StudentLibraryController::class, 'downloadFineProof'])->name('library.loans.fine.proof');
+
+// Kemahasiswaan — organisasi dan prestasi mahasiswa (Inertia React).
+Route::get('/student-affairs', [StudentAffairsController::class, 'index'])->name('student-affairs.index');
+Route::get('/student-affairs/achievements/{id}/certificate', [StudentAffairsController::class, 'downloadCertificate'])
+    ->whereNumber('id')
+    ->name('student-affairs.certificate');

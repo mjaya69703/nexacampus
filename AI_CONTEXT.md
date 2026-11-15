@@ -945,6 +945,37 @@ Domain `Library` — katalog buku, eksemplar, sirkulasi peminjaman/pengembalian,
 
 **Seeder & test:** `database/seeders/LibrarySeeder.php`, template notifikasi di `NotificationTemplateSeeder`, demo pustakawan `pustakawan` / `librarian123` di `UserSeeder`; `tests/Feature/Library/LibraryManagementTest.php` (41 test / 291 assertion) mencakup pengingat H-3/H-1, interval terlambat, dry-run, notifikasi reservasi, unggah/verifikasi/tolak bukti, otorisasi unduhan, dan filter status denda.
 
+### 3.12 Modul Kemahasiswaan (Organisasi & Prestasi)
+
+Domain `StudentAffairs` — Slice 1 mencakup master organisasi mahasiswa (ormawa), keanggotaan per periode kepengurusan, prestasi mahasiswa dengan alur verifikasi, portal mahasiswa (read-only), serta halaman publik Organisasi dan Prestasi yang dinamis. Event kemahasiswaan, poin/leaderboard, dan booking fasilitas belum termasuk (Slice 2).
+
+**Tabel:** `student_organizations`, `student_organization_members`, `student_achievements`.
+- `student_organizations.type`: `bem`, `dpm`, `hima`, `ukm`, `community`; scope fakultas/prodi opsional (kosong = tingkat universitas).
+- `student_organization_members` unik pada `(student_organization_id, user_id, period)`; `period` berformat `YYYY/YYYY`. Jabatan: `chairman`, `vice_chairman`, `secretary`, `treasurer`, `coordinator`, `member`.
+- `student_achievements.status`: `pending`, `verified`, `rejected`. Kategori: `academic`, `sports`, `arts`, `research`, `entrepreneurship`, `community`; tingkat: `local`, `regional`, `national`, `international`; peringkat: `winner`, `runner_up`, `third_place`, `honorable_mention`, `finalist`, `participant`.
+- Hanya prestasi `verified` yang tampil di halaman publik dan boleh `is_featured`. Menolak prestasi otomatis melepas sorotan dan menyimpan `rejection_reason`.
+
+**Aturan bisnis:**
+- Organisasi yang masih memiliki data prestasi tidak dapat dihapus (single maupun bulk); bulk delete melewati organisasi tersebut dan memberi flash `warning`.
+- Anggota wajib user dengan `studentProfile`; duplikasi user+periode ditolak dengan error validasi pada `user_id`.
+- Logo organisasi disimpan di disk `public` folder `student-affairs/organizations`; sertifikat prestasi di `student-affairs/achievements/{id}`.
+- Unduh sertifikat: admin dengan `student-achievement.view`; mahasiswa hanya sertifikat miliknya (`Student\StudentAffairsController@downloadCertificate`, 404 bila bukan pemilik).
+
+**Route utama:**
+- Admin: `admin.student-affairs.organizations.*` (`index/create/store/edit/show/update/destroy/bulk-destroy`, `members.store/update/destroy`, `search-students`, `search-lecturers`) dan `admin.student-affairs.achievements.*` (`index/create/store/edit/show/update/destroy/bulk-destroy`, `verify`, `reject`, `feature`, `certificate`, `search-students`).
+- Mahasiswa: `student.student-affairs.index`, `student.student-affairs.certificate`.
+- Publik: `root.kemahasiswaan.organisasi`, `root.kemahasiswaan.prestasi` (data dari `CommunityPageController`).
+
+**Halaman React:**
+- Admin: `resources/js/pages/Admin/StudentAffairs/Organizations/{Index,Form,Show}.tsx`, `Achievements/{Index,Form,Show}.tsx`, helper `Admin/StudentAffairs/shared.tsx` (`buildQuery`, `toneClass`, `StudentAffairsStats`, `StudentAffairsModal`, `initialsFor`).
+- Mahasiswa: `resources/js/pages/Student/StudentAffairs/Index.tsx` — kartu keanggotaan, rekomendasi ormawa aktif, prestasi pribadi + status verifikasi + unduh sertifikat.
+- Publik: `resources/js/pages/Home/Kemahasiswaan/Organisasi.tsx` (filter jenis, kartu ormawa, statistik) dan `Prestasi.tsx` (filter tingkat, galeri prestasi terverifikasi, sorotan).
+- Menu sidebar mahasiswa: grup “Kemahasiswaan” → “Organisasi & Prestasi” (`SidebarMenu::roleMenus()`).
+
+**Permission:** `student-organization.viewAny/create/update/delete/view`, `student-achievement.viewAny/create/update/delete/view/verify` (menu group “Kemahasiswaan”, `group_order` 45 di `config/resources.php`). Aksi verifikasi/tolak memakai `student-achievement.verify`; sorotan memakai `student-achievement.update`.
+
+**Seeder & test:** `database/seeders/StudentAffairsSeeder.php` (8 ormawa, 6 keanggotaan demo, 6 prestasi); `tests/Feature/StudentAffairs/StudentAffairsManagementTest.php` (18 test / 252 assertion) mencakup CRUD organisasi, guard hapus, keanggotaan, CRUD/verifikasi/tolak/sorotan prestasi, otorisasi sertifikat, portal mahasiswa, halaman publik, dan penolakan akses tanpa permission.
+
 ---
 
 ## 4. Naming Conventions
