@@ -2,14 +2,14 @@
 // status reservasi/pinjaman, dan aksi reservasi atau perpanjangan.
 import { Head, router } from '@inertiajs/react';
 import {
-    ArrowLeft, BookMarked, BookOpen, CalendarClock, CheckCircle2, Clock,
-    Library, RefreshCw, TriangleAlert, Users, XCircle,
+    ArrowLeft, BookMarked, BookOpen, CalendarClock, CheckCircle2, Clock, FileText,
+    Library, RefreshCw, TriangleAlert, Upload, Users, XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminShell, ShellProps } from '../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../components/Shared/Crud/CrudHero';
-import { LibraryStats, ReserveBookModal, formatRupiah, libraryTone } from '../../../components/Shared/Library/LibraryUI';
+import { FinePaymentModal, LibraryStats, ReserveBookModal, formatRupiah, libraryTone } from '../../../components/Shared/Library/LibraryUI';
 import '../../../../css/dashboard.css';
 import '../../../../css/crud.css';
 
@@ -44,6 +44,17 @@ type MyLoan = {
     dueAt: string | null;
     statusLabel: string;
     statusTone: string;
+    fineAmount: number;
+    finePaid: boolean;
+    fineStatus: string;
+    fineStatusLabel: string;
+    fineStatusTone: string;
+    fineProofUrl: string | null;
+    fineSubmittedAt: string | null;
+    fineVerifiedAt: string | null;
+    fineRejectionReason: string | null;
+    canSubmitFineProof: boolean;
+    submitFineProofUrl: string;
     renewalCount: number;
     maxRenewals: number;
     canRenew: boolean;
@@ -96,6 +107,7 @@ export default function StudentLibraryShow({ shell, book, stats, copies, myLoan,
     const [reserveOpen, setReserveOpen] = useState(false);
     const [cancelOpen, setCancelOpen] = useState(false);
     const [renewOpen, setRenewOpen] = useState(false);
+    const [fineOpen, setFineOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
 
     const canReserve = !myLoan && !myReservation;
@@ -222,6 +234,38 @@ export default function StudentLibraryShow({ shell, book, stats, copies, myLoan,
                                         <span>{myLoan.renewBlockReason}</span>
                                     </div>
                                 ) : null}
+
+                                {myLoan.fineAmount > 0 && (
+                                    <div className="db-note warning" style={{ alignItems: 'flex-start' }}>
+                                        <TriangleAlert size={15} />
+                                        <span>
+                                            Denda <b>{formatRupiah(myLoan.fineAmount)}</b>{' '}
+                                            <span className={`db-badge ${libraryTone(myLoan.fineStatusTone)}`}>{myLoan.fineStatusLabel}</span>
+                                            {myLoan.fineSubmittedAt && <> · diunggah {myLoan.fineSubmittedAt}</>}
+                                            {myLoan.fineVerifiedAt && <> · diverifikasi {myLoan.fineVerifiedAt}</>}
+                                            {myLoan.fineRejectionReason && (
+                                                <small className="db-hint" style={{ display: 'block', color: 'var(--db-red)' }}>
+                                                    Alasan penolakan: {myLoan.fineRejectionReason}
+                                                </small>
+                                            )}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {(myLoan.fineProofUrl || myLoan.canSubmitFineProof) && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                        {myLoan.fineProofUrl && (
+                                            <a className="db-btn ghost" href={myLoan.fineProofUrl} target="_blank" rel="noreferrer">
+                                                <FileText size={15} /> Lihat Bukti
+                                            </a>
+                                        )}
+                                        {myLoan.canSubmitFineProof && (
+                                            <button className="db-btn primary" type="button" onClick={() => setFineOpen(true)}>
+                                                <Upload size={15} /> Unggah Bukti Pembayaran
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </section>
                     )}
@@ -370,6 +414,20 @@ export default function StudentLibraryShow({ shell, book, stats, copies, myLoan,
                         holdDays={options.holdDays}
                         pickupPlanDays={options.pickupPlanDays}
                         onClose={() => setReserveOpen(false)}
+                    />
+                )}
+
+                {fineOpen && myLoan && (
+                    <FinePaymentModal
+                        loan={{
+                            bookTitle: book.title,
+                            fineAmount: myLoan.fineAmount,
+                            fineStatus: myLoan.fineStatus,
+                            fineRejectionReason: myLoan.fineRejectionReason,
+                            submitFineProofUrl: myLoan.submitFineProofUrl,
+                        }}
+                        finePerDay={options.finePerDay}
+                        onClose={() => setFineOpen(false)}
                     />
                 )}
 

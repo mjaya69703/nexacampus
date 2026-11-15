@@ -184,6 +184,15 @@ class StudentLibraryController extends Controller
                     'daysLate' => $loan->isActive() ? $loan->daysLate() : 0,
                     'fineAmount' => (float) $loan->fine_amount,
                     'finePaid' => (bool) $loan->fine_paid,
+                    'fineStatus' => $loan->fineStatus()->value,
+                    'fineStatusLabel' => $loan->fineStatusLabel(),
+                    'fineStatusTone' => $loan->fineStatusTone(),
+                    'fineProofUrl' => $loan->fine_proof_path ? route('student.library.loans.fine.proof', $loan) : null,
+                    'fineSubmittedAt' => $loan->fine_submitted_at?->format('d M Y H:i'),
+                    'fineVerifiedAt' => $loan->fine_verified_at?->format('d M Y H:i'),
+                    'fineRejectionReason' => $loan->fine_rejection_reason,
+                    'canSubmitFineProof' => $loan->canSubmitFineProof(),
+                    'submitFineProofUrl' => route('student.library.loans.fine.store', $loan),
                     'renewalCount' => (int) $loan->renewal_count,
                     'maxRenewals' => (int) config('library.max_renewals', 1),
                     'renewalDays' => (int) config('library.renewal_days', 14),
@@ -338,6 +347,17 @@ class StudentLibraryController extends Controller
                 'dueAt' => $myLoan->due_at?->format('d M Y'),
                 'statusLabel' => $myLoan->statusLabel(),
                 'statusTone' => $myLoan->statusTone(),
+                'fineAmount' => (float) $myLoan->fine_amount,
+                'finePaid' => (bool) $myLoan->fine_paid,
+                'fineStatus' => $myLoan->fineStatus()->value,
+                'fineStatusLabel' => $myLoan->fineStatusLabel(),
+                'fineStatusTone' => $myLoan->fineStatusTone(),
+                'fineProofUrl' => $myLoan->fine_proof_path ? route('student.library.loans.fine.proof', $myLoan) : null,
+                'fineSubmittedAt' => $myLoan->fine_submitted_at?->format('d M Y H:i'),
+                'fineVerifiedAt' => $myLoan->fine_verified_at?->format('d M Y H:i'),
+                'fineRejectionReason' => $myLoan->fine_rejection_reason,
+                'canSubmitFineProof' => $myLoan->canSubmitFineProof(),
+                'submitFineProofUrl' => route('student.library.loans.fine.store', $myLoan),
                 'renewalCount' => (int) $myLoan->renewal_count,
                 'maxRenewals' => (int) config('library.max_renewals', 1),
                 'canRenew' => (bool) ($loanEligibility['allowed'] ?? false),
@@ -414,5 +434,40 @@ class StudentLibraryController extends Controller
         $service->cancelReservation($reservation, $request->user(), 'Dibatalkan oleh mahasiswa.');
 
         return back()->with('success', 'Reservasi berhasil dibatalkan.');
+    }
+
+    public function submitFineProof(Request $request, BookLoan $loan, LibraryService $service)
+    {
+        abort_unless((int) $loan->user_id === (int) $request->user()->id, 403);
+
+        $validated = $request->validate([
+            'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:'.(int) config('library.fine_proof_max_kb', 5120)],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $service->submitFineProof(
+            $loan,
+            $request->user(),
+            $validated['proof'],
+            $validated['notes'] ?? null,
+        );
+
+        return back()->with('success', 'Bukti pembayaran denda berhasil diunggah dan menunggu verifikasi pustakawan.');
+    }
+
+    public function downloadFineProof(Request $request, BookLoan $loan)
+    {
+        abort_unless((int) $loan->user_id === (int) $request->user()->id, 403);
+
+        abort_unless(
+            $loan->fine_proof_path && Storage::disk('public')->exists($loan->fine_proof_path),
+            404,
+            'Bukti pembayaran tidak ditemukan.',
+        );
+
+        return Storage::disk('public')->download(
+            $loan->fine_proof_path,
+            $loan->fine_proof_original_name ?: basename($loan->fine_proof_path),
+        );
     }
 }

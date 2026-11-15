@@ -1,7 +1,7 @@
 // Komponen & helper bersama modul Perpustakaan (admin dan portal mahasiswa).
 import { useForm } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
-import { CalendarClock, Clock } from 'lucide-react';
+import { CalendarClock, Clock, FileText, TriangleAlert, Upload, Wallet } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import '../../../../css/dashboard.css';
 import '../../../../css/crud.css';
@@ -214,6 +214,174 @@ export function ReserveBookModal({ book, url, loanDays, holdDays, pickupPlanDays
                     <button className="db-btn ghost" type="button" onClick={onClose} disabled={form.processing}>Batal</button>
                     <button className="db-btn primary" type="submit" disabled={form.processing}>
                         {form.processing ? 'Mengajukan…' : 'Ajukan Reservasi'}
+                    </button>
+                </div>
+            </form>
+        </LibraryModal>
+    );
+}
+
+export type FinePaymentLoanInfo = {
+    bookTitle: string | null;
+    fineAmount: number;
+    fineStatus: string;
+    fineRejectionReason: string | null;
+    submitFineProofUrl: string;
+};
+
+/**
+ * Modal unggah bukti pembayaran denda oleh mahasiswa. Mendukung unggah ulang
+ * setelah bukti sebelumnya ditolak pustakawan.
+ */
+export function FinePaymentModal({ loan, finePerDay, onClose }: {
+    loan: FinePaymentLoanInfo;
+    finePerDay: number;
+    onClose: () => void;
+}) {
+    const form = useForm<{ proof: File | null; notes: string }>({
+        proof: null,
+        notes: '',
+    });
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        form.post(loan.submitFineProofUrl, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: onClose,
+        });
+    };
+
+    return (
+        <LibraryModal
+            title="Unggah Bukti Pembayaran Denda"
+            description={loan.bookTitle ? `Denda untuk "${loan.bookTitle}"` : 'Denda perpustakaan'}
+            onClose={onClose}
+        >
+            <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+                {loan.fineStatus === 'rejected' && loan.fineRejectionReason && (
+                    <div className="db-note warning">
+                        <TriangleAlert size={15} />
+                        <span>Bukti sebelumnya ditolak: <b>{loan.fineRejectionReason}</b></span>
+                    </div>
+                )}
+
+                <div className="db-note info">
+                    <Wallet size={15} />
+                    <span>
+                        Nominal denda <b>{formatRupiah(loan.fineAmount)}</b>.
+                        Denda berjalan {formatRupiah(finePerDay)}/hari. Pastikan bukti transfer terlihat jelas.
+                    </span>
+                </div>
+
+                <div>
+                    <label className="crud-label" htmlFor="fine-proof">Bukti pembayaran <span>*</span></label>
+                    <input
+                        id="fine-proof"
+                        type="file"
+                        className="db-input"
+                        accept="image/jpeg,image/png,application/pdf"
+                        onChange={(event) => form.setData('proof', event.target.files?.[0] ?? null)}
+                    />
+                    <small className="db-hint">Format JPG, PNG, atau PDF. Maksimal 5 MB.</small>
+                    {form.errors.proof && <div className="db-error">{form.errors.proof}</div>}
+                </div>
+
+                <div>
+                    <label className="crud-label" htmlFor="fine-notes">Catatan (opsional)</label>
+                    <textarea
+                        id="fine-notes"
+                        className="db-input"
+                        rows={3}
+                        value={form.data.notes}
+                        onChange={(event) => form.setData('notes', event.target.value)}
+                        placeholder="Contoh: Transfer BCA 12 Nov 2026, a.n. Rania Putri…"
+                    />
+                    {form.errors.notes && <div className="db-error">{form.errors.notes}</div>}
+                    {(form.errors as Record<string, string | undefined>).loan && (
+                        <div className="db-error">{(form.errors as Record<string, string | undefined>).loan}</div>
+                    )}
+                </div>
+
+                {form.progress && (
+                    <div className="db-note muted">
+                        <Upload size={15} />
+                        <span>Mengunggah… {form.progress.percentage ?? 0}%</span>
+                    </div>
+                )}
+
+                <div className="db-modal-actions">
+                    <button className="db-btn ghost" type="button" onClick={onClose} disabled={form.processing}>Batal</button>
+                    <button className="db-btn primary" type="submit" disabled={form.processing || !form.data.proof}>
+                        {form.processing ? 'Mengunggah…' : 'Kirim Bukti'}
+                    </button>
+                </div>
+            </form>
+        </LibraryModal>
+    );
+}
+
+export type FineReviewLoanInfo = {
+    bookTitle: string | null;
+    fineAmount: number;
+    member?: string | null;
+    proofUrl: string | null;
+};
+
+/**
+ * Modal penolakan bukti pembayaran denda oleh pustakawan. Alasan wajib diisi
+ * agar mahasiswa tahu bagian bukti yang perlu diperbaiki.
+ */
+export function FineRejectModal({ loan, url, onClose }: {
+    loan: FineReviewLoanInfo;
+    url: string;
+    onClose: () => void;
+}) {
+    const form = useForm({ reason: '' });
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        form.post(url, { preserveScroll: true, onSuccess: onClose });
+    };
+
+    return (
+        <LibraryModal
+            title="Tolak Bukti Pembayaran"
+            description={loan.bookTitle ? `Denda "${loan.bookTitle}"${loan.member ? ` — ${loan.member}` : ''}` : 'Denda perpustakaan'}
+            onClose={onClose}
+        >
+            <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+                <div className="db-note info">
+                    <Wallet size={15} />
+                    <span>Nominal denda <b>{formatRupiah(loan.fineAmount)}</b>.</span>
+                </div>
+
+                {loan.proofUrl && (
+                    <a className="db-btn ghost sm" href={loan.proofUrl} target="_blank" rel="noreferrer" style={{ justifySelf: 'start' }}>
+                        <FileText size={13} /> Lihat bukti pembayaran
+                    </a>
+                )}
+
+                <div>
+                    <label className="crud-label" htmlFor="reject-reason">Alasan penolakan <span>*</span></label>
+                    <textarea
+                        id="reject-reason"
+                        className="db-input"
+                        rows={3}
+                        value={form.data.reason}
+                        onChange={(event) => form.setData('reason', event.target.value)}
+                        placeholder="Contoh: Nominal transfer tidak sesuai atau bukti tidak terbaca…"
+                    />
+                    {form.errors.reason && <div className="db-error">{form.errors.reason}</div>}
+                    {(form.errors as Record<string, string | undefined>).loan && (
+                        <div className="db-error">{(form.errors as Record<string, string | undefined>).loan}</div>
+                    )}
+                </div>
+
+                <div className="db-modal-actions">
+                    <button className="db-btn ghost" type="button" onClick={onClose} disabled={form.processing}>Batal</button>
+                    <button className="db-btn danger" type="submit" disabled={form.processing || form.data.reason.trim() === ''}>
+                        {form.processing ? 'Menolak…' : 'Tolak Bukti'}
                     </button>
                 </div>
             </form>

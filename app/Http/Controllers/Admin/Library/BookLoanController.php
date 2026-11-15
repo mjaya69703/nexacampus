@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Library;
 
 use App\Enums\BookCopyStatus;
 use App\Enums\BookLoanStatus;
+use App\Enums\FinePaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Library\BookCopy;
 use App\Models\Library\BookLoan;
@@ -12,6 +13,7 @@ use App\Support\ActivePermission;
 use App\Support\Inertia\ShellProps;
 use App\Support\Library\LibraryService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,6 +29,7 @@ class BookLoanController extends Controller
             'q' => 'nullable|string|max:100',
             'status' => 'nullable|in:borrowed,returned,overdue,lost',
             'overdue' => 'nullable|in:0,1',
+            'fine_status' => 'nullable|in:unpaid,pending,verified,rejected',
             'sort' => 'nullable|in:borrowed_at,due_at,status,created_at',
             'direction' => 'nullable|in:asc,desc',
             'perPage' => 'nullable|in:10,15,25,50,100',
@@ -60,6 +63,11 @@ class BookLoanController extends Controller
             $query->whereIn('status', BookLoanStatus::activeValues())->where('due_at', '<', now());
         }
 
+        if (filled($validated['fine_status'] ?? null)) {
+            $query->where('fine_amount', '>', 0)
+                ->where('fine_payment_status', $validated['fine_status']);
+        }
+
         $sort = $validated['sort'] ?? 'borrowed_at';
         $direction = $validated['direction'] ?? 'desc';
         $query->orderBy($sort, $direction);
@@ -81,6 +89,11 @@ class BookLoanController extends Controller
                     ->whereBetween('returned_at', [now()->startOfMonth(), now()->endOfMonth()])
                     ->count(),
                 'outstandingFines' => (float) BookLoan::where('fine_paid', false)->sum('fine_amount'),
+                'pendingFineReviews' => BookLoan::query()
+                    ->where('fine_payment_status', FinePaymentStatus::PENDING->value)
+                    ->where('fine_paid', false)
+                    ->where('fine_amount', '>', 0)
+                    ->count(),
             ],
             'data' => [
                 'rows' => collect($loans->items())->values()->map(function (BookLoan $loan, int $i) use ($service, $loans) {
@@ -102,6 +115,16 @@ class BookLoanController extends Controller
                         'daysLate' => $loan->isActive() ? $loan->daysLate() : 0,
                         'fineAmount' => (float) $loan->fine_amount,
                         'finePaid' => (bool) $loan->fine_paid,
+                        'fineStatus' => $loan->fineStatus()->value,
+                        'fineStatusLabel' => $loan->fineStatusLabel(),
+                        'fineStatusTone' => $loan->fineStatusTone(),
+                        'fineProofUrl' => $loan->fine_proof_path ? route('admin.library.loans.fine.proof', $loan) : null,
+                        'fineSubmittedAt' => $loan->fine_submitted_at?->format('d M Y H:i'),
+                        'fineVerifiedAt' => $loan->fine_verified_at?->format('d M Y H:i'),
+                        'fineRejectionReason' => $loan->fine_rejection_reason,
+                        'finePaymentNotes' => $loan->fine_payment_notes,
+                        'canVerifyFine' => $loan->isFineProofPending(),
+                        'canRejectFine' => $loan->isFineProofPending(),
                         'renewalCount' => (int) $loan->renewal_count,
                         'maxRenewals' => (int) config('library.max_renewals', 1),
                         'canRenew' => $eligibility['allowed'],
@@ -112,6 +135,8 @@ class BookLoanController extends Controller
                         'returnUrl' => route('admin.library.loans.return', $loan),
                         'renewUrl' => route('admin.library.loans.renew', $loan),
                         'payFineUrl' => route('admin.library.loans.pay-fine', $loan),
+                        'verifyFineUrl' => route('admin.library.loans.fine.verify', $loan),
+                        'rejectFineUrl' => route('admin.library.loans.fine.reject', $loan),
                         'deleteUrl' => route('admin.library.loans.destroy', $loan),
                     ];
                 })->all(),
@@ -124,6 +149,7 @@ class BookLoanController extends Controller
                 'q' => $validated['q'] ?? '',
                 'status' => $validated['status'] ?? '',
                 'overdue' => $validated['overdue'] ?? '',
+                'fine_status' => $validated['fine_status'] ?? '',
                 'sort' => $sort,
                 'direction' => $direction,
                 'perPage' => $perPage,
@@ -136,6 +162,7 @@ class BookLoanController extends Controller
                 'finePerDay' => (int) config('library.fine_per_day', 1000),
                 'maxRenewals' => (int) config('library.max_renewals', 1),
                 'renewalDays' => (int) config('library.renewal_days', 14),
+                'fineStatuses' => FinePaymentStatus::options(),
             ],
             'urls' => [
                 'index' => route('admin.library.loans.index'),
@@ -243,7 +270,7 @@ class BookLoanController extends Controller
         return back()->with('success', 'Peminjaman diperpanjang sampai '.$loan->refresh()->due_at?->format('d M Y').'.');
     }
 
-    public function payFine(Request $request, BookLoan $loan)
+    public function payFine(Request $request, BookLoan $loan, LibraryService $service)
     {
         if ((float) $loan->fine_amount <= 0) {
             return back()->with('error', 'Peminjaman ini tidak memiliki denda.');
@@ -253,12 +280,49 @@ class BookLoanController extends Controller
             return back()->with('error', 'Denda sudah ditandai lunas.');
         }
 
-        $loan->update([
-            'fine_paid' => true,
-            'fine_paid_at' => now(),
-        ]);
+        $service->verifyFinePayment($loan, $request->user());
 
         return back()->with('success', 'Denda berhasil ditandai lunas.');
+    }
+
+    public function verifyFine(Request $request, BookLoan $loan, LibraryService $service)
+    {
+        if ($loan->fine_paid) {
+            return back()->with('error', 'Denda sudah ditandai lunas.');
+        }
+
+        if ((float) $loan->fine_amount <= 0) {
+            return back()->with('error', 'Peminjaman ini tidak memiliki denda.');
+        }
+
+        $service->verifyFinePayment($loan, $request->user());
+
+        return back()->with('success', 'Bukti pembayaran denda berhasil diverifikasi.');
+    }
+
+    public function rejectFine(Request $request, BookLoan $loan, LibraryService $service)
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $service->rejectFinePayment($loan, $request->user(), $validated['reason']);
+
+        return back()->with('success', 'Bukti pembayaran denda ditolak. Mahasiswa dapat mengunggah ulang bukti.');
+    }
+
+    public function downloadFineProof(BookLoan $loan)
+    {
+        abort_unless(
+            $loan->fine_proof_path && Storage::disk('public')->exists($loan->fine_proof_path),
+            404,
+            'Bukti pembayaran tidak ditemukan.',
+        );
+
+        return Storage::disk('public')->download(
+            $loan->fine_proof_path,
+            $loan->fine_proof_original_name ?: basename($loan->fine_proof_path),
+        );
     }
 
     public function destroy(Request $request, BookLoan $loan)

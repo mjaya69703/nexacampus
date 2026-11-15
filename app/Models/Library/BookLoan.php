@@ -3,6 +3,7 @@
 namespace App\Models\Library;
 
 use App\Enums\BookLoanStatus;
+use App\Enums\FinePaymentStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,6 +30,17 @@ class BookLoan extends Model
         'fine_amount',
         'fine_paid',
         'fine_paid_at',
+        'fine_payment_status',
+        'fine_proof_path',
+        'fine_proof_original_name',
+        'fine_payment_notes',
+        'fine_submitted_at',
+        'fine_verified_at',
+        'fine_verified_by',
+        'fine_rejection_reason',
+        'due_reminder_h3_sent_at',
+        'due_reminder_h1_sent_at',
+        'overdue_notified_at',
         'notes',
         'processed_by',
         'returned_by',
@@ -45,6 +57,11 @@ class BookLoan extends Model
             'fine_amount' => 'decimal:2',
             'fine_paid' => 'boolean',
             'fine_paid_at' => 'datetime',
+            'fine_submitted_at' => 'datetime',
+            'fine_verified_at' => 'datetime',
+            'due_reminder_h3_sent_at' => 'datetime',
+            'due_reminder_h1_sent_at' => 'datetime',
+            'overdue_notified_at' => 'datetime',
         ];
     }
 
@@ -52,7 +69,10 @@ class BookLoan extends Model
     {
         return LogOptions::defaults()
             ->useLogName('book_loan')
-            ->logOnly(['status', 'due_at', 'renewal_count', 'renewed_at', 'returned_at', 'fine_amount', 'fine_paid'])
+            ->logOnly([
+                'status', 'due_at', 'renewal_count', 'renewed_at', 'returned_at',
+                'fine_amount', 'fine_paid', 'fine_payment_status', 'fine_verified_at',
+            ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -75,6 +95,11 @@ class BookLoan extends Model
     public function returnedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'returned_by');
+    }
+
+    public function fineVerifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'fine_verified_by');
     }
 
     public function scopeActive(Builder $query): Builder
@@ -125,5 +150,47 @@ class BookLoan extends Model
         }
 
         return (float) $this->fine_amount;
+    }
+
+    public function fineStatus(): FinePaymentStatus
+    {
+        return FinePaymentStatus::tryFrom((string) $this->fine_payment_status) ?? FinePaymentStatus::UNPAID;
+    }
+
+    public function fineStatusLabel(): string
+    {
+        if ((float) $this->fine_amount <= 0) {
+            return 'Tanpa denda';
+        }
+
+        return $this->fineStatus()->label();
+    }
+
+    public function fineStatusTone(): string
+    {
+        if ((float) $this->fine_amount <= 0) {
+            return 'gray';
+        }
+
+        return $this->fineStatus()->tone();
+    }
+
+    public function hasFine(): bool
+    {
+        return (float) $this->fine_amount > 0;
+    }
+
+    public function isFineProofPending(): bool
+    {
+        return $this->fineStatus() === FinePaymentStatus::PENDING && ! $this->fine_paid;
+    }
+
+    public function canSubmitFineProof(): bool
+    {
+        if (! $this->hasFine() || $this->fine_paid) {
+            return false;
+        }
+
+        return in_array($this->fineStatus(), [FinePaymentStatus::UNPAID, FinePaymentStatus::REJECTED], true);
     }
 }

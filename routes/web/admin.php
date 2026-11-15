@@ -3360,6 +3360,15 @@ Route::post('/library/loans/{loan}/renew', [BookLoanController::class, 'renew'])
 Route::post('/library/loans/{loan}/pay-fine', [BookLoanController::class, 'payFine'])
     ->middleware('active_permission:book-loan.update')
     ->name('library.loans.pay-fine');
+Route::get('/library/loans/{loan}/fine/proof', [BookLoanController::class, 'downloadFineProof'])
+    ->middleware('active_permission:book-loan.viewAny')
+    ->name('library.loans.fine.proof');
+Route::post('/library/loans/{loan}/fine/verify', [BookLoanController::class, 'verifyFine'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.fine.verify');
+Route::post('/library/loans/{loan}/fine/reject', [BookLoanController::class, 'rejectFine'])
+    ->middleware('active_permission:book-loan.update')
+    ->name('library.loans.fine.reject');
 Route::delete('/library/loans/{loan}', [BookLoanController::class, 'destroy'])
     ->middleware('active_permission:book-loan.delete')
     ->name('library.loans.destroy');

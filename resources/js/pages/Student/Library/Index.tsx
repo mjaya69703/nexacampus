@@ -1,15 +1,15 @@
 // Portal mahasiswa — katalog perpustakaan, pinjaman, dan reservasi.
 import { Head, router } from '@inertiajs/react';
 import {
-    BookMarked, BookOpen, CalendarClock, CheckCircle2, Clock, Eye, Library,
-    RefreshCw, Search, TriangleAlert, Wallet, XCircle,
+    BookMarked, BookOpen, CalendarClock, CheckCircle2, Clock, Eye, FileText, Library,
+    RefreshCw, Search, TriangleAlert, Upload, Wallet, XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { AdminShell, ShellProps } from '../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../components/Shared/Crud/CrudHero';
-import { LibraryStats, ReserveBookModal, formatRupiah, libraryTone } from '../../../components/Shared/Library/LibraryUI';
+import { FinePaymentModal, LibraryStats, ReserveBookModal, formatRupiah, libraryTone } from '../../../components/Shared/Library/LibraryUI';
 import '../../../../css/dashboard.css';
 import '../../../../css/crud.css';
 
@@ -47,6 +47,15 @@ type LoanRow = {
     daysLate: number;
     fineAmount: number;
     finePaid: boolean;
+    fineStatus: string;
+    fineStatusLabel: string;
+    fineStatusTone: string;
+    fineProofUrl: string | null;
+    fineSubmittedAt: string | null;
+    fineVerifiedAt: string | null;
+    fineRejectionReason: string | null;
+    canSubmitFineProof: boolean;
+    submitFineProofUrl: string;
     renewalCount: number;
     maxRenewals: number;
     renewalDays: number;
@@ -104,6 +113,7 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
     const [reserveBook, setReserveBook] = useState<BookRow | null>(null);
     const [cancelReservation, setCancelReservation] = useState<ReservationRow | null>(null);
     const [renewLoan, setRenewLoan] = useState<LoanRow | null>(null);
+    const [fineLoan, setFineLoan] = useState<LoanRow | null>(null);
     const [processing, setProcessing] = useState(false);
 
     const visit = (overrides: Record<string, string | number | undefined>) => {
@@ -378,12 +388,40 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                                                             {loan.fineAmount > 0 ? (
                                                                 <span>
                                                                     <b>{formatRupiah(loan.fineAmount)}</b>
-                                                                    <small className="db-hint" style={{ display: 'block' }}>{loan.finePaid ? 'Lunas' : 'Belum lunas'}</small>
+                                                                    <span className={`db-badge ${libraryTone(loan.fineStatusTone)}`} style={{ display: 'inline-block', marginTop: 4 }}>
+                                                                        {loan.fineStatusLabel}
+                                                                    </span>
+                                                                    {loan.fineRejectionReason && (
+                                                                        <small className="db-hint" style={{ display: 'block', color: 'var(--db-red)' }}>
+                                                                            {loan.fineRejectionReason}
+                                                                        </small>
+                                                                    )}
                                                                 </span>
                                                             ) : '—'}
                                                         </td>
                                                         <td>
                                                             <div className="crud-row-actions" style={{ justifyContent: 'flex-end' }}>
+                                                                {loan.fineProofUrl && (
+                                                                    <a
+                                                                        className="db-btn ghost sm"
+                                                                        href={loan.fineProofUrl}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        title="Lihat bukti pembayaran"
+                                                                    >
+                                                                        <FileText size={13} />
+                                                                    </a>
+                                                                )}
+                                                                {loan.canSubmitFineProof && (
+                                                                    <button
+                                                                        className="db-btn ghost sm"
+                                                                        type="button"
+                                                                        onClick={() => setFineLoan(loan)}
+                                                                        title="Unggah bukti pembayaran denda"
+                                                                    >
+                                                                        <Upload size={13} />
+                                                                    </button>
+                                                                )}
                                                                 {loan.canRenew ? (
                                                                     <button
                                                                         className="db-btn ghost sm"
@@ -497,6 +535,20 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                         holdDays={options.holdDays}
                         pickupPlanDays={options.pickupPlanDays}
                         onClose={() => setReserveBook(null)}
+                    />
+                )}
+
+                {fineLoan && (
+                    <FinePaymentModal
+                        loan={{
+                            bookTitle: fineLoan.bookTitle,
+                            fineAmount: fineLoan.fineAmount,
+                            fineStatus: fineLoan.fineStatus,
+                            fineRejectionReason: fineLoan.fineRejectionReason,
+                            submitFineProofUrl: fineLoan.submitFineProofUrl,
+                        }}
+                        finePerDay={options.finePerDay}
+                        onClose={() => setFineLoan(null)}
                     />
                 )}
 

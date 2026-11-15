@@ -5,13 +5,16 @@ namespace App\Support\Library;
 use App\Enums\BookCopyStatus;
 use App\Enums\BookLoanStatus;
 use App\Enums\BookReservationStatus;
+use App\Enums\FinePaymentStatus;
 use App\Models\Library\Book;
 use App\Models\Library\BookCopy;
 use App\Models\Library\BookLoan;
 use App\Models\Library\BookReservation;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -23,6 +26,8 @@ use Illuminate\Validation\ValidationException;
  */
 class LibraryService
 {
+    public function __construct(private readonly LibraryNotificationService $notifications) {}
+
     public function refreshOverdueLoans(): int
     {
         return BookLoan::query()
@@ -236,6 +241,12 @@ class LibraryService
                 'fine_amount' => $fineAmount,
                 'fine_paid' => $fineAmount > 0 ? $finePaid : false,
                 'fine_paid_at' => $fineAmount > 0 && $finePaid ? now() : null,
+                'fine_payment_status' => $fineAmount > 0 && $finePaid
+                    ? FinePaymentStatus::VERIFIED->value
+                    : FinePaymentStatus::UNPAID->value,
+                'fine_verified_at' => $fineAmount > 0 && $finePaid ? now() : null,
+                'fine_verified_by' => $fineAmount > 0 && $finePaid ? $actor->id : null,
+                'fine_rejection_reason' => null,
                 'notes' => $options['notes'] ?? $lockedLoan->notes,
                 'returned_by' => $actor->id,
             ]);
@@ -456,13 +467,161 @@ class LibraryService
     }
 
     /**
+     * Mahasiswa mengunggah bukti pembayaran denda.
+     *
+     * @throws ValidationException
+     */
+    public function submitFineProof(BookLoan $loan, User $student, UploadedFile $proof, ?string $notes = null): BookLoan
+    {
+        if ((int) $loan->user_id !== (int) $student->id) {
+            throw ValidationException::withMessages([
+                'loan' => 'Anda hanya dapat mengunggah bukti untuk peminjaman sendiri.',
+            ]);
+        }
+
+        if (! $loan->hasFine()) {
+            throw ValidationException::withMessages([
+                'loan' => 'Peminjaman ini tidak memiliki denda.',
+            ]);
+        }
+
+        if ($loan->fine_paid) {
+            throw ValidationException::withMessages([
+                'loan' => 'Denda peminjaman ini sudah lunas.',
+            ]);
+        }
+
+        if ($loan->fineStatus() === FinePaymentStatus::PENDING) {
+            throw ValidationException::withMessages([
+                'proof' => 'Bukti pembayaran sedang menunggu verifikasi pustakawan.',
+            ]);
+        }
+
+        $path = $proof->store('library/fines/'.$loan->id, 'public');
+        $previousPath = $loan->fine_proof_path;
+
+        $updated = DB::transaction(function () use ($loan, $path, $proof, $notes) {
+            $lockedLoan = BookLoan::query()->lockForUpdate()->findOrFail($loan->id);
+
+            if ($lockedLoan->fine_paid) {
+                throw ValidationException::withMessages([
+                    'loan' => 'Denda peminjaman ini sudah lunas.',
+                ]);
+            }
+
+            $lockedLoan->update([
+                'fine_payment_status' => FinePaymentStatus::PENDING->value,
+                'fine_proof_path' => $path,
+                'fine_proof_original_name' => $proof->getClientOriginalName(),
+                'fine_payment_notes' => $notes,
+                'fine_submitted_at' => now(),
+                'fine_verified_at' => null,
+                'fine_verified_by' => null,
+                'fine_rejection_reason' => null,
+            ]);
+
+            return $lockedLoan;
+        });
+
+        if ($previousPath && $previousPath !== $path) {
+            Storage::disk('public')->delete($previousPath);
+        }
+
+        $this->notifications->fineSubmitted($updated);
+
+        return $updated->refresh()->load(['copy.book', 'user']);
+    }
+
+    /**
+     * Pustakawan memverifikasi pembayaran denda (langsung tunai atau bukti transfer).
+     *
+     * @throws ValidationException
+     */
+    public function verifyFinePayment(BookLoan $loan, User $actor): BookLoan
+    {
+        if (! $loan->hasFine()) {
+            throw ValidationException::withMessages([
+                'loan' => 'Peminjaman ini tidak memiliki denda.',
+            ]);
+        }
+
+        if ($loan->fine_paid) {
+            return $loan->refresh()->load(['copy.book', 'user']);
+        }
+
+        $verified = DB::transaction(function () use ($loan, $actor) {
+            $lockedLoan = BookLoan::query()->lockForUpdate()->findOrFail($loan->id);
+
+            $lockedLoan->update([
+                'fine_paid' => true,
+                'fine_paid_at' => now(),
+                'fine_payment_status' => FinePaymentStatus::VERIFIED->value,
+                'fine_verified_at' => now(),
+                'fine_verified_by' => $actor->id,
+                'fine_rejection_reason' => null,
+            ]);
+
+            return $lockedLoan;
+        });
+
+        $this->notifications->fineVerified($verified);
+
+        return $verified->refresh()->load(['copy.book', 'user']);
+    }
+
+    /**
+     * Pustakawan menolak bukti pembayaran denda sehingga mahasiswa dapat unggah ulang.
+     *
+     * @throws ValidationException
+     */
+    public function rejectFinePayment(BookLoan $loan, User $actor, string $reason): BookLoan
+    {
+        if (! $loan->hasFine()) {
+            throw ValidationException::withMessages([
+                'loan' => 'Peminjaman ini tidak memiliki denda.',
+            ]);
+        }
+
+        if ($loan->fine_paid) {
+            throw ValidationException::withMessages([
+                'loan' => 'Denda peminjaman ini sudah lunas.',
+            ]);
+        }
+
+        if (! $loan->isFineProofPending()) {
+            throw ValidationException::withMessages([
+                'loan' => 'Tidak ada bukti pembayaran yang menunggu verifikasi.',
+            ]);
+        }
+
+        $rejected = DB::transaction(function () use ($loan, $actor, $reason) {
+            $lockedLoan = BookLoan::query()->lockForUpdate()->findOrFail($loan->id);
+
+            $lockedLoan->update([
+                'fine_paid' => false,
+                'fine_paid_at' => null,
+                'fine_payment_status' => FinePaymentStatus::REJECTED->value,
+                'fine_verified_at' => now(),
+                'fine_verified_by' => $actor->id,
+                'fine_rejection_reason' => $reason,
+            ]);
+
+            return $lockedLoan;
+        });
+
+        $this->notifications->fineRejected($rejected);
+
+        return $rejected->refresh()->load(['copy.book', 'user']);
+    }
+
+    /**
      * @throws ValidationException
      */
     public function markReservationReady(BookReservation $reservation, BookCopy $copy, User $actor): BookReservation
     {
         $this->expireReservations();
 
-        return DB::transaction(function () use ($reservation, $copy, $actor) {
+        $ready = DB::transaction(function () use ($reservation, $copy, $actor) {
             $lockedReservation = BookReservation::query()->lockForUpdate()->findOrFail($reservation->id);
 
             if ($lockedReservation->status !== BookReservationStatus::PENDING->value) {
@@ -497,6 +656,10 @@ class LibraryService
 
             return $lockedReservation->refresh();
         });
+
+        $this->notifications->reservationReady($ready);
+
+        return $ready;
     }
 
     /**
@@ -583,7 +746,11 @@ class LibraryService
             'processed_by' => $actor?->id,
         ]);
 
-        return $reservation->refresh();
+        $reservation->refresh();
+
+        $this->notifications->reservationReady($reservation);
+
+        return $reservation;
     }
 
     public function maxLoansFor(User $user): int

@@ -1,7 +1,8 @@
 // Daftar peminjaman perpustakaan (admin) + pengembalian dan pembayaran denda.
 import { Head, router, useForm } from '@inertiajs/react';
 import {
-    BookMarked, BookOpen, CircleDollarSign, Clock, Plus, RefreshCw, RotateCcw, Wallet,
+    BookMarked, BookOpen, CircleDollarSign, Clock, FileText, Plus, RefreshCw, RotateCcw,
+    ShieldCheck, Wallet, XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
@@ -10,7 +11,7 @@ import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
 import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
 import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
-import { buildQuery, formatRupiah, libraryTone, LibraryModal, LibraryStats } from '../shared';
+import { FineRejectModal, buildQuery, formatRupiah, libraryTone, LibraryModal, LibraryStats } from '../shared';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
@@ -30,6 +31,16 @@ type Row = {
     daysLate: number;
     fineAmount: number;
     finePaid: boolean;
+    fineStatus: string;
+    fineStatusLabel: string;
+    fineStatusTone: string;
+    fineProofUrl: string | null;
+    fineSubmittedAt: string | null;
+    fineVerifiedAt: string | null;
+    fineRejectionReason: string | null;
+    finePaymentNotes: string | null;
+    canVerifyFine: boolean;
+    canRejectFine: boolean;
     renewalCount: number;
     maxRenewals: number;
     canRenew: boolean;
@@ -40,20 +51,22 @@ type Row = {
     returnUrl: string;
     renewUrl: string;
     payFineUrl: string;
+    verifyFineUrl: string;
+    rejectFineUrl: string;
     deleteUrl: string;
 };
 
 type Props = {
     shell: ShellProps;
     can: { create: boolean; update: boolean; delete: boolean };
-    stats: { active: number; overdue: number; returnedThisMonth: number; outstandingFines: number };
+    stats: { active: number; overdue: number; returnedThisMonth: number; outstandingFines: number; pendingFineReviews: number };
     data: { rows: Row[]; currentPage: number; lastPage: number; perPage: number; total: number };
-    filters: { q: string; status: string; overdue: string; sort: string; direction: 'asc' | 'desc'; perPage: number };
-    options: { statuses: Record<string, string>; copyStatuses: Record<string, string>; finePerDay: number; maxRenewals: number; renewalDays: number };
+    filters: { q: string; status: string; overdue: string; fine_status: string; sort: string; direction: 'asc' | 'desc'; perPage: number };
+    options: { statuses: Record<string, string>; copyStatuses: Record<string, string>; finePerDay: number; maxRenewals: number; renewalDays: number; fineStatuses: Record<string, string> };
     urls: { index: string; create: string; bulkDestroy: string };
 };
 
-type Pending = { kind: 'delete'; row: Row } | { kind: 'bulk' } | { kind: 'pay'; row: Row } | { kind: 'renew'; row: Row } | null;
+type Pending = { kind: 'delete'; row: Row } | { kind: 'bulk' } | { kind: 'pay'; row: Row } | { kind: 'renew'; row: Row } | { kind: 'verify'; row: Row } | null;
 
 function ReturnModal({ loan, copyStatuses, finePerDay, onClose }: {
     loan: Row;
@@ -150,6 +163,7 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
     const [selected, setSelected] = useState<number[]>([]);
     const [pending, setPending] = useState<Pending>(null);
     const [returning, setReturning] = useState<Row | null>(null);
+    const [rejecting, setRejecting] = useState<Row | null>(null);
     const [processing, setProcessing] = useState(false);
 
     const visit = (overrides: Record<string, string | number | undefined>, clearSelection = false) => {
@@ -160,7 +174,7 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
         });
     };
 
-    const activeFilterCount = [filters.status, filters.overdue].filter((value) => value !== '').length;
+    const activeFilterCount = [filters.status, filters.overdue, filters.fine_status].filter((value) => value !== '').length;
 
     const toggle = (id: number) => {
         setSelected((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
@@ -187,6 +201,11 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
 
         if (pending.kind === 'pay') {
             router.post(pending.row.payFineUrl, {}, { preserveScroll: true, onFinish: done });
+            return;
+        }
+
+        if (pending.kind === 'verify') {
+            router.post(pending.row.verifyFineUrl, {}, { preserveScroll: true, onFinish: done });
             return;
         }
 
@@ -220,6 +239,7 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
                             { label: 'Terlambat', value: stats.overdue, icon: Clock, tone: 'red' },
                             { label: 'Kembali bulan ini', value: stats.returnedThisMonth, icon: RotateCcw, tone: 'green' },
                             { label: 'Denda belum lunas', value: formatRupiah(stats.outstandingFines), icon: CircleDollarSign, tone: 'gold' },
+                            { label: 'Menunggu verifikasi', value: stats.pendingFineReviews, icon: ShieldCheck, tone: 'gold' },
                         ]}
                     />
 
@@ -290,7 +310,15 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
                                         render: (row) => row.fineAmount > 0 ? (
                                             <span>
                                                 <b>{formatRupiah(row.fineAmount)}</b>
-                                                <small className="db-hint" style={{ display: 'block' }}>{row.finePaid ? 'Lunas' : 'Belum lunas'}</small>
+                                                <span className={`db-badge ${libraryTone(row.fineStatusTone)}`} style={{ display: 'inline-block', marginTop: 3 }}>
+                                                    {row.fineStatusLabel}
+                                                </span>
+                                                {row.fineSubmittedAt && (
+                                                    <small className="db-hint" style={{ display: 'block' }}>Diunggah {row.fineSubmittedAt}</small>
+                                                )}
+                                                {row.fineRejectionReason && (
+                                                    <small className="db-hint" style={{ display: 'block', color: 'var(--db-red)' }}>{row.fineRejectionReason}</small>
+                                                )}
                                             </span>
                                         ) : '—',
                                     },
@@ -311,7 +339,7 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
                                 filterBar={(
                                     <FilterPanel
                                         count={activeFilterCount}
-                                        onReset={() => visit({ status: '', overdue: '', page: 1 }, true)}
+                                        onReset={() => visit({ status: '', overdue: '', fine_status: '', page: 1 }, true)}
                                     >
                                         <select
                                             className="db-input"
@@ -332,6 +360,17 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
                                         >
                                             <option value="">Semua ketepatan waktu</option>
                                             <option value="1">Hanya terlambat</option>
+                                        </select>
+                                        <select
+                                            className="db-input"
+                                            value={filters.fine_status}
+                                            onChange={(event) => visit({ fine_status: event.target.value, page: 1 }, true)}
+                                            aria-label="Filter status denda"
+                                        >
+                                            <option value="">Semua status denda</option>
+                                            {Object.entries(options.fineStatuses).map(([value, label]) => (
+                                                <option key={value} value={value}>{label}</option>
+                                            ))}
                                         </select>
                                     </FilterPanel>
                                 )}
@@ -355,7 +394,28 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
                                                 <RefreshCw size={13} />
                                             </button>
                                         )}
-                                        {can.update && row.canPayFine && (
+                                        {can.update && row.fineProofUrl && (
+                                            <a
+                                                className="db-btn ghost sm"
+                                                href={row.fineProofUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                title="Lihat bukti pembayaran denda"
+                                            >
+                                                <FileText size={13} />
+                                            </a>
+                                        )}
+                                        {can.update && row.canVerifyFine && (
+                                            <button className="db-btn ghost sm" type="button" onClick={() => setPending({ kind: 'verify', row })} title="Verifikasi bukti pembayaran">
+                                                <ShieldCheck size={13} />
+                                            </button>
+                                        )}
+                                        {can.update && row.canRejectFine && (
+                                            <button className="db-btn ghost sm" type="button" onClick={() => setRejecting(row)} title="Tolak bukti pembayaran">
+                                                <XCircle size={13} />
+                                            </button>
+                                        )}
+                                        {can.update && row.canPayFine && !row.canVerifyFine && (
                                             <button className="db-btn ghost sm" type="button" onClick={() => setPending({ kind: 'pay', row })} title="Tandai denda lunas">
                                                 <Wallet size={13} />
                                             </button>
@@ -382,30 +442,47 @@ export default function LoansIndex({ shell, can, stats, data, filters, options, 
                     />
                 )}
 
+                {rejecting && (
+                    <FineRejectModal
+                        loan={{
+                            bookTitle: rejecting.bookTitle,
+                            fineAmount: rejecting.fineAmount,
+                            member: rejecting.member,
+                            proofUrl: rejecting.fineProofUrl,
+                        }}
+                        url={rejecting.rejectFineUrl}
+                        onClose={() => setRejecting(null)}
+                    />
+                )}
+
                 <ConfirmModal
                     open={pending !== null}
                     title={
                         pending?.kind === 'bulk' ? 'Hapus riwayat terpilih?'
                             : pending?.kind === 'pay' ? 'Tandai denda lunas?'
-                                : pending?.kind === 'renew' ? 'Perpanjang peminjaman?'
-                                    : 'Hapus riwayat peminjaman?'
+                                : pending?.kind === 'verify' ? 'Verifikasi bukti pembayaran?'
+                                    : pending?.kind === 'renew' ? 'Perpanjang peminjaman?'
+                                        : 'Hapus riwayat peminjaman?'
                     }
                     message={pending?.kind === 'bulk'
                         ? `${selected.length} riwayat peminjaman akan dihapus. Peminjaman aktif akan dilewati.`
                         : pending?.kind === 'pay'
                             ? `Denda ${formatRupiah(pending.row.fineAmount)} untuk ${pending.row.member} akan ditandai lunas.`
-                            : pending?.kind === 'renew'
-                                ? `Peminjaman "${pending.row.bookTitle ?? ''}" oleh ${pending.row.member} akan diperpanjang ${options.renewalDays} hari dari jatuh tempo saat ini (${pending.row.dueAt ?? '—'}).`
-                                : pending?.kind === 'delete'
-                                    ? `Riwayat peminjaman ${pending.row.copyCode ?? ''} oleh ${pending.row.member} akan dihapus.`
-                                    : ''}
+                            : pending?.kind === 'verify'
+                                ? `Bukti pembayaran denda ${formatRupiah(pending.row.fineAmount)} untuk ${pending.row.member} akan diverifikasi dan denda ditandai lunas.`
+                                : pending?.kind === 'renew'
+                                    ? `Peminjaman "${pending.row.bookTitle ?? ''}" oleh ${pending.row.member} akan diperpanjang ${options.renewalDays} hari dari jatuh tempo saat ini (${pending.row.dueAt ?? '—'}).`
+                                    : pending?.kind === 'delete'
+                                        ? `Riwayat peminjaman ${pending.row.copyCode ?? ''} oleh ${pending.row.member} akan dihapus.`
+                                        : ''}
                     confirmLabel={
                         pending?.kind === 'bulk' ? 'Ya, hapus semua'
                             : pending?.kind === 'pay' ? 'Ya, tandai lunas'
-                                : pending?.kind === 'renew' ? 'Ya, perpanjang'
-                                    : 'Ya, hapus'
+                                : pending?.kind === 'verify' ? 'Ya, verifikasi'
+                                    : pending?.kind === 'renew' ? 'Ya, perpanjang'
+                                        : 'Ya, hapus'
                     }
-                    danger={pending?.kind !== 'pay' && pending?.kind !== 'renew'}
+                    danger={pending?.kind !== 'pay' && pending?.kind !== 'renew' && pending?.kind !== 'verify'}
                     processing={processing}
                     onConfirm={confirm}
                     onCancel={() => setPending(null)}

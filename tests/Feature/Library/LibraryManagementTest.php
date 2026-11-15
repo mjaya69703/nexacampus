@@ -3,6 +3,8 @@
 use App\Enums\BookCopyStatus;
 use App\Enums\BookLoanStatus;
 use App\Enums\BookReservationStatus;
+use App\Enums\FinePaymentStatus;
+use App\Mail\Library\LibraryNotificationMail;
 use App\Models\Library\Book;
 use App\Models\Library\BookCategory;
 use App\Models\Library\BookCopy;
@@ -12,6 +14,9 @@ use App\Models\Settings\System;
 use App\Models\User;
 use App\Support\Library\LibraryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission as SpatiePermission;
@@ -166,6 +171,46 @@ function makeLibraryLoan(array $setup, User $borrower, ?BookCopy $copy = null, ?
     ]);
 
     return app(LibraryService::class)->borrow($borrower, $copy, $setup['operator']);
+}
+
+/**
+ * Buat riwayat peminjaman yang sudah dikembalikan dan memiliki denda belum lunas.
+ *
+ * @param  array<string, mixed>  $setup
+ */
+function makeLibraryFineLoan(array $setup, User $borrower, float $amount = 5000): BookLoan
+{
+    return BookLoan::create([
+        'book_copy_id' => $setup['copy']->id,
+        'user_id' => $borrower->id,
+        'borrowed_at' => now()->subDays(20),
+        'due_at' => now()->subDays(5)->startOfDay(),
+        'returned_at' => now()->subDay(),
+        'status' => BookLoanStatus::RETURNED->value,
+        'fine_amount' => $amount,
+        'fine_paid' => false,
+        'fine_payment_status' => FinePaymentStatus::UNPAID->value,
+    ]);
+}
+
+/**
+ * Tandai peminjaman memiliki bukti pembayaran denda yang menunggu verifikasi.
+ */
+function attachLibraryFineProof(BookLoan $loan, string $contents = 'bukti-transfer'): BookLoan
+{
+    $path = 'library/fines/'.$loan->id.'/bukti.pdf';
+
+    Storage::disk('public')->put($path, $contents);
+
+    $loan->update([
+        'fine_payment_status' => FinePaymentStatus::PENDING->value,
+        'fine_proof_path' => $path,
+        'fine_proof_original_name' => 'bukti.pdf',
+        'fine_payment_notes' => 'Transfer bank.',
+        'fine_submitted_at' => now(),
+    ]);
+
+    return $loan->refresh();
 }
 
 test('admin dapat membuka daftar kategori buku', function () {
@@ -735,4 +780,244 @@ test('dashboard pustakawan menampilkan section perpustakaan', function () {
             ->has('sections', 1)
             ->where('sections.0.key', 'library')
             ->where('sections.0.quickLinks.0.label', 'Peminjaman'));
+});
+
+test('perintah pengingat mengirim H-3 dan H-1 sekali per peminjaman', function () {
+    $setup = libraryTestSetup();
+    Mail::fake();
+
+    $loan = makeLibraryLoan($setup, $setup['studentUser'], $setup['copy']);
+    $loan->update(['due_at' => now()->addDays(3)]);
+
+    $this->artisan('library:send-due-reminders')->assertSuccessful();
+
+    expect($loan->refresh()->due_reminder_h3_sent_at)->not->toBeNull()
+        ->and($loan->due_reminder_h1_sent_at)->toBeNull();
+
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+
+    $this->artisan('library:send-due-reminders')->assertSuccessful();
+
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+
+    $loan->update(['due_at' => now()->addDay()]);
+
+    $this->artisan('library:send-due-reminders')->assertSuccessful();
+
+    expect($loan->refresh()->due_reminder_h1_sent_at)->not->toBeNull();
+
+    Mail::assertSent(LibraryNotificationMail::class, 2);
+});
+
+test('peringatan keterlambatan diulang setelah interval konfigurasi', function () {
+    $setup = libraryTestSetup();
+    Mail::fake();
+
+    $loan = makeLibraryLoan($setup, $setup['studentUser'], $setup['copy']);
+    $loan->update(['due_at' => now()->subDays(2)]);
+
+    $this->artisan('library:send-due-reminders')->assertSuccessful();
+
+    expect($loan->refresh()->overdue_notified_at)->not->toBeNull()
+        ->and($loan->status)->toBe(BookLoanStatus::OVERDUE->value);
+
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+
+    $this->artisan('library:send-due-reminders')->assertSuccessful();
+
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+
+    $this->travel(4)->days();
+
+    $this->artisan('library:send-due-reminders')->assertSuccessful();
+
+    Mail::assertSent(LibraryNotificationMail::class, 2);
+});
+
+test('perintah pengingat mendukung dry-run tanpa menandai notifikasi', function () {
+    $setup = libraryTestSetup();
+    Mail::fake();
+
+    $loan = makeLibraryLoan($setup, $setup['studentUser'], $setup['copy']);
+    $loan->update(['due_at' => now()->addDays(3)]);
+
+    $this->artisan('library:send-due-reminders', ['--dry-run' => true])
+        ->expectsOutputToContain('[dry-run]')
+        ->assertSuccessful();
+
+    expect($loan->refresh()->due_reminder_h3_sent_at)->toBeNull();
+
+    Mail::assertNothingSent();
+});
+
+test('reservasi siap diambil mengirim notifikasi sekali', function () {
+    $setup = libraryTestSetup();
+    Mail::fake();
+
+    $reservation = app(LibraryService::class)->createReservation($setup['studentUser'], $setup['book']);
+    $ready = app(LibraryService::class)->markReservationReady($reservation, $setup['copy'], $setup['operator']);
+
+    expect($ready->status)->toBe(BookReservationStatus::READY->value)
+        ->and($ready->ready_notified_at)->not->toBeNull();
+
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+
+    $this->artisan('library:send-due-reminders')->assertSuccessful();
+
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+});
+
+test('mahasiswa dapat mengunggah bukti pembayaran denda dan menunggu verifikasi', function () {
+    $setup = libraryTestSetup();
+    Mail::fake();
+    Storage::fake('public');
+
+    $loan = makeLibraryFineLoan($setup, $setup['studentUser']);
+
+    actingLibraryStudent($setup['studentUser'])
+        ->post(route('student.library.loans.fine.store', $loan), [
+            'proof' => UploadedFile::fake()->create('bukti-transfer.pdf', 120, 'application/pdf'),
+            'notes' => 'Transfer BCA 12 Nov 2026.',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $loan->refresh();
+
+    expect($loan->fine_payment_status)->toBe(FinePaymentStatus::PENDING->value)
+        ->and($loan->fine_paid)->toBeFalse()
+        ->and($loan->fine_submitted_at)->not->toBeNull()
+        ->and($loan->fine_proof_path)->not->toBeNull();
+
+    Storage::disk('public')->assertExists($loan->fine_proof_path);
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+
+    $availableCopy = BookCopy::create([
+        'book_id' => makeLibraryBook($setup)->id,
+        'code' => 'BK-DENDA-PENDING',
+        'status' => BookCopyStatus::AVAILABLE->value,
+    ]);
+
+    expect(fn () => app(LibraryService::class)->borrow($setup['studentUser'], $availableCopy, $setup['operator']))
+        ->toThrow(ValidationException::class);
+
+    actingLibraryStudent($setup['studentUser'])
+        ->post(route('student.library.loans.fine.store', $loan), [
+            'proof' => UploadedFile::fake()->create('bukti-lagi.pdf', 120, 'application/pdf'),
+        ])
+        ->assertSessionHasErrors('proof');
+});
+
+test('mahasiswa tidak dapat mengunggah bukti denda peminjaman orang lain', function () {
+    $setup = libraryTestSetup();
+    Storage::fake('public');
+
+    $loan = makeLibraryFineLoan($setup, $setup['studentUser']);
+
+    actingLibraryStudent($setup['otherStudent'])
+        ->post(route('student.library.loans.fine.store', $loan), [
+            'proof' => UploadedFile::fake()->create('bukti.pdf', 120, 'application/pdf'),
+        ])
+        ->assertForbidden();
+});
+
+test('pustakawan dapat memverifikasi bukti pembayaran denda', function () {
+    $setup = libraryTestSetup();
+    Mail::fake();
+    Storage::fake('public');
+
+    $loan = attachLibraryFineProof(makeLibraryFineLoan($setup, $setup['studentUser']));
+
+    actingLibraryAdmin($setup['operator'])
+        ->post(route('admin.library.loans.fine.verify', $loan))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $loan->refresh();
+
+    expect($loan->fine_paid)->toBeTrue()
+        ->and($loan->fine_payment_status)->toBe(FinePaymentStatus::VERIFIED->value)
+        ->and($loan->fine_verified_by)->toBe($setup['operator']->id)
+        ->and($loan->fine_paid_at)->not->toBeNull();
+
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+});
+
+test('pustakawan dapat menolak bukti denda dan mahasiswa mengunggah ulang', function () {
+    $setup = libraryTestSetup();
+    Mail::fake();
+    Storage::fake('public');
+
+    $loan = attachLibraryFineProof(makeLibraryFineLoan($setup, $setup['studentUser']));
+    $oldPath = $loan->fine_proof_path;
+
+    actingLibraryAdmin($setup['operator'])
+        ->post(route('admin.library.loans.fine.reject', $loan), [
+            'reason' => 'Nominal transfer tidak sesuai.',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $loan->refresh();
+
+    expect($loan->fine_payment_status)->toBe(FinePaymentStatus::REJECTED->value)
+        ->and($loan->fine_paid)->toBeFalse()
+        ->and($loan->fine_rejection_reason)->toBe('Nominal transfer tidak sesuai.');
+
+    Mail::assertSent(LibraryNotificationMail::class, 1);
+
+    actingLibraryStudent($setup['studentUser'])
+        ->post(route('student.library.loans.fine.store', $loan), [
+            'proof' => UploadedFile::fake()->create('bukti-baru.pdf', 120, 'application/pdf'),
+            'notes' => 'Transfer ulang.',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $loan->refresh();
+
+    expect($loan->fine_payment_status)->toBe(FinePaymentStatus::PENDING->value)
+        ->and($loan->fine_rejection_reason)->toBeNull()
+        ->and($loan->fine_proof_path)->not->toBe($oldPath);
+
+    Storage::disk('public')->assertMissing($oldPath);
+    Storage::disk('public')->assertExists($loan->fine_proof_path);
+
+    Mail::assertSent(LibraryNotificationMail::class, 2);
+});
+
+test('bukti pembayaran denda hanya dapat diunduh pemilik dan pustakawan', function () {
+    $setup = libraryTestSetup();
+    Storage::fake('public');
+
+    $loan = attachLibraryFineProof(makeLibraryFineLoan($setup, $setup['studentUser']));
+
+    actingLibraryStudent($setup['studentUser'])
+        ->get(route('student.library.loans.fine.proof', $loan))
+        ->assertOk();
+
+    actingLibraryStudent($setup['otherStudent'])
+        ->get(route('student.library.loans.fine.proof', $loan))
+        ->assertForbidden();
+
+    actingLibraryAdmin($setup['operator'])
+        ->get(route('admin.library.loans.fine.proof', $loan))
+        ->assertOk();
+});
+
+test('daftar peminjaman dapat difilter status denda dan menampilkan antrean verifikasi', function () {
+    $setup = libraryTestSetup();
+    Storage::fake('public');
+
+    attachLibraryFineProof(makeLibraryFineLoan($setup, $setup['studentUser'], 5000));
+
+    actingLibraryAdmin($setup['operator'])
+        ->get(route('admin.library.loans.index', ['fine_status' => 'pending']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Library/Loans/Index')
+            ->has('data.rows', 1)
+            ->where('data.rows.0.fineStatus', FinePaymentStatus::PENDING->value)
+            ->where('stats.pendingFineReviews', 1)
+            ->where('filters.fine_status', 'pending'));
 });

@@ -137,3 +137,5 @@ Route::get('/library/books/{book}', [StudentLibraryController::class, 'showBook'
 Route::post('/library/reservations', [StudentLibraryController::class, 'storeReservation'])->name('library.reservations.store');
 Route::post('/library/reservations/{reservation}/cancel', [StudentLibraryController::class, 'cancelReservation'])->name('library.reservations.cancel');
 Route::post('/library/loans/{loan}/renew', [StudentLibraryController::class, 'renewLoan'])->name('library.loans.renew');
+Route::post('/library/loans/{loan}/fine', [StudentLibraryController::class, 'submitFineProof'])->name('library.loans.fine.store');
+Route::get('/library/loans/{loan}/fine/proof', [StudentLibraryController::class, 'downloadFineProof'])->name('library.loans.fine.proof');

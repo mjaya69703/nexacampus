@@ -2001,6 +2001,20 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
     - **UI:** tabel admin peminjaman menampilkan `Diperpanjang n/max×`; tabel reservasi admin menampilkan antrean, rencana ambil, masa berlaku, dan jatuh tempo pinjaman hasil fulfill.
     - **Test:** `tests/Feature/Library/LibraryManagementTest.php` menjadi 31 test / 211 assertion (detail buku, antrean, estimasi, perpanjangan, guard reservasi, halaman admin reservasi, role pustakawan); suite total 857 test / 8.651 assertion. `npm run typecheck` dan `npm run build` lulus.
 
+- **2026-11-16 (Notifikasi & denda perpustakaan):**
+  - **COMPLETED: Notifikasi sirkulasi dan verifikasi bukti denda**
+    - **Pengingat otomatis:** command `library:send-due-reminders` (dijadwalkan harian 07:30 di `routes/console.php`, mendukung `--dry-run`) mengirim pengingat H-3/H-1, peringatan terlambat berulang tiap `LIBRARY_OVERDUE_REMINDER_DAYS` (default 3 hari), dan notifikasi reservasi `ready` yang belum dikirim.
+    - **Dedupe:** kolom `book_loans.due_reminder_h3_sent_at`, `due_reminder_h1_sent_at`, `overdue_notified_at`, serta `book_reservations.ready_notified_at` mencegah notifikasi ganda.
+    - **Kanal:** `app/Support/Library/LibraryNotificationService.php` mengirim email (`App\Mail\Library\LibraryNotificationMail`) dan WhatsApp/web push lewat `NotificationDispatchService`; event `library.loan_due_soon`, `library.loan_overdue`, `library.reservation_ready`, `library.fine_submitted`, `library.fine_verified`, `library.fine_rejected` dengan template WhatsApp di `NotificationTemplateSeeder`.
+    - **Denda berbasis bukti:** enum `FinePaymentStatus` (`unpaid`, `pending`, `verified`, `rejected`); kolom `fine_payment_status`, `fine_proof_path`, `fine_proof_original_name`, `fine_payment_notes`, `fine_submitted_at`, `fine_verified_at`, `fine_verified_by`, `fine_rejection_reason`. `fine_paid`/`fine_paid_at` tetap sumber kebenaran blokir peminjaman; status `verified` selalu menyinkronkan `fine_paid = true`.
+    - **Service:** `submitFineProof()` (validasi pemilik, nominal, status, ukuran/format bukti), `verifyFinePayment()` (tunai atau transfer), `rejectFinePayment()` (alasan wajib) di `LibraryService`, lengkap dengan notifikasi ke mahasiswa.
+    - **Route:** mahasiswa `student.library.loans.fine.store` + `loans.fine.proof`; admin `admin.library.loans.fine.proof`, `fine.verify`, `fine.reject`. Verifikasi/tolak memakai permission `book-loan.update`, unduh bukti admin memakai `book-loan.viewAny`.
+    - **UI:** `FinePaymentModal` + `FineRejectModal` di `components/Shared/Library/LibraryUI.tsx`; portal mahasiswa menampilkan status denda, unggah/unggah ulang bukti, unduh bukti, dan alasan penolakan; tabel admin peminjaman menampilkan antrean “Menunggu verifikasi”, unduh bukti, serta aksi verifikasi/tolak, plus filter `fine_status` dan statistik denda pending.
+    - **Konfigurasi:** `LIBRARY_REMINDER_DAYS` (default `3,1`), `LIBRARY_OVERDUE_REMINDER_DAYS` (3), `LIBRARY_FINE_PROOF_MAX_KB` (5120).
+    - **Migrasi:** `2026_11_14_000001_add_library_fine_payments_and_notifications.php`.
+    - **Test:** `tests/Feature/Library/LibraryManagementTest.php` menjadi 41 test / 291 assertion (H-3/H-1, interval terlambat, dry-run, notifikasi reservasi, unggah bukti, otorisasi unduhan, verifikasi, penolakan + unggah ulang, filter status denda); suite total 867 test / 8.731 assertion. `vendor\bin\pint`, `npm run typecheck`, dan `npm run build` lulus.
+    - **Verifikasi browser:** mahasiswa `rania.putri` mengunggah bukti PDF → status “Menunggu verifikasi”; pustakawan `pustakawan` memverifikasi → “Lunas”, denda belum lunas Rp 0, bukti tersimpan di `storage/app/public/library/fines/3`, dan 4 log notifikasi `library.*` tercatat.
+
 - Last updated by: AI Assistant (based on actual git commit history)
 
 ---
