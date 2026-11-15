@@ -1,68 +1,207 @@
-// Public student achievements (prestasi mahasiswa) page — development placeholder.
+// Public student achievements (prestasi mahasiswa) page.
 import { Head } from '@inertiajs/react';
-import { Clock3, HeartPulse, Hourglass, Medal, Star, Trophy, Users, Wallet } from 'lucide-react';
+import {
+    Award, CalendarDays, GraduationCap, HeartPulse, Medal, Star, Trophy, Users,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { CommunityBaseProps, KemahasiswaanShell } from '../../../components/Home/Community/CommunityShell';
+import { EmptyState } from '../../../components/Shared/EmptyState';
 import { StatStrip } from '../../../components/Shared/StatStrip';
 
-const upcoming: Array<{ num: string; title: string; desc: string }> = [
-    { num: '01', title: 'Galeri Medali', desc: 'Dokumentasi capaian lomba dan penghargaan mahasiswa di tingkat nasional maupun internasional.' },
-    { num: '02', title: 'Profil Peraih Prestasi', desc: 'Kisah inspiratif para mahasiswa yang membanggakan nama kampus.' },
-    { num: '03', title: 'Kalender Kompetisi', desc: 'Agenda kompetisi resmi yang dapat diikuti mahasiswa aktif sepanjang tahun.' },
-];
+type Achievement = {
+    id: number;
+    title: string;
+    student: string;
+    nim: string | null;
+    program: string | null;
+    initials: string;
+    organization: string | null;
+    category: string;
+    categoryLabel: string;
+    categoryTone: string;
+    level: string;
+    levelLabel: string;
+    levelTone: string;
+    rankLabel: string;
+    rankTone: string;
+    achievedAt: string | null;
+    year: string | null;
+    organizer: string | null;
+    description: string | null;
+    isFeatured: boolean;
+};
 
-export default function Prestasi({ campus, links, user }: CommunityBaseProps) {
+type PrestasiProps = CommunityBaseProps & {
+    achievements: Achievement[];
+    stats: { total: number; featured: number; national: number; students: number };
+    levels: Record<string, string>;
+};
+
+const iconToneFor = (tone: string): string => {
+    switch (tone) {
+        case 'green':
+        case 'red':
+            return tone;
+        case 'amber':
+            return 'gold';
+        default:
+            return '';
+    }
+};
+
+const badgeFor = (tone: string): string => {
+    switch (tone) {
+        case 'green':
+        case 'red':
+        case 'amber':
+        case 'gray':
+            return tone;
+        default:
+            return '';
+    }
+};
+
+export default function Prestasi({ campus, links, user, achievements, stats, levels }: PrestasiProps) {
+    const [activeLevel, setActiveLevel] = useState('all');
+
+    const levelEntries = Object.entries(levels);
+
+    const filtered = useMemo(
+        () => (activeLevel === 'all' ? achievements : achievements.filter((achievement) => achievement.level === activeLevel)),
+        [activeLevel, achievements],
+    );
+
     return <KemahasiswaanShell campus={campus} links={links} user={user} activeTab="Prestasi" eyebrow="Prestasi Mahasiswa" title="Prestasi & penghargaan mahasiswa." description="Mahasiswa NexaCampus terus mengukir prestasi gemilang di tingkat nasional maupun internasional. Jadilah bagian dari sejarah kami." icon={Trophy}>
         <Head title={`Prestasi Mahasiswa · ${campus.name}`} />
 
-        <div className="adm-layout">
-            <div className="adm-stack">
-                <section className="adm-card">
-                    <div className="adm-card-head">
-                        <span className="adm-kicker"><Hourglass size={12} /> Status Pengembangan</span>
-                        <span className="adm-badge amber">Segera Hadir</span>
+        <div className="adm-hero">
+            <div className="public-container">
+                <div className="adm-hero-inner">
+                    <div>
+                        <span className="adm-crumb"><Trophy size={14} /> {stats.total} Prestasi Terverifikasi</span>
+                        <p className="adm-hero-desc" style={{ maxWidth: 560 }}>
+                            Galeri capaian mahasiswa lintas kompetisi akademik, olahraga, seni, riset, dan kewirausahaan — dari tingkat lokal hingga internasional.
+                        </p>
                     </div>
-                    <div className="adm-card-body" style={{ display: 'grid', justifyContent: 'center', textAlign: 'center' }}>
-                        <span className="adm-stat-icon gold" style={{ width: 66, height: 66, borderRadius: 20, margin: '4px auto 0' }}><Trophy size={28} /></span>
-                        <h2 style={{ margin: '14px 0 0', color: 'var(--adm-heading)', font: "700 19px/1.35 'Source Serif 4', Georgia, serif" }}>Halaman Sedang Dalam Pengembangan</h2>
-                        <p className="adm-hint" style={{ margin: '6px auto 0', maxWidth: 430 }}>Galeri prestasi mahasiswa akan segera diluncurkan. Tim kami sedang merangkum capaian terbaik dari seluruh ormawa dan delegasi.</p>
-                        <div style={{ width: '100%', maxWidth: 380, margin: '18px auto 0' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-                                <small style={{ color: 'var(--adm-muted)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.07em' }}>Progres Pengembangan</small>
-                            </div>
-                            <div className="adm-progress" style={{ background: 'var(--adm-soft)' }}><i style={{ width: '65%' }} /></div>
-                        </div>
+                    <div className="adm-hero-cta">
+                        <a className="adm-btn outline" href="/kemahasiswaan/organisasi"><Users size={15} /> Organisasi Mahasiswa</a>
+                        <a className="adm-btn light" href="/kemahasiswaan/layanan"><HeartPulse size={15} /> Layanan Mahasiswa</a>
                     </div>
-                </section>
-
-                <section className="adm-card">
-                    <div className="adm-card-head"><h2 className="adm-card-title">Yang Akan Kami Hadirkan</h2><span className="adm-badge">{upcoming.length} Fitur</span></div>
-                    <div className="adm-card-body"><div className="adm-steps" style={{ gap: 16 }}>
-                        {upcoming.map((item) => <div className="adm-step" key={item.num}>
-                            <span className="adm-step-num">{item.num}</span>
-                            <div><h3>{item.title}</h3><p>{item.desc}</p></div>
-                        </div>)}
-                    </div></div>
-                </section>
+                </div>
             </div>
+        </div>
 
-                <div className="adm-stack">
-                <StatStrip
-                    items={[
-                        { icon: Medal, value: '300+', label: 'Medali Diraih', tone: 'gold' },
-                        { icon: Clock3, value: 5, label: 'Tahun Terakhir' },
-                    ]}
-                />
+        <StatStrip
+            items={[
+                { icon: Trophy, value: stats.total, label: 'Prestasi Terverifikasi' },
+                { icon: Medal, value: stats.national, label: 'Nasional & Internasional', tone: 'gold' },
+                { icon: Star, value: stats.featured, label: 'Sorotan Kampus', tone: 'gold' },
+                { icon: GraduationCap, value: stats.students, label: 'Mahasiswa Berprestasi', tone: 'green' },
+            ]}
+        />
 
-                <div className="adm-note gold"><Star size={16} /><div><b style={{ display: 'block', marginBottom: 2, color: 'var(--adm-heading)' }}>Kebanggaan bersama.</b>Lebih dari 300 medali telah dikumpulkan dalam lima tahun terakhir — dan terus bertambah setiap semesternya.</div></div>
+        {achievements.length === 0 ? (
+            <EmptyState
+                icon={Award}
+                iconSize={28}
+                title="Belum Ada Prestasi Terverifikasi"
+                description="Galeri prestasi akan ditampilkan di sini setelah admin memverifikasi capaian mahasiswa."
+            />
+        ) : (
+            <>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <button
+                        type="button"
+                        className={`adm-btn ${activeLevel === 'all' ? '' : 'ghost'} sm`}
+                        onClick={() => setActiveLevel('all')}
+                    >
+                        Semua <span className="adm-badge gray">{achievements.length}</span>
+                    </button>
+                    {levelEntries.map(([value, label]) => {
+                        const count = achievements.filter((achievement) => achievement.level === value).length;
 
-                <section className="adm-card">
-                    <div className="adm-card-head"><h2 className="adm-card-title">Sambil Menunggu</h2></div>
-                    <div className="adm-card-body tight" style={{ display: 'grid', gap: 9 }}>
-                        <a className="adm-btn ghost sm block" href="/kemahasiswaan/organisasi"><Users size={14} /> Organisasi Mahasiswa</a>
-                        <a className="adm-btn ghost sm block" href="/beasiswa"><Wallet size={14} /> Program Beasiswa</a>
-                        <a className="adm-btn ghost sm block" href="/kemahasiswaan/layanan"><HeartPulse size={14} /> Layanan Mahasiswa</a>
+                        if (count === 0) return null;
+
+                        return (
+                            <button
+                                key={value}
+                                type="button"
+                                className={`adm-btn ${activeLevel === value ? '' : 'ghost'} sm`}
+                                onClick={() => setActiveLevel(value)}
+                            >
+                                {label} <span className="adm-badge gray">{count}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {filtered.length === 0 ? (
+                    <EmptyState
+                        icon={Award}
+                        iconSize={24}
+                        title="Belum Ada Prestasi pada Tingkat Ini"
+                        description="Pilih tingkat lain untuk melihat capaian mahasiswa yang tersedia."
+                    />
+                ) : (
+                    <div className="adm-grid adm-cols-3">
+                        {filtered.map((achievement) => (
+                            <article className="adm-card" key={achievement.id}>
+                                <div className="adm-card-body" style={{ display: 'grid', gap: 11, alignContent: 'start' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                                        <span className={`adm-stat-icon ${iconToneFor(achievement.levelTone)}`} style={{ width: 46, height: 46, borderRadius: 13, font: "700 14px 'Source Serif 4', Georgia, serif" }}>
+                                            {achievement.initials || <Trophy size={20} />}
+                                        </span>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 5 }}>
+                                            {achievement.isFeatured && <span className="adm-badge amber"><Star size={10} /> Sorotan</span>}
+                                            <span className={`adm-badge ${badgeFor(achievement.levelTone)}`.trim()}>{achievement.levelLabel}</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h3 style={{ margin: 0, color: 'var(--adm-heading)', font: "700 15px/1.35 'Source Serif 4', Georgia, serif" }}>
+                                            {achievement.title}
+                                        </h3>
+                                        <small className="adm-hint">
+                                            {achievement.student}{achievement.program ? ` · ${achievement.program}` : ''}
+                                        </small>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                        <span className={`adm-badge ${badgeFor(achievement.rankTone)}`.trim()}>{achievement.rankLabel}</span>
+                                        <span className={`adm-badge ${badgeFor(achievement.categoryTone)}`.trim()}>{achievement.categoryLabel}</span>
+                                    </div>
+
+                                    {achievement.description && (
+                                        <p className="adm-hint" style={{ margin: 0 }}>{achievement.description}</p>
+                                    )}
+
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                                        <span className="adm-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                            <CalendarDays size={11} /> {achievement.achievedAt || achievement.year || '—'}
+                                        </span>
+                                        {achievement.organizer && (
+                                            <span className="adm-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                <Medal size={11} /> {achievement.organizer}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {achievement.organization && (
+                                        <small className="adm-hint">Melalui {achievement.organization}</small>
+                                    )}
+                                </div>
+                            </article>
+                        ))}
                     </div>
-                </section>
+                )}
+            </>
+        )}
+
+        <div className="adm-note gold">
+            <Star size={16} />
+            <div>
+                <b style={{ display: 'block', marginBottom: 2, color: 'var(--adm-heading)' }}>Kebanggaan bersama.</b>
+                Setiap prestasi yang tercatat adalah hasil kerja keras mahasiswa, pembina, dan organisasi kemahasiswaan. Data diverifikasi oleh admin kemahasiswaan sebelum ditampilkan.
             </div>
         </div>
     </KemahasiswaanShell>;

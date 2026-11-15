@@ -1448,5 +1448,37 @@ return [
             'order' => 4,
         ],
     ],
+    [
+        'resource' => 'student-organization',
+        'plural' => 'organizations',
+        'area' => 'student-affairs',
+        'component' => 'admin.student-affairs.organizations',
+        'actions' => ['index', 'create', 'edit', 'show', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'],
+        'menu' => [
+            'title' => 'Organisasi Mahasiswa',
+            'icon' => 'fas fa-users',
+            'group' => 'Kemahasiswaan',
+            'group_icon' => 'fas fa-user-graduate',
+            'group_order' => 45,
+            'order' => 1,
+        ],
+    ],
+    [
+        'resource' => 'student-achievement',
+        'plural' => 'achievements',
+        'area' => 'student-affairs',
+        'component' => 'admin.student-affairs.achievements',
+        'actions' => ['index', 'create', 'edit', 'show', 'delete'],
+        'permissions' => ['viewAny', 'create', 'update', 'delete', 'view', 'verify'],
+        'menu' => [
+            'title' => 'Prestasi Mahasiswa',
+            'icon' => 'fas fa-trophy',
+            'group' => 'Kemahasiswaan',
+            'group_icon' => 'fas fa-user-graduate',
+            'group_order' => 45,
+            'order' => 2,
+        ],
+    ],
 
 ];

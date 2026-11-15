@@ -88,6 +88,8 @@ use App\Http\Controllers\Admin\Publication\FaqController;
 use App\Http\Controllers\Admin\Publication\GalleryController;
 use App\Http\Controllers\Admin\Publication\NewsController;
 use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
+use App\Http\Controllers\Admin\StudentAffairs\StudentAchievementController;
+use App\Http\Controllers\Admin\StudentAffairs\StudentOrganizationController;
 use App\Http\Controllers\Admin\StudentService\GraduationApplicationController;
 use App\Http\Controllers\Admin\StudentService\GraduationBatchController;
 use App\Http\Controllers\Admin\StudentService\GraduationDocumentRequirementController;
@@ -3391,3 +3393,101 @@ Route::post('/library/reservations/{reservation}/cancel', [BookReservationContro
 Route::delete('/library/reservations/{reservation}', [BookReservationController::class, 'destroy'])
     ->middleware('active_permission:book-reservation.delete')
     ->name('library.reservations.destroy');
+
+// Kemahasiswaan — organisasi, anggota, dan prestasi mahasiswa.
+Route::get('/student-affairs/organizations', [StudentOrganizationController::class, 'index'])
+    ->middleware('active_permission:student-organization.viewAny')
+    ->name('student-affairs.organizations.index');
+Route::get('/student-affairs/organizations/create', [StudentOrganizationController::class, 'create'])
+    ->middleware('active_permission:student-organization.create')
+    ->name('student-affairs.organizations.create');
+Route::post('/student-affairs/organizations', [StudentOrganizationController::class, 'store'])
+    ->middleware('active_permission:student-organization.create')
+    ->name('student-affairs.organizations.store');
+Route::post('/student-affairs/organizations/bulk-destroy', [StudentOrganizationController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-organization.delete')
+    ->name('student-affairs.organizations.bulk-destroy');
+Route::get('/student-affairs/organizations/search-students', [StudentOrganizationController::class, 'searchStudents'])
+    ->middleware('active_permission:student-organization.update')
+    ->name('student-affairs.organizations.search-students');
+Route::get('/student-affairs/organizations/search-lecturers', [StudentOrganizationController::class, 'searchLecturers'])
+    ->middleware('active_permission:student-organization.viewAny')
+    ->name('student-affairs.organizations.search-lecturers');
+Route::get('/student-affairs/organizations/{id}/edit', [StudentOrganizationController::class, 'edit'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-organization.update')
+    ->name('student-affairs.organizations.edit');
+Route::get('/student-affairs/organizations/{id}', [StudentOrganizationController::class, 'show'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-organization.view')
+    ->name('student-affairs.organizations.show');
+Route::put('/student-affairs/organizations/{id}', [StudentOrganizationController::class, 'update'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-organization.update')
+    ->name('student-affairs.organizations.update');
+Route::delete('/student-affairs/organizations/{id}', [StudentOrganizationController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-organization.delete')
+    ->name('student-affairs.organizations.destroy');
+Route::post('/student-affairs/organizations/{id}/members', [StudentOrganizationController::class, 'storeMember'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-organization.update')
+    ->name('student-affairs.organizations.members.store');
+Route::put('/student-affairs/organizations/{id}/members/{memberId}', [StudentOrganizationController::class, 'updateMember'])
+    ->whereNumber('id')
+    ->whereNumber('memberId')
+    ->middleware('active_permission:student-organization.update')
+    ->name('student-affairs.organizations.members.update');
+Route::delete('/student-affairs/organizations/{id}/members/{memberId}', [StudentOrganizationController::class, 'destroyMember'])
+    ->whereNumber('id')
+    ->whereNumber('memberId')
+    ->middleware('active_permission:student-organization.update')
+    ->name('student-affairs.organizations.members.destroy');
+
+Route::get('/student-affairs/achievements', [StudentAchievementController::class, 'index'])
+    ->middleware('active_permission:student-achievement.viewAny')
+    ->name('student-affairs.achievements.index');
+Route::get('/student-affairs/achievements/create', [StudentAchievementController::class, 'create'])
+    ->middleware('active_permission:student-achievement.create')
+    ->name('student-affairs.achievements.create');
+Route::post('/student-affairs/achievements', [StudentAchievementController::class, 'store'])
+    ->middleware('active_permission:student-achievement.create')
+    ->name('student-affairs.achievements.store');
+Route::post('/student-affairs/achievements/bulk-destroy', [StudentAchievementController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-achievement.delete')
+    ->name('student-affairs.achievements.bulk-destroy');
+Route::get('/student-affairs/achievements/search-students', [StudentAchievementController::class, 'searchStudents'])
+    ->middleware('active_permission:student-achievement.create')
+    ->name('student-affairs.achievements.search-students');
+Route::get('/student-affairs/achievements/{id}/edit', [StudentAchievementController::class, 'edit'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-achievement.update')
+    ->name('student-affairs.achievements.edit');
+Route::get('/student-affairs/achievements/{id}/certificate', [StudentAchievementController::class, 'downloadCertificate'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-achievement.view')
+    ->name('student-affairs.achievements.certificate');
+Route::post('/student-affairs/achievements/{id}/verify', [StudentAchievementController::class, 'verify'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-achievement.verify')
+    ->name('student-affairs.achievements.verify');
+Route::post('/student-affairs/achievements/{id}/reject', [StudentAchievementController::class, 'reject'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-achievement.verify')
+    ->name('student-affairs.achievements.reject');
+Route::post('/student-affairs/achievements/{id}/feature', [StudentAchievementController::class, 'toggleFeatured'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-achievement.update')
+    ->name('student-affairs.achievements.feature');
+Route::get('/student-affairs/achievements/{id}', [StudentAchievementController::class, 'show'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-achievement.view')
+    ->name('student-affairs.achievements.show');
+Route::put('/student-affairs/achievements/{id}', [StudentAchievementController::class, 'update'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-achievement.update')
+    ->name('student-affairs.achievements.update');
+Route::delete('/student-affairs/achievements/{id}', [StudentAchievementController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-achievement.delete')
+    ->name('student-affairs.achievements.destroy');
