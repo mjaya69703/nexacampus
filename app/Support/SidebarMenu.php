@@ -127,8 +127,7 @@ class SidebarMenu
         }
 
         $children = [
-            static::makeChildLink('employee.attendance.index', 'Absensi Saya'),
-            static::makeChildLink('employee.leaves.index', 'Cuti Saya'),
+            static::makeChildLink('employee.attendance.index', 'Kehadiran Saya'),
         ];
 
         if ($role !== 'lecturer') {
@@ -150,6 +149,7 @@ class SidebarMenu
                     static::makeChildLink('student.study-plan.comparison', 'Banding KRS'),
                     static::makeChildLink('student.schedule.index', 'Jadwal'),
                     static::makeChildLink('student.progress.index', 'Progress'),
+                    static::makeChildLink('student.thesis.index', 'Skripsi'),
                 ]),
                 static::makeGroup('student-learning', 'Pembelajaran', 'fas fa-book-open', [
                     static::makeChildLink('student.course-materials.index', 'Materi'),
@@ -170,6 +170,9 @@ class SidebarMenu
                     static::makeChildLink('student.student-services.transfers', 'Pindah Program'),
                     static::makeChildLink('student.student-services.graduations', 'Yudisium'),
                     static::makeChildLink('student.student-services.complaints', 'Pengaduan'),
+                ]),
+                static::makeGroup('student-library', 'Perpustakaan', 'fas fa-book-open', [
+                    static::makeChildLink('student.library.index', 'Katalog & Pinjaman'),
                 ]),
                 static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
                     static::makeChildLink('student.announcements.index', 'Pengumuman'),
@@ -230,6 +233,7 @@ class SidebarMenu
 
         $advisingChildren = [
             static::makeChildLink('lecturer.consultations.index', 'Konsultasi'),
+            static::makeChildLink('lecturer.theses.index', 'Bimbingan Skripsi'),
         ];
 
         if (static::lecturerHasAdvisorAssignments()) {
@@ -296,10 +300,15 @@ class SidebarMenu
 
     protected static function dashboardRouteName(string $role): string
     {
-        return match ($role) {
+        $candidate = match ($role) {
             'superuser' => 'admin.dashboard.index',
             'academic-leader' => 'academic-leader.dashboard.index',
             default => $role.'.dashboard.index',
         };
+
+        // Role baru belum tentu punya dashboard sendiri. Karena kokpit admin
+        // adaptif berbasis izin (bukan berbasis nama role), jadikan ia
+        // fallback agar menu Dashboard tidak pernah mengarah ke '#'.
+        return Route::has($candidate) ? $candidate : 'admin.dashboard.index';
     }
 }

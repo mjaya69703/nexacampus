@@ -3,6 +3,7 @@
 namespace App\Models\Campus;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
@@ -22,6 +23,7 @@ class Building extends Model
     }
 
     protected $fillable = [
+        'campus_location_id',
         'name',
         'code',
         'address',
@@ -39,6 +41,11 @@ class Building extends Model
             'is_active' => 'boolean',
             'floor_count' => 'integer',
         ];
+    }
+
+    public function campusLocation(): BelongsTo
+    {
+        return $this->belongsTo(CampusLocation::class);
     }
 
     public function rooms(): HasMany

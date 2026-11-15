@@ -19,6 +19,7 @@ class AssignmentReportExportService
     {
         $students = StudyPlanDetail::query()
             ->where('course_offering_id', $assignment->course_offering_id)
+            ->officiallyEnrolled()
             ->whereHas('studyPlan.studentProfile.user')
             ->with(['studyPlan.studentProfile.user'])
             ->get()

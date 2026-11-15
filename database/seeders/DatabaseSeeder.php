@@ -22,11 +22,19 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             MenuSeeder::class,
             AcademicSeeder::class,
+            DemoSeniorStudentSeeder::class,
+            ThesisDemoSeeder::class,
             OrganizationSeeder::class,
             AdmissionSeeder::class,
             FinancialSeeder::class,
             StudentServiceSeeder::class,
+            LibrarySeeder::class,
             AlumniSeeder::class,
+            FaqSeeder::class,
+            PublicationCategorySeeder::class,
+            NewsSeeder::class,
+            AgendaSeeder::class,
+            GalleryAlbumSeeder::class,
         ]);
     }
 }

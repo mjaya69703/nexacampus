@@ -33,11 +33,23 @@ class System extends Model
         'app_favicon',
         'app_logo_vertikal',
         'app_logo_horizontal',
+        'is_installed',
         'maintenance_mode',
         'enable_captcha',
         'max_login_attempts',
         'login_decay_seconds',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_installed' => 'boolean',
+            'maintenance_mode' => 'boolean',
+            'enable_captcha' => 'boolean',
+            'max_login_attempts' => 'integer',
+            'login_decay_seconds' => 'integer',
+        ];
+    }
 
     public function getAppFaviconAttribute($value)
     {

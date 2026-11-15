@@ -5,23 +5,29 @@
 
 ## 1. Overview Proyek
 
-**NexaCampus** adalah Sistem Informasi Akademik (SIAKAD) perguruan tinggi terpadu berbasis **Laravel 12** + **Livewire 4** + **Flux UI** + **PowerGrid 6**. Proyek ini full-stack single-monolith dengan multi-role access (superuser, admin, lecturer, student, academic-leader, alumni).
+**NexaCampus** adalah Sistem Informasi Akademik (SIAKAD) perguruan tinggi terpadu berbasis **Laravel 12** + **Inertia.js** + **React 19** + **Bootstrap 5 (Tabler)**. Proyek ini full-stack single-monolith dengan multi-role access (superuser, admin, lecturer, student, academic-leader, alumni).
+
+> [!IMPORTANT]
+> **STATUS MIGRASI (per November 2026):** Seluruh UI — admin, portal, auth, halaman publik, dan setup wizard — sudah menggunakan **Inertia.js 3 + React 19** (`resources/js/pages/**`). Tidak ada lagi halaman Livewire/Blade/PowerGrid milik aplikasi. Paket `livewire/livewire` + `livewire/flux` hanya dipakai oleh UI admin bawaan package WhatsApp (opsional, di luar navigasi aplikasi). Untuk modul/fitur baru, **WAJIB memakai pola Inertia React di §3.1**.
 
 ### Tech Stack
 | Layer | Teknologi |
 |---|---|
 | **Backend Framework** | Laravel 12 (PHP 8.2+) |
-| **Frontend Reactivity** | Livewire 4 (Full-Page Components + Anonymous Blade Components) |
-| **UI Kit** | Livewire Flux v2 + Bootstrap 5 (Tabler Admin Theme) |
-| **CSS** | TailwindCSS 4 via Vite plugin + custom CSS variables |
-| **DataTable** | PowerGrid 6 (Laravel Livewire PowerGrid) |
+| **Frontend Reactivity** | **Inertia.js 3 + React 19** (seluruh halaman aplikasi; Livewire/Flux hanya untuk UI admin bawaan package WhatsApp) |
+| **UI Kit** | Bootstrap 5 (Tabler Admin Theme) + komponen React shared |
+| **CSS** | TailwindCSS 4 via Vite plugin + `dashboard.css`/`crud.css` + custom CSS variables |
+| **DataTable** | Komponen React `CrudTable` |
+| **Form & Navigasi** | Inertia `useForm`, `router`, `Link`/`Head` |
+| **Ikon** | Lucide React (halaman React); Font Awesome 6 (Blade legacy) |
+| **Type Checking** | TypeScript (`npm run typecheck`) |
 | **Authorization** | Spatie Laravel Permission v7 (multi-role, session-based active role) |
 | **Activity Log** | Spatie Laravel Activity Log v4 |
-| **Build Tool** | Vite 7 + laravel-vite-plugin |
-| **Database** | MySQL (DB: `nexacampus_test`) |
+| **Build Tool** | Vite 7 + laravel-vite-plugin + @vitejs/plugin-react |
+| **Database** | MySQL (DB: `nexacampus`) |
 | **Queue** | Database driver |
 | **Session/Cache** | Database driver |
-| **Rich Text Editor** | Mantix Jodit Text Editor |
+| **Rich Text Editor** | Jodit (`jodit-react`) |
 | **Export** | PhpSpreadsheet 5 + DomPDF 3 + OpenSpout 5 |
 | **Notification** | Email (SMTP) + WhatsApp (kstmostofa/laravel-whatsapp) + Web Push |
 | **PWA** | erag/laravel-pwa |
@@ -39,7 +45,7 @@ composer dev  # Runs: php artisan serve + queue:listen + npm run dev (concurrent
 ## 2. Arsitektur & Struktur Direktori
 
 ### Domain Modules (Modular-by-Domain)
-Proyek ini mengorganisir kode berdasarkan **domain bisnis**, BUKAN berdasarkan tipe file. Setiap domain memiliki mirror structure di Models, Livewire, Views, Controllers, Mail, Support:
+Proyek ini mengorganisir kode berdasarkan **domain bisnis**, BUKAN berdasarkan tipe file. Setiap domain memiliki mirror structure di Models, Controllers, React pages, Support, Mail, dan Tests.
 
 ```
 Domain Modules:
@@ -49,6 +55,7 @@ Domain Modules:
 ├── Alumni         → Alumni, tracer study, lowongan kerja, event
 ├── Campus         → Fasilitas kampus (gedung, ruangan)
 ├── Financial      → Keuangan (tagihan, pembayaran, beasiswa)
+├── Library        → Perpustakaan (kategori buku, buku, eksemplar, peminjaman, reservasi)
 ├── Organization   → Kepegawaian & organisasi (pegawai, approval, absensi pegawai, BKD, EDOM, tridharma)
 ├── Publication    → Pengumuman
 ├── Settings       → Pengaturan sistem (campus, menu, notification, system)
@@ -63,14 +70,23 @@ nexacampus/
 │   ├── Console/Commands/          # Artisan commands (SyncPermissions, SyncMenus, etc.)
 │   ├── Enums/                     # PHP 8.1+ backed enums (AnnouncementPriority, etc.)
 │   ├── Http/
-│   │   ├── Controllers/           # Thin controllers (file downloads, PDF, exports only)
-│   │   │   ├── Academic/
-│   │   │   ├── Admin/
+│   │   ├── Controllers/
+│   │   │   ├── Admin/                          # ⭐ Controller CRUD admin Inertia React (per area)
+│   │   │   │   ├── Academic/
+│   │   │   │   ├── Access/
+│   │   │   │   ├── Admission/
+│   │   │   │   ├── Alumni/
+│   │   │   │   ├── Campus/
+│   │   │   │   ├── Organization/
+│   │   │   │   ├── Publication/
+│   │   │   │   ├── StudentService/
+│   │   │   │   └── System/
+│   │   │   ├── Academic/                       # Portal controller (download/export/PDF)
 │   │   │   ├── Alumni/
-│   │   │   ├── Financial/
+│   │   │   ├── Financial/                      # Export & receipt (bukan CRUD admin)
 │   │   │   ├── Lecturer/
 │   │   │   ├── Notifications/
-│   │   │   ├── Organization/
+│   │   │   ├── Organization/                   # Attachment/export controller
 │   │   │   ├── Student/
 │   │   │   └── StudentService/
 │   │   └── Middleware/
@@ -79,28 +95,13 @@ nexacampus/
 │   │       ├── EnsureActiveRoleHasPermission.php # middleware: active_permission:resource.action
 │   │       ├── EnsureFinancialClearance.php     # middleware: financial_clearance
 │   │       └── EnsureSystemIsInstalled.php      # middleware: is_installed
-│   ├── Livewire/
-│   │   ├── BasePowerGridTable.php              # ⭐ BASE CLASS untuk semua PowerGrid table
-│   │   ├── Concerns/
-│   │   │   └── ExportsPowerGridWithPhpSpreadsheet.php  # Trait export XLS/CSV
-│   │   ├── Academic/                           # PowerGrid tables untuk modul akademik
-│   │   ├── Access/
-│   │   ├── Admission/
-│   │   ├── Alumni/
-│   │   ├── Campus/
-│   │   ├── Financial/
-│   │   ├── Lecturer/                           # Sub-components (CourseMaterials/, StudentGrades/)
-│   │   ├── Organization/
-│   │   ├── Publication/
-│   │   ├── StudentService/
-│   │   └── System/
 │   ├── Mail/                                   # Mailable classes per domain
 │   │   ├── Academic/
 │   │   ├── Financial/
 │   │   └── StudentService/
 │   ├── Models/                                 # Eloquent models per domain
 │   │   ├── User.php                            # Root user model (multi-profile)
-│   │   ├── Academic/   (43 models)
+│   │   ├── Academic/   (49 models)
 │   │   ├── Access/     (Role, Permission)
 │   │   ├── Admission/  (11 models)
 │   │   ├── Alumni/     (7 models)
@@ -116,6 +117,7 @@ nexacampus/
 │       ├── ActivePermission.php                # Permission checker (session-based active role)
 │       ├── ResourceRegistry.php                # Config-driven CRUD resource registry
 │       ├── SidebarMenu.php                     # Dynamic sidebar menu builder
+│       ├── Inertia/ShellProps.php              # ⭐ Props AdminShell React (sidebar/topbar/user)
 │       ├── AcademicAdvisorService.php
 │       ├── StudentGradeCalculator.php
 │       ├── TranscriptSyncService.php
@@ -139,40 +141,49 @@ nexacampus/
 │   ├── seeders/                                # Domain-based seeders
 │   └── factories/
 ├── resources/
-│   ├── css/app.css                             # Custom CSS + CSS variables + PowerGrid theming
-│   ├── js/app.js                               # Flatpickr, Leaflet, PowerGrid, TomSelect init
+│   ├── css/
+│   │   ├── app.css                             # Global CSS + CSS variables + dark mode
+│   │   ├── dashboard.css                       # Styling dashboard/portal React
+│   │   ├── crud.css                            # Styling CRUD React (table, form, hero, filter)
+│   │   └── admin-shell.css                     # Sidebar/topbar AdminShell
+│   ├── js/
+│   │   ├── app.tsx                             # ⭐ Entry Inertia React (createInertiaApp)
+│   │   ├── app.js                              # Init global legacy (Leaflet, Flatpickr, dsb.)
+│   │   ├── components/Shared/                  # ⭐ AdminShell, FlashAlert, Pagination, StatStrip
+│   │   │   └── Crud/                           # ⭐ CrudTable, FilterPanel, fields, ConfirmModal,
+│   │   │                                       #    AsyncSelect, CrudHero, ImportModal, Checklist
+│   │   ├── pages/Admin/{Area}/{Resource}/      # ⭐ Halaman admin React (Index/Form/Show.tsx)
+│   │   ├── pages/{Role}/                       # Portal student/lecturer/alumni/academic-leader
+│   │   ├── lib/                                # Helper fetch/format
+│   │   └── types/                              # Deklarasi TypeScript
 │   ├── saas/app.scss                           # SCSS (minimal)
 │   └── views/
-│       ├── layouts/
-│       │   ├── app.blade.php                   # ⭐ Main admin layout (Tabler sidebar)
-│       │   ├── home.blade.php                  # Public/home layout
-│       │   ├── setup.blade.php                 # Setup wizard layout
-│       │   └── errors.blade.php                # Error pages layout
-│       ├── components/                         # ⭐ Livewire anonymous Blade components
-│       │   ├── admin/{domain}/{resource}/      # Admin CRUD views
-│       │   ├── student/{feature}/              # Student portal views
-│       │   ├── lecturer/{feature}/             # Lecturer portal views
-│       │   ├── academic-leader/{feature}/      # Academic leader views
-│       │   ├── alumni/{feature}/               # Alumni portal views
-│       │   ├── employee/{feature}/             # Employee self-service views
-│       │   ├── admission/                      # Public admission views
-│       │   ├── auth/                           # Login/select-role views
-│       │   └── powergrid/                      # Custom PowerGrid templates
-│       ├── templates/                          # Reusable templates
+│       ├── app.blade.php                       # ⭐ Root Inertia (div#app + @vite)
+│       ├── layouts/                            # Layout Blade legacy (PDF, error)
+│       ├── components/                         # Komponen Blade legacy (alert, dll.)
+│       ├── templates/                          # Reusable template
 │       ├── exports/                            # PDF/export templates
 │       ├── pdf/                                # DomPDF templates
 │       └── vendor/                             # Published vendor views
-└── routes/
-    └── web.php                                 # ⭐ All routes (admin, student, lecturer, etc.)
-└── tests/
+├── routes/
+    ├── web.php                                 # ⭐ Entry route (memuat semua file di routes/web/)
+    └── web/
+        ├── admin.php                           # ⭐ Route admin per area + skip list ResourceRegistry
+        ├── student.php, lecturer.php           # Route portal
+        ├── alumni.php, academic-leader.php
+        ├── guest.php, public.php, shared.php
+├── tests/
     ├── Feature/                                # ⭐ Automated Domain E2E & Feature Tests
     │   ├── Academic/                           # KRS, Nilai, Kalender, QR Attendance
+    │   ├── Access/                             # User, role, permission (Inertia)
     │   ├── Admission/                          # PMB, NIM Generator, Konversi Maba
     │   ├── Alumni/                             # Tracer Study, Job Board, Event
+    │   ├── Campus/                             # Gedung, ruangan, aset, reservasi
     │   ├── Financial/                          # Invoice, Clearance Policy, Payment Verification
     │   ├── Organization/                       # Approval Engine, Kepegawaian, Workload EDOM
+    │   ├── Publication/                        # Pengumuman, berita, agenda, galeri
     │   ├── StudentService/                     # Cuti Akademik, Fee Integration, Digital ID
-    │   └── System/                             # Uji sistem umum
+    │   └── System/                             # Uji sistem umum + smoke Inertia
     ├── Unit/                                   # Uji unit murni
     ├── Pest.php                                # ⭐ Konfigurasi Pest bind TestCase->in('Feature')
     └── TestCase.php
@@ -182,17 +193,20 @@ nexacampus/
 
 ## 3. Pola Kode Inti (Core Patterns)
 
-### 3.1 CRUD Admin Resource Pattern (Config-Driven)
+### 3.1 CRUD Admin Resource Pattern (Inertia React) ⭐
 
-**Ini adalah pola paling penting.** Semua CRUD admin dikelola via `config/resources.php` dan di-route secara otomatis.
+**Ini adalah pola paling penting.** Semua CRUD admin baru memakai **Inertia.js 3 + React 19**. `config/resources.php` tetap menjadi sumber menu & permission, tetapi route dan halaman dibuat eksplisit per area.
 
-#### Step 1: Registrasi di `config/resources.php`
+> [!NOTE]
+> Pola **Blade + Livewire + PowerGrid** di §3.1b **tidak dipakai lagi** dan hanya disimpan sebagai referensi historis. Jangan memakainya untuk modul baru.
+
+#### Step 1: Registrasi resource di `config/resources.php`
 ```php
 [
     'resource' => 'your-resource',      // Singular kebab-case (dipakai untuk permission: your-resource.viewAny)
     'plural' => 'your-resources',       // Plural (dipakai untuk URL)
     'area' => 'academic',               // Domain area (academic/admission/financial/etc.)
-    'component' => 'admin.academic.your-resources',  // Livewire component prefix
+    'component' => 'admin.academic.your-resources',  // Legacy: prefix komponen (tidak dipakai route Inertia)
     'actions' => ['index', 'create', 'edit', 'show', 'delete'],  // Available actions
     'permissions' => ['viewAny', 'create', 'update', 'delete', 'view'], // Optional: custom permissions
     'menu' => [
@@ -206,12 +220,30 @@ nexacampus/
 ]
 ```
 
-#### Step 2: Model (`app/Models/{Domain}/YourResource.php`)
+#### Step 2: Migration & Model (`app/Models/{Domain}/YourResource.php`)
+
+```php
+// database/migrations/xxxx_xx_xx_xxxxxx_create_your_resources_table.php
+Schema::create('your_resources', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('code', 30)->unique();
+    $table->text('description')->nullable();
+    $table->boolean('is_active')->default(true);
+    $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->foreignId('deleted_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamps();
+    $table->softDeletes();
+});
+```
+
 ```php
 <?php
 namespace App\Models\Academic;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -246,186 +278,397 @@ class YourResource extends Model
 }
 ```
 
-#### Step 3: PowerGrid Table (`app/Livewire/{Domain}/YourResourceTable.php`)
+#### Step 3: Route eksplisit (`routes/web/admin.php`)
+
+Resource Inertia **tetap terdaftar** di `config/resources.php` (untuk menu & permission), lalu route-nya ditulis eksplisit di `routes/web/admin.php`:
+
+```php
+// Route eksplisit (nama route WAJIB sama dengan yang dipakai sidebar/menu)
+Route::get('/academic/your-resources', [YourResourceController::class, 'index'])
+    ->middleware('active_permission:your-resource.viewAny')
+    ->name('academic.your-resources.index');
+Route::get('/academic/your-resources/create', [YourResourceController::class, 'create'])
+    ->middleware('active_permission:your-resource.create')
+    ->name('academic.your-resources.create');
+Route::post('/academic/your-resources', [YourResourceController::class, 'store'])
+    ->middleware('active_permission:your-resource.create')
+    ->name('academic.your-resources.store');
+Route::post('/academic/your-resources/bulk-destroy', [YourResourceController::class, 'bulkDestroy'])
+    ->middleware('active_permission:your-resource.delete')
+    ->name('academic.your-resources.bulk-destroy');
+Route::get('/academic/your-resources/{id}/edit', [YourResourceController::class, 'edit'])
+    ->middleware('active_permission:your-resource.update')
+    ->name('academic.your-resources.edit');
+Route::put('/academic/your-resources/{id}', [YourResourceController::class, 'update'])
+    ->middleware('active_permission:your-resource.update')
+    ->name('academic.your-resources.update');
+Route::delete('/academic/your-resources/{id}', [YourResourceController::class, 'destroy'])
+    ->middleware('active_permission:your-resource.delete')
+    ->name('academic.your-resources.destroy');
+```
+
+> Route admin tinggal di `routes/web/admin.php` (dimuat oleh `routes/web.php`), bukan di satu file monolitik.
+
+#### Step 4: Controller Inertia (`app/Http/Controllers/Admin/{Area}/{Resource}Controller.php`)
+
 ```php
 <?php
-namespace App\Livewire\Academic;
 
-use App\Livewire\BasePowerGridTable;
-use App\Livewire\Concerns\ExportsPowerGridWithPhpSpreadsheet;
+namespace App\Http\Controllers\Admin\Academic;
+
+use App\Http\Controllers\Controller;
 use App\Models\Academic\YourResource;
 use App\Support\ActivePermission;
-use Illuminate\Database\Eloquent\Builder;
-use Livewire\Attributes\On;
-use PowerComponents\LivewirePowerGrid\Button;
-use PowerComponents\LivewirePowerGrid\Column;
-use PowerComponents\LivewirePowerGrid\Facades\Filter;
-use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
-use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use App\Support\Inertia\ShellProps;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
 
-final class YourResourceTable extends BasePowerGridTable
+class YourResourceController extends Controller
 {
-    use ExportsPowerGridWithPhpSpreadsheet;
-
-    public string $tableName = 'yourResourceTable';
-    protected ?string $bulkActionModel = YourResource::class;
-    protected ?string $bulkActionPermissionPrefix = 'your-resource';
-    protected string $bulkActionItemLabel = 'data';
-
-    public function setUp(): array
+    public function index(Request $request): Response
     {
-        return $this->powerGridSetUp(showToggleColumns: true, showExport: true);
-    }
+        $validated = $request->validate([
+            'q' => 'nullable|string|max:100',
+            'is_active' => 'nullable|in:0,1',
+            'sort' => 'nullable|in:name,code,is_active,created_at',
+            'direction' => 'nullable|in:asc,desc',
+            'perPage' => 'nullable|in:10,15,25,50,100',
+        ]);
 
-    public function datasource(): Builder
-    {
-        return YourResource::query()->withCount('relatedModel');
-    }
+        $query = YourResource::query();
 
-    public function fields(): PowerGridFields { /* ... */ }
-    public function columns(): array { /* ... */ }
-    public function filters(): array { /* ... */ }
-
-    // Edit action → redirect to edit page
-    #[On('edit')]
-    public function edit($rowId): void
-    {
-        $this->redirectRoute('admin.academic.your-resources.edit', ['id' => $rowId]);
-    }
-
-    // Delete action → SweetAlert confirmation → Livewire dispatch
-    #[On('delete')]
-    public function delete($id): void { /* SweetAlert + dispatch('deleteItem') */ }
-
-    #[On('deleteItem')]
-    public function deleteItem($id = null): void { /* ActivePermission check + delete */ }
-
-    // Action buttons (per-row)
-    public function actions(YourResource $row): array
-    {
-        $actions = [];
-        if (ActivePermission::check('your-resource.update')) {
-            $actions[] = Button::add('edit')->slot('<i class="fa fa-edit"></i>')->class('btn btn-primary')->dispatch('edit', ['rowId' => $row->id]);
+        if (filled($validated['q'] ?? null)) {
+            $q = $validated['q'];
+            $query->where(fn ($sub) => $sub->where('name', 'like', "%{$q}%")
+                ->orWhere('code', 'like', "%{$q}%"));
         }
-        if (ActivePermission::check('your-resource.delete')) {
-            $actions[] = Button::add('delete')->slot('<i class="fa fa-trash"></i>')->class('btn btn-danger')->dispatch('delete', ['id' => $row->id]);
+
+        if (isset($validated['is_active']) && $validated['is_active'] !== '') {
+            $query->where('is_active', (bool) $validated['is_active']);
         }
-        return $actions;
+
+        $sort = $validated['sort'] ?? 'name';
+        $direction = $validated['direction'] ?? 'asc';
+        $query->orderBy($sort, $direction);
+
+        $rows = $query->paginate((int) ($validated['perPage'] ?? 10))->withQueryString();
+
+        return Inertia::render('Admin/Academic/YourResources/Index', [
+            'shell' => ShellProps::make($request->user(), 'Akademik', 'Daftar Your Resources'),
+            'can' => [
+                'create' => ActivePermission::check('your-resource.create'),
+                'update' => ActivePermission::check('your-resource.update'),
+                'delete' => ActivePermission::check('your-resource.delete'),
+            ],
+            'stats' => [
+                'total' => YourResource::count(),
+                'active' => YourResource::where('is_active', true)->count(),
+            ],
+            'data' => [
+                'rows' => collect($rows->items())->values()->map(fn (YourResource $row, int $i) => [
+                    'id' => $row->id,
+                    'no' => ($rows->firstItem() ?? 0) + $i,
+                    'name' => $row->name,
+                    'code' => $row->code,
+                    'isActive' => (bool) $row->is_active,
+                    'createdAt' => $row->created_at?->format('d M Y'),
+                    'editUrl' => route('admin.academic.your-resources.edit', $row->id),
+                    'deleteUrl' => route('admin.academic.your-resources.destroy', $row->id),
+                ])->all(),
+                'currentPage' => $rows->currentPage(),
+                'lastPage' => $rows->lastPage(),
+                'perPage' => $rows->perPage(),
+                'total' => $rows->total(),
+            ],
+            'filters' => [
+                'q' => $validated['q'] ?? '',
+                'is_active' => $validated['is_active'] ?? '',
+                'sort' => $sort,
+                'direction' => $direction,
+                'perPage' => (int) ($validated['perPage'] ?? 10),
+            ],
+            'urls' => [
+                'index' => route('admin.academic.your-resources.index'),
+                'create' => route('admin.academic.your-resources.create'),
+                'bulkDestroy' => route('admin.academic.your-resources.bulk-destroy'),
+            ],
+        ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        return Inertia::render('Admin/Academic/YourResources/Form', [
+            'shell' => ShellProps::make($request->user(), 'Akademik', 'Tambah Your Resource'),
+            'mode' => 'create',
+            'resource' => ['name' => '', 'code' => '', 'is_active' => true],
+            'urls' => [
+                'index' => route('admin.academic.your-resources.index'),
+                'submit' => route('admin.academic.your-resources.store'),
+            ],
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $this->validatePayload($request);
+
+        YourResource::create([
+            ...$validated,
+            'created_by' => $request->user()->id,
+            'updated_by' => $request->user()->id,
+        ]);
+
+        return redirect()->route('admin.academic.your-resources.index')
+            ->with('success', 'Data berhasil ditambahkan.');
+    }
+
+    public function edit(Request $request, int $id): Response
+    {
+        $row = YourResource::findOrFail($id);
+
+        return Inertia::render('Admin/Academic/YourResources/Form', [
+            'shell' => ShellProps::make($request->user(), 'Akademik', 'Edit Your Resource'),
+            'mode' => 'edit',
+            'resource' => [
+                'id' => $row->id,
+                'name' => $row->name,
+                'code' => $row->code,
+                'is_active' => (bool) $row->is_active,
+            ],
+            'urls' => [
+                'index' => route('admin.academic.your-resources.index'),
+                'submit' => route('admin.academic.your-resources.update', $row->id),
+            ],
+        ]);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $row = YourResource::findOrFail($id);
+        $row->update([
+            ...$this->validatePayload($request, $row),
+            'updated_by' => $request->user()->id,
+        ]);
+
+        return redirect()->route('admin.academic.your-resources.index')
+            ->with('success', 'Data berhasil diperbarui.');
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $row = YourResource::findOrFail($id);
+
+        // Guard relasi bisnis: kembalikan back()->with('error', '...') bila masih dipakai.
+
+        $row->update(['deleted_by' => $request->user()->id]);
+        $row->delete();
+
+        return redirect()->route('admin.academic.your-resources.index')
+            ->with('success', 'Data berhasil dihapus.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatePayload(Request $request, ?YourResource $row = null): array
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:30', Rule::unique('your_resources', 'code')->ignore($row?->id)],
+            'is_active' => ['boolean'],
+        ]);
+
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
+
+        return $validated;
     }
 }
 ```
 
-#### Step 4: Views (Anonymous Blade Components)
-**PENTING:** Views ditulis sebagai **anonymous Blade Livewire components** dengan `⚡` prefix di nama file.
+**Aturan controller:**
+- `ShellProps::make($user, $pretitle, $pageTitle)` wajib agar sidebar/topbar React tampil.
+- Kirim `can` dari `ActivePermission::check(...)` — jangan mengandalkan `auth()->user()->can()` karena role aktif berbasis session.
+- Map baris tabel secara eksplisit (jangan kirim model Eloquent mentah) + sertakan `editUrl`/`deleteUrl`.
+- `bulkDestroy` wajib punya guard per baris bila model punya relasi bisnis (jangan soft-delete buta).
+- Semua pesan flash & label dalam Bahasa Indonesia.
 
-**Index**: `resources/views/components/admin/academic/your-resources/⚡index.blade.php`
-```blade
-<?php
-use Livewire\Component;
+#### Step 5: Halaman React (`resources/js/pages/Admin/{Area}/{Resources}/`)
 
-new class extends Component {
-    public function render()
-    {
-        return $this->view()->layout('layouts.app', [
-            'menus' => 'Academic Management',
-            'pages' => 'Daftar Your Resources',
-        ]);
-    }
+**`Index.tsx`** — pola tabel + filter + aksi massal:
+
+```tsx
+import { Head, router } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
+import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
+import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
+import { CrudTable } from '../../../../components/Shared/Crud/CrudTable';
+import { FilterPanel } from '../../../../components/Shared/Crud/FilterPanel';
+import '../../../../../css/dashboard.css';
+import '../../../../../css/crud.css';
+
+type Row = { id: number; no: number; name: string; code: string; isActive: boolean; editUrl: string; deleteUrl: string };
+
+type Props = {
+    shell: ShellProps;
+    can: { create: boolean; update: boolean; delete: boolean };
+    data: { rows: Row[]; currentPage: number; lastPage: number; perPage: number; total: number };
+    filters: { q: string; is_active: string; sort: string; direction: 'asc' | 'desc'; perPage: number };
+    urls: { index: string; create: string; bulkDestroy: string };
 };
-?>
 
-<div class="w-full" style="width: 100% !important">
-    <x-alert />
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title">Daftar Your Resources</h3>
-            <div class="card-tools d-flex gap-2 flex-wrap justify-content-end">
-                @activecan('your-resource.create')
-                    <a href="{{ route('admin.academic.your-resources.create') }}" class="btn btn-ghost-primary">
-                        <i class="fa fa-plus me-2"></i> Tambah
-                    </a>
-                @endactivecan
+export default function YourResourcesIndex({ shell, can, data, filters, urls }: Props) {
+    const [search, setSearch] = useState(filters.q);
+    const [pending, setPending] = useState<Row | null>(null);
+
+    const visit = (overrides: Record<string, string | number>) => {
+        router.get(urls.index, { ...filters, q: search, ...overrides }, { preserveState: true, replace: true });
+    };
+
+    return (
+        <AdminShell shell={shell}>
+            <Head title={`Your Resources · ${shell.appName}`} />
+            <div className="db-root">
+                <div className="db-stack">
+                    <CrudHero
+                        icon={Plus}
+                        eyebrow="Akademik"
+                        title="Daftar Your Resources"
+                        description="Kelola data master …"
+                        actions={can.create ? <a className="db-btn light" href={urls.create}><Plus size={15} /> Tambah</a> : undefined}
+                    />
+                    <section className="db-card">
+                        <div className="db-card-body">
+                            <CrudTable<Row>
+                                columns={[
+                                    { key: 'id', label: 'No', render: (row) => row.no },
+                                    { key: 'name', label: 'Nama', sortable: true, render: (row) => row.name },
+                                    { key: 'code', label: 'Kode', sortable: true, render: (row) => <span className="db-badge gray">{row.code}</span> },
+                                    { key: 'is_active', label: 'Status', sortable: true, render: (row) => (
+                                        <span className={`db-badge ${row.isActive ? 'green' : 'gray'}`}>{row.isActive ? 'Aktif' : 'Nonaktif'}</span>
+                                    ) },
+                                ]}
+                                rows={data.rows}
+                                page={{ currentPage: data.currentPage, lastPage: data.lastPage, perPage: data.perPage, total: data.total }}
+                                sort={filters.sort}
+                                direction={filters.direction}
+                                onSort={(key) => visit({ sort: key, direction: filters.sort === key && filters.direction === 'asc' ? 'desc' : 'asc', page: 1 })}
+                                search={search}
+                                onSearchChange={setSearch}
+                                onSearchSubmit={() => visit({ page: 1 })}
+                                filterBar={<FilterPanel count={filters.is_active !== '' ? 1 : 0} onReset={() => visit({ is_active: '', page: 1 })}>
+                                    <select className="db-input" value={filters.is_active} onChange={(e) => visit({ is_active: e.target.value, page: 1 })}>
+                                        <option value="">Semua status</option>
+                                        <option value="1">Aktif</option>
+                                        <option value="0">Nonaktif</option>
+                                    </select>
+                                </FilterPanel>}
+                                canUpdate={can.update}
+                                canDelete={can.delete}
+                                editUrl={(row) => row.editUrl}
+                                onDeleteRow={(row) => setPending(row)}
+                                onPage={(page) => visit({ page })}
+                                perPage={filters.perPage}
+                                onPerPageChange={(perPage) => visit({ perPage, page: 1 })}
+                            />
+                        </div>
+                    </section>
+                </div>
+                <ConfirmModal
+                    open={pending !== null}
+                    title="Hapus data?"
+                    message={pending ? `"${pending.name}" akan dihapus.` : ''}
+                    confirmLabel="Ya, hapus"
+                    danger
+                    onConfirm={() => { if (pending) router.delete(pending.deleteUrl, { onFinish: () => setPending(null) }); }}
+                    onCancel={() => setPending(null)}
+                />
             </div>
-        </div>
-        <div class="card-body">
-            <livewire:academic.your-resource-table />
-        </div>
-    </div>
-</div>
+        </AdminShell>
+    );
+}
 ```
 
-**Create**: `resources/views/components/admin/academic/your-resources/⚡create.blade.php`
-```blade
-<?php
-use App\Models\Academic\YourResource;
-use Livewire\Component;
+**`Form.tsx`** — pola form create/edit:
 
-new class extends Component {
-    public array $form = [];
+```tsx
+import { Head, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
+import type { FormEvent } from 'react';
+import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
+import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
+import { FormActions, SwitchField, TextField } from '../../../../components/Shared/Crud/fields';
 
-    public function mount(): void
-    {
-        $this->form = ['name' => '', 'code' => '', 'is_active' => true, 'desc' => ''];
-    }
-
-    public function save(): void
-    {
-        $validated = $this->validate([
-            'form.name' => 'required|string|max:255',
-            'form.code' => 'required|string|max:20|unique:your_resources,code',
-            'form.is_active' => 'boolean',
-            'form.desc' => 'nullable|string',
-        ]);
-
-        YourResource::create([...$validated['form'], 'created_by' => auth()->id()]);
-        session()->flash('success', 'Data berhasil ditambahkan.');
-        $this->redirectRoute('admin.academic.your-resources.index');
-    }
-
-    public function cancel(): void { $this->redirectRoute('admin.academic.your-resources.index'); }
-
-    public function render()
-    {
-        return $this->view()->layout('layouts.app', [
-            'menus' => 'Academic Management',
-            'pages' => 'Tambah Your Resource',
-        ]);
-    }
+type Props = {
+    shell: ShellProps;
+    mode: 'create' | 'edit';
+    resource: { id?: number; name: string; code: string; is_active: boolean };
+    urls: { index: string; submit: string };
 };
-?>
 
-<div>
-    <x-alert />
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title">Tambah Your Resource</h3>
-        </div>
-        <div class="card-body row">
-            <div class="form-group col-lg-6 col-md-6 col-sm-12 mt-2">
-                <label>Nama <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" wire:model.defer="form.name">
-                @error('form.name') <span class="text-danger">{{ $message }}</span> @enderror
+export default function YourResourceForm({ shell, mode, resource, urls }: Props) {
+    const isCreate = mode === 'create';
+    const form = useForm({ name: resource.name, code: resource.code, is_active: resource.is_active });
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        isCreate ? form.post(urls.submit) : form.put(urls.submit);
+    };
+
+    return (
+        <AdminShell shell={shell}>
+            <Head title={`${isCreate ? 'Tambah' : 'Edit'} Your Resource · ${shell.appName}`} />
+            <div className="db-root">
+                <div className="db-stack">
+                    <CrudHero icon={Plus} eyebrow="Akademik" title={isCreate ? 'Tambah Your Resource' : `Edit ${resource.name}`} description="…" />
+                    <form onSubmit={submit}>
+                        <section className="db-card">
+                            <div className="db-card-body">
+                                <div className="crud-grid">
+                                    <TextField label="Nama" required value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                                    <TextField label="Kode" required value={form.data.code} onChange={(e) => form.setData('code', e.target.value)} error={form.errors.code} />
+                                    <SwitchField label="Status aktif" checked={form.data.is_active} onChange={(value) => form.setData('is_active', value)} />
+                                </div>
+                            </div>
+                        </section>
+                        <FormActions cancelHref={urls.index} submitLabel={isCreate ? 'Simpan' : 'Simpan Perubahan'} processing={form.processing} />
+                    </form>
+                </div>
             </div>
-            <!-- ... more fields ... -->
-            <div class="form-group col-12 mt-4 d-flex align-items-center justify-content-end gap-2">
-                <button class="btn btn-primary" wire:click="save">
-                    <i class="fas fa-save me-2"></i> Simpan
-                </button>
-                <button class="btn btn-secondary" wire:click="cancel">
-                    <i class="fas fa-times me-2"></i> Batal
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+        </AdminShell>
+    );
+}
 ```
 
-#### Step 5: Sync permissions & menus
+**Komponen shared wajib diketahui:**
+
+| Komponen | Fungsi |
+|---|---|
+| `components/Shared/AdminShell.tsx` | Sidebar + topbar + flash alert + layout portal |
+| `components/Shared/Crud/CrudTable.tsx` | Tabel generik: sort, search, pagination, checkbox, bulk delete, actions |
+| `components/Shared/Crud/FilterPanel.tsx` | Panel filter collapsible + badge jumlah filter aktif |
+| `components/Shared/Crud/fields.tsx` | `TextField`, `TextareaField`, `SelectField`, `SwitchField`, `FormActions` |
+| `components/Shared/Crud/AsyncSelect.tsx` | Pencarian server-side (debounce + endpoint JSON) |
+| `components/Shared/Crud/ConfirmModal.tsx` | Konfirmasi hapus/aksi destruktif |
+| `components/Shared/Crud/CrudHero.tsx` | Header halaman (ikon, eyebrow, judul, deskripsi, badges, actions) |
+| `components/Shared/Crud/ImportModal.tsx` | Modal impor spreadsheet |
+| `components/Shared/FlashAlert.tsx` | Render flash `success/error/warning/info` |
+| `pages/Admin/{Area}/shared.tsx` | Helper lokal area (mis. `buildQuery`, `OrgStats`) |
+
+#### Step 6: Sync permissions & menus
 ```bash
-php artisan app:sync-resources   # Runs SyncPermissions + SyncMenus
+php artisan resources:sync   # Runs SyncPermissions + SyncMenus
 ```
 
 ---
+
+### 3.1b Legacy: Blade + Livewire + PowerGrid (historis)
+
+> [!NOTE]
+> Seluruh modul admin, termasuk Financial, sudah memakai Inertia React. Pola Blade + Livewire + PowerGrid di bagian ini **tidak dipakai lagi** dan hanya disimpan sebagai referensi historis. Jangan membuat resource baru dengan pola ini.
 
 ### 3.2 Authorization System (Session-Based Active Role)
 
@@ -470,21 +713,14 @@ admission-application.viewAny, admission-application.view, admission-application
 
 ### 3.3 Route Patterns
 
-#### Admin Routes (Auto-generated via `Route::crudLivewire()` macro)
-```php
-// Defined in AppServiceProvider::boot()
-Route::macro('crudLivewire', function($resource, $componentPrefix, $only, $uriPrefix) {
-    // Generates: admin/{area}/{resources}, admin/{area}/{resources}/create, etc.
-    // With middleware: active_permission:{singular}.{action}
-    // Named: {baseName}.index, {baseName}.create, etc.
-});
+#### Admin Routes (Inertia React — primary)
+Route admin ditulis eksplisit di `routes/web/admin.php`. Tidak ada lagi loop `ResourceRegistry` atau macro `crudLivewire`; `config/resources.php` hanya menjadi sumber menu & permission.
 
-// Usage in web.php:
-Route::middleware('active_role')->prefix('admin')->as('admin.')->group(function () {
-    foreach (ResourceRegistry::all() as $resource) {
-        Route::crudLivewire($resource['plural'], $resource['component'], $resource['actions'], $resource['area']);
-    }
-});
+```php
+// routes/web/admin.php
+Route::get('/academic/faculties', [FacultyController::class, 'index'])
+    ->middleware('active_permission:faculty.viewAny')
+    ->name('academic.faculties.index');
 ```
 
 #### Route Name Conventions:
@@ -497,9 +733,10 @@ Academic Leader: academic-leader.{feature}      → academic-leader.dashboard.in
 Employee: employee.{feature}.{action}           → employee.attendance.index
 ```
 
-#### Livewire Full-Page Route:
+#### Inertia Page Route:
 ```php
-Route::livewire('/path', 'component.name')->name('route.name');
+Route::get('/path', [FeatureController::class, 'index'])->name('route.name');
+// Controller: return Inertia::render('Role/Feature/Index', [...]);
 ```
 
 ---
@@ -524,9 +761,21 @@ $user->photo      // Auto-resolve ke storage path
 
 ---
 
-### 3.5 View Layout System
+### 3.5 Layout & Shell System
 
-#### Layout: `layouts.app`
+#### Inertia React (utama)
+Setiap controller admin mengirim props `shell` lewat `ShellProps::make($user, $pretitle, $pageTitle)`:
+
+```php
+return Inertia::render('Admin/Organization/WorkUnits/Index', [
+    'shell' => ShellProps::make($request->user(), 'Kepegawaian', 'Unit Kerja'),
+    // ...
+]);
+```
+
+Halaman React membungkus konten dengan `<AdminShell shell={shell}>`. Shell menyediakan sidebar, topbar, command palette, flash alert, dan data user — **tidak perlu** memanggil layout Blade.
+
+#### Blade legacy (historis)
 ```php
 return $this->view()->layout('layouts.app', [
     'menus' => 'Menu Category Name',    // Breadcrumb/sidebar context
@@ -534,16 +783,15 @@ return $this->view()->layout('layouts.app', [
 ]);
 ```
 
-#### Global View Variables (dari AppServiceProvider):
+#### Global View Variables (dari AppServiceProvider, Blade legacy):
 - `$campus` → Campus model (nama, logo, alamat)
 - `$system` → System model (app_name, app_description)
 - `$user` → Auth::user()
 - `$activeRole` → session('active_role')
 
 #### Alert Component:
-```blade
-<x-alert />  {{-- Renders session flash messages (success/error/warning/info) --}}
-```
+- React: `<FlashAlert />` sudah terpasang di dalam `AdminShell`.
+- Blade legacy: `<x-alert />` (session flash `success/error/warning/info`).
 
 ---
 
@@ -608,6 +856,95 @@ Generic approval workflow via:
 
 Used by: Employee leaves, financial adjustments, student service requests.
 
+### 3.10 Modul Skripsi / Tugas Akhir
+
+Domain `Academic` — alur: mahasiswa mengajukan proposal → admin menyetujui/menolak + menetapkan pembimbing → milestone bimbingan (mahasiswa submit, dosen review) → admin menjadwalkan sidang → dosen/penguji memberi nilai → admin finalisasi nilai & publikasi repositori.
+
+**Tabel:** `theses`, `thesis_supervisors`, `thesis_milestones`, `thesis_documents`, `thesis_defenses`, `thesis_defense_examiners`.
+
+**Status:**
+- `theses.status`: `draft`, `submitted`, `in_progress`, `defense_ready`, `defended`, `completed`, `rejected`, `cancelled`
+- `thesis_milestones.status`: `pending`, `in_progress`, `submitted`, `revision`, `approved`
+- `thesis_defenses.status`: `scheduled`, `completed`, `cancelled`, `postponed`; tipe `proposal` / `result`; hasil `passed` / `passed_with_revision` / `failed`
+- `theses.plagiarism_status`: `not_checked`, `pending`, `passed`, `flagged`. Status `flagged` memblokir publikasi dan otomatis menarik karya dari repositori.
+- Repositori publik hanya menampilkan thesis `completed` + `repository_published = true`; unduhan publik dibatasi pada dokumen kategori `final`.
+- Karya `completed` yang sebelumnya ditarik dapat dipublikasikan ulang lewat aksi admin `publish` setelah status plagiarisme tidak lagi `flagged`.
+
+**Service utama:** `app(ThesisService::class)` di `app/Support/Academic/ThesisService.php`:
+- `createProposal()`, `approve()`, `reject()`, `submitMilestone()`, `reviewMilestone()`
+- `scheduleDefense()`, `completeDefense()`, `finalize()`, `storeDocument()`, `updatePlagiarism()`, `publishToRepository()`
+- `ensureNoActiveThesis()` — mahasiswa hanya boleh punya satu thesis aktif
+- Konversi skor → huruf mutu (`gradeFromScore`) dan sinkronisasi status thesis dari milestone/sidang
+- Notifikasi otomatis via `NotificationDispatchService`: perubahan status, milestone dikirim/direview, jadwal sidang, dan metadata plagiarisme.
+
+**Route utama:**
+- Admin: `admin.academic.theses.*` (`index/create/store/show/edit/update/destroy`, `approve`, `reject`, `milestones.store/update/destroy`, `defenses.store/update/complete/cancel`, `documents.store/destroy/download`, `finalize`, `plagiarism.update`, `publish`, `bulk-destroy`, `search-lecturers`, `search-students`)
+- Mahasiswa: `student.thesis.*` (`index/store/update/cancel`, `milestones.submit`, `documents.store/destroy/download`)
+- Dosen: `lecturer.theses.*` (`index/show`, `milestones.review`, `defenses.score`, `documents.download`)
+- Publik: `root.repository.*` (`index`, `show`, `documents.download`) — hanya karya `completed` + `repository_published`, unduhan dokumen `final`.
+
+**Halaman React:**
+- Admin: `resources/js/pages/Admin/Academic/Theses/{Index,Form,Show}.tsx`
+- Mahasiswa: `resources/js/pages/Student/Thesis/Index.tsx`
+- Dosen: `resources/js/pages/Lecturer/Theses/{Index,Show}.tsx`
+- Publik: `resources/js/pages/Home/Repository/{Index,Show}.tsx` (tab Repositori di `AcademicShell` + link footer)
+
+**Permission:** `thesis.viewAny`, `thesis.view`, `thesis.create`, `thesis.update`, `thesis.delete`, `thesis.approve`, `thesis.defense`, `thesis.grade`, `thesis.plagiarism`.
+
+**Dokumen:** disk `public`, folder `thesis/{thesis_id}`. Akses unduh dibatasi pemilik, pembimbing, penguji, dan admin ber-permission `thesis.view` (`Academic\ThesisDocumentController`).
+
+**Test:** `tests/Feature/Academic/ThesisManagementTest.php`.
+
+### 3.11 Modul Perpustakaan
+
+Domain `Library` — katalog buku, eksemplar, sirkulasi peminjaman/pengembalian, denda dengan bukti pembayaran, reservasi berantrean, perpanjangan pinjaman, serta notifikasi jatuh tempo/reservasi. Peminjam mereferensikan `users` langsung (tanpa tabel anggota terpisah).
+
+**Tabel:** `book_categories`, `books`, `book_copies`, `book_loans`, `book_reservations`.
+- `book_reservations.pickup_planned_at` — rencana tanggal ambil oleh anggota.
+- `book_reservations.book_loan_id` — terisi saat reservasi `fulfilled` menjadi peminjaman.
+- `book_reservations.ready_notified_at` — penanda notifikasi reservasi siap diambil sudah dikirim.
+- `book_loans.renewal_count`, `book_loans.renewed_at` — jumlah & waktu perpanjangan.
+- `book_loans.fine_payment_status`, `fine_proof_path`, `fine_proof_original_name`, `fine_payment_notes`, `fine_submitted_at`, `fine_verified_at`, `fine_verified_by`, `fine_rejection_reason` — alur pembayaran denda dan unggah bukti.
+- `book_loans.due_reminder_h3_sent_at`, `due_reminder_h1_sent_at`, `overdue_notified_at` — dedupe pengingat jatuh tempo dan keterlambatan.
+- `fine_paid`/`fine_paid_at` tetap menjadi sumber kebenaran blokir peminjaman; status `verified` selalu disinkronkan dengan `fine_paid = true`.
+
+**Status:**
+- `book_copies.status`: `available`, `borrowed`, `reserved`, `lost`, `damaged`, `maintenance`. Status `borrowed`/`reserved` tidak boleh diubah manual (hanya lewat transaksi).
+- `book_loans.status`: `borrowed`, `returned`, `overdue`, `lost`; status aktif = `borrowed` + `overdue`.
+- `book_loans.fine_payment_status`: `unpaid`, `pending`, `verified`, `rejected` (enum `FinePaymentStatus`).
+- `book_reservations.status`: `pending`, `ready`, `fulfilled`, `cancelled`, `expired`.
+
+**Konfigurasi:** `config/library.php` — masa pinjam 14 hari, denda Rp1.000/hari, maksimal 3 pinjaman aktif mahasiswa / 5 dosen, maksimal 3 reservasi aktif, masa tahan reservasi siap-ambil 3 hari, rencana ambil default 7 hari, maksimal 1 perpanjangan × 14 hari. Pengingat: `LIBRARY_REMINDER_DAYS` (default `3,1`), interval peringatan terlambat `LIBRARY_OVERDUE_REMINDER_DAYS` (3 hari), dan batas ukuran bukti `LIBRARY_FINE_PROOF_MAX_KB` (5120 KB). Semua dapat dioverride lewat `.env` (`LIBRARY_*`).
+
+**Service utama:** `app(LibraryService::class)` di `app/Support/Library/LibraryService.php`:
+- `borrow()`, `returnBook()`, `createReservation()`, `markReservationReady()`, `fulfillReservation()`, `cancelReservation()`
+- `submitFineProof()`, `verifyFinePayment()`, `rejectFinePayment()` — unggah bukti (validasi pemilik/denda/status pending), verifikasi tunai atau transfer, dan penolakan dengan alasan; notifikasi otomatis ke mahasiswa.
+- `promoteNextReservation()` — eksemplar kembali → reservasi `pending` berikutnya menjadi `ready` + eksemplar `reserved`
+- `queuePosition()`, `queueSize()`, `estimatedReadyAt()` — posisi antrean (hanya `pending`), ukuran antrean, dan estimasi siap ambil dihitung dinamis (tidak disimpan)
+- `renewalEligibility()`, `renewLoan()` — perpanjangan ditolak bila pinjaman tidak aktif/terlambat, batas perpanjangan tercapai, atau buku sedang direservasi anggota lain; jatuh tempo digeser `renewal_days` dari due date berjalan
+- `refreshOverdueLoans()`, `expireReservations()` — dijalankan otomatis saat daftar/borrow dibuka
+- `maxLoansFor()`, `outstandingFine()`, `calculateFine()` — guard batas pinjam dan denda
+- `markReservationReady()`/`promoteNextReservation()` memicu notifikasi reservasi siap diambil sekali per reservasi.
+- Aturan: anggota dengan denda belum lunas tidak boleh meminjam; reservasi `ready` yang kedaluwarsa mengembalikan eksemplar menjadi `available`.
+
+**Notifikasi & command:**
+- `app/Support/Library/LibraryNotificationService.php` — email (`App\Mail\Library\LibraryNotificationMail`) + WhatsApp/web push via `NotificationDispatchService`; event `library.loan_due_soon`, `library.loan_overdue`, `library.reservation_ready`, `library.fine_submitted`, `library.fine_verified`, `library.fine_rejected`. Template WhatsApp tersedia di `NotificationTemplateSeeder`.
+- `library:send-due-reminders` — command harian (dijadwalkan 07:30 di `routes/console.php`) untuk pengingat H-3/H-1, peringatan terlambat berulang tiap `overdue_reminder_days`, dan reservasi `ready` yang belum dinotifikasi; mendukung `--dry-run`.
+
+**Route utama:**
+- Admin: `admin.library.book-categories.*`, `admin.library.books.*` (+ `copies.store/update/status/destroy`), `admin.library.loans.*` (`index/create/store/return/renew/pay-fine/fine.proof/fine.verify/fine.reject/destroy/bulk-destroy/search-members/search-copies`), `admin.library.reservations.*` (`index/ready/fulfill/cancel/destroy/available-copies`)
+- Mahasiswa: `student.library.*` (`index`, `books.show`, `reservations.store`, `reservations.cancel`, `loans.renew`, `loans.fine.store`, `loans.fine.proof`)
+
+**Halaman React:**
+- Admin: `resources/js/pages/Admin/Library/BookCategories/{Index,Form}.tsx`, `Books/{Index,Form,Show}.tsx`, `Loans/{Index,Create}.tsx`, `Reservations/Index.tsx`. `Loans/Index.tsx` menampilkan status denda, antrean verifikasi, unduh bukti, serta aksi verifikasi/tolak.
+- Mahasiswa: `resources/js/pages/Student/Library/Index.tsx` (tab Katalog / Pinjaman Saya / Reservasi Saya) dan `Student/Library/Show.tsx` (detail buku: bibliografi, status eksemplar + jatuh tempo, antrean, reservasi/pinjaman saya, status denda, unggah/unduh bukti, aksi perpanjang/batal, buku terkait)
+- Shared: `resources/js/components/Shared/Library/LibraryUI.tsx` (helper `buildQuery`, `formatRupiah`, `libraryTone`, `LibraryStats`, `LibraryModal`, `ReserveBookModal`, `FinePaymentModal`, `FineRejectModal`)
+- Modal reservasi menampilkan rencana tanggal ambil, jumlah antrean, estimasi siap ambil, masa tahan, dan estimasi jatuh tempo pinjaman. Modal bukti denda mendukung unggah ulang setelah ditolak dan menampilkan nominal serta alasan penolakan.
+
+**Permission & role:** `book-category.*`, `book.*`, `book-loan.*`, `book-reservation.*` (terdaftar di `config/resources.php`, menu group “Perpustakaan”). Verifikasi/tolak bukti memakai `book-loan.update`; unduh bukti admin memakai `book-loan.viewAny`. `php artisan permissions:sync` membuat role turunan `librarian` (label “Pustakawan”) yang hanya menerima permission resource ber-`area === 'library'`. Dashboard admin menampilkan section “Perpustakaan” adaptif bila user memegang permission library, sehingga login pustakawan tidak kosong.
+
+**Seeder & test:** `database/seeders/LibrarySeeder.php`, template notifikasi di `NotificationTemplateSeeder`, demo pustakawan `pustakawan` / `librarian123` di `UserSeeder`; `tests/Feature/Library/LibraryManagementTest.php` (41 test / 291 assertion) mencakup pengingat H-3/H-1, interval terlambat, dry-run, notifikasi reservasi, unggah/verifikasi/tolak bukti, otorisasi unduhan, dan filter status denda.
+
 ---
 
 ## 4. Naming Conventions
@@ -618,23 +955,23 @@ Used by: Employee leaves, financial adjustments, student service requests.
 | Model | PascalCase singular | `StudentProfile`, `CourseOffering` |
 | Table | snake_case plural | `student_profiles`, `course_offerings` |
 | Migration | timestamp + descriptive | `2026_03_21_171532_create_faculties_table.php` |
-| Livewire Table | `{Resource}Table` | `FacultyTable`, `CourseOfferingTable` |
 | Enum | PascalCase | `AnnouncementPriority` |
 | Service | `{Name}Service` | `TranscriptSyncService` |
 | Seeder | `{Domain}Seeder` | `AcademicSeeder` |
 | Middleware | `Ensure{Condition}` | `EnsureRoleIsActive` |
 | Command | Imperative verb | `SyncPermissions`, `PruneNotificationLogs` |
+| Admin Controller | `{Resource}Controller` | `FacultyController`, `WorkUnitController` |
 
-### View File Naming:
+### Frontend File Naming:
 | Type | Path Pattern |
 |---|---|
-| Admin CRUD view | `components/admin/{domain}/{resources}/⚡{action}.blade.php` |
-| Student view | `components/student/{feature}/⚡{page}.blade.php` |
-| Lecturer view | `components/lecturer/{feature}/⚡{page}.blade.php` |
-| Alumni view | `components/alumni/{feature}/⚡{page}.blade.php` |
-| Auth view | `components/auth/⚡{page}.blade.php` |
-
-**⚡ prefix** = Livewire anonymous component (inline PHP class + Blade template in one file).
+| Admin CRUD page | `resources/js/pages/Admin/{Area}/{Resources}/{Index,Form,Show}.tsx` |
+| Portal page | `resources/js/pages/{Role}/{Feature}/{Page}.tsx` |
+| Shared CRUD component | `resources/js/components/Shared/Crud/{Component}.tsx` |
+| Shared layout/UI | `resources/js/components/Shared/{Component}.tsx` |
+| Halaman publik | `resources/js/pages/Home/{Page}.tsx` |
+| Halaman auth | `resources/js/pages/Auth/{Login,SelectRole}.tsx` |
+| Setup wizard | `resources/js/pages/Setup/Wizard.tsx` |
 
 ### Route & Permission Naming:
 | Type | Pattern | Example |
@@ -657,41 +994,64 @@ Used by: Employee leaves, financial adjustments, student service requests.
 --app-surface-bg:     #ffffff   /* Card/surface background */
 ```
 
-### CSS Framework: Bootstrap 5 (Tabler Admin) + TailwindCSS 4
-- Bootstrap classes untuk layout utama: `card`, `form-control`, `btn`, `row/col-*`
-- TailwindCSS untuk utility tambahan: `w-full`, flex utilities
-- Custom CSS variables di `resources/css/app.css` untuk theming
+### CSS Framework: Bootstrap 5 (Tabler Admin) + TailwindCSS 4 + React
+- Halaman **React**: class `db-*`/`crud-*` + CSS variables; Bootstrap tersedia global untuk komponen legacy.
+- Halaman **Blade legacy**: `card`, `form-control`, `btn`, `row/col-*`.
+- TailwindCSS untuk utility tambahan; custom CSS variables di `resources/css/app.css`.
 
-### Icon: Font Awesome 6
+### Icon: Lucide React (utama) + Font Awesome 6 (legacy)
+```tsx
+import { Plus, Pencil, Trash2 } from 'lucide-react';
+<Plus size={15} />
+```
 ```html
-<i class="fas fa-plus"></i>     <!-- Solid -->
-<i class="fa fa-edit"></i>      <!-- Regular -->
+<!-- Blade legacy -->
+<i class="fas fa-plus"></i>
 ```
 
-### Button Styles:
+### Button Styles & Sizing Rules (MANDATORY):
+```tsx
+// React (utama)
+<button className="db-btn primary">Aksi Utama</button>
+<a className="db-btn light" href={urls.create}>Tambah</a>
+<button className="db-btn danger">Hapus</button>
+```
 ```html
+<!-- Blade legacy -->
 <button class="btn btn-primary">Primary Action</button>
 <a class="btn btn-ghost-primary">Ghost/Outline</a>
 <button class="btn btn-secondary">Cancel</button>
 <button class="btn btn-danger">Delete</button>
 ```
+> [!IMPORTANT]
+> **ATURAN PROPORSI & UKURAN ELEMEN (ANTI-OVERSIZE & ANTI-MINI):**
+> 1. **DILARANG OVERSIZE:** Jangan pernah menggunakan ukuran besar/oversize (`btn-lg`, `form-control-lg`, padding raksasa `-lg`, font super besar). User sangat tidak menyukai desain yang gembrot/oversized.
+> 2. **DILARANG BTN-SM SEMBARANGAN:** Jangan sembarangan memakai `btn-sm` atau tombol mini pada navbar/toggle/action utama yang merusak estetika dan keterbacaan. Gunakan ukuran standar (`btn`, `form-control`) yang proporsional, compact, dan elegan.
 
-### Confirmation Dialog: SweetAlert2 (via Livewire `$this->js()`)
+### Dark Mode & Background Architecture Rules (MANDATORY):
+> [!WARNING]
+> **ATURAN TEMA & DARK MODE GLOBAL:**
+> 1. **DILARANG HARDCODED BG-WHITE/BG-LIGHT:** Hindari penggunaan `bg-white`, `bg-light`, atau `style="background: #ffffff"` pada container/card di file Blade. Karena di Tabler/Bootstrap class tersebut memaksa `#ffffff !important` dan membuat tampilan bocor/putih menyilaukan saat mode gelap (`[data-bs-theme=dark]`). Gunakan class `card`, `var(--tblr-bg-surface)`, atau biarkan mengikuti styling tema global.
+> 2. **GLOBAL FIRST:** Pengaturan warna latar dan border untuk dark mode diatur secara terpusat dan global melalui `resources/css/app.css` (`[data-bs-theme=dark]`). Jangan membuat custom blok CSS dark mode di setiap komponen blade yang membebani maintainability.
+
+### Confirmation Dialog: `ConfirmModal` (React, utama)
+```tsx
+<ConfirmModal
+    open={pending !== null}
+    title="Hapus data?"
+    message="Data tidak bisa dikembalikan!"
+    confirmLabel="Ya, hapus"
+    danger
+    processing={processing}
+    onConfirm={confirmPending}
+    onCancel={() => setPending(null)}
+/>
+```
+
+**Legacy historis (tidak dipakai modul aktif):** SweetAlert2 via Livewire `$this->js()`:
 ```php
-$this->js('
-    Swal.fire({
-        title: "Hapus data?",
-        text: "Data tidak bisa dikembalikan!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Ya hapus",
-        cancelButtonText: "Batal"
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $wire.deleteItem('.$id.')
-        }
-    });
-');
+$this->js('Swal.fire({ title: "Hapus data?", icon: "warning", showCancelButton: true })
+    .then((result) => { if (result.isConfirmed) { $wire.deleteItem('.$id.') } });');
 ```
 
 ### Flash Messages:
@@ -726,6 +1086,7 @@ session()->flash('info', 'Informasi.');                     // Blue
 `course_materials` → `course_material_files`, `course_material_versions`
 `consultation_slots` → `consultation_appointments`
 `grade_appeals` → `grade_appeal_attachments`
+`theses` → `thesis_supervisors`, `thesis_milestones`, `thesis_documents`, `thesis_defenses` → `thesis_defense_examiners`
 
 ### Financial Module:
 `tuition_fees` → `invoice_schedules` → `student_invoices` → `invoice_items`
@@ -769,41 +1130,63 @@ $this->call([
 
 ## 8. Artisan Commands
 
+> Command signatures menggunakan namespace per-domain (BUKAN `app:*`).
+
 ```bash
-php artisan app:sync-resources          # Sync permissions + menus from config/resources.php
-php artisan app:sync-permissions        # Sync permissions only
-php artisan app:sync-menus              # Sync menus only
-php artisan app:evaluate-financial-holds # Evaluate student financial holds
-php artisan app:refresh-financial-overdue # Mark overdue invoices
-php artisan app:run-invoice-schedules   # Generate invoices from schedules
-php artisan app:send-assignment-reminders # Send assignment due reminders
-php artisan app:prune-notification-logs  # Clean old notification logs
-php artisan app:generate-vapid-keys     # Generate Web Push VAPID keys
+# Resources / Permissions / Menus
+php artisan resources:sync              # Sync permissions + menus dari config/resources.php
+php artisan permissions:sync            # Sync permissions saja ({--prune} = hapus permission web yang tidak terdaftar)
+php artisan menus:sync                  # Sync menus saja
+
+# Financial
+php artisan financial:evaluate-holds    # Evaluate student financial holds
+php artisan financial:refresh-overdue   # Mark overdue invoices
+php artisan financial:run-invoice-schedules {--dry-run} {--limit=}  # Generate invoices dari schedules
+
+# Academic
+php artisan academic:send-assignment-reminders {--hours=24} {--dry-run}  # Reminder deadline tugas
+
+# Notifications
+php artisan notifications:prune-logs    # Bersihkan notification logs lama
+php artisan notifications:web-push-vapid # Generate Web Push VAPID keys
+
+# WhatsApp Sidecar
+php artisan nexacampus:whatsapp-sidecar-start  # Spawn WhatsApp sidecar background
+php artisan whatsapp:health             # Cek health sidecar & Cloud API backends
+php artisan whatsapp:sidecar:status     # Status instalasi/sesi sidecar
+php artisan whatsapp:sidecar:install    # Install Node dependencies sidecar
+php artisan whatsapp:sidecar:stop       # Stop sidecar session
+php artisan whatsapp:web:listen         # Subscribe event stream sidecar → Laravel events
 ```
 
 ---
 
 ## 9. Key Integration Points
 
-### Menambah Modul/Resource Baru:
+### Menambah Modul/Resource Admin Baru (Inertia React):
 1. **Migration** → `database/migrations/`
 2. **Model** → `app/Models/{Domain}/`
-3. **Config** → Tambah entry di `config/resources.php`
-4. **PowerGrid Table** → `app/Livewire/{Domain}/{Resource}Table.php` extends `BasePowerGridTable`
-5. **Views** → `resources/views/components/admin/{domain}/{resources}/⚡{action}.blade.php`
-6. **Sync** → `php artisan app:sync-resources`
+3. **Config** → Tambah entry di `config/resources.php` (menu + permission)
+4. **Route** → Tambahkan plural ke skip list `ResourceRegistry`, lalu route eksplisit di `routes/web/admin.php`
+5. **Controller** → `app/Http/Controllers/Admin/{Area}/{Resource}Controller.php` (`Inertia::render` + `ShellProps::make`)
+6. **Halaman React** → `resources/js/pages/Admin/{Area}/{Resources}/Index.tsx` + `Form.tsx` (+ `Show.tsx` bila perlu)
+7. **Test** → `tests/Feature/{Domain}/{Resource}CrudTest.php` dengan `assertInertia`
+8. **Sync** → `php artisan resources:sync`
 
-### Menambah Fitur Student/Lecturer/Alumni:
-1. **Route** → Tambah di `routes/web.php` di group yang sesuai
-2. **View** → `resources/views/components/{role}/{feature}/⚡{page}.blade.php`
-3. **Menu** → Tambah di `SidebarMenu::roleMenus()` atau `SidebarMenu::lecturerMenus()`
-4. **Service** (opsional) → `app/Support/{Domain}/`
+> Detail pola lengkap ada di §3.1. Jangan membuat PowerGrid/Blade untuk modul admin baru.
 
-### Menambah Controller (untuk file downloads/exports only):
+### Menambah Fitur Student/Lecturer/Alumni/Employee:
+1. **Route** → Tambah di `routes/web/{portal}.php` (`student.php`, `lecturer.php`, `alumni.php`, `academic-leader.php`)
+2. **Controller** → `app/Http/Controllers/{Portal}/{Feature}Controller.php` → `Inertia::render('{Role}/{Feature}/Index', [...])`
+3. **Halaman React** → `resources/js/pages/{Role}/{Feature}/` (gunakan `AdminShell`/layout portal + komponen `Shared`)
+4. **Menu** → Tambah di `SidebarMenu::roleMenus()` atau `SidebarMenu::lecturerMenus()`
+5. **Service** (opsional) → `app/Support/{Domain}/`
+
+### Menambah Controller (untuk file downloads/exports/PDF only):
 ```
 app/Http/Controllers/{Domain}/{Resource}Controller.php
 ```
-Controllers hanya dipakai untuk non-Livewire operations: file downloads, PDF generation, API endpoints.
+Controller terpisah hanya dipakai untuk operasi non-Inertia: file download, PDF generation, export spreadsheet, webhook/API.
 
 ---
 
@@ -820,11 +1203,13 @@ Controllers hanya dipakai untuk non-Livewire operations: file downloads, PDF gen
 
 | File | Kapan Diubah |
 |---|---|
-| `config/resources.php` | Setiap tambah CRUD resource baru |
-| `routes/web.php` | Setiap tambah route baru |
+| `config/resources.php` | Setiap tambah CRUD resource baru (menu + permission) |
+| `routes/web/admin.php` | Setiap tambah route admin + skip list resource Inertia |
+| `app/Http/Controllers/Admin/{Area}/` | Setiap buat/modifikasi CRUD admin Inertia |
+| `resources/js/pages/Admin/{Area}/{Resources}/` | Setiap buat halaman admin React |
+| `resources/js/components/Shared/Crud/` | Saat mengubah perilaku tabel/form/filter bersama |
 | `app/Support/SidebarMenu.php` | Setiap tambah menu untuk role tertentu |
-| `app/Livewire/{Domain}/` | Setiap buat PowerGrid table baru |
-| `resources/views/components/` | Setiap buat view/page baru |
+| `app/Support/Inertia/ShellProps.php` | Saat menambah data global sidebar/topbar |
 | `database/migrations/` | Setiap tambah/ubah schema |
 | `database/seeders/` | Setiap tambah data seeder |
 
@@ -837,25 +1222,37 @@ Controllers hanya dipakai untuk non-Livewire operations: file downloads, PDF gen
 ### 12.1 Struktur Domain Test Suite
 ```
 tests/Feature/
-├── Academic/       # AcademicAttendanceQrServiceTest, GradeAppealTest, LecturerCalendarTest, dll.
-├── Admission/      # AdmissionEndToEndTest (NIM Generator, Quota Limits, Conversion Maba)
-├── Alumni/         # AlumniModuleTest (Tracer Study, Job Board, Event)
-├── Financial/      # FinancialClearanceEndToEndTest (InvoiceItem, Clearance Policy, Payment Verification Auto-Release)
-├── Organization/   # ApprovalEnginePhaseTwoTest, EmployeeAttendanceLeaveTest, WorkloadEdomTest
-├── StudentService/ # StudentServicesEndToEndTest (Cuti Akademik, Leave Fee Invoice, Academic Status Auto-Transition)
-└── System/         # ExampleTest, System Check
+├── Academic/       # KRS, Nilai, Kalender, QR Attendance, registrasi, Skripsi/Tugas Akhir
+├── Access/         # User, role, permission (Inertia CRUD)
+├── Admission/      # PMB, NIM Generator, Konversi Maba
+├── Alumni/         # Tracer Study, Job Board, Event
+├── Campus/         # Gedung, ruangan, aset, maintenance, reservasi
+├── Financial/      # Invoice, Clearance Policy, Payment Verification
+├── Organization/   # Approval Engine, Kepegawaian, Workload EDOM, CRUD OR-1..OR-8
+├── Publication/    # Pengumuman, berita, agenda, galeri
+├── StudentService/ # Cuti Akademik, Fee Integration, Digital ID
+└── System/         # Uji sistem umum, smoke render Inertia
 ```
+
+**Status saat ini:** **867 test / 8.731 assertion** lulus (`php artisan test`, ±157 detik).
 
 ### 12.2 Konvensi Penulisan Pest Test (`*Test.php`)
 1. **Direct Namespace/Uses:** File pengujian di `tests/Feature/[Domain]/` ditulis langsung dengan `<?php \n\n use App\Models\...` tanpa deklarasi `namespace Tests\Feature\[Domain];` karena `tests/Pest.php` telah dikonfigurasikan dengan `uses(TestCase::class, RefreshDatabase::class)->in('Feature');` yang mengikat seluruh subdirektori secara rekursif.
 2. **Setup Helper Function:** Setiap file test domain disarankan memiliki fungsi helper setup lokal (misal: `admissionTestSetup()`, `financialTestSetup()`, `studentServiceTestSetup()`) yang mendaftarkan *roles* (`Role::firstOrCreate(['name' => '...', 'guard_name' => 'web']);`), membuat entitas inti (`Faculty`, `StudyProgram`, `AcademicYear`), dan mengembalikan array asosiatif via `compact()`.
 3. **Database Constraints Integrity:** Saat membuat data dummy dalam test (misal `AdmissionApplication` atau `StudentInvoice`), selalu pastikan kolom *NOT NULL* (`phone`, `birth_date`, `gender`, `address`) terisi lengkap dan sertakan `InvoiceItem` agar metode penghitungan seperti `InvoiceAdjustmentService::totalWithAdjustments($invoice)` menghasilkan nilai akurat.
-4. **Menjalankan Pengujian:**
+4. **Test CRUD Inertia:** Gunakan `assertInertia(fn (Assert $page) => $page->component('Admin/{Area}/{Resources}/Index')->has('data.rows', ...))`; uji juga `can` permission, filter, create/update, guard delete, dan bulk delete. Contoh: `tests/Feature/Organization/OrganizationOr8CrudTest.php`.
+5. **Menjalankan Pengujian:**
    ```bash
-   php artisan test                                     # Jalankan seluruh 73+ pengujian (semua domain)
-   php artisan test --filter=AdmissionEndToEndTest        # Jalankan test khusus modul Admission
-   php artisan test --filter=FinancialClearanceEndToEndTest # Jalankan test khusus modul Financial
-   php artisan test --filter=StudentServicesEndToEndTest  # Jalankan test khusus modul Student Service
+   php artisan test                                      # Seluruh 844 test (semua domain)
+   php artisan test tests/Feature/Organization           # Satu domain
+   php artisan test --filter=AdmissionEndToEndTest       # Satu file/kelas test
+   php artisan test --filter=FinancialClearanceEndToEndTest
+   ```
+6. **Verifikasi wajib setelah perubahan UI:**
+   ```bash
+   npm run typecheck   # TypeScript
+   npm run build       # Bundle Vite
+   php artisan view:cache  # Bila menyentuh Blade legacy
    ```
 
 ---
@@ -866,4 +1263,44 @@ tests/Feature/
 - `.notes/PATTERN-QUICK-REFERENCE.md` → Quick reference untuk pola kode (created for Grade Book feature)
 - `.notes/has-been-implemented.md` → Catatan fitur yang sudah diimplementasi
 - `.notes/will-be-implemented.md` → Catatan fitur yang akan diimplementasi
+
+---
+
+## 14. Arsitektur & Aturan Ketat Dark Mode (Global Dark Mode & Mandatory UI Rules)
+
+**NexaCampus menggunakan sistem Global Dark Mode Interceptor (`[data-bs-theme=dark]`) di `resources/css/app.css` (Section 1 - 5). Untuk menjaga konsistensi visual modern & premium di seluruh portal (Admin, Lecturer, Student, Alumni), seluruh developer & AI WAJIB mematuhi aturan berikut:**
+
+### 14.1 Larangan Keras (Strict Prohibitions)
+1. ❌ **DILARANG KERAS** menggunakan *hardcoded background* terang (`background: white;`, `background: #fff;`, `background: #ffffff;`, `background: #f8fafc;`, `background: #f9fafb;`) di dalam blok `<style>` atau `@push('styles')` tanpa disertai override `[data-bs-theme=dark]` yang sesuai.
+2. ❌ **DILARANG KERAS** menulis *inline style* statis berwarna terang pada container/panel, contoh: `<div style="background: white; color: #1f2937">` atau `<div style="background: linear-gradient(...)">` yang tidak memiliki override dark mode di `app.css`.
+
+### 14.2 Standard UI Component Classes
+Gunakan class card yang telah terdaftar & ter-normalize secara otomatis di `app.css` agar langsung beradaptasi dengan Dark Mode secara sempurna:
+- **Kartu Utama:** `.card`, `.modern-card`, `.stat-card`, `.course-card`, `.material-card`, `.grade-card`, `.advisor-card`, `.service-card`, `.finance-widget`
+- **Sub-Panel & Inner Items:** `.section-header`, `.soft-list-item`, `.stat-item`, `.info-item`, `.score-display`, `.advisor-metric`, `.note-preview`, `.selected-file-chip`, `.upload-panel`, `.form-section`
+
+### 14.3 Pola Pembuatan Custom Style Baru (Mandatory Pattern)
+Untuk halaman **React**, gunakan variabel tema (`var(--db-card)`, `var(--db-line)`, `var(--db-heading)`, `var(--db-muted)`, `var(--db-brand)`) dan class `db-*`/`crud-*` yang sudah ada — jangan menulis warna hex terang secara inline. Untuk file **Blade legacy**, jika Anda perlu membuat class custom baru di dalam `@push('styles')`, **WAJIB** menyertakan blok override dark mode langsung di bawahnya:
+
+```css
+.my-custom-panel {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #1f2937;
+}
+
+/* WAJIB diserahkan untuk adaptasi Dark Mode */
+[data-bs-theme=dark] .my-custom-panel,
+body[data-bs-theme=dark] .my-custom-panel {
+    background: rgba(43, 28, 67, 0.85) !important;
+    border-color: rgba(167, 139, 255, 0.22) !important;
+    color: #f3edff !important;
+}
+```
+
+### 14.4 Kompilasi Asset (`npm run build`)
+Setiap kali melakukan perubahan pada `resources/css/app.css` atau aset frontend global, selalu jalankan perintah berikut agar bundle CSS terperbarui di seluruh environment:
+```bash
+npm run build
+```
 

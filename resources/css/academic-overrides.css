@@ -1,0 +1,81 @@
+.academic-note { display:flex; align-items:center; gap:13px; margin-top:34px; padding:15px 18px; border-left:3px solid var(--gold); background:var(--academic-soft); }.academic-note > svg { flex:0 0 auto; color:var(--gold); }.academic-note > span { display:grid; gap:4px; }.academic-note strong { color:var(--academic-navy); font-size:10px; }.academic-note small { color:var(--academic-muted); font-size:9px; line-height:1.5; }.academic-note .academic-link { margin-left:auto; flex:0 0 auto; }.calendar-summary-card .academic-breadcrumb { color:var(--academic-blue); font-weight:700; }
+[data-theme='dark'] .academic-page {
+  --academic-ink:#e9f0f8;
+  --academic-muted:#a7b2c4;
+  --academic-blue:#75a7ef;
+  --academic-navy:#edf3fb;
+  --academic-line:#2b3c55;
+  --academic-soft:#203751;
+}
+
+[data-theme='dark'] .calendar-year,
+[data-theme='dark'] .elearning-hero {
+  background:#172c48;
+}
+[data-theme='dark'] .academic-subnav-title,
+[data-theme='dark'] .academic-overview h2,
+[data-theme='dark'] .academic-section-title h2,
+[data-theme='dark'] .faculty-heading h2,
+[data-theme='dark'] .program-card h3,
+[data-theme='dark'] .calendar-summary-card h2,
+[data-theme='dark'] .period-row h3,
+[data-theme='dark'] .schedule-day-heading h2,
+[data-theme='dark'] .schedule-card h3,
+[data-theme='dark'] .curriculum-card h3,
+[data-theme='dark'] .learning-feature h3,
+[data-theme='dark'] .learning-help strong,
+[data-theme='dark'] .academic-note strong { color:#edf3fb; }
+[data-theme='dark'] .academic-stat strong,
+[data-theme='dark'] .program-detail strong,
+[data-theme='dark'] .period-date strong,
+[data-theme='dark'] .schedule-meta b,
+[data-theme='dark'] .curriculum-metrics strong { color:#e9f0f8; }
+[data-theme='dark'] .academic-subnav nav a:hover { background:#223852; }
+[data-theme='dark'] .academic-note,
+[data-theme='dark'] .schedule-note,
+[data-theme='dark'] .learning-help { background:#1b3048; }
+
+/* Page-specific active state for the academic sub-navigation. */
+.academic-subnav nav a.active {
+  color:var(--academic-blue);
+  background:var(--academic-soft);
+  border-bottom-color:var(--gold);
+}
+.academic-subnav nav a.active svg { color:var(--gold); }
+[data-theme='dark'] .academic-subnav nav a.active {
+  color:#e5efff;
+  background:#203751;
+  border-bottom-color:#e7b65b;
+}
+[data-theme='dark'] .academic-subnav nav a.active svg { color:#f0bf64; }
+.academic-search-wrap { position:relative; margin-left:auto; }
+.academic-search-popover { position:absolute; top:calc(100% + 8px); right:0; z-index:40; width:235px; padding:11px; border:1px solid var(--academic-line); border-radius:5px; background:var(--surface); box-shadow:0 14px 28px rgba(17,43,72,.16); }
+.academic-search-popover label { display:block; margin-bottom:7px; color:var(--academic-navy); font-size:9px; font-weight:700; }
+.academic-search-popover input { width:100%; height:31px; padding:0 9px; border:1px solid var(--academic-line); border-radius:3px; color:var(--academic-ink); background:var(--canvas); font:inherit; font-size:10px; outline:none; }
+.academic-search-popover input:focus { border-color:var(--academic-blue); box-shadow:0 0 0 2px rgba(40,102,181,.12); }
+.academic-search-popover a { display:flex; align-items:center; gap:7px; margin-top:5px; padding:7px 6px; border-radius:3px; color:var(--academic-ink); font-size:9px; text-decoration:none; }
+.academic-search-popover a:hover { color:var(--academic-blue); background:var(--academic-soft); }
+.academic-search-empty { display:block; margin-top:9px; color:var(--academic-muted); font-size:9px; }
+[data-theme='dark'] .academic-search-popover { border-color:#38536f; background:#17263c; }
+[data-theme='dark'] .academic-search-popover label,
+[data-theme='dark'] .academic-search-popover a { color:#edf3fb; }
+[data-theme='dark'] .academic-search-popover input { border-color:#40536d; color:#edf3fb; background:#0f1d2e; }
+[data-theme='dark'] .academic-search-popover a:hover { background:#223852; }
+[data-theme='dark'] .academic-search-empty { color:#a7b2c4; }
+@media (max-width:650px) { .academic-search-wrap { display:none; }.academic-note { align-items:flex-start; flex-wrap:wrap; }.academic-note .academic-link { width:100%; margin-left:29px; } }
+
+/* Public contact layout and map. */
+.contact-layout { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:18px; align-items:start; }
+.contact-card-list { display:grid; gap:14px; min-width:0; }
+.contact-map-card { min-width:0; }
+.contact-map-wrap { position:relative; min-height:300px; flex:1; background:var(--adm-soft); }
+.contact-map { position:absolute; inset:0; min-height:300px; z-index:0; }
+.contact-map .leaflet-control-attribution { font-size:9px; }
+
+@media (max-width:900px) {
+  .contact-layout { grid-template-columns:1fr; }
+}
+
+@media (max-width:650px) {
+  .academic-heading-inner > .campus-button { margin-bottom:14px; }
+}

@@ -145,6 +145,7 @@ class AssignmentGradeBookSyncService
     {
         return StudyPlanDetail::query()
             ->where('course_offering_id', $assignment->course_offering_id)
+            ->officiallyEnrolled()
             ->whereHas('studyPlan', fn ($query) => $query->where('student_profile_id', $submission->student_profile_id))
             ->first();
     }

@@ -82,6 +82,72 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => "Halo {{ student_name }}, {{ request_label }} {{ request_number }} berubah menjadi {{ status_label }}.\nCatatan: {{ notes }}",
                 'variables' => ['student_name', 'request_label', 'request_number', 'status_label', 'notes'],
             ],
+            [
+                'event_key' => 'academic.thesis_status_updated',
+                'title' => 'Status skripsi diperbarui',
+                'body' => "Halo {{ student_name }}, status skripsi \"{{ thesis_title }}\" berubah menjadi {{ status_label }}.\nCatatan: {{ notes }}",
+                'variables' => ['student_name', 'thesis_title', 'status_label', 'notes'],
+            ],
+            [
+                'event_key' => 'academic.thesis_milestone_submitted',
+                'title' => 'Milestone skripsi dikirim',
+                'body' => "Halo {{ lecturer_name }}, mahasiswa {{ student_name }} mengirim milestone {{ milestone_title }} untuk skripsi \"{{ thesis_title }}\".\nSilakan review melalui portal dosen.",
+                'variables' => ['lecturer_name', 'student_name', 'thesis_title', 'milestone_title'],
+            ],
+            [
+                'event_key' => 'academic.thesis_milestone_reviewed',
+                'title' => 'Review milestone skripsi',
+                'body' => "Halo {{ student_name }}, milestone {{ milestone_title }} pada skripsi \"{{ thesis_title }}\" telah direview.\nStatus: {{ status_label }}.\nCatatan: {{ feedback }}",
+                'variables' => ['student_name', 'thesis_title', 'milestone_title', 'status_label', 'feedback'],
+            ],
+            [
+                'event_key' => 'academic.thesis_defense_scheduled',
+                'title' => 'Jadwal sidang skripsi',
+                'body' => "Halo {{ student_name }}, {{ defense_type }} skripsi \"{{ thesis_title }}\" dijadwalkan pada {{ scheduled_at }}.\nLokasi: {{ room }}.",
+                'variables' => ['student_name', 'thesis_title', 'defense_type', 'scheduled_at', 'room'],
+            ],
+            [
+                'event_key' => 'academic.thesis_plagiarism_updated',
+                'title' => 'Hasil cek plagiarisme skripsi',
+                'body' => "Halo {{ student_name }}, hasil cek plagiarisme skripsi \"{{ thesis_title }}\" diperbarui.\nStatus: {{ status_label }}.\nSkor kemiripan: {{ score }}.\nAlat: {{ tool }}.\nCatatan: {{ notes }}",
+                'variables' => ['student_name', 'thesis_title', 'status_label', 'score', 'tool', 'notes'],
+            ],
+            [
+                'event_key' => 'library.loan_due_soon',
+                'title' => 'Pengingat jatuh tempo buku',
+                'body' => "Halo {{ student_name }}, buku \"{{ book_title }}\" akan jatuh tempo pada {{ due_date }} ({{ days_left }} hari lagi).\nDenda keterlambatan {{ fine_per_day }}/hari.\nKembalikan atau perpanjang melalui portal perpustakaan.",
+                'variables' => ['student_name', 'book_title', 'due_date', 'days_left', 'fine_per_day'],
+            ],
+            [
+                'event_key' => 'library.loan_overdue',
+                'title' => 'Peminjaman buku terlambat',
+                'body' => "Halo {{ student_name }}, buku \"{{ book_title }}\" sudah melewati jatuh tempo {{ due_date }}.\nKeterlambatan: {{ days_late }} hari.\nDenda berjalan: {{ fine_amount }}.\nSegera kembalikan buku ke perpustakaan.",
+                'variables' => ['student_name', 'book_title', 'due_date', 'days_late', 'fine_amount'],
+            ],
+            [
+                'event_key' => 'library.reservation_ready',
+                'title' => 'Reservasi buku siap diambil',
+                'body' => "Halo {{ student_name }}, reservasi buku \"{{ book_title }}\" sudah siap diambil.\nKode eksemplar: {{ copy_code }}.\nBatas pengambilan: {{ expires_at }}.",
+                'variables' => ['student_name', 'book_title', 'copy_code', 'expires_at'],
+            ],
+            [
+                'event_key' => 'library.fine_submitted',
+                'title' => 'Bukti denda diterima',
+                'body' => "Halo {{ student_name }}, bukti pembayaran denda untuk buku \"{{ book_title }}\" sebesar {{ fine_amount }} sudah diterima.\nStatus: menunggu verifikasi pustakawan.",
+                'variables' => ['student_name', 'book_title', 'fine_amount'],
+            ],
+            [
+                'event_key' => 'library.fine_verified',
+                'title' => 'Pembayaran denda diverifikasi',
+                'body' => "Halo {{ student_name }}, pembayaran denda untuk buku \"{{ book_title }}\" sebesar {{ fine_amount }} sudah diverifikasi.\nStatus: lunas.",
+                'variables' => ['student_name', 'book_title', 'fine_amount'],
+            ],
+            [
+                'event_key' => 'library.fine_rejected',
+                'title' => 'Bukti pembayaran denda ditolak',
+                'body' => "Halo {{ student_name }}, bukti pembayaran denda untuk buku \"{{ book_title }}\" sebesar {{ fine_amount }} belum dapat diverifikasi.\nAlasan: {{ reason }}.\nSilakan unggah ulang bukti pembayaran.",
+                'variables' => ['student_name', 'book_title', 'fine_amount', 'reason'],
+            ],
         ];
     }
 }

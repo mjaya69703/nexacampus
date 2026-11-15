@@ -2,8 +2,8 @@
 
 namespace App\Support\Organization;
 
+use App\Models\Campus\CampusLocation;
 use App\Models\Organization\EmployeeAttendanceRecord;
-use App\Models\Organization\EmployeeAttendanceLocation;
 use App\Models\Organization\EmployeeAttendanceSource;
 use App\Models\Organization\EmployeeProfile;
 use Carbon\CarbonInterface;
@@ -172,14 +172,14 @@ class EmployeeAttendanceService
 
         $latitude = (float) $payload['latitude'];
         $longitude = (float) $payload['longitude'];
-        $locations = EmployeeAttendanceLocation::where('is_active', true)->get();
+        $locations = CampusLocation::attendancePoints()->where('is_active', true)->get();
 
         if ($locations->isEmpty()) {
             return ['location' => null, 'distance' => null, 'status' => 'unverified'];
         }
 
         $nearest = $locations
-            ->map(function (EmployeeAttendanceLocation $location) use ($latitude, $longitude) {
+            ->map(function (CampusLocation $location) use ($latitude, $longitude) {
                 $location->distance_meters = $this->distanceMeters(
                     $latitude,
                     $longitude,

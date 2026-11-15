@@ -29,7 +29,7 @@ class AuthController extends Controller
         request()->session()->invalidate();
         request()->session()->regenerateToken();
 
-        session()->flash('success', 'You have been logged out successfully.');
+        session()->flash('success', 'Anda berhasil keluar.');
 
         return redirect()->route('auth.signin-index');
     }

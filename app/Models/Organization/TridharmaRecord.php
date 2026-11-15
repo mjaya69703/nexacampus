@@ -45,6 +45,11 @@ class TridharmaRecord extends Model
         return $this->belongsTo(EmployeeProfile::class);
     }
 
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
+
     public function approvalRequest(): BelongsTo
     {
         return $this->belongsTo(ApprovalRequest::class);

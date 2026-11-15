@@ -125,7 +125,7 @@
                 <!-- END NAVBAR TOGGLER -->
                 <!-- BEGIN NAVBAR LOGO -->
                 <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-                    <a href="." aria-label="Tabler">
+                    <a href="{{ route('root.home-index') }}" aria-label="Tabler">
                         <img src="{{ $campus->logo_horizontal }}" style="height: 32px;" alt="Neco Siakad Logo">
                     </a>
                 </div>
@@ -135,7 +135,7 @@
                         @include('themes.partials.buttons-navbar')
                     </div>
                     <div class="nav-item dropdown">
-                        <a href="#" class="nav-link d-flex lh-1 p-0 px-2" data-bs-toggle="dropdown" aria-label="Open user menu">
+                        <a href="" class="nav-link d-flex lh-1 p-0 px-2" data-bs-toggle="dropdown" aria-label="Open user menu">
                             <span class="avatar avatar-sm" style="background-image: url({{ $user == null ? asset('storage/images/profile/default.jpg') : $user->photo }})">
                             </span>
                             <div class="d-none d-xl-block ps-2">
@@ -147,7 +147,7 @@
 
                             @auth
                             @if($activeRole)
-                            <a href="#" class="dropdown-item">
+                            <a href="{{ route('home.profile-index') }}" class="dropdown-item">
                                 <i class="fas fa-user"></i>
                                 Profile
                             </a>

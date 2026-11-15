@@ -4,6 +4,9 @@ namespace App\Support\Notifications;
 
 use App\Models\Academic\StudentGrade;
 use App\Models\Academic\StudyPlan;
+use App\Models\Academic\Thesis;
+use App\Models\Academic\ThesisDefense;
+use App\Models\Academic\ThesisMilestone;
 use App\Models\Admission\AdmissionApplication;
 use App\Models\Financial\Payment;
 use App\Models\Financial\StudentInvoice;
@@ -243,6 +246,118 @@ class NotificationDispatchService
             'status_label' => $statusLabel,
             'notes' => $notes ?: '-',
         ], $model);
+    }
+
+    public function thesisStatusUpdated(Thesis $thesis, ?string $notes = null): ?NotificationLog
+    {
+        $thesis->loadMissing('studentProfile.user');
+        $user = $thesis->studentProfile?->user;
+
+        if (! $user) {
+            return null;
+        }
+
+        return $this->dispatch($user, 'academic.thesis_status_updated', [
+            'student_name' => $user->name,
+            'thesis_title' => $thesis->title,
+            'status_label' => $thesis->statusLabel(),
+            'notes' => $notes ?: '-',
+            'url' => route('student.thesis.index'),
+        ], $thesis);
+    }
+
+    public function thesisMilestoneSubmitted(ThesisMilestone $milestone): void
+    {
+        $milestone->loadMissing([
+            'thesis.activeSupervisors.lecturerProfile.user',
+            'thesis.studentProfile.user',
+        ]);
+
+        $thesis = $milestone->thesis;
+
+        if (! $thesis) {
+            return;
+        }
+
+        $studentName = $thesis->studentProfile?->user?->name ?? 'Mahasiswa';
+
+        foreach ($thesis->activeSupervisors as $supervisor) {
+            $user = $supervisor->lecturerProfile?->user;
+
+            if (! $user) {
+                continue;
+            }
+
+            $this->dispatch($user, 'academic.thesis_milestone_submitted', [
+                'lecturer_name' => $user->name,
+                'student_name' => $studentName,
+                'thesis_title' => $thesis->title,
+                'milestone_title' => $milestone->title,
+                'url' => route('lecturer.theses.show', $thesis),
+            ], $milestone);
+        }
+    }
+
+    public function thesisMilestoneReviewed(ThesisMilestone $milestone, ?string $feedback = null): ?NotificationLog
+    {
+        $milestone->loadMissing('thesis.studentProfile.user');
+        $thesis = $milestone->thesis;
+        $user = $thesis?->studentProfile?->user;
+
+        if (! $thesis || ! $user) {
+            return null;
+        }
+
+        return $this->dispatch($user, 'academic.thesis_milestone_reviewed', [
+            'student_name' => $user->name,
+            'thesis_title' => $thesis->title,
+            'milestone_title' => $milestone->title,
+            'status_label' => $milestone->statusLabel(),
+            'feedback' => $feedback ?: '-',
+            'url' => route('student.thesis.index'),
+        ], $milestone);
+    }
+
+    public function thesisDefenseScheduled(ThesisDefense $defense): ?NotificationLog
+    {
+        $defense->loadMissing('thesis.studentProfile.user');
+        $thesis = $defense->thesis;
+        $user = $thesis?->studentProfile?->user;
+
+        if (! $thesis || ! $user) {
+            return null;
+        }
+
+        return $this->dispatch($user, 'academic.thesis_defense_scheduled', [
+            'student_name' => $user->name,
+            'thesis_title' => $thesis->title,
+            'defense_type' => $defense->typeLabel(),
+            'scheduled_at' => $defense->scheduled_at?->format('d M Y H:i') ?? '-',
+            'room' => $defense->room ?: ($defense->meeting_link ?: 'Daring'),
+            'url' => route('student.thesis.index'),
+        ], $defense);
+    }
+
+    public function thesisPlagiarismUpdated(Thesis $thesis): ?NotificationLog
+    {
+        $thesis->loadMissing('studentProfile.user');
+        $user = $thesis->studentProfile?->user;
+
+        if (! $user) {
+            return null;
+        }
+
+        return $this->dispatch($user, 'academic.thesis_plagiarism_updated', [
+            'student_name' => $user->name,
+            'thesis_title' => $thesis->title,
+            'status_label' => $thesis->plagiarismStatusLabel(),
+            'score' => $thesis->plagiarism_score !== null
+                ? number_format((float) $thesis->plagiarism_score, 2, ',', '.').'%'
+                : '-',
+            'tool' => $thesis->plagiarism_tool ?: '-',
+            'notes' => $thesis->plagiarism_notes ?: '-',
+            'url' => route('student.thesis.index'),
+        ], $thesis);
     }
 
     private function render(string $template, array $data): string

@@ -5,6 +5,8 @@ namespace App\Support;
 use App\Models\Academic\AcademicAdvisorAssignment;
 use App\Models\Academic\LecturerProfile;
 use App\Models\Academic\StudentProfile;
+use App\Models\Academic\StudyPlan;
+use App\Support\Notifications\NotificationDispatchService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -207,5 +209,83 @@ class AcademicAdvisorService
     public function lecturerLabel(LecturerProfile $lecturer): string
     {
         return trim(($lecturer->nidn ?? $lecturer->nip ?? '-').' - '.($lecturer->user?->name ?? '-'));
+    }
+
+    /**
+     * Apakah dosen adalah DPA aktif mahasiswa untuk tahun KRS tersebut.
+     * Assignment umum (tanpa tahun) berlaku untuk semua tahun.
+     */
+    public function isAdvisorFor(int $lecturerProfileId, int $studentProfileId, ?int $academicYearId): bool
+    {
+        $assignment = $this->activeAdvisorForStudent($studentProfileId, $academicYearId);
+
+        return $assignment !== null && (int) $assignment->lecturer_profile_id === (int) $lecturerProfileId;
+    }
+
+    /**
+     * KRS Submitted milik mahasiswa bimbingan untuk diputuskan DPA.
+     *
+     * @return \Illuminate\Support\Collection<int, StudyPlan>
+     */
+    public function pendingPlansForStudent(int $studentProfileId): Collection
+    {
+        return StudyPlan::query()
+            ->with(['academicYear:id,name'])
+            ->withCount('details as details_count')
+            ->withSum('details as total_credits', 'credits')
+            ->where('student_profile_id', $studentProfileId)
+            ->where('status', 'Submitted')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    public function approveStudyPlanAsAdvisor(int $lecturerProfileId, StudyPlan $plan, ?string $notes, int $byUserId): StudyPlan
+    {
+        return $this->decideStudyPlanAsAdvisor($lecturerProfileId, $plan, 'Approved', $notes, $byUserId);
+    }
+
+    public function rejectStudyPlanAsAdvisor(int $lecturerProfileId, StudyPlan $plan, ?string $notes, int $byUserId): StudyPlan
+    {
+        return $this->decideStudyPlanAsAdvisor($lecturerProfileId, $plan, 'Rejected', $notes, $byUserId);
+    }
+
+    private function decideStudyPlanAsAdvisor(int $lecturerProfileId, StudyPlan $plan, string $decision, ?string $notes, int $byUserId): StudyPlan
+    {
+        if ($plan->status !== 'Submitted') {
+            throw ValidationException::withMessages([
+                'status' => 'Hanya KRS berstatus Diajukan yang bisa diputuskan DPA.',
+            ]);
+        }
+
+        if (! $this->isAdvisorFor($lecturerProfileId, (int) $plan->student_profile_id, $plan->academic_year_id)) {
+            throw ValidationException::withMessages([
+                'status' => 'Anda bukan Dosen PA aktif mahasiswa ini untuk tahun akademik tersebut.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($plan, $decision, $notes, $byUserId) {
+            $payload = [
+                'status' => $decision,
+                'updated_by' => $byUserId,
+            ];
+
+            if ($decision === 'Approved') {
+                $payload['approved_at'] = now();
+                $payload['approved_by'] = $byUserId;
+            } else {
+                $payload['approved_at'] = null;
+                $payload['approved_by'] = null;
+            }
+
+            if ($notes !== null && trim($notes) !== '') {
+                $payload['notes'] = $notes;
+            }
+
+            $plan->update($payload);
+
+            app(NotificationDispatchService::class)->studyPlanStatusUpdated($plan->fresh(), $plan->notes);
+
+            return $plan->fresh();
+        });
     }
 }

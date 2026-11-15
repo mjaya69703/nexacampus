@@ -4,6 +4,19 @@ Dokumen ini berisi tracking progress implementasi fitur-fitur NexaCampus yang se
 
 ---
 
+## Migrasi Admin ke Inertia React (COMPLETED, November 2026)
+
+**Status:** COMPLETED
+
+- Seluruh modul admin (Access, System, Academic, Campus, Publication, Admission, Alumni, Student Service, Organization, **Financial**) sudah dimigrasi dari Blade/Livewire/PowerGrid ke **Inertia.js 3 + React 19**.
+- Financial mencakup dashboard, tarif, clearance, beasiswa, jadwal tagihan, tagihan mahasiswa, pembayaran, penyesuaian, cicilan, penerima beasiswa, saldo deposit, blokir akademik, dan laporan — seluruh route memakai controller Inertia.
+- Pola CRUD baru: controller `App\Http\Controllers\Admin\{Area}`, halaman `resources/js/pages/Admin/{Area}/{Resources}/`, komponen shared `CrudTable`, `FilterPanel`, `fields`, `CrudHero`, `ConfirmModal`, `AsyncSelect`, `AdminShell`.
+- View Blade dan tabel Livewire lama per area dihapus setelah paritas fitur terverifikasi. Tidak ada lagi halaman admin yang memakai PowerGrid.
+- Dokumentasi pola diperbarui di `AI_CONTEXT.md` (§3.1) dan `.notes/AI_DEVELOPMENT_MEMORY.md` (§1b); skill `crud-resource` kini memakai pola Inertia React.
+- Verifikasi akhir: **798 test / 7.973 assertion** lulus, `npm run typecheck`, `npm run build`, dan smoke test browser lintas area termasuk seluruh halaman Financial.
+
+---
+
 ## ⭐ AI Development Memory & Modular Domain QA Suite (RESTUCTURED & VERIFIED)
 
 **Status:** ✅ COMPLETED (July 2026)  
@@ -1694,7 +1707,7 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
 - [ ] **Library Management Integration** - Book borrowing system
 - [ ] **Hostel/Dormitory Management** - Room allocation
 - [ ] **Internship/PKL Management** - Placement tracking
-- [ ] **Thesis/Final Project Management** - Skripsi monitoring
+- [x] **Thesis/Final Project Management** - Skripsi/Tugas Akhir (proposal, pembimbing, milestone, sidang, repositori)
 - [ ] **Research & Community Service** - Dosen research tracking
 - [ ] **Partnership & MOU Management** - Institutional cooperation
 
@@ -1945,6 +1958,62 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
     - UI: Lecturer `lecturer.consultations.index`, Student `student.consultations.index`.
     - Navigation integrated into lecturer and student sidebars.
     - Remaining enhancement candidates: calendar sync, email/in-app notification integration, holiday/break exceptions.
+
+- **2026-11-12 (Skripsi / Tugas Akhir):**
+  - **COMPLETED: Thesis/Final Project Management** (roadmap §13)
+    - Alur lengkap: pengajuan proposal mahasiswa → approve/reject + penetapan pembimbing → milestone bimbingan → jadwal sidang → penilaian penguji → finalisasi nilai + publikasi repositori.
+    - Database: `theses`, `thesis_supervisors`, `thesis_milestones`, `thesis_documents`, `thesis_defenses`, `thesis_defense_examiners`.
+    - Service: `app/Support/Academic/ThesisService.php` (transisi status, milestone default, konversi nilai, guard satu thesis aktif).
+    - Admin: `Admin/Academic/Theses/{Index,Form,Show}.tsx` + permission `thesis.*`.
+    - Portal mahasiswa: `Student/Thesis/Index.tsx` (pengajuan, milestone, dokumen, sidang, hasil).
+    - Portal dosen: `Lecturer/Theses/{Index,Show}.tsx` (review milestone, nilai sidang, unduh dokumen).
+    - Dokumen di disk `public` (`thesis/{id}`) dengan kontrol akses pemilik/pembimbing/penguji/admin.
+    - Test: `tests/Feature/Academic/ThesisManagementTest.php` (12 test, 215 assertion); suite total 818 test / 8.300 assertion.
+
+- **2026-11-13 (Polish Skripsi / Tugas Akhir):**
+  - **Repositori publik:** route `root.repository.*` + halaman `Home/Repository/{Index,Show}.tsx`; hanya thesis `completed` + `repository_published`, filter pencarian (judul/abstrak/kata kunci/nama/NIM), program studi, tahun, jenis, dan urutan. Unduhan publik dibatasi dokumen kategori `final`.
+  - **Metadata plagiarisme:** enum `PlagiarismStatus` (`not_checked`, `pending`, `passed`, `flagged`), kolom `plagiarism_status/score/tool/checked_at/notes` pada `theses`, permission `thesis.plagiarism`, aksi admin `plagiarism.update`, serta kartu read-only di portal mahasiswa/dosen.
+  - **Guard publikasi:** status `flagged` memblokir finalisasi+publikasi dan otomatis menarik karya dari repositori (`repository_published = false`).
+  - **Publikasi ulang:** aksi admin `admin.academic.theses.publish` (permission `thesis.grade`) untuk karya `completed` yang belum terpublikasi; ditolak bila masih `flagged`, dan mengirim notifikasi ke mahasiswa. Tombol tersedia di kartu "Arsip & Repositori" beserta link ke repositori publik.
+  - **Notifikasi:** `NotificationDispatchService` mengirim notifikasi perubahan status, milestone dikirim/direview, jadwal sidang, dan metadata plagiarisme; template ditambahkan di `NotificationTemplateSeeder`.
+  - **UI:** tab Repositori di `AcademicShell`, link footer, kartu/modal plagiarisme admin, kartu plagiarisme mahasiswa/dosen, dark mode memakai token `--adm-*`/`--db-*`.
+  - **Test:** `tests/Feature/Academic/ThesisManagementTest.php` diperluas menjadi 20 test / 353 assertion (repositori, unduhan final, update plagiarisme, guard finalisasi, publikasi ulang, notifikasi); suite total 826 test / 8.438 assertion.
+
+- **2026-11-13 (Modul Perpustakaan):**
+  - **COMPLETED: Library Management** (katalog, eksemplar, sirkulasi, reservasi)
+    - Database: `book_categories`, `books`, `book_copies`, `book_loans`, `book_reservations`.
+    - Enum: `BookCopyStatus`, `BookLoanStatus`, `BookReservationStatus`.
+    - Service: `app/Support/Library/LibraryService.php` — borrow/return/fine/reservation, guard batas pinjam, denda tertunggak, promosi reservasi, auto-refresh overdue, dan expiry reservasi.
+    - Konfigurasi sirkulasi: `config/library.php` (14 hari pinjam, Rp1.000/hari denda, 3 pinjaman mahasiswa / 5 dosen, 3 reservasi aktif, tahan 3 hari).
+    - Admin: `Admin/Library/BookCategories/{Index,Form}.tsx`, `Books/{Index,Form,Show}.tsx`, `Loans/{Index,Create}.tsx`, `Reservations/Index.tsx` + permission `book-category.*`, `book.*`, `book-loan.*`, `book-reservation.*`.
+    - Portal mahasiswa: `Student/Library/Index.tsx` — katalog, ajukan/batalkan reservasi, pantau pinjaman & denda.
+    - Shared UI: `components/Shared/Library/LibraryUI.tsx`; menu group “Perpustakaan” (admin) dan “Katalog & Pinjaman” (mahasiswa).
+    - Seeder demo: `database/seeders/LibrarySeeder.php`.
+    - Test: `tests/Feature/Library/LibraryManagementTest.php` (18 test / 117 assertion); suite total 844 test / 8.555 assertion.
+
+  - **ENHANCEMENT: Detail buku, reservasi berantrean, perpanjangan, dan role pustakawan**
+    - **Detail buku mahasiswa:** route `student.library.books.show` + halaman `Student/Library/Show.tsx` — bibliografi, status tiap eksemplar beserta jatuh tempo, info antrean, reservasi/pinjaman milik sendiri, aksi perpanjang/batal, dan buku terkait.
+    - **Reservasi realistis:** kolom `pickup_planned_at` (rencana ambil) dan `book_loan_id` (tautan ke peminjaman saat `fulfilled`); service menghitung `queuePosition()`, `queueSize()`, `estimatedReadyAt()` secara dinamis. Modal `ReserveBookModal` menampilkan rencana ambil, jumlah antrean, estimasi siap ambil, masa tahan 3 hari, dan estimasi jatuh tempo.
+    - **Perpanjangan pinjaman:** kolom `renewal_count`/`renewed_at`; `renewalEligibility()` + `renewLoan()` di `LibraryService`. Ditolak bila pinjaman tidak aktif/terlambat, batas `max_renewals` (1×) tercapai, atau buku sedang direservasi anggota lain; jatuh tempo bergeser `renewal_days` (14 hari). Tersedia di portal mahasiswa dan admin (`admin.library.loans.renew`).
+    - **Role pustakawan:** `permissions:sync` membuat role `librarian` (label “Pustakawan”) berisi hanya permission resource ber-`area === 'library'`; demo user `pustakawan` / `librarian123` di `UserSeeder`. Dashboard admin menampilkan section “Perpustakaan” adaptif permission dengan quick link Peminjaman/Reservasi/Buku.
+    - **Perbaikan:** `BookCopy::activeLoan()` tidak lagi memakai `latestOfMany()` (menghindari `ambiguous column name: book_copy_id`); route name menu perpustakaan diselaraskan (`admin.library.loans.*`, `admin.library.reservations.*`); closure `$loans`/`$reservations` pada controller admin diperbaiki.
+    - **Konfigurasi baru:** `LIBRARY_PICKUP_PLAN_DAYS` (7), `LIBRARY_MAX_RENEWALS` (1), `LIBRARY_RENEWAL_DAYS` (14).
+    - **UI:** tabel admin peminjaman menampilkan `Diperpanjang n/max×`; tabel reservasi admin menampilkan antrean, rencana ambil, masa berlaku, dan jatuh tempo pinjaman hasil fulfill.
+    - **Test:** `tests/Feature/Library/LibraryManagementTest.php` menjadi 31 test / 211 assertion (detail buku, antrean, estimasi, perpanjangan, guard reservasi, halaman admin reservasi, role pustakawan); suite total 857 test / 8.651 assertion. `npm run typecheck` dan `npm run build` lulus.
+
+- **2026-11-16 (Notifikasi & denda perpustakaan):**
+  - **COMPLETED: Notifikasi sirkulasi dan verifikasi bukti denda**
+    - **Pengingat otomatis:** command `library:send-due-reminders` (dijadwalkan harian 07:30 di `routes/console.php`, mendukung `--dry-run`) mengirim pengingat H-3/H-1, peringatan terlambat berulang tiap `LIBRARY_OVERDUE_REMINDER_DAYS` (default 3 hari), dan notifikasi reservasi `ready` yang belum dikirim.
+    - **Dedupe:** kolom `book_loans.due_reminder_h3_sent_at`, `due_reminder_h1_sent_at`, `overdue_notified_at`, serta `book_reservations.ready_notified_at` mencegah notifikasi ganda.
+    - **Kanal:** `app/Support/Library/LibraryNotificationService.php` mengirim email (`App\Mail\Library\LibraryNotificationMail`) dan WhatsApp/web push lewat `NotificationDispatchService`; event `library.loan_due_soon`, `library.loan_overdue`, `library.reservation_ready`, `library.fine_submitted`, `library.fine_verified`, `library.fine_rejected` dengan template WhatsApp di `NotificationTemplateSeeder`.
+    - **Denda berbasis bukti:** enum `FinePaymentStatus` (`unpaid`, `pending`, `verified`, `rejected`); kolom `fine_payment_status`, `fine_proof_path`, `fine_proof_original_name`, `fine_payment_notes`, `fine_submitted_at`, `fine_verified_at`, `fine_verified_by`, `fine_rejection_reason`. `fine_paid`/`fine_paid_at` tetap sumber kebenaran blokir peminjaman; status `verified` selalu menyinkronkan `fine_paid = true`.
+    - **Service:** `submitFineProof()` (validasi pemilik, nominal, status, ukuran/format bukti), `verifyFinePayment()` (tunai atau transfer), `rejectFinePayment()` (alasan wajib) di `LibraryService`, lengkap dengan notifikasi ke mahasiswa.
+    - **Route:** mahasiswa `student.library.loans.fine.store` + `loans.fine.proof`; admin `admin.library.loans.fine.proof`, `fine.verify`, `fine.reject`. Verifikasi/tolak memakai permission `book-loan.update`, unduh bukti admin memakai `book-loan.viewAny`.
+    - **UI:** `FinePaymentModal` + `FineRejectModal` di `components/Shared/Library/LibraryUI.tsx`; portal mahasiswa menampilkan status denda, unggah/unggah ulang bukti, unduh bukti, dan alasan penolakan; tabel admin peminjaman menampilkan antrean “Menunggu verifikasi”, unduh bukti, serta aksi verifikasi/tolak, plus filter `fine_status` dan statistik denda pending.
+    - **Konfigurasi:** `LIBRARY_REMINDER_DAYS` (default `3,1`), `LIBRARY_OVERDUE_REMINDER_DAYS` (3), `LIBRARY_FINE_PROOF_MAX_KB` (5120).
+    - **Migrasi:** `2026_11_14_000001_add_library_fine_payments_and_notifications.php`.
+    - **Test:** `tests/Feature/Library/LibraryManagementTest.php` menjadi 41 test / 291 assertion (H-3/H-1, interval terlambat, dry-run, notifikasi reservasi, unggah bukti, otorisasi unduhan, verifikasi, penolakan + unggah ulang, filter status denda); suite total 867 test / 8.731 assertion. `vendor\bin\pint`, `npm run typecheck`, dan `npm run build` lulus.
+    - **Verifikasi browser:** mahasiswa `rania.putri` mengunggah bukti PDF → status “Menunggu verifikasi”; pustakawan `pustakawan` memverifikasi → “Lunas”, denda belum lunas Rp 0, bukti tersimpan di `storage/app/public/library/fines/3`, dan 4 log notifikasi `library.*` tercatat.
 
 - Last updated by: AI Assistant (based on actual git commit history)
 

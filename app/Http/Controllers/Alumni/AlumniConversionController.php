@@ -26,13 +26,13 @@ class AlumniConversionController extends Controller
 
         if (! empty($result['errors'])) {
             return redirect()
-                ->route('admin.alumni.profiles.index')
+                ->route('admin.alumni.alumni-profiles.index')
                 ->with('success', $message)
                 ->with('error', implode(' ', $result['errors']));
         }
 
         return redirect()
-            ->route('admin.alumni.profiles.index')
+            ->route('admin.alumni.alumni-profiles.index')
             ->with('success', $message);
     }
 }

@@ -149,6 +149,7 @@ class AcademicAttendanceQrService
     {
         $allowed = StudyPlanDetail::query()
             ->where('course_offering_id', $session->course_offering_id)
+            ->where('status', 'Taken')
             ->whereHas('studyPlan', function ($query) use ($studentProfile) {
                 $query->where('student_profile_id', $studentProfile->id)
                     ->where('status', 'Approved');

@@ -84,4 +84,14 @@ class LecturerProfile extends Model
     {
         return $this->hasMany(ConsultationAppointment::class);
     }
+
+    public function thesisSupervisions(): HasMany
+    {
+        return $this->hasMany(ThesisSupervisor::class);
+    }
+
+    public function thesisExaminations(): HasMany
+    {
+        return $this->hasMany(ThesisDefenseExaminer::class);
+    }
 }

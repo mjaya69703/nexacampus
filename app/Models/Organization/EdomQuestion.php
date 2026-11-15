@@ -3,6 +3,7 @@
 namespace App\Models\Organization;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EdomQuestion extends Model
@@ -18,5 +19,10 @@ class EdomQuestion extends Model
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    public function answers(): HasMany
+    {
+        return $this->hasMany(EdomAnswer::class);
     }
 }

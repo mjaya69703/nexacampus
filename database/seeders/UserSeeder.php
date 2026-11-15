@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $roles = ['superuser', 'admin', 'lecturer', 'student', 'academic-leader', 'alumni'];
+        $roles = ['superuser', 'admin', 'librarian', 'lecturer', 'student', 'academic-leader', 'alumni'];
         $permissions = [
             'user.viewAny',
             'user.create',
@@ -40,6 +40,7 @@ class UserSeeder extends Seeder
             'setting.viewAny',
             'activity-log.viewAny',
             'activity-log.view',
+            'dashboard.manage',
         ];
 
         foreach ($permissions as $permission) {
@@ -74,6 +75,20 @@ class UserSeeder extends Seeder
         ]);
 
         $user->syncRoles(['superuser', 'admin', 'lecturer', 'student', 'academic-leader', 'alumni']);
+
+        $librarian = User::firstOrCreate([
+            'email' => 'pustakawan@example.com',
+        ], [
+            'first_name' => 'Pustakawan',
+            'last_name' => 'NexaCampus',
+            'photo' => 'default.jpg',
+            'username' => 'pustakawan',
+            'phone' => '0800000002',
+            'code' => Str::random(6),
+            'password' => Hash::make('librarian123'),
+        ]);
+
+        $librarian->syncRoles(['librarian']);
 
         // Generate 250 dummy users
         // $this->command->info('Creating 250 dummy users...');

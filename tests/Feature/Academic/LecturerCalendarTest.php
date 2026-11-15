@@ -12,6 +12,7 @@ use App\Models\Campus\Building;
 use App\Models\Campus\Room;
 use App\Models\Settings\Campus;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 
 function ensureLecturerCalendarInstalled(): void
@@ -78,8 +79,10 @@ it('renders lecturer teaching calendar with assigned schedules', function () {
         ->withSession(['active_role' => 'lecturer'])
         ->get(route('lecturer.calendar.index'))
         ->assertOk()
-        ->assertSee('Kalender Mengajar')
-        ->assertSee('Rekayasa Perangkat Lunak')
-        ->assertSee('Ruang 301')
-        ->assertSee('08:00 - 09:40');
+        ->assertInertia(fn ($page) => $page
+            ->component('Lecturer/Calendar/Index')
+            ->where('schedules.0.courseName', 'Rekayasa Perangkat Lunak')
+            ->where('schedules.0.room', 'Ruang 301')
+            ->where('schedules.0.startTime', '08:00')
+            ->where('schedules.0.endTime', '09:40'));
 });

@@ -1,0 +1,213 @@
+/* =====================================================================
+   Kit CRUD shared (Inertia React) — pilot: area access.
+   Semua warna WAJIB lewat token --db-* (diwarisi dari .db-root);
+   token membalik otomatis pada [data-theme='dark'].
+   Dilarang hex langsung di komponen maupun di file ini di luar token.
+   ===================================================================== */
+
+.crud-label { display: block; margin-bottom: 6px; color: var(--db-heading); font-size: 12.5px; font-weight: 700; }
+.crud-label > span { color: var(--db-red); }
+.crud-hint { margin-top: 5px; color: var(--db-muted); font-size: 11.5px; }
+.crud-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.crud-grid-1 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+select.db-input { appearance: auto; }
+
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+.crud-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+.crud-toolbar .db-input { width: auto; }
+.crud-search { display: flex; gap: 8px; flex: 1 1 240px; min-width: 200px; }
+.crud-search .db-input { flex: 1; }
+.crud-toolbar-spacer { flex: 1; }
+
+/* ── Tabel ───────────────────────────────────────────────────────── */
+.crud-table-wrap { overflow-x: auto; border: 1px solid var(--db-line); border-radius: 12px; }
+table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.crud-table thead th {
+    padding: 10px 14px; text-align: left; white-space: nowrap;
+    color: var(--db-muted); font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .06em;
+    background: var(--db-soft); border-bottom: 1px solid var(--db-line);
+}
+.crud-table thead th button {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 0; border: 0; background: none; cursor: pointer;
+    color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit;
+}
+.crud-table tbody td { padding: 11px 14px; border-bottom: 1px solid var(--db-line); color: var(--db-ink); vertical-align: middle; }
+.crud-table tbody tr:last-child td { border-bottom: 0; }
+.crud-table tbody tr:hover td { background: var(--db-soft); }
+.crud-table input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--db-brand); cursor: pointer; }
+.crud-row-actions { display: flex; gap: 8px; justify-content: flex-end; white-space: nowrap; }
+.crud-name { color: var(--db-heading); font-weight: 700; font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 12.5px; }
+
+/* ── Dropdown export ───────────────────────────────────────────────── */
+.crud-export { position: relative; }
+.crud-export > summary { list-style: none; cursor: pointer; }
+.crud-export > summary::-webkit-details-marker { display: none; }
+.crud-export-menu {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
+    display: grid; min-width: 160px; padding: 6px;
+    border: 1px solid var(--db-line); border-radius: 10px;
+    background: var(--db-card); box-shadow: var(--db-shadow);
+}
+.crud-export-menu a {
+    padding: 8px 12px; border-radius: 7px; text-decoration: none;
+    color: var(--db-ink); font-size: 12.5px; font-weight: 600; white-space: nowrap;
+}
+.crud-export-menu a:hover { background: var(--db-soft); text-decoration: none; }
+
+/* ── Dropdown filter (toolbar ramping, filter lanjut lipat) ────────── */
+/* Panel in-flow (bukan overlay) agar tidak kepotong .db-card yang
+   overflow:hidden saat isi tabel sedikit. */
+.crud-filter { position: relative; }
+.crud-filter > summary { list-style: none; cursor: pointer; }
+.crud-filter > summary::-webkit-details-marker { display: none; }
+.crud-filter[open] { flex-basis: 100%; }
+.crud-filter-menu {
+    display: grid; gap: 12px; margin-top: 10px; padding: 14px;
+    border: 1px solid var(--db-line); border-radius: 12px;
+    background: var(--db-soft);
+}
+.crud-filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.crud-filter-grid .db-input { width: 100%; }
+.crud-filter-foot { display: flex; justify-content: flex-end; }
+
+/* ── Blok semester transkrip ───────────────────────────────────────── */
+.cx-sem { padding: 14px 0; border-bottom: 1px solid var(--db-line); }
+.cx-sem:last-child { border-bottom: 0; padding-bottom: 2px; }
+.cx-sem:first-child { padding-top: 2px; }
+.cx-sem-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; color: var(--db-heading); font-size: 13px; font-weight: 800; }
+.cx-sem-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.cx-sem-cell { border: 1px solid var(--db-line); border-radius: 10px; padding: 10px 12px; background: var(--db-card); }
+.cx-sem-num { display: block; color: var(--db-heading); font-size: 18px; font-weight: 800; }
+.cx-sem-num.brand { color: var(--db-brand); }
+.cx-sem-num.green { color: var(--db-green); }
+.cx-sem-num.gold { color: var(--db-gold); }
+.cx-sem-label { display: block; margin-top: 2px; color: var(--db-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── Tabel baca (detail/show) ─────────────────────────────────────── */
+.db-table-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
+.db-table { width: 100%; border-collapse: collapse; font-size: 13px; color: var(--db-ink); }
+.db-table thead th {
+    padding: 10px 12px; border-bottom: 1px solid var(--db-line);
+    color: var(--db-muted); font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+}
+.db-table tbody td { padding: 11px 12px; border-bottom: 1px solid var(--db-line); vertical-align: middle; }
+.db-table tbody tr:last-child td { border-bottom: 0; }
+.db-table tbody tr:hover td { background: var(--db-soft); }
+
+/* ── Bulkbar ─────────────────────────────────────────────────────── */
+.crud-bulkbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    margin-bottom: 14px; padding: 10px 14px; border-radius: 12px;
+    color: var(--db-brand); background: var(--db-brand-soft); font-size: 12.5px; font-weight: 700;
+}
+
+/* ── Checklist (pengganti TomSelect) ─────────────────────────────── */
+.crud-check { border: 1px solid var(--db-line); border-radius: 12px; overflow: hidden; background: var(--db-card); }
+.crud-check-search { padding: 10px 12px; border-bottom: 1px solid var(--db-line); }
+.crud-check-list { max-height: 260px; overflow-y: auto; padding: 6px; }
+.crud-check-group { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 4px; color: var(--db-muted); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.crud-check-group button { border: 0; background: none; cursor: pointer; color: var(--db-brand); font-size: 11px; font-weight: 700; padding: 0; }
+.crud-check-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--db-ink); }
+.crud-check-item:hover { background: var(--db-soft); }
+.crud-check-item input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--db-brand); cursor: pointer; }
+.crud-check-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--db-line); color: var(--db-muted); font-size: 11.5px; }
+
+/* ── Split form berdampingan (edit dengan panel samping) ─────────── */
+.cx-form-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 18px; align-items: start; }
+.cx-sticky { position: sticky; top: 16px; }
+
+/* ── Grid kartu 6-6 (mis. kartu semester) ─────────────────────────── */
+.cx-cards-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+
+/* ── Tabs (Semua / Sampah) ─────────────────────────────────────────── */
+.crud-tabs { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--db-line); border-radius: 12px; background: var(--db-card); }
+.crud-tab {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+    color: var(--db-muted); font-family: inherit; font-size: 12.5px; font-weight: 700; white-space: nowrap;
+}
+.crud-tab:hover { color: var(--db-heading); }
+.crud-tab.active { color: #fff; background: var(--db-brand); }
+.crud-tab .db-badge { font-size: 9.5px; padding: 2px 8px; }
+.crud-tab.active .db-badge { color: #fff; background: rgba(255, 255, 255, .22); }
+
+/* ── Form actions ────────────────────────────────────────────────── */
+.crud-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--db-line); }
+
+@media (max-width: 960px) {
+    .cx-form-split { grid-template-columns: 1fr; }
+    .cx-sticky { position: static; }
+    .cx-cards-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 650px) {
+    .crud-grid { grid-template-columns: 1fr; }
+    .crud-filter-grid { grid-template-columns: 1fr; }
+    .cx-sem-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* RichTextField (Jodit) — border mengikuti kit, area tulis terang agar
+   konten WYSIWYG tetap terbaca; adaptasi dark mode di bawahnya. */
+.crud-richtext .jodit-container { border: 1px solid var(--db-line) !important; border-radius: 10px; overflow: hidden; }
+.crud-richtext .jodit-wysiwyg { background: #fff; color: #1f2937; }
+
+/* WAJIB — adaptasi dark mode. Editor memakai tema gelap bawaan Jodit
+   (jodit_theme_dark, diaktifkan dari RichTextField mengikuti data-bs-theme);
+   variabel --jd-dark-* di bawah menunjuk langsung ke variabel palet db-*
+   (dashboard.css) agar menyatu dengan kartu/input lain. Ikon Jodit memakai
+   fill/stroke hardcoded #212529 sehingga harus di-override eksplisit. */
+[data-bs-theme=dark] .crud-richtext .jodit-container,
+body[data-bs-theme=dark] .crud-richtext .jodit-container {
+    --jd-dark-background-color: var(--db-card);
+    --jd-dark-background-darknes: var(--db-soft);
+    --jd-dark-background-ligher: var(--db-brand-soft);
+    --jd-dark-toolbar-color: var(--db-soft);
+    --jd-dark-toolbar-seperator-color1: var(--db-line);
+    --jd-dark-toolbar-seperator-color2: var(--db-line);
+    --jd-dark-toolbar-seperator-color3: var(--db-brand-soft);
+    --jd-dark-border-color: var(--db-line);
+    --jd-dark-text-color: var(--db-ink);
+    --jd-dark-text-color-opacity80: var(--db-muted);
+    border-color: var(--db-line) !important;
+}
+[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button svg,
+body[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button svg,
+[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button__button,
+body[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button__button,
+[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button__text,
+body[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button__text {
+    fill: var(--db-ink) !important;
+    stroke: var(--db-ink) !important;
+    color: var(--db-ink) !important;
+}
+[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button:hover:not([disabled]),
+body[data-bs-theme=dark] .crud-richtext .jodit-toolbar-button:hover:not([disabled]) {
+    background-color: var(--db-brand-soft) !important;
+    border-color: var(--db-line) !important;
+}
+[data-bs-theme=dark] .jodit-popup,
+body[data-bs-theme=dark] .jodit-popup,
+[data-bs-theme=dark] .jodit-dialog__panel,
+body[data-bs-theme=dark] .jodit-dialog__panel {
+    --jd-dark-background-color: var(--db-card);
+    --jd-dark-background-darknes: var(--db-soft);
+    --jd-color-panel: var(--db-card);
+    --jd-color-background-default: var(--db-card);
+    --jd-color-text: var(--db-ink);
+    --jd-color-icon: var(--db-ink);
+    --jd-color-border: var(--db-line);
+}
+[data-bs-theme=dark] .jodit-popup .jodit-toolbar-button svg,
+body[data-bs-theme=dark] .jodit-popup .jodit-toolbar-button svg,
+[data-bs-theme=dark] .jodit-dialog__panel .jodit-toolbar-button svg,
+body[data-bs-theme=dark] .jodit-dialog__panel .jodit-toolbar-button svg {
+    fill: var(--db-ink) !important;
+    stroke: var(--db-ink) !important;
+}
+[data-bs-theme=dark] .crud-richtext .jodit-statusbar,
+body[data-bs-theme=dark] .crud-richtext .jodit-statusbar {
+    color: var(--db-muted) !important;
+}

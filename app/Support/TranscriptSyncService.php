@@ -15,6 +15,7 @@ class TranscriptSyncService
     {
         return DB::transaction(function () use ($studentProfileId, $academicYearId) {
             $studyResultsCount = $this->syncStudyResults($studentProfileId, $academicYearId);
+            $this->pruneEmptyStudyResults($studentProfileId, $academicYearId);
             $this->syncStudyPlanReferences($studentProfileId, $academicYearId);
             $transcriptEntriesCount = $this->syncTranscriptEntries($studentProfileId);
             $this->syncCumulativeGpaSnapshot($studentProfileId);
@@ -104,6 +105,39 @@ class TranscriptSyncService
         }
 
         return $count;
+    }
+
+    /**
+     * Hapus baris StudyResult untuk tahun yang sudah tidak punya nilai
+     * Finalized/Published (mis. semua nilai dihapus atau turun ke Draft).
+     * Tanpa ini, IPS/IPK basi tetap tampil di admin + portal mahasiswa.
+     */
+    protected function pruneEmptyStudyResults(int $studentProfileId, ?int $academicYearId = null): int
+    {
+        $activeYearIds = $this->finalizedGradesQuery($studentProfileId, $academicYearId)
+            ->get()
+            ->map(fn (StudentGrade $grade) => $grade->studyPlanDetail?->studyPlan?->academic_year_id)
+            ->filter()
+            ->map(fn ($yearId) => (int) $yearId)
+            ->unique()
+            ->values()
+            ->all();
+
+        $query = StudyResult::query()->where('student_profile_id', $studentProfileId);
+
+        if ($academicYearId !== null) {
+            if (in_array($academicYearId, $activeYearIds, true)) {
+                return 0;
+            }
+
+            return $query->where('academic_year_id', $academicYearId)->delete();
+        }
+
+        if ($activeYearIds === []) {
+            return $query->delete();
+        }
+
+        return $query->whereNotIn('academic_year_id', $activeYearIds)->delete();
     }
 
     protected function syncStudyPlanReferences(int $studentProfileId, ?int $academicYearId = null): int
