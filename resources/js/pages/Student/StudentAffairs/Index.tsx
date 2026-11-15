@@ -1,7 +1,7 @@
 // Portal mahasiswa — organisasi yang diikuti dan prestasi pribadi.
 import { Head } from '@inertiajs/react';
 import {
-    Award, CalendarDays, CheckCircle2, Clock3, FileText, GraduationCap,
+    Award, Building2, CalendarDays, CheckCircle2, Clock3, FileText, GraduationCap,
     Info, Star, Trophy, UserCheck, Users,
 } from 'lucide-react';
 import { AdminShell, ShellProps } from '../../../components/Shared/AdminShell';
@@ -75,6 +75,9 @@ type Props = {
         achievements: number;
         verified: number;
         organizations: number;
+        points: number;
+        registeredEvents: number;
+        activeBookings: number;
     };
     memberships: Membership[];
     achievements: Achievement[];
@@ -87,7 +90,7 @@ type Props = {
         positions: Record<string, string>;
         organizationTypes: Record<string, string>;
     };
-    urls: { publicOrganizations: string; publicAchievements: string };
+    urls: { publicOrganizations: string; publicAchievements: string; events: string; leaderboard: string; bookings: string };
 };
 
 export default function StudentAffairsIndex({ shell, student, stats, memberships, achievements, organizations, urls }: Props) {
@@ -122,8 +125,34 @@ export default function StudentAffairsIndex({ shell, student, stats, memberships
                             { label: 'Riwayat keanggotaan', value: stats.memberships, icon: Users },
                             { label: 'Prestasi tercatat', value: stats.achievements, icon: Trophy, tone: 'gold' },
                             { label: 'Prestasi terverifikasi', value: stats.verified, icon: CheckCircle2, tone: 'green' },
+                            { label: 'Poin saya', value: stats.points, icon: Star, tone: 'gold' },
+                            { label: 'Event terdaftar', value: stats.registeredEvents, icon: CalendarDays },
                         ]}
                     />
+
+                    <div className="db-grid-3">
+                        <a className="db-fact wide" href={urls.events} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span className="db-stat-icon blue"><CalendarDays size={18} /></span>
+                            <span>
+                                <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>Event Mahasiswa</b>
+                                <small className="db-hint">Ikuti agenda dan kumpulkan poin</small>
+                            </span>
+                        </a>
+                        <a className="db-fact wide" href={urls.leaderboard} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span className="db-stat-icon gold"><Star size={18} /></span>
+                            <span>
+                                <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>Poin & Leaderboard</b>
+                                <small className="db-hint">Lihat peringkat dan riwayat poin</small>
+                            </span>
+                        </a>
+                        <a className="db-fact wide" href={urls.bookings} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span className="db-stat-icon green"><Building2 size={18} /></span>
+                            <span>
+                                <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>Booking Fasilitas</b>
+                                <small className="db-hint">{stats.activeBookings} booking aktif</small>
+                            </span>
+                        </a>
+                    </div>
 
                     <div className="db-layout">
                         <div className="db-stack">

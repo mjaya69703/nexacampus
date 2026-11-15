@@ -6,16 +6,28 @@ use App\Enums\AchievementCategory;
 use App\Enums\AchievementLevel;
 use App\Enums\AchievementRank;
 use App\Enums\AchievementStatus;
+use App\Enums\EventRegistrationStatus;
+use App\Enums\FacilityBookingStatus;
 use App\Enums\MemberPosition;
 use App\Enums\OrganizationType;
+use App\Enums\PointEntryCategory;
+use App\Enums\StudentEventCategory;
+use App\Enums\StudentEventStatus;
 use App\Models\Academic\Faculty;
 use App\Models\Academic\StudyProgram;
+use App\Models\Campus\Room;
+use App\Models\Campus\RoomReservation;
 use App\Models\StudentAffairs\StudentAchievement;
+use App\Models\StudentAffairs\StudentEvent;
+use App\Models\StudentAffairs\StudentEventRegistration;
 use App\Models\StudentAffairs\StudentOrganization;
 use App\Models\StudentAffairs\StudentOrganizationMember;
+use App\Models\StudentAffairs\StudentPointEntry;
 use App\Models\User;
+use App\Support\StudentAffairs\StudentPointService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class StudentAffairsSeeder extends Seeder
 {
@@ -269,6 +281,273 @@ class StudentAffairsSeeder extends Seeder
                     'is_featured' => $isVerified && $row['is_featured'],
                     'verified_by' => $isVerified ? $admin?->id : null,
                     'verified_at' => $isVerified ? Carbon::now()->subDays(3) : null,
+                    'created_by' => $admin?->id,
+                    'updated_by' => $admin?->id,
+                ],
+            );
+        }
+
+        $events = [
+            [
+                'title' => 'Seminar Nasional Kepemimpinan Mahasiswa 2026',
+                'category' => StudentEventCategory::SEMINAR,
+                'organization' => 'Badan Eksekutif Mahasiswa NexaCampus',
+                'organizer' => 'BEM NexaCampus',
+                'location' => 'Aula Gedung B',
+                'description' => 'Seminar kepemimpinan mahasiswa dengan pembicara nasional, membahas advokasi, kolaborasi lintas ormawa, dan pengembangan kapasitas pengurus.',
+                'starts_at' => Carbon::now()->addDays(10)->setTime(9, 0),
+                'ends_at' => Carbon::now()->addDays(10)->setTime(15, 0),
+                'registration_deadline' => Carbon::now()->addDays(7)->setTime(23, 59),
+                'quota' => 150,
+                'points' => 15,
+                'status' => StudentEventStatus::PUBLISHED,
+                'is_featured' => true,
+            ],
+            [
+                'title' => 'Workshop UI/UX untuk Organisasi',
+                'category' => StudentEventCategory::WORKSHOP,
+                'organization' => 'Himpunan Mahasiswa Teknik Informatika',
+                'organizer' => 'HIMA Teknik Informatika',
+                'location' => 'Laboratorium Komputer 203',
+                'description' => 'Pelatihan praktis merancang poster, feed media sosial, dan antarmuka aplikasi organisasi menggunakan prinsip desain yang inklusif.',
+                'starts_at' => Carbon::now()->addDays(14)->setTime(13, 0),
+                'ends_at' => Carbon::now()->addDays(14)->setTime(16, 30),
+                'registration_deadline' => Carbon::now()->addDays(12)->setTime(23, 59),
+                'quota' => 40,
+                'points' => 10,
+                'status' => StudentEventStatus::PUBLISHED,
+                'is_featured' => false,
+            ],
+            [
+                'title' => 'Turnamen Futsal Antar Ormawa',
+                'category' => StudentEventCategory::SPORTS,
+                'organization' => 'Unit Kegiatan Mahasiswa Olahraga',
+                'organizer' => 'UKM Olahraga',
+                'location' => 'Lapangan Futsal Kampus',
+                'description' => 'Turnamen futsal antar organisasi mahasiswa untuk mempererat kebersamaan dan menyalurkan bakat olahraga.',
+                'starts_at' => Carbon::now()->addDays(21)->setTime(8, 0),
+                'ends_at' => Carbon::now()->addDays(22)->setTime(17, 0),
+                'registration_deadline' => Carbon::now()->addDays(18)->setTime(23, 59),
+                'quota' => 80,
+                'points' => 12,
+                'status' => StudentEventStatus::PUBLISHED,
+                'is_featured' => false,
+            ],
+            [
+                'title' => 'Festival Seni Mahasiswa',
+                'category' => StudentEventCategory::ARTS,
+                'organization' => 'Unit Kegiatan Mahasiswa Seni & Budaya',
+                'organizer' => 'UKM Seni & Budaya',
+                'location' => 'Aula Gedung A',
+                'description' => 'Panggung seni tahunan yang menampilkan musik, tari, teater, dan paduan suara mahasiswa.',
+                'starts_at' => Carbon::now()->addDays(30)->setTime(10, 0),
+                'ends_at' => Carbon::now()->addDays(30)->setTime(21, 0),
+                'registration_deadline' => Carbon::now()->addDays(27)->setTime(23, 59),
+                'quota' => 200,
+                'points' => 20,
+                'status' => StudentEventStatus::DRAFT,
+                'is_featured' => false,
+            ],
+            [
+                'title' => 'Bakti Sosial Mahasiswa',
+                'category' => StudentEventCategory::SOCIAL,
+                'organization' => 'Badan Eksekutif Mahasiswa NexaCampus',
+                'organizer' => 'BEM NexaCampus',
+                'location' => 'Desa Mitra Kampus',
+                'description' => 'Kegiatan pengabdian masyarakat berupa penyuluhan literasi digital dan donor darah bersama warga sekitar.',
+                'starts_at' => Carbon::now()->subDays(20)->setTime(8, 0),
+                'ends_at' => Carbon::now()->subDays(20)->setTime(14, 0),
+                'registration_deadline' => Carbon::now()->subDays(23)->setTime(23, 59),
+                'quota' => 100,
+                'points' => 15,
+                'status' => StudentEventStatus::COMPLETED,
+                'is_featured' => true,
+            ],
+            [
+                'title' => 'Kompetisi Hackathon Internal NexaCampus',
+                'category' => StudentEventCategory::COMPETITION,
+                'organization' => 'Unit Kegiatan Mahasiswa Penalaran',
+                'organizer' => 'UKM Penalaran',
+                'location' => 'Laboratorium Komputer 203',
+                'description' => 'Kompetisi pengembangan solusi digital selama 24 jam untuk menjawab permasalahan kampus.',
+                'starts_at' => Carbon::now()->addDays(45)->setTime(8, 0),
+                'ends_at' => Carbon::now()->addDays(46)->setTime(16, 0),
+                'registration_deadline' => Carbon::now()->addDays(40)->setTime(23, 59),
+                'quota' => 60,
+                'points' => 25,
+                'status' => StudentEventStatus::PUBLISHED,
+                'is_featured' => true,
+            ],
+        ];
+
+        $eventModels = collect($events)->mapWithKeys(function (array $data) use ($organizationModels, $admin) {
+            $organization = $organizationModels->get($data['organization']);
+
+            $payload = collect($data)
+                ->except(['organization'])
+                ->merge([
+                    'category' => $data['category']->value,
+                    'status' => $data['status']->value,
+                    'student_organization_id' => $organization?->id,
+                    'created_by' => $admin?->id,
+                    'updated_by' => $admin?->id,
+                ])
+                ->all();
+
+            $event = StudentEvent::updateOrCreate(
+                ['slug' => Str::slug($data['title'])],
+                $payload,
+            );
+
+            return [$event->title => $event];
+        });
+
+        $registrations = [
+            ['event' => 'Seminar Nasional Kepemimpinan Mahasiswa 2026', 'username' => 'rania.putri', 'status' => EventRegistrationStatus::REGISTERED, 'registered_at' => Carbon::now()->subDays(3)],
+            ['event' => 'Seminar Nasional Kepemimpinan Mahasiswa 2026', 'username' => 'nadia.senior', 'status' => EventRegistrationStatus::REGISTERED, 'registered_at' => Carbon::now()->subDays(2)],
+            ['event' => 'Seminar Nasional Kepemimpinan Mahasiswa 2026', 'username' => 'dimas.saputra', 'status' => EventRegistrationStatus::REGISTERED, 'registered_at' => Carbon::now()->subDay()],
+            ['event' => 'Workshop UI/UX untuk Organisasi', 'username' => 'rania.putri', 'status' => EventRegistrationStatus::REGISTERED, 'registered_at' => Carbon::now()->subDay()],
+            ['event' => 'Workshop UI/UX untuk Organisasi', 'username' => 'citra.anjani', 'status' => EventRegistrationStatus::REGISTERED, 'registered_at' => Carbon::now()->subHours(12)],
+            ['event' => 'Kompetisi Hackathon Internal NexaCampus', 'username' => 'rania.putri', 'status' => EventRegistrationStatus::REGISTERED, 'registered_at' => Carbon::now()->subHours(6)],
+            ['event' => 'Bakti Sosial Mahasiswa', 'username' => 'rania.putri', 'status' => EventRegistrationStatus::ATTENDED, 'registered_at' => Carbon::now()->subDays(25), 'attended_at' => Carbon::now()->subDays(20)->setTime(9, 0)],
+            ['event' => 'Bakti Sosial Mahasiswa', 'username' => 'nadia.senior', 'status' => EventRegistrationStatus::ATTENDED, 'registered_at' => Carbon::now()->subDays(24), 'attended_at' => Carbon::now()->subDays(20)->setTime(9, 0)],
+            ['event' => 'Bakti Sosial Mahasiswa', 'username' => 'citra.anjani', 'status' => EventRegistrationStatus::ATTENDED, 'registered_at' => Carbon::now()->subDays(23), 'attended_at' => Carbon::now()->subDays(20)->setTime(9, 0)],
+        ];
+
+        $pointService = app(StudentPointService::class);
+
+        foreach ($registrations as $row) {
+            $event = $eventModels->get($row['event']);
+            $user = User::query()->where('username', $row['username'])->first();
+
+            if (! $event || ! $user) {
+                continue;
+            }
+
+            $registration = StudentEventRegistration::updateOrCreate(
+                ['student_event_id' => $event->id, 'user_id' => $user->id],
+                [
+                    'status' => $row['status']->value,
+                    'registered_at' => $row['registered_at'],
+                    'attended_at' => $row['attended_at'] ?? null,
+                    'created_by' => $admin?->id,
+                    'updated_by' => $admin?->id,
+                ],
+            );
+
+            if ($row['status'] === EventRegistrationStatus::ATTENDED) {
+                $pointService->awardEventAttendance($registration->refresh());
+            }
+        }
+
+        $manualPoints = [
+            ['username' => 'rania.putri', 'points' => 20, 'category' => PointEntryCategory::ORGANIZATION, 'description' => 'Keaktifan sebagai koordinator BEM NexaCampus'],
+            ['username' => 'nadia.senior', 'points' => 15, 'category' => PointEntryCategory::ORGANIZATION, 'description' => 'Keaktifan sebagai koordinator UKM Penalaran'],
+            ['username' => 'dimas.saputra', 'points' => 10, 'category' => PointEntryCategory::ORGANIZATION, 'description' => 'Keaktifan sebagai ketua UKM Olahraga'],
+            ['username' => 'citra.anjani', 'points' => 8, 'category' => PointEntryCategory::ORGANIZATION, 'description' => 'Kontribusi anggota UKM Seni & Budaya'],
+        ];
+
+        foreach ($manualPoints as $row) {
+            $user = User::query()->where('username', $row['username'])->first();
+
+            if (! $user) {
+                continue;
+            }
+
+            StudentPointEntry::updateOrCreate(
+                ['user_id' => $user->id, 'description' => $row['description']],
+                [
+                    'points' => $row['points'],
+                    'category' => $row['category']->value,
+                    'awarded_at' => Carbon::now()->subDays(5)->toDateString(),
+                    'awarded_by' => $admin?->id,
+                    'created_by' => $admin?->id,
+                    'updated_by' => $admin?->id,
+                ],
+            );
+        }
+
+        $bookings = [
+            [
+                'reservation_number' => 'RES-SEED-001',
+                'room' => 'A-101',
+                'organization' => 'Himpunan Mahasiswa Teknik Informatika',
+                'username' => 'rania.putri',
+                'title' => 'Rapat Kerja Pengurus HIMA TI',
+                'purpose' => 'Menyusun program kerja dan pembagian tugas pengurus periode 2026/2027.',
+                'date' => Carbon::now()->addDay()->toDateString(),
+                'start' => '09:00',
+                'end' => '12:00',
+                'attendees' => 30,
+                'status' => FacilityBookingStatus::PENDING,
+            ],
+            [
+                'reservation_number' => 'RES-SEED-002',
+                'room' => 'B-401',
+                'organization' => 'Badan Eksekutif Mahasiswa NexaCampus',
+                'username' => 'rania.putri',
+                'title' => 'Gladi Bersih Seminar Kepemimpinan',
+                'purpose' => 'Pengecekan teknis dan simulasi rundown sebelum seminar nasional.',
+                'date' => Carbon::now()->addDays(9)->toDateString(),
+                'start' => '13:00',
+                'end' => '16:00',
+                'attendees' => 45,
+                'status' => FacilityBookingStatus::APPROVED,
+            ],
+            [
+                'reservation_number' => 'RES-SEED-003',
+                'room' => 'B-301',
+                'organization' => 'Unit Kegiatan Mahasiswa Olahraga',
+                'username' => 'dimas.saputra',
+                'title' => 'Rapat Persiapan Turnamen Futsal',
+                'purpose' => 'Koordinasi panitia, jadwal pertandingan, dan kebutuhan logistik.',
+                'date' => Carbon::now()->addDays(3)->toDateString(),
+                'start' => '16:00',
+                'end' => '18:00',
+                'attendees' => 25,
+                'status' => FacilityBookingStatus::APPROVED,
+            ],
+            [
+                'reservation_number' => 'RES-SEED-004',
+                'room' => 'B-401',
+                'organization' => 'Unit Kegiatan Mahasiswa Seni & Budaya',
+                'username' => 'citra.anjani',
+                'title' => 'Gladi Bersih Festival Seni',
+                'purpose' => 'Latihan panggung dan pengecekan tata suara sebelum festival.',
+                'date' => Carbon::now()->addDays(25)->toDateString(),
+                'start' => '13:00',
+                'end' => '17:00',
+                'attendees' => 40,
+                'status' => FacilityBookingStatus::PENDING,
+            ],
+        ];
+
+        foreach ($bookings as $row) {
+            $room = Room::query()->where('code', $row['room'])->first();
+            $organization = $organizationModels->get($row['organization']);
+            $user = User::query()->where('username', $row['username'])->first();
+
+            if (! $room || ! $organization || ! $user) {
+                continue;
+            }
+
+            $isApproved = $row['status'] === FacilityBookingStatus::APPROVED;
+
+            RoomReservation::updateOrCreate(
+                ['reservation_number' => $row['reservation_number']],
+                [
+                    'room_id' => $room->id,
+                    'user_id' => $user->id,
+                    'student_organization_id' => $organization->id,
+                    'title' => $row['title'],
+                    'purpose' => $row['purpose'],
+                    'reservation_date' => $row['date'],
+                    'start_time' => $row['start'],
+                    'end_time' => $row['end'],
+                    'attendee_count' => $row['attendees'],
+                    'status' => $row['status']->value,
+                    'approved_by' => $isApproved ? $admin?->id : null,
+                    'approved_at' => $isApproved ? Carbon::now()->subDay() : null,
                     'created_by' => $admin?->id,
                     'updated_by' => $admin?->id,
                 ],

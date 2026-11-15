@@ -12,7 +12,9 @@ use App\Models\Organization\UserDevelopmentRecord;
 use App\Models\Organization\WorkUnit;
 use App\Models\Settings\PushNotificationSubscription;
 use App\Models\StudentAffairs\StudentAchievement;
+use App\Models\StudentAffairs\StudentEventRegistration;
 use App\Models\StudentAffairs\StudentOrganizationMember;
+use App\Models\StudentAffairs\StudentPointEntry;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -186,6 +188,16 @@ class User extends Authenticatable
     public function achievements(): HasMany
     {
         return $this->hasMany(StudentAchievement::class);
+    }
+
+    public function eventRegistrations(): HasMany
+    {
+        return $this->hasMany(StudentEventRegistration::class);
+    }
+
+    public function pointEntries(): HasMany
+    {
+        return $this->hasMany(StudentPointEntry::class);
     }
 
     // Prefix untuk route names berdasarkan active role

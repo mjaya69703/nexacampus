@@ -945,36 +945,47 @@ Domain `Library` — katalog buku, eksemplar, sirkulasi peminjaman/pengembalian,
 
 **Seeder & test:** `database/seeders/LibrarySeeder.php`, template notifikasi di `NotificationTemplateSeeder`, demo pustakawan `pustakawan` / `librarian123` di `UserSeeder`; `tests/Feature/Library/LibraryManagementTest.php` (41 test / 291 assertion) mencakup pengingat H-3/H-1, interval terlambat, dry-run, notifikasi reservasi, unggah/verifikasi/tolak bukti, otorisasi unduhan, dan filter status denda.
 
-### 3.12 Modul Kemahasiswaan (Organisasi & Prestasi)
+### 3.12 Modul Kemahasiswaan (Organisasi, Prestasi, Event, Poin & Booking Fasilitas)
 
-Domain `StudentAffairs` — Slice 1 mencakup master organisasi mahasiswa (ormawa), keanggotaan per periode kepengurusan, prestasi mahasiswa dengan alur verifikasi, portal mahasiswa (read-only), serta halaman publik Organisasi dan Prestasi yang dinamis. Event kemahasiswaan, poin/leaderboard, dan booking fasilitas belum termasuk (Slice 2).
+Domain `StudentAffairs` — Slice 1 mencakup master organisasi mahasiswa (ormawa), keanggotaan per periode kepengurusan, prestasi mahasiswa dengan alur verifikasi, portal mahasiswa (read-only), serta halaman publik Organisasi dan Prestasi yang dinamis. Slice 2 menambahkan event kemahasiswaan dengan pendaftaran & kehadiran, poin/leaderboard (manual + otomatis dari kehadiran event), dan booking fasilitas organisasi yang memakai ulang `room_reservations`.
 
-**Tabel:** `student_organizations`, `student_organization_members`, `student_achievements`.
+**Tabel Slice 1:** `student_organizations`, `student_organization_members`, `student_achievements`.
 - `student_organizations.type`: `bem`, `dpm`, `hima`, `ukm`, `community`; scope fakultas/prodi opsional (kosong = tingkat universitas).
 - `student_organization_members` unik pada `(student_organization_id, user_id, period)`; `period` berformat `YYYY/YYYY`. Jabatan: `chairman`, `vice_chairman`, `secretary`, `treasurer`, `coordinator`, `member`.
 - `student_achievements.status`: `pending`, `verified`, `rejected`. Kategori: `academic`, `sports`, `arts`, `research`, `entrepreneurship`, `community`; tingkat: `local`, `regional`, `national`, `international`; peringkat: `winner`, `runner_up`, `third_place`, `honorable_mention`, `finalist`, `participant`.
 - Hanya prestasi `verified` yang tampil di halaman publik dan boleh `is_featured`. Menolak prestasi otomatis melepas sorotan dan menyimpan `rejection_reason`.
 
+**Tabel Slice 2:** `student_events`, `student_event_registrations`, `student_point_entries`; booking memakai `room_reservations` + kolom `student_organization_id` (nullable).
+- `student_events.status`: `draft`, `published`, `ongoing`, `completed`, `cancelled`; kategori: `seminar`, `workshop`, `competition`, `sports`, `arts`, `social`, `community`. Hanya `published`/`ongoing` yang tampil di portal mahasiswa (`visibleToStudents()`), dengan syarat batas pendaftaran belum lewat dan kuota masih tersedia (`isRegistrationOpen()`).
+- `student_event_registrations.status`: `registered`, `attended`, `cancelled`; unik pada `(student_event_id, user_id)`. Registrasi batal dapat didaftarkan ulang (record di-restore/di-update, bukan duplikat).
+- `student_point_entries.category`: `event`, `organization`, `achievement`, `manual`, `penalty`; `points` boleh negatif. Sumber poin event memakai `source_type`/`source_id` sehingga pemberian poin idempoten (tidak dobel saat kehadiran diubah bolak-balik).
+- Booking fasilitas: status mengikuti `room_reservations` (`pending`, `approved`, `rejected`, `cancelled`). Hanya baris dengan `student_organization_id` yang tampil di modul Kemahasiswaan; modul Kampus tetap menampilkan semua reservasi.
+
 **Aturan bisnis:**
 - Organisasi yang masih memiliki data prestasi tidak dapat dihapus (single maupun bulk); bulk delete melewati organisasi tersebut dan memberi flash `warning`.
 - Anggota wajib user dengan `studentProfile`; duplikasi user+periode ditolak dengan error validasi pada `user_id`.
-- Logo organisasi disimpan di disk `public` folder `student-affairs/organizations`; sertifikat prestasi di `student-affairs/achievements/{id}`.
+- Logo organisasi disimpan di disk `public` folder `student-affairs/organizations`; sertifikat prestasi di `student-affairs/achievements/{id}`; cover event di `student-affairs/events/{id}`.
 - Unduh sertifikat: admin dengan `student-achievement.view`; mahasiswa hanya sertifikat miliknya (`Student\StudentAffairsController@downloadCertificate`, 404 bila bukan pemilik).
+- Kehadiran event dicatat admin (`registered`/`attended`/`cancelled`). Mengubah ke `attended` memberi poin event secara otomatis; mengembalikan status akan menarik poin tersebut (idempoten via `StudentPointService::awardEventAttendance`/`revoke`).
+- Booking hanya boleh diajukan anggota aktif organisasi (`student_organization_members.is_active`), peserta ≤ kapasitas ruangan, dan tidak bentrok dengan reservasi `approved` maupun jadwal kuliah (`RoomReservation::getConflict()`). Approve/reject memakai state machine yang sama dengan modul Kampus.
+- Mahasiswa dapat membatalkan booking miliknya sendiri selama `pending`/`approved`; admin dapat approve/reject/cancel/hapus.
+
+**Service utama:** `app(StudentPointService::class)` di `app/Support/StudentAffairs/StudentPointService.php` — `award()`, `awardEventAttendance()`, `revoke()`, `totalFor()`, `leaderboard()`, `rankFor()`.
 
 **Route utama:**
-- Admin: `admin.student-affairs.organizations.*` (`index/create/store/edit/show/update/destroy/bulk-destroy`, `members.store/update/destroy`, `search-students`, `search-lecturers`) dan `admin.student-affairs.achievements.*` (`index/create/store/edit/show/update/destroy/bulk-destroy`, `verify`, `reject`, `feature`, `certificate`, `search-students`).
-- Mahasiswa: `student.student-affairs.index`, `student.student-affairs.certificate`.
+- Admin: `admin.student-affairs.organizations.*` (`index/create/store/edit/show/update/destroy/bulk-destroy`, `members.store/update/destroy`, `search-students`, `search-lecturers`), `admin.student-affairs.achievements.*` (`index/create/store/edit/show/update/destroy/bulk-destroy`, `verify`, `reject`, `feature`, `certificate`, `search-students`), `admin.student-affairs.events.*` (`index/create/store/edit/show/update/destroy/bulk-destroy`, `publish`, `complete`, `cancel`, `attendance`), `admin.student-affairs.points.*` (`index/store/destroy/bulk-destroy`, `search-students`), `admin.student-affairs.facility-bookings.*` (`index/bulk-destroy`, `approve`, `reject`, `cancel`, `destroy`).
+- Mahasiswa: `student.student-affairs.index`, `student.student-affairs.certificate`, `student.student-affairs.events`, `student.student-affairs.events.register`, `student.student-affairs.events.cancel-registration`, `student.student-affairs.leaderboard`, `student.student-affairs.bookings`, `student.student-affairs.bookings.store`, `student.student-affairs.bookings.cancel`.
 - Publik: `root.kemahasiswaan.organisasi`, `root.kemahasiswaan.prestasi` (data dari `CommunityPageController`).
 
 **Halaman React:**
-- Admin: `resources/js/pages/Admin/StudentAffairs/Organizations/{Index,Form,Show}.tsx`, `Achievements/{Index,Form,Show}.tsx`, helper `Admin/StudentAffairs/shared.tsx` (`buildQuery`, `toneClass`, `StudentAffairsStats`, `StudentAffairsModal`, `initialsFor`).
-- Mahasiswa: `resources/js/pages/Student/StudentAffairs/Index.tsx` — kartu keanggotaan, rekomendasi ormawa aktif, prestasi pribadi + status verifikasi + unduh sertifikat.
+- Admin: `resources/js/pages/Admin/StudentAffairs/Organizations/{Index,Form,Show}.tsx`, `Achievements/{Index,Form,Show}.tsx`, `Events/{Index,Form,Show}.tsx`, `Points/Index.tsx`, `FacilityBookings/Index.tsx`, helper `Admin/StudentAffairs/shared.tsx` (`buildQuery`, `toneClass`, `StudentAffairsStats`, `StudentAffairsModal`, `initialsFor`).
+- Mahasiswa: `resources/js/pages/Student/StudentAffairs/Index.tsx` (kartu keanggotaan, prestasi pribadi, pintasan event/poin/booking), `Events.tsx` (katalog event + daftar/batal), `Leaderboard.tsx` (papan peringkat + riwayat poin), `Bookings.tsx` (form pengajuan + daftar booking + batal).
 - Publik: `resources/js/pages/Home/Kemahasiswaan/Organisasi.tsx` (filter jenis, kartu ormawa, statistik) dan `Prestasi.tsx` (filter tingkat, galeri prestasi terverifikasi, sorotan).
-- Menu sidebar mahasiswa: grup “Kemahasiswaan” → “Organisasi & Prestasi” (`SidebarMenu::roleMenus()`).
+- Menu sidebar mahasiswa: grup “Kemahasiswaan” → Organisasi & Prestasi, Event Mahasiswa, Poin & Leaderboard, Booking Fasilitas (`SidebarMenu::roleMenus()`).
 
-**Permission:** `student-organization.viewAny/create/update/delete/view`, `student-achievement.viewAny/create/update/delete/view/verify` (menu group “Kemahasiswaan”, `group_order` 45 di `config/resources.php`). Aksi verifikasi/tolak memakai `student-achievement.verify`; sorotan memakai `student-achievement.update`.
+**Permission:** `student-organization.viewAny/create/update/delete/view`, `student-achievement.viewAny/create/update/delete/view/verify`, `student-event.viewAny/create/update/delete/view/publish`, `student-point.viewAny/create/delete`, `student-facility-booking.viewAny/update/delete/approve/view` (menu group “Kemahasiswaan”, `group_order` 45 di `config/resources.php`). Aksi verifikasi/tolak prestasi memakai `student-achievement.verify`; sorotan memakai `student-achievement.update`. Publish/complete/cancel event memakai `student-event.publish`; approve/reject booking memakai `student-facility-booking.approve`.
 
-**Seeder & test:** `database/seeders/StudentAffairsSeeder.php` (8 ormawa, 6 keanggotaan demo, 6 prestasi); `tests/Feature/StudentAffairs/StudentAffairsManagementTest.php` (18 test / 252 assertion) mencakup CRUD organisasi, guard hapus, keanggotaan, CRUD/verifikasi/tolak/sorotan prestasi, otorisasi sertifikat, portal mahasiswa, halaman publik, dan penolakan akses tanpa permission.
+**Seeder & test:** `database/seeders/StudentAffairsSeeder.php` (8 ormawa, 6 keanggotaan, 6 prestasi, 6 event, 9 pendaftaran, 7 entri poin, 4 booking fasilitas); `tests/Feature/StudentAffairs/StudentAffairsManagementTest.php` (18 test / 252 assertion) untuk Slice 1 dan `tests/Feature/StudentAffairs/StudentAffairsSliceTwoTest.php` (15 test / 163 assertion) untuk Slice 2 — CRUD event + publish, poin kehadiran idempoten, leaderboard & poin manual, filter booking organisasi, approve dengan deteksi bentrok, reject wajib alasan, portal event/poin/booking mahasiswa, guard non-anggota/kapasitas/bentrok, dan penolakan akses tanpa permission.
 
 ---
 

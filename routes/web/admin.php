@@ -88,8 +88,11 @@ use App\Http\Controllers\Admin\Publication\FaqController;
 use App\Http\Controllers\Admin\Publication\GalleryController;
 use App\Http\Controllers\Admin\Publication\NewsController;
 use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
+use App\Http\Controllers\Admin\StudentAffairs\FacilityBookingController;
 use App\Http\Controllers\Admin\StudentAffairs\StudentAchievementController;
+use App\Http\Controllers\Admin\StudentAffairs\StudentEventController;
 use App\Http\Controllers\Admin\StudentAffairs\StudentOrganizationController;
+use App\Http\Controllers\Admin\StudentAffairs\StudentPointController;
 use App\Http\Controllers\Admin\StudentService\GraduationApplicationController;
 use App\Http\Controllers\Admin\StudentService\GraduationBatchController;
 use App\Http\Controllers\Admin\StudentService\GraduationDocumentRequirementController;
@@ -3491,3 +3494,90 @@ Route::delete('/student-affairs/achievements/{id}', [StudentAchievementControlle
     ->whereNumber('id')
     ->middleware('active_permission:student-achievement.delete')
     ->name('student-affairs.achievements.destroy');
+
+// Kemahasiswaan — event, poin/leaderboard, dan booking fasilitas organisasi.
+Route::get('/student-affairs/events', [StudentEventController::class, 'index'])
+    ->middleware('active_permission:student-event.viewAny')
+    ->name('student-affairs.events.index');
+Route::get('/student-affairs/events/create', [StudentEventController::class, 'create'])
+    ->middleware('active_permission:student-event.create')
+    ->name('student-affairs.events.create');
+Route::post('/student-affairs/events', [StudentEventController::class, 'store'])
+    ->middleware('active_permission:student-event.create')
+    ->name('student-affairs.events.store');
+Route::post('/student-affairs/events/bulk-destroy', [StudentEventController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-event.delete')
+    ->name('student-affairs.events.bulk-destroy');
+Route::get('/student-affairs/events/{id}/edit', [StudentEventController::class, 'edit'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.update')
+    ->name('student-affairs.events.edit');
+Route::get('/student-affairs/events/{id}', [StudentEventController::class, 'show'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.view')
+    ->name('student-affairs.events.show');
+Route::put('/student-affairs/events/{id}', [StudentEventController::class, 'update'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.update')
+    ->name('student-affairs.events.update');
+Route::delete('/student-affairs/events/{id}', [StudentEventController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.delete')
+    ->name('student-affairs.events.destroy');
+Route::post('/student-affairs/events/{id}/publish', [StudentEventController::class, 'publish'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.publish')
+    ->name('student-affairs.events.publish');
+Route::post('/student-affairs/events/{id}/complete', [StudentEventController::class, 'complete'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.publish')
+    ->name('student-affairs.events.complete');
+Route::post('/student-affairs/events/{id}/cancel', [StudentEventController::class, 'cancel'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.publish')
+    ->name('student-affairs.events.cancel');
+Route::post('/student-affairs/events/{id}/registrations/{registrationId}/attendance', [StudentEventController::class, 'attendance'])
+    ->whereNumber('id')
+    ->whereNumber('registrationId')
+    ->middleware('active_permission:student-event.update')
+    ->name('student-affairs.events.attendance');
+
+Route::get('/student-affairs/points', [StudentPointController::class, 'index'])
+    ->middleware('active_permission:student-point.viewAny')
+    ->name('student-affairs.points.index');
+Route::post('/student-affairs/points', [StudentPointController::class, 'store'])
+    ->middleware('active_permission:student-point.create')
+    ->name('student-affairs.points.store');
+Route::post('/student-affairs/points/bulk-destroy', [StudentPointController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-point.delete')
+    ->name('student-affairs.points.bulk-destroy');
+Route::get('/student-affairs/points/search-students', [StudentPointController::class, 'searchStudents'])
+    ->middleware('active_permission:student-point.create')
+    ->name('student-affairs.points.search-students');
+Route::delete('/student-affairs/points/{id}', [StudentPointController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-point.delete')
+    ->name('student-affairs.points.destroy');
+
+Route::get('/student-affairs/facility-bookings', [FacilityBookingController::class, 'index'])
+    ->middleware('active_permission:student-facility-booking.viewAny')
+    ->name('student-affairs.facility-bookings.index');
+Route::post('/student-affairs/facility-bookings/bulk-destroy', [FacilityBookingController::class, 'bulkDestroy'])
+    ->middleware('active_permission:student-facility-booking.delete')
+    ->name('student-affairs.facility-bookings.bulk-destroy');
+Route::post('/student-affairs/facility-bookings/{id}/approve', [FacilityBookingController::class, 'approve'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-facility-booking.approve')
+    ->name('student-affairs.facility-bookings.approve');
+Route::post('/student-affairs/facility-bookings/{id}/reject', [FacilityBookingController::class, 'reject'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-facility-booking.approve')
+    ->name('student-affairs.facility-bookings.reject');
+Route::post('/student-affairs/facility-bookings/{id}/cancel', [FacilityBookingController::class, 'cancel'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-facility-booking.update')
+    ->name('student-affairs.facility-bookings.cancel');
+Route::delete('/student-affairs/facility-bookings/{id}', [FacilityBookingController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-facility-booking.delete')
+    ->name('student-affairs.facility-bookings.destroy');

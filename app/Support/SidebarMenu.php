@@ -176,6 +176,9 @@ class SidebarMenu
                 ]),
                 static::makeGroup('student-affairs', 'Kemahasiswaan', 'fas fa-user-graduate', [
                     static::makeChildLink('student.student-affairs.index', 'Organisasi & Prestasi'),
+                    static::makeChildLink('student.student-affairs.events', 'Event Mahasiswa'),
+                    static::makeChildLink('student.student-affairs.leaderboard', 'Poin & Leaderboard'),
+                    static::makeChildLink('student.student-affairs.bookings', 'Booking Fasilitas'),
                 ]),
                 static::makeGroup('student-publication', 'Publikasi', 'fas fa-bullhorn', [
                     static::makeChildLink('student.announcements.index', 'Pengumuman'),

@@ -83,4 +83,14 @@ class StudentOrganization extends Model
     {
         return $this->hasMany(StudentAchievement::class);
     }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(StudentEvent::class);
+    }
+
+    public function facilityBookings(): HasMany
+    {
+        return $this->hasMany(\App\Models\Campus\RoomReservation::class);
+    }
 }

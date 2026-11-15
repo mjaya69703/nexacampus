@@ -26,6 +26,7 @@ class RoomReservation extends Model
         'reservation_number',
         'room_id',
         'user_id',
+        'student_organization_id',
         'title',
         'purpose',
         'reservation_date',
@@ -58,6 +59,11 @@ class RoomReservation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function studentOrganization(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\StudentAffairs\StudentOrganization::class, 'student_organization_id');
     }
 
     public function approver(): BelongsTo

@@ -141,8 +141,21 @@ Route::post('/library/loans/{loan}/renew', [StudentLibraryController::class, 're
 Route::post('/library/loans/{loan}/fine', [StudentLibraryController::class, 'submitFineProof'])->name('library.loans.fine.store');
 Route::get('/library/loans/{loan}/fine/proof', [StudentLibraryController::class, 'downloadFineProof'])->name('library.loans.fine.proof');
 
-// Kemahasiswaan — organisasi dan prestasi mahasiswa (Inertia React).
+// Kemahasiswaan — organisasi, prestasi, event, poin, dan booking fasilitas (Inertia React).
 Route::get('/student-affairs', [StudentAffairsController::class, 'index'])->name('student-affairs.index');
 Route::get('/student-affairs/achievements/{id}/certificate', [StudentAffairsController::class, 'downloadCertificate'])
     ->whereNumber('id')
     ->name('student-affairs.certificate');
+Route::get('/student-affairs/events', [StudentAffairsController::class, 'events'])->name('student-affairs.events');
+Route::post('/student-affairs/events/{id}/register', [StudentAffairsController::class, 'registerEvent'])
+    ->whereNumber('id')
+    ->name('student-affairs.events.register');
+Route::post('/student-affairs/events/{id}/cancel-registration', [StudentAffairsController::class, 'cancelEventRegistration'])
+    ->whereNumber('id')
+    ->name('student-affairs.events.cancel-registration');
+Route::get('/student-affairs/leaderboard', [StudentAffairsController::class, 'leaderboard'])->name('student-affairs.leaderboard');
+Route::get('/student-affairs/bookings', [StudentAffairsController::class, 'bookings'])->name('student-affairs.bookings');
+Route::post('/student-affairs/bookings', [StudentAffairsController::class, 'storeBooking'])->name('student-affairs.bookings.store');
+Route::post('/student-affairs/bookings/{id}/cancel', [StudentAffairsController::class, 'cancelBooking'])
+    ->whereNumber('id')
+    ->name('student-affairs.bookings.cancel');
