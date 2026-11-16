@@ -16,7 +16,7 @@ select.db-input { appearance: auto; }
 .crud-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
 .crud-toolbar .db-input { width: auto; }
 .crud-search { display: flex; gap: 8px; flex: 1 1 240px; min-width: 200px; }
-.crud-search .db-input { flex: 1; }
+.crud-search .db-input { flex: 1; min-width: 0; }
 .crud-toolbar-spacer { flex: 1; }
 
 /* ── Tabel ───────────────────────────────────────────────────────── */
@@ -123,7 +123,7 @@ table.crud-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .cx-cards-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 
 /* ── Tabs (Semua / Sampah) ─────────────────────────────────────────── */
-.crud-tabs { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--db-line); border-radius: 12px; background: var(--db-card); }
+.crud-tabs { display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: 4px; padding: 4px; border: 1px solid var(--db-line); border-radius: 12px; background: var(--db-card); }
 .crud-tab {
     display: inline-flex; align-items: center; gap: 7px;
     padding: 7px 14px; border: 0; border-radius: 8px; background: none; cursor: pointer;

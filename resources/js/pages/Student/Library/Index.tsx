@@ -237,7 +237,7 @@ export default function StudentLibraryIndex({ shell, stats, books, myLoans, myRe
                                             <p>Tidak ada buku yang cocok dengan pencarian.</p>
                                         </div>
                                     ) : (
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 14, marginTop: 16 }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))', gap: 14, marginTop: 16 }}>
                                             {books.rows.map((book) => (
                                                 <article
                                                     key={book.id}

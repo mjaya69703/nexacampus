@@ -132,25 +132,25 @@ export default function StudentAffairsIndex({ shell, student, stats, memberships
 
                     <div className="db-grid-3">
                         <a className="db-fact wide" href={urls.events} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <span className="db-stat-icon blue"><CalendarDays size={18} /></span>
-                            <span>
+                            <div className="db-stat-icon"><CalendarDays size={18} /></div>
+                            <div style={{ minWidth: 0 }}>
                                 <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>Event Mahasiswa</b>
                                 <small className="db-hint">Ikuti agenda dan kumpulkan poin</small>
-                            </span>
+                            </div>
                         </a>
                         <a className="db-fact wide" href={urls.leaderboard} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <span className="db-stat-icon gold"><Star size={18} /></span>
-                            <span>
+                            <div className="db-stat-icon gold"><Star size={18} /></div>
+                            <div style={{ minWidth: 0 }}>
                                 <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>Poin & Leaderboard</b>
                                 <small className="db-hint">Lihat peringkat dan riwayat poin</small>
-                            </span>
+                            </div>
                         </a>
                         <a className="db-fact wide" href={urls.bookings} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <span className="db-stat-icon green"><Building2 size={18} /></span>
-                            <span>
+                            <div className="db-stat-icon green"><Building2 size={18} /></div>
+                            <div style={{ minWidth: 0 }}>
                                 <b style={{ display: 'block', color: 'var(--db-heading)', fontSize: 13 }}>Booking Fasilitas</b>
                                 <small className="db-hint">{stats.activeBookings} booking aktif</small>
-                            </span>
+                            </div>
                         </a>
                     </div>
 
