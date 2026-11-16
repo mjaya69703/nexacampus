@@ -2048,6 +2048,15 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
     - **Seeder & test:** `StudentAffairsSeeder` diperluas (7 item anggaran, 3 evaluasi); `tests/Feature/StudentAffairs/StudentAffairsSliceThreeTest.php` 8 test / 129 assertion; total modul 41 test / 544 assertion; suite total 909 test / 9.276 assertion. `npm run typecheck`, `npm run build`, migrasi MySQL, dan seeder lulus.
     - **Verifikasi browser (MySQL):** detail event `Bakti Sosial Mahasiswa` menampilkan dokumentasi/anggaran/evaluasi tanpa error console, modal anggaran terbuka normal, dan evaluasi sebagai `rania.putri` berhasil terkirim lalu data demo dipulihkan via seeder.
 
+- **2026-11-16 (Kemahasiswaan Slice 4 — agenda kegiatan publik):**
+  - **COMPLETED: Halaman publik agenda kegiatan dan detail event**
+    - **Controller:** `CommunityPageController@agenda`, `agendaDetail()`, dan `mapPublicEvent()` — daftar event `published`/`ongoing` yang akan datang (event `ongoing` tetap tampil meski sudah dimulai), statistik kegiatan/akan datang/peserta/penyelenggara, detail untuk `published`/`ongoing`/`completed`, kegiatan serupa per kategori (maks. 3), dan CTA sesuai role (tamu → login, mahasiswa → portal event, role lain → dashboard).
+    - **Route publik:** `root.kemahasiswaan.agenda` dan `root.kemahasiswaan.agenda.show` (`/kemahasiswaan/agenda`, `/kemahasiswaan/agenda/{slug}`).
+    - **Halaman React:** `Home/Kemahasiswaan/Agenda.tsx` (hero, statistik, filter kategori, kartu event dengan tanggal/kategori/lokasi/poin/status pendaftaran) dan `AgendaDetail.tsx` (cover, deskripsi, informasi kegiatan, CTA, kegiatan serupa); tab “Agenda” ditambahkan di `CommunityShell.tsx`.
+    - **Aturan:** hanya event `published`/`ongoing` dengan `starts_at >= awal hari ini` yang masuk daftar; detail `draft`/`cancelled`/slug tidak dikenal → 404; peserta dihitung dari pendaftaran non-`cancelled`; kegiatan serupa hanya event mendatang pada kategori yang sama. Tanpa perubahan skema/migrasi.
+    - **Test:** `tests/Feature/StudentAffairs/PublicAgendaTest.php` 6 test / 119 assertion; total modul 47 test / 663 assertion; suite total 915 test / 9.395 assertion. `npm run typecheck` dan `npm run build` lulus.
+    - **Verifikasi browser (MySQL):** `/kemahasiswaan/agenda` menampilkan 4 kegiatan demo dengan statistik 4 kegiatan / 4 akan datang / 6 peserta / 4 penyelenggara, filter kategori berfungsi, detail seminar menampilkan informasi kegiatan + CTA “Buka Portal Event” untuk `rania.putri`, dan mode gelap memakai variabel tema (kartu gelap, bukan putih).
+
 - Last updated by: AI Assistant (based on actual git commit history)
 
 ---

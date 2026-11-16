@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Home;
 
 use App\Enums\AchievementLevel;
 use App\Enums\AchievementStatus;
+use App\Enums\EventRegistrationStatus;
 use App\Enums\OrganizationType;
+use App\Enums\StudentEventCategory;
+use App\Enums\StudentEventStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Academic\StudyProgram;
 use App\Models\Alumni\AlumniProfile;
@@ -13,6 +16,7 @@ use App\Models\Financial\Scholarship;
 use App\Models\Settings\Campus;
 use App\Models\Settings\System;
 use App\Models\StudentAffairs\StudentAchievement;
+use App\Models\StudentAffairs\StudentEvent;
 use App\Models\StudentAffairs\StudentOrganization;
 use App\Models\StudentAffairs\StudentOrganizationMember;
 use App\Support\Inertia\PublicUser;
@@ -149,6 +153,135 @@ class CommunityPageController extends Controller
     public function layanan(Request $request): Response
     {
         return $this->render($request, 'Home/Kemahasiswaan/Layanan');
+    }
+
+    public function agenda(Request $request): Response
+    {
+        $events = StudentEvent::with('organization:id,name')
+            ->withCount([
+                'registrations as registered_count' => fn ($sub) => $sub->where('status', '!=', EventRegistrationStatus::CANCELLED->value),
+            ])
+            ->whereIn('status', [
+                StudentEventStatus::PUBLISHED->value,
+                StudentEventStatus::ONGOING->value,
+            ])
+            ->where(function ($query) {
+                $query->where('starts_at', '>=', now()->startOfDay())
+                    ->orWhere('status', StudentEventStatus::ONGOING->value);
+            })
+            ->orderBy('starts_at')
+            ->limit(60)
+            ->get();
+
+        $mapped = $events->map(fn (StudentEvent $event) => $this->mapPublicEvent($event));
+
+        $stats = [
+            'events' => $mapped->count(),
+            'upcoming' => $events->filter(fn (StudentEvent $event) => $event->starts_at?->isFuture())->count(),
+            'participants' => (int) $events->sum('registered_count'),
+            'organizations' => $events
+                ->map(fn (StudentEvent $event) => $event->organization?->name ?? $event->organizer)
+                ->filter()
+                ->unique()
+                ->count(),
+        ];
+
+        return $this->render($request, 'Home/Kemahasiswaan/Agenda', [
+            'events' => $mapped->values(),
+            'stats' => $stats,
+            'categories' => StudentEventCategory::options(),
+        ]);
+    }
+
+    public function agendaDetail(Request $request, string $slug): Response
+    {
+        $event = StudentEvent::with('organization:id,name')
+            ->withCount([
+                'registrations as registered_count' => fn ($sub) => $sub->where('status', '!=', EventRegistrationStatus::CANCELLED->value),
+            ])
+            ->where('slug', $slug)
+            ->whereIn('status', [
+                StudentEventStatus::PUBLISHED->value,
+                StudentEventStatus::ONGOING->value,
+                StudentEventStatus::COMPLETED->value,
+            ])
+            ->firstOrFail();
+
+        $related = StudentEvent::with('organization:id,name')
+            ->withCount([
+                'registrations as registered_count' => fn ($sub) => $sub->where('status', '!=', EventRegistrationStatus::CANCELLED->value),
+            ])
+            ->whereKeyNot($event->id)
+            ->where('category', $event->category->value)
+            ->visibleToStudents()
+            ->where('starts_at', '>=', now()->startOfDay())
+            ->orderBy('starts_at')
+            ->limit(3)
+            ->get()
+            ->map(fn (StudentEvent $relatedEvent) => $this->mapPublicEvent($relatedEvent))
+            ->values();
+
+        $user = $request->user();
+        $activeRole = $request->session()->get('active_role');
+        $isStudent = $activeRole ? $activeRole === 'student' : ($user?->hasRole('student') ?? false);
+        $dashboardRoute = $user ? $user->prefix.'dashboard.index' : null;
+        $dashboardUrl = $dashboardRoute && Route::has($dashboardRoute) ? route($dashboardRoute) : route('auth.select-role');
+        $eventData = $this->mapPublicEvent($event, true);
+
+        return $this->render($request, 'Home/Kemahasiswaan/AgendaDetail', [
+            'event' => $eventData,
+            'related' => $related,
+            'ctaUrl' => $user ? ($isStudent ? route('student.student-affairs.events') : $dashboardUrl) : route('auth.signin-index'),
+            'ctaLabel' => $user
+                ? ($isStudent ? 'Buka Portal Event' : 'Buka Dashboard')
+                : ($eventData['registrationOpen'] ? 'Masuk untuk Mendaftar' : 'Masuk ke Portal'),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapPublicEvent(StudentEvent $event, bool $detailed = false): array
+    {
+        $registered = (int) ($event->registered_count ?? 0);
+        $seatsLeft = $event->quota !== null ? max(0, $event->quota - $registered) : null;
+        $registrationOpen = $event->status === StudentEventStatus::PUBLISHED
+            && (! $event->registration_deadline || $event->registration_deadline->isFuture())
+            && ($event->quota === null || $registered < $event->quota);
+
+        return [
+            'id' => $event->id,
+            'title' => $event->title,
+            'slug' => $event->slug,
+            'category' => $event->category->value,
+            'categoryLabel' => $event->category->label(),
+            'categoryTone' => $event->category->tone(),
+            'description' => $detailed
+                ? strip_tags((string) $event->description)
+                : Str::limit(strip_tags((string) $event->description), 180),
+            'organization' => $event->organization?->name,
+            'organizer' => $event->organizer,
+            'location' => $event->location,
+            'startsAt' => $event->starts_at?->format('d M Y H:i'),
+            'startDay' => $event->starts_at?->format('d'),
+            'startMonth' => $event->starts_at?->format('M'),
+            'startYear' => $event->starts_at?->format('Y'),
+            'startTime' => $event->starts_at?->format('H:i'),
+            'endsAt' => $event->ends_at?->format('d M Y H:i'),
+            'endTime' => $event->ends_at?->format('H:i'),
+            'registrationDeadline' => $event->registration_deadline?->format('d M Y H:i'),
+            'quota' => $event->quota,
+            'registeredCount' => $registered,
+            'seatsLeft' => $seatsLeft,
+            'points' => (int) $event->points,
+            'status' => $event->status->value,
+            'statusLabel' => $event->status->label(),
+            'statusTone' => $event->status->tone(),
+            'isFeatured' => (bool) $event->is_featured,
+            'coverUrl' => $event->cover_path ? Storage::disk('public')->url($event->cover_path) : null,
+            'registrationOpen' => $registrationOpen,
+            'detailUrl' => route('root.kemahasiswaan.agenda.show', $event->slug),
+        ];
     }
 
     public function alumniIndex(Request $request): Response

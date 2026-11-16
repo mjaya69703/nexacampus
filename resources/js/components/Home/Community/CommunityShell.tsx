@@ -1,6 +1,6 @@
 // Home kemahasiswaan/alumni shell (mirrors AcademicShell).
 import { Link } from '@inertiajs/react';
-import { Briefcase, GraduationCap, HeartPulse, LucideIcon, Search, Trophy, Users, Wallet } from 'lucide-react';
+import { Briefcase, CalendarDays, GraduationCap, HeartPulse, LucideIcon, Search, Trophy, Users, Wallet } from 'lucide-react';
 import { ReactNode, useMemo, useState } from 'react';
 import { Campus, PublicLinks, PublicShell } from '../PublicShell';
 import '../../../../css/academic.css';
@@ -26,6 +26,7 @@ const kemahasiswaanTabs = [
     { label: 'Beasiswa', href: '/beasiswa', icon: Wallet },
     { label: 'Organisasi', href: '/kemahasiswaan/organisasi', icon: Users },
     { label: 'Prestasi', href: '/kemahasiswaan/prestasi', icon: Trophy },
+    { label: 'Agenda', href: '/kemahasiswaan/agenda', icon: CalendarDays },
 ];
 const alumniTabs = [
     { label: 'Profil Alumni', href: '/alumni', icon: Users },

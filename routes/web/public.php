@@ -44,6 +44,8 @@ Route::get('/alumni', [CommunityPageController::class, 'alumniIndex'])->name('ro
 Route::get('/alumni/karir', [CommunityPageController::class, 'alumniKarir'])->name('root.alumni.karir');
 Route::get('/kemahasiswaan/organisasi', [CommunityPageController::class, 'organisasi'])->name('root.kemahasiswaan.organisasi');
 Route::get('/kemahasiswaan/prestasi', [CommunityPageController::class, 'prestasi'])->name('root.kemahasiswaan.prestasi');
+Route::get('/kemahasiswaan/agenda', [CommunityPageController::class, 'agenda'])->name('root.kemahasiswaan.agenda');
+Route::get('/kemahasiswaan/agenda/{slug}', [CommunityPageController::class, 'agendaDetail'])->name('root.kemahasiswaan.agenda.show');
 Route::get('/kemahasiswaan/layanan', [CommunityPageController::class, 'layanan'])->name('root.kemahasiswaan.layanan');
 
 Route::get('/institusi/profil', [InstitutionPageController::class, 'profil'])->name('root.institusi.profil');
