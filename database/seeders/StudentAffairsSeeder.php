@@ -6,6 +6,7 @@ use App\Enums\AchievementCategory;
 use App\Enums\AchievementLevel;
 use App\Enums\AchievementRank;
 use App\Enums\AchievementStatus;
+use App\Enums\EventBudgetCategory;
 use App\Enums\EventRegistrationStatus;
 use App\Enums\FacilityBookingStatus;
 use App\Enums\MemberPosition;
@@ -19,6 +20,8 @@ use App\Models\Campus\Room;
 use App\Models\Campus\RoomReservation;
 use App\Models\StudentAffairs\StudentAchievement;
 use App\Models\StudentAffairs\StudentEvent;
+use App\Models\StudentAffairs\StudentEventBudget;
+use App\Models\StudentAffairs\StudentEventEvaluation;
 use App\Models\StudentAffairs\StudentEventRegistration;
 use App\Models\StudentAffairs\StudentOrganization;
 use App\Models\StudentAffairs\StudentOrganizationMember;
@@ -463,6 +466,141 @@ class StudentAffairsSeeder extends Seeder
                     'awarded_by' => $admin?->id,
                     'created_by' => $admin?->id,
                     'updated_by' => $admin?->id,
+                ],
+            );
+        }
+
+        $budgets = [
+            [
+                'event' => 'Seminar Nasional Kepemimpinan Mahasiswa 2026',
+                'item_name' => 'Honor pembicara nasional',
+                'category' => EventBudgetCategory::SPEAKER,
+                'planned_amount' => 5000000,
+                'realized_amount' => 5000000,
+                'notes' => 'Dibayarkan setelah sesi pleno.',
+            ],
+            [
+                'event' => 'Seminar Nasional Kepemimpinan Mahasiswa 2026',
+                'item_name' => 'Sewa aula dan tata suara',
+                'category' => EventBudgetCategory::FACILITY,
+                'planned_amount' => 2000000,
+                'realized_amount' => 0,
+                'notes' => 'Pembayaran dilakukan pada hari kegiatan.',
+            ],
+            [
+                'event' => 'Seminar Nasional Kepemimpinan Mahasiswa 2026',
+                'item_name' => 'Konsumsi peserta dan panitia',
+                'category' => EventBudgetCategory::CONSUMPTION,
+                'planned_amount' => 4500000,
+                'realized_amount' => 0,
+                'notes' => 'Estimasi 150 peserta.',
+            ],
+            [
+                'event' => 'Bakti Sosial Mahasiswa',
+                'item_name' => 'Konsumsi peserta dan warga',
+                'category' => EventBudgetCategory::CONSUMPTION,
+                'planned_amount' => 3000000,
+                'realized_amount' => 2850000,
+                'notes' => 'Termasuk konsumsi relawan dan warga penerima manfaat.',
+            ],
+            [
+                'event' => 'Bakti Sosial Mahasiswa',
+                'item_name' => 'Transportasi relawan',
+                'category' => EventBudgetCategory::TRANSPORTATION,
+                'planned_amount' => 1500000,
+                'realized_amount' => 1500000,
+                'notes' => 'Dua bus menuju desa mitra.',
+            ],
+            [
+                'event' => 'Bakti Sosial Mahasiswa',
+                'item_name' => 'Peralatan dan logistik',
+                'category' => EventBudgetCategory::EQUIPMENT,
+                'planned_amount' => 800000,
+                'realized_amount' => 750000,
+                'notes' => 'Tenda, kursi, dan perlengkapan donor darah.',
+            ],
+            [
+                'event' => 'Bakti Sosial Mahasiswa',
+                'item_name' => 'Publikasi dan dokumentasi',
+                'category' => EventBudgetCategory::PUBLICATION,
+                'planned_amount' => 500000,
+                'realized_amount' => 350000,
+                'notes' => 'Cetak spanduk dan dokumentasi kegiatan.',
+            ],
+        ];
+
+        foreach ($budgets as $row) {
+            $event = $eventModels->get($row['event']);
+
+            if (! $event) {
+                continue;
+            }
+
+            StudentEventBudget::updateOrCreate(
+                ['student_event_id' => $event->id, 'item_name' => $row['item_name']],
+                [
+                    'category' => $row['category']->value,
+                    'planned_amount' => $row['planned_amount'],
+                    'realized_amount' => $row['realized_amount'],
+                    'notes' => $row['notes'],
+                    'created_by' => $admin?->id,
+                    'updated_by' => $admin?->id,
+                ],
+            );
+        }
+
+        $evaluations = [
+            [
+                'event' => 'Bakti Sosial Mahasiswa',
+                'username' => 'rania.putri',
+                'rating' => 5,
+                'organization_rating' => 5,
+                'benefit_rating' => 5,
+                'feedback' => 'Kegiatan sangat terorganisir dan memberi dampak langsung bagi warga desa mitra.',
+                'suggestions' => 'Tambahkan sesi dokumentasi bersama warga di akhir acara.',
+                'is_anonymous' => false,
+            ],
+            [
+                'event' => 'Bakti Sosial Mahasiswa',
+                'username' => 'nadia.senior',
+                'rating' => 4,
+                'organization_rating' => 4,
+                'benefit_rating' => 5,
+                'feedback' => 'Materi literasi digital relevan dan mudah dipahami warga.',
+                'suggestions' => 'Perpanjang durasi sesi tanya jawab.',
+                'is_anonymous' => true,
+            ],
+            [
+                'event' => 'Bakti Sosial Mahasiswa',
+                'username' => 'citra.anjani',
+                'rating' => 5,
+                'organization_rating' => 4,
+                'benefit_rating' => 5,
+                'feedback' => 'Suasana kegiatan hangat dan kolaboratif.',
+                'suggestions' => 'Sediakan pembagian tugas relawan yang lebih rinci sejak awal.',
+                'is_anonymous' => false,
+            ],
+        ];
+
+        foreach ($evaluations as $row) {
+            $event = $eventModels->get($row['event']);
+            $user = User::query()->where('username', $row['username'])->first();
+
+            if (! $event || ! $user) {
+                continue;
+            }
+
+            StudentEventEvaluation::updateOrCreate(
+                ['student_event_id' => $event->id, 'user_id' => $user->id],
+                [
+                    'rating' => $row['rating'],
+                    'organization_rating' => $row['organization_rating'],
+                    'benefit_rating' => $row['benefit_rating'],
+                    'feedback' => $row['feedback'],
+                    'suggestions' => $row['suggestions'],
+                    'is_anonymous' => $row['is_anonymous'],
+                    'created_by' => $user->id,
+                    'updated_by' => $user->id,
                 ],
             );
         }

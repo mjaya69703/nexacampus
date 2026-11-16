@@ -91,6 +91,7 @@ use App\Http\Controllers\Admin\Publication\PublicationCategoryController;
 use App\Http\Controllers\Admin\StudentAffairs\FacilityBookingController;
 use App\Http\Controllers\Admin\StudentAffairs\StudentAchievementController;
 use App\Http\Controllers\Admin\StudentAffairs\StudentEventController;
+use App\Http\Controllers\Admin\StudentAffairs\StudentEventInsightController;
 use App\Http\Controllers\Admin\StudentAffairs\StudentOrganizationController;
 use App\Http\Controllers\Admin\StudentAffairs\StudentPointController;
 use App\Http\Controllers\Admin\StudentService\GraduationApplicationController;
@@ -3541,6 +3542,36 @@ Route::post('/student-affairs/events/{id}/registrations/{registrationId}/attenda
     ->whereNumber('registrationId')
     ->middleware('active_permission:student-event.update')
     ->name('student-affairs.events.attendance');
+
+// Kemahasiswaan — dokumentasi, realisasi anggaran, dan evaluasi pasca-acara.
+Route::post('/student-affairs/events/{id}/documents', [StudentEventInsightController::class, 'storeDocument'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.update')
+    ->name('student-affairs.events.documents.store');
+Route::get('/student-affairs/events/{id}/documents/{documentId}/download', [StudentEventInsightController::class, 'downloadDocument'])
+    ->whereNumber('id')
+    ->whereNumber('documentId')
+    ->middleware('active_permission:student-event.view')
+    ->name('student-affairs.events.documents.download');
+Route::delete('/student-affairs/events/{id}/documents/{documentId}', [StudentEventInsightController::class, 'destroyDocument'])
+    ->whereNumber('id')
+    ->whereNumber('documentId')
+    ->middleware('active_permission:student-event.update')
+    ->name('student-affairs.events.documents.destroy');
+Route::post('/student-affairs/events/{id}/budgets', [StudentEventInsightController::class, 'storeBudget'])
+    ->whereNumber('id')
+    ->middleware('active_permission:student-event.update')
+    ->name('student-affairs.events.budgets.store');
+Route::put('/student-affairs/events/{id}/budgets/{budgetId}', [StudentEventInsightController::class, 'updateBudget'])
+    ->whereNumber('id')
+    ->whereNumber('budgetId')
+    ->middleware('active_permission:student-event.update')
+    ->name('student-affairs.events.budgets.update');
+Route::delete('/student-affairs/events/{id}/budgets/{budgetId}', [StudentEventInsightController::class, 'destroyBudget'])
+    ->whereNumber('id')
+    ->whereNumber('budgetId')
+    ->middleware('active_permission:student-event.update')
+    ->name('student-affairs.events.budgets.destroy');
 
 Route::get('/student-affairs/points', [StudentPointController::class, 'index'])
     ->middleware('active_permission:student-point.viewAny')

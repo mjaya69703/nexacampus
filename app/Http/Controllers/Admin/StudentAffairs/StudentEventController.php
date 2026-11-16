@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers\Admin\StudentAffairs;
 
+use App\Enums\EventBudgetCategory;
+use App\Enums\EventDocumentCategory;
 use App\Enums\EventRegistrationStatus;
 use App\Enums\StudentEventCategory;
 use App\Enums\StudentEventStatus;
 use App\Http\Controllers\Controller;
 use App\Models\StudentAffairs\StudentEvent;
+use App\Models\StudentAffairs\StudentEventBudget;
+use App\Models\StudentAffairs\StudentEventDocument;
+use App\Models\StudentAffairs\StudentEventEvaluation;
 use App\Models\StudentAffairs\StudentEventRegistration;
 use App\Models\StudentAffairs\StudentOrganization;
 use App\Support\ActivePermission;
@@ -240,7 +245,15 @@ class StudentEventController extends Controller
 
     public function show(Request $request, int $id): Response
     {
-        $event = StudentEvent::with(['organization:id,name', 'creator:id,first_name,last_name'])
+        $event = StudentEvent::with([
+            'organization:id,name',
+            'creator:id,first_name,last_name',
+            'documents' => fn ($query) => $query->orderByDesc('created_at'),
+            'documents.uploader:id,first_name,last_name',
+            'budgets' => fn ($query) => $query->orderBy('category')->orderBy('id'),
+            'evaluations' => fn ($query) => $query->orderByDesc('created_at')->orderByDesc('id'),
+            'evaluations.user:id,first_name,last_name',
+        ])
             ->withCount([
                 'registrations as registered_count' => fn ($sub) => $sub->where('status', '!=', EventRegistrationStatus::CANCELLED->value),
                 'registrations as attended_count' => fn ($sub) => $sub->where('status', EventRegistrationStatus::ATTENDED->value),
@@ -269,6 +282,59 @@ class StudentEventController extends Controller
                 'pointsAwarded' => (int) $registration->points_awarded,
                 'attendanceUrl' => route('admin.student-affairs.events.attendance', [$event->id, $registration->id]),
             ]);
+
+        $documents = $event->documents->map(fn (StudentEventDocument $document) => [
+            'id' => $document->id,
+            'title' => $document->title,
+            'category' => $document->category->value,
+            'categoryLabel' => $document->category->label(),
+            'categoryTone' => $document->category->tone(),
+            'description' => $document->description,
+            'originalName' => $document->original_name,
+            'fileSize' => $document->fileSizeLabel(),
+            'isImage' => $document->isImage(),
+            'fileUrl' => $document->isImage() ? Storage::disk('public')->url($document->file_path) : null,
+            'uploader' => $document->uploader?->name,
+            'createdAt' => $document->created_at?->format('d M Y H:i'),
+            'downloadUrl' => route('admin.student-affairs.events.documents.download', [$event->id, $document->id]),
+            'deleteUrl' => route('admin.student-affairs.events.documents.destroy', [$event->id, $document->id]),
+        ])->values();
+
+        $budgets = $event->budgets->map(fn (StudentEventBudget $budget) => [
+            'id' => $budget->id,
+            'itemName' => $budget->item_name,
+            'category' => $budget->category->value,
+            'categoryLabel' => $budget->category->label(),
+            'categoryTone' => $budget->category->tone(),
+            'plannedAmount' => (float) $budget->planned_amount,
+            'realizedAmount' => (float) $budget->realized_amount,
+            'variance' => $budget->variance(),
+            'notes' => $budget->notes,
+            'updateUrl' => route('admin.student-affairs.events.budgets.update', [$event->id, $budget->id]),
+            'deleteUrl' => route('admin.student-affairs.events.budgets.destroy', [$event->id, $budget->id]),
+        ])->values();
+
+        $plannedTotal = (float) $event->budgets->sum('planned_amount');
+        $realizedTotal = (float) $event->budgets->sum('realized_amount');
+
+        $evaluations = $event->evaluations->map(fn (StudentEventEvaluation $evaluation) => [
+            'id' => $evaluation->id,
+            'student' => $evaluation->is_anonymous ? 'Anonim' : ($evaluation->user?->name ?? 'Mahasiswa'),
+            'rating' => (int) $evaluation->rating,
+            'organizationRating' => $evaluation->organization_rating !== null ? (int) $evaluation->organization_rating : null,
+            'benefitRating' => $evaluation->benefit_rating !== null ? (int) $evaluation->benefit_rating : null,
+            'feedback' => $evaluation->feedback,
+            'suggestions' => $evaluation->suggestions,
+            'isAnonymous' => (bool) $evaluation->is_anonymous,
+            'createdAt' => $evaluation->created_at?->format('d M Y H:i'),
+        ])->values();
+
+        $evaluationCount = $evaluations->count();
+        $attendedCount = (int) $event->attended_count;
+
+        $distribution = collect([1, 2, 3, 4, 5])
+            ->mapWithKeys(fn (int $rating) => [$rating => $evaluations->where('rating', $rating)->count()])
+            ->all();
 
         return Inertia::render('Admin/StudentAffairs/Events/Show', [
             'shell' => ShellProps::make($request->user(), 'Kemahasiswaan', 'Detail Event'),
@@ -302,13 +368,34 @@ class StudentEventController extends Controller
             ],
             'stats' => [
                 'registered' => (int) $event->registered_count,
-                'attended' => (int) $event->attended_count,
+                'attended' => $attendedCount,
                 'cancelled' => (int) $event->cancelled_count,
                 'quota' => $event->quota,
             ],
             'registrations' => $registrations,
+            'documents' => $documents,
+            'budgets' => $budgets,
+            'budgetSummary' => [
+                'planned' => $plannedTotal,
+                'realized' => $realizedTotal,
+                'variance' => $plannedTotal - $realizedTotal,
+                'absorption' => $plannedTotal > 0 ? round($realizedTotal / $plannedTotal * 100, 1) : 0.0,
+                'items' => $budgets->count(),
+            ],
+            'evaluations' => $evaluations,
+            'evaluationSummary' => [
+                'count' => $evaluationCount,
+                'average' => $evaluationCount > 0 ? round($evaluations->avg('rating'), 2) : null,
+                'averageOrganization' => $evaluationCount > 0 ? round($evaluations->whereNotNull('organizationRating')->avg('organizationRating'), 2) : null,
+                'averageBenefit' => $evaluationCount > 0 ? round($evaluations->whereNotNull('benefitRating')->avg('benefitRating'), 2) : null,
+                'distribution' => $distribution,
+                'responseRate' => $attendedCount > 0 ? (int) round($evaluationCount / $attendedCount * 100) : 0,
+                'attended' => $attendedCount,
+            ],
             'options' => [
                 'registrationStatuses' => EventRegistrationStatus::options(),
+                'documentCategories' => EventDocumentCategory::options(),
+                'budgetCategories' => EventBudgetCategory::options(),
             ],
             'urls' => [
                 'index' => route('admin.student-affairs.events.index'),
@@ -317,6 +404,8 @@ class StudentEventController extends Controller
                 'publish' => route('admin.student-affairs.events.publish', $event->id),
                 'complete' => route('admin.student-affairs.events.complete', $event->id),
                 'cancel' => route('admin.student-affairs.events.cancel', $event->id),
+                'documentsStore' => route('admin.student-affairs.events.documents.store', $event->id),
+                'budgetsStore' => route('admin.student-affairs.events.budgets.store', $event->id),
             ],
         ]);
     }
@@ -391,6 +480,10 @@ class StudentEventController extends Controller
             Storage::disk('public')->delete($event->cover_path);
         }
 
+        foreach ($event->documents()->get() as $document) {
+            Storage::disk('public')->delete($document->file_path);
+        }
+
         $event->update(['deleted_by' => $request->user()->id]);
         $event->delete();
 
@@ -410,6 +503,10 @@ class StudentEventController extends Controller
         foreach ($events as $event) {
             if ($event->cover_path) {
                 Storage::disk('public')->delete($event->cover_path);
+            }
+
+            foreach ($event->documents()->get() as $document) {
+                Storage::disk('public')->delete($document->file_path);
             }
 
             $event->update(['deleted_by' => $request->user()->id]);

@@ -1,14 +1,16 @@
-// Portal mahasiswa — daftar event kemahasiswaan dan pendaftaran.
-import { Head, router } from '@inertiajs/react';
+// Portal mahasiswa — daftar event kemahasiswaan, pendaftaran, dan evaluasi pasca-acara.
+import { Head, router, useForm } from '@inertiajs/react';
 import {
-    CalendarDays, CheckCircle2, Clock3, MapPin, Search, Star, Trophy, Users, XCircle,
+    CalendarDays, CheckCircle2, Clock3, MapPin, MessageSquare, Search, Send, Star, Trophy, Users, XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { AdminShell, ShellProps } from '../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../components/Shared/Crud/CrudHero';
+import { SelectField, SwitchField, TextareaField } from '../../../components/Shared/Crud/fields';
 import { Pagination } from '../../../components/Shared/Pagination';
-import { StudentAffairsStats, toneClass } from '../../Admin/StudentAffairs/shared';
+import { StudentAffairsModal, StudentAffairsStats, toneClass } from '../../Admin/StudentAffairs/shared';
 import '../../../../css/dashboard.css';
 import '../../../../css/crud.css';
 
@@ -49,8 +51,11 @@ type EventRow = {
     canRegister: boolean;
     canCancel: boolean;
     myRegistration: Registration | null;
+    canEvaluate: boolean;
+    myEvaluation: { rating: number; createdAt: string | null } | null;
     registerUrl: string;
     cancelUrl: string;
+    evaluateUrl: string;
 };
 
 type Props = {
@@ -68,6 +73,16 @@ export default function StudentEvents({ shell, student, stats, events, data, fil
     const [search, setSearch] = useState(filters.q);
     const [pending, setPending] = useState<EventRow | null>(null);
     const [processing, setProcessing] = useState(false);
+    const [evaluating, setEvaluating] = useState<EventRow | null>(null);
+
+    const evaluationForm = useForm({
+        rating: 5,
+        organization_rating: 5,
+        benefit_rating: 5,
+        feedback: '',
+        suggestions: '',
+        is_anonymous: false,
+    });
 
     const visit = (overrides: Record<string, string | number | undefined>) => {
         const params: Record<string, string> = {};
@@ -90,6 +105,32 @@ export default function StudentEvents({ shell, student, stats, events, data, fil
             onFinish: () => {
                 setProcessing(false);
                 setPending(null);
+            },
+        });
+    };
+
+    const openEvaluation = (event: EventRow) => {
+        setEvaluating(event);
+        evaluationForm.setData({
+            rating: 5,
+            organization_rating: 5,
+            benefit_rating: 5,
+            feedback: '',
+            suggestions: '',
+            is_anonymous: false,
+        });
+        evaluationForm.clearErrors();
+    };
+
+    const submitEvaluation = (submitEvent: FormEvent) => {
+        submitEvent.preventDefault();
+        if (!evaluating) return;
+
+        evaluationForm.post(evaluating.evaluateUrl, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setEvaluating(null);
+                evaluationForm.reset();
             },
         });
     };
@@ -203,6 +244,11 @@ export default function StudentEvents({ shell, student, stats, events, data, fil
                                                     {event.myRegistration.statusLabel}
                                                 </span>
                                             )}
+                                            {event.myEvaluation && (
+                                                <span className="db-badge gold">
+                                                    <Star size={11} /> Evaluasi {event.myEvaluation.rating}/5
+                                                </span>
+                                            )}
                                             <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
                                                 {event.canRegister && (
                                                     <button
@@ -216,6 +262,11 @@ export default function StudentEvents({ shell, student, stats, events, data, fil
                                                 {event.canCancel && (
                                                     <button className="db-btn ghost sm" type="button" onClick={() => setPending(event)}>
                                                         <XCircle size={13} /> Batalkan
+                                                    </button>
+                                                )}
+                                                {event.canEvaluate && (
+                                                    <button className="db-btn light sm" type="button" onClick={() => openEvaluation(event)}>
+                                                        <MessageSquare size={13} /> Beri Evaluasi
                                                     </button>
                                                 )}
                                                 {!event.isRegistrationOpen && !event.myRegistration && (
@@ -249,6 +300,89 @@ export default function StudentEvents({ shell, student, stats, events, data, fil
                     onConfirm={cancelRegistration}
                     onCancel={() => setPending(null)}
                 />
+
+                {evaluating && (
+                    <StudentAffairsModal
+                        title="Evaluasi Event"
+                        description={`Bagikan penilaian Anda untuk "${evaluating.title}".`}
+                        onClose={() => setEvaluating(null)}
+                    >
+                        <form onSubmit={submitEvaluation} style={{ display: 'grid', gap: 12 }}>
+                            <SelectField
+                                label="Penilaian keseluruhan"
+                                required
+                                value={String(evaluationForm.data.rating)}
+                                onChange={(changeEvent) => evaluationForm.setData('rating', Number(changeEvent.target.value))}
+                                error={evaluationForm.errors.rating}
+                            >
+                                <option value="5">5 — Sangat baik</option>
+                                <option value="4">4 — Baik</option>
+                                <option value="3">3 — Cukup</option>
+                                <option value="2">2 — Kurang</option>
+                                <option value="1">1 — Sangat kurang</option>
+                            </SelectField>
+
+                            <div className="crud-grid">
+                                <SelectField
+                                    label="Materi & manfaat"
+                                    value={String(evaluationForm.data.benefit_rating)}
+                                    onChange={(changeEvent) => evaluationForm.setData('benefit_rating', Number(changeEvent.target.value))}
+                                    error={evaluationForm.errors.benefit_rating}
+                                >
+                                    <option value="5">5 — Sangat bermanfaat</option>
+                                    <option value="4">4 — Bermanfaat</option>
+                                    <option value="3">3 — Cukup</option>
+                                    <option value="2">2 — Kurang</option>
+                                    <option value="1">1 — Tidak bermanfaat</option>
+                                </SelectField>
+                                <SelectField
+                                    label="Penyelenggaraan"
+                                    value={String(evaluationForm.data.organization_rating)}
+                                    onChange={(changeEvent) => evaluationForm.setData('organization_rating', Number(changeEvent.target.value))}
+                                    error={evaluationForm.errors.organization_rating}
+                                >
+                                    <option value="5">5 — Sangat baik</option>
+                                    <option value="4">4 — Baik</option>
+                                    <option value="3">3 — Cukup</option>
+                                    <option value="2">2 — Kurang</option>
+                                    <option value="1">1 — Sangat kurang</option>
+                                </SelectField>
+                            </div>
+
+                            <TextareaField
+                                label="Kesan & pesan"
+                                value={evaluationForm.data.feedback}
+                                onChange={(changeEvent) => evaluationForm.setData('feedback', changeEvent.target.value)}
+                                error={evaluationForm.errors.feedback}
+                                placeholder="Apa yang paling berkesan dari event ini?"
+                            />
+
+                            <TextareaField
+                                label="Saran perbaikan"
+                                value={evaluationForm.data.suggestions}
+                                onChange={(changeEvent) => evaluationForm.setData('suggestions', changeEvent.target.value)}
+                                error={evaluationForm.errors.suggestions}
+                                placeholder="Apa yang bisa ditingkatkan pada event berikutnya?"
+                            />
+
+                            <SwitchField
+                                label="Kirim sebagai anonim"
+                                hint="Nama Anda tidak akan ditampilkan pada rekap evaluasi."
+                                checked={evaluationForm.data.is_anonymous}
+                                onChange={(value) => evaluationForm.setData('is_anonymous', value)}
+                                onLabel="Anonim"
+                                offLabel="Nama ditampilkan"
+                            />
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                                <button className="db-btn ghost" type="button" onClick={() => setEvaluating(null)}>Batal</button>
+                                <button className="db-btn primary" type="submit" disabled={evaluationForm.processing}>
+                                    <Send size={14} /> Kirim Evaluasi
+                                </button>
+                            </div>
+                        </form>
+                    </StudentAffairsModal>
+                )}
             </div>
         </AdminShell>
     );

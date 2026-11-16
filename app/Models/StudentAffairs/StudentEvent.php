@@ -71,6 +71,21 @@ class StudentEvent extends Model
         return $this->hasMany(StudentEventRegistration::class);
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(StudentEventDocument::class);
+    }
+
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(StudentEventEvaluation::class);
+    }
+
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(StudentEventBudget::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

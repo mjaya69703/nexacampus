@@ -153,6 +153,9 @@ Route::post('/student-affairs/events/{id}/register', [StudentAffairsController::
 Route::post('/student-affairs/events/{id}/cancel-registration', [StudentAffairsController::class, 'cancelEventRegistration'])
     ->whereNumber('id')
     ->name('student-affairs.events.cancel-registration');
+Route::post('/student-affairs/events/{id}/evaluation', [StudentAffairsController::class, 'evaluateEvent'])
+    ->whereNumber('id')
+    ->name('student-affairs.events.evaluate');
 Route::get('/student-affairs/leaderboard', [StudentAffairsController::class, 'leaderboard'])->name('student-affairs.leaderboard');
 Route::get('/student-affairs/bookings', [StudentAffairsController::class, 'bookings'])->name('student-affairs.bookings');
 Route::post('/student-affairs/bookings', [StudentAffairsController::class, 'storeBooking'])->name('student-affairs.bookings.store');

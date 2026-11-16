@@ -1,14 +1,16 @@
-// Detail event kemahasiswaan: informasi acara dan kelola kehadiran peserta.
-import { Head, router } from '@inertiajs/react';
+// Detail event kemahasiswaan: informasi acara, kehadiran, dokumentasi, anggaran, dan evaluasi.
+import { Head, router, useForm } from '@inertiajs/react';
 import {
-    ArrowLeft, CalendarDays, CheckCircle2, Clock3, MapPin, Pencil, Star,
-    Trash2, Users, XCircle,
+    ArrowLeft, CalendarDays, CheckCircle2, Clock3, Download, FileText, Image as ImageIcon,
+    MapPin, MessageSquare, Pencil, Plus, Star, Trash2, Upload, Users, Wallet, XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { AdminShell, ShellProps } from '../../../../components/Shared/AdminShell';
 import { ConfirmModal } from '../../../../components/Shared/Crud/ConfirmModal';
 import { CrudHero } from '../../../../components/Shared/Crud/CrudHero';
-import { StudentAffairsStats, toneClass } from '../shared';
+import { SelectField, TextareaField, TextField } from '../../../../components/Shared/Crud/fields';
+import { StudentAffairsModal, StudentAffairsStats, toneClass } from '../shared';
 import '../../../../../css/dashboard.css';
 import '../../../../../css/crud.css';
 
@@ -24,6 +26,49 @@ type Registration = {
     attendedAt: string | null;
     pointsAwarded: number;
     attendanceUrl: string;
+};
+
+type DocumentRow = {
+    id: number;
+    title: string;
+    category: string;
+    categoryLabel: string;
+    categoryTone: string;
+    description: string | null;
+    originalName: string;
+    fileSize: string;
+    isImage: boolean;
+    fileUrl: string | null;
+    uploader: string | null;
+    createdAt: string | null;
+    downloadUrl: string;
+    deleteUrl: string;
+};
+
+type BudgetRow = {
+    id: number;
+    itemName: string;
+    category: string;
+    categoryLabel: string;
+    categoryTone: string;
+    plannedAmount: number;
+    realizedAmount: number;
+    variance: number;
+    notes: string | null;
+    updateUrl: string;
+    deleteUrl: string;
+};
+
+type EvaluationRow = {
+    id: number;
+    student: string;
+    rating: number;
+    organizationRating: number | null;
+    benefitRating: number | null;
+    feedback: string | null;
+    suggestions: string | null;
+    isAnonymous: boolean;
+    createdAt: string | null;
 };
 
 type Props = {
@@ -54,7 +99,30 @@ type Props = {
     };
     stats: { registered: number; attended: number; cancelled: number; quota: number | null };
     registrations: Registration[];
-    options: { registrationStatuses: Record<string, string> };
+    documents: DocumentRow[];
+    budgets: BudgetRow[];
+    budgetSummary: {
+        planned: number;
+        realized: number;
+        variance: number;
+        absorption: number;
+        items: number;
+    };
+    evaluations: EvaluationRow[];
+    evaluationSummary: {
+        count: number;
+        average: number | null;
+        averageOrganization: number | null;
+        averageBenefit: number | null;
+        distribution: Record<string, number>;
+        responseRate: number;
+        attended: number;
+    };
+    options: {
+        registrationStatuses: Record<string, string>;
+        documentCategories: Record<string, string>;
+        budgetCategories: Record<string, string>;
+    };
     urls: {
         index: string;
         edit: string;
@@ -62,6 +130,8 @@ type Props = {
         publish: string;
         complete: string;
         cancel: string;
+        documentsStore: string;
+        budgetsStore: string;
     };
 };
 
@@ -74,9 +144,38 @@ const ACTION_COPY: Record<Exclude<Pending, null>['kind'], { title: string; messa
     delete: { title: 'Hapus event?', message: 'Event beserta data pendaftarannya akan dihapus.', confirm: 'Ya, hapus', danger: true },
 };
 
-export default function EventShow({ shell, can, event, stats, registrations, options, urls }: Props) {
+const rupiah = (value: number) => new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+}).format(value);
+
+export default function EventShow({
+    shell, can, event, stats, registrations, documents, budgets, budgetSummary,
+    evaluations, evaluationSummary, options, urls,
+}: Props) {
     const [pending, setPending] = useState<Pending>(null);
     const [processing, setProcessing] = useState(false);
+    const [documentPending, setDocumentPending] = useState<DocumentRow | null>(null);
+    const [budgetPending, setBudgetPending] = useState<BudgetRow | null>(null);
+    const [budgetModalOpen, setBudgetModalOpen] = useState(false);
+    const [editingBudget, setEditingBudget] = useState<BudgetRow | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const documentForm = useForm({
+        category: 'photo',
+        title: '',
+        description: '',
+        file: null as File | null,
+    });
+
+    const budgetForm = useForm({
+        item_name: '',
+        category: 'consumption',
+        planned_amount: '',
+        realized_amount: '',
+        notes: '',
+    });
 
     const runAction = () => {
         if (!pending) return;
@@ -94,7 +193,66 @@ export default function EventShow({ shell, can, event, stats, registrations, opt
         router.post(urls[pending.kind], {}, { preserveScroll: true, onFinish: done });
     };
 
+    const submitDocument = (submitEvent: FormEvent) => {
+        submitEvent.preventDefault();
+        documentForm.post(urls.documentsStore, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                documentForm.reset();
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            },
+        });
+    };
+
+    const openCreateBudget = () => {
+        setEditingBudget(null);
+        budgetForm.setData({
+            item_name: '',
+            category: 'consumption',
+            planned_amount: '',
+            realized_amount: '',
+            notes: '',
+        });
+        budgetForm.clearErrors();
+        setBudgetModalOpen(true);
+    };
+
+    const openEditBudget = (budget: BudgetRow) => {
+        setEditingBudget(budget);
+        budgetForm.setData({
+            item_name: budget.itemName,
+            category: budget.category,
+            planned_amount: String(budget.plannedAmount),
+            realized_amount: String(budget.realizedAmount),
+            notes: budget.notes ?? '',
+        });
+        budgetForm.clearErrors();
+        setBudgetModalOpen(true);
+    };
+
+    const submitBudget = (submitEvent: FormEvent) => {
+        submitEvent.preventDefault();
+        const submitOptions = {
+            preserveScroll: true,
+            onSuccess: () => {
+                setBudgetModalOpen(false);
+                setEditingBudget(null);
+                budgetForm.reset();
+            },
+        };
+
+        if (editingBudget) {
+            budgetForm.put(editingBudget.updateUrl, submitOptions);
+        } else {
+            budgetForm.post(urls.budgetsStore, submitOptions);
+        }
+    };
+
     const copy = pending ? ACTION_COPY[pending.kind] : null;
+    const maxDistribution = Math.max(1, ...Object.values(evaluationSummary.distribution));
 
     return (
         <AdminShell shell={shell}>
@@ -233,9 +391,218 @@ export default function EventShow({ shell, can, event, stats, registrations, opt
                                     )}
                                 </div>
                             </section>
+
+                            <section className="db-card">
+                                <div className="db-card-head">
+                                    <h2 className="db-card-title"><ImageIcon size={15} /> Dokumentasi Kegiatan</h2>
+                                    <span className="db-badge gray">{documents.length} berkas</span>
+                                </div>
+                                <div className="db-card-body" style={{ display: 'grid', gap: 14 }}>
+                                    {can.update && (
+                                        <form onSubmit={submitDocument} style={{ display: 'grid', gap: 10 }}>
+                                            <div className="crud-grid">
+                                                <SelectField
+                                                    label="Kategori"
+                                                    required
+                                                    value={documentForm.data.category}
+                                                    onChange={(changeEvent) => documentForm.setData('category', changeEvent.target.value)}
+                                                    error={documentForm.errors.category}
+                                                >
+                                                    {Object.entries(options.documentCategories).map(([value, label]) => (
+                                                        <option key={value} value={value}>{label}</option>
+                                                    ))}
+                                                </SelectField>
+                                                <TextField
+                                                    label="Judul"
+                                                    required
+                                                    value={documentForm.data.title}
+                                                    onChange={(changeEvent) => documentForm.setData('title', changeEvent.target.value)}
+                                                    error={documentForm.errors.title}
+                                                    placeholder="Mis. Foto sesi pembukaan"
+                                                />
+                                            </div>
+                                            <TextareaField
+                                                label="Deskripsi"
+                                                value={documentForm.data.description}
+                                                onChange={(changeEvent) => documentForm.setData('description', changeEvent.target.value)}
+                                                error={documentForm.errors.description}
+                                                placeholder="Keterangan singkat dokumentasi (opsional)"
+                                            />
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'end', gap: 10 }}>
+                                                <div style={{ flex: 1, minWidth: 220 }}>
+                                                    <label className="crud-label" htmlFor="event-document-file">Berkas <span>*</span></label>
+                                                    <input
+                                                        id="event-document-file"
+                                                        ref={fileInputRef}
+                                                        className="db-input"
+                                                        type="file"
+                                                        accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
+                                                        onChange={(changeEvent) => documentForm.setData('file', changeEvent.target.files?.[0] ?? null)}
+                                                    />
+                                                    {documentForm.errors.file && <div className="db-error">{documentForm.errors.file}</div>}
+                                                    <div className="crud-hint">Foto, laporan, atau dokumen pendukung. Maksimal 10 MB.</div>
+                                                </div>
+                                                <button className="db-btn primary" type="submit" disabled={documentForm.processing}>
+                                                    <Upload size={14} /> Unggah
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    {documents.length === 0 ? (
+                                        <span className="db-hint">Belum ada dokumentasi yang diunggah.</span>
+                                    ) : (
+                                        <div className="db-grid-2">
+                                            {documents.map((document) => (
+                                                <article key={document.id} className="db-fact wide" style={{ display: 'grid', gap: 8 }}>
+                                                    {document.fileUrl ? (
+                                                        <img
+                                                            src={document.fileUrl}
+                                                            alt={document.title}
+                                                            style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--db-line)' }}
+                                                        />
+                                                    ) : (
+                                                        <div style={{ height: 80, display: 'grid', placeItems: 'center', background: 'var(--db-soft, rgba(104, 66, 244, 0.08))', borderRadius: 8 }}>
+                                                            <FileText size={22} />
+                                                        </div>
+                                                    )}
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                        <span className={`db-badge ${toneClass(document.categoryTone)}`}>{document.categoryLabel}</span>
+                                                        <span className="db-badge gray">{document.fileSize}</span>
+                                                    </div>
+                                                    <b style={{ color: 'var(--db-heading)', fontSize: 13 }}>{document.title}</b>
+                                                    {document.description && <span className="db-hint">{document.description}</span>}
+                                                    <span className="db-hint">{document.originalName} · {document.uploader || '—'} · {document.createdAt || '—'}</span>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                                                        <a className="db-btn ghost sm" href={document.downloadUrl}><Download size={12} /> Unduh</a>
+                                                        {can.update && (
+                                                            <button className="db-btn danger sm" type="button" onClick={() => setDocumentPending(document)}>
+                                                                <Trash2 size={12} /> Hapus
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </article>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+
+                            <section className="db-card">
+                                <div className="db-card-head">
+                                    <h2 className="db-card-title"><Wallet size={15} /> Realisasi Anggaran</h2>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span className="db-badge gray">{budgetSummary.items} item</span>
+                                        {can.update && (
+                                            <button className="db-btn primary sm" type="button" onClick={openCreateBudget}>
+                                                <Plus size={13} /> Tambah
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="db-card-body" style={{ display: 'grid', gap: 12 }}>
+                                    <div className="db-grid-2">
+                                        <div className="db-fact"><span className="db-hint">Rencana</span><b>{rupiah(budgetSummary.planned)}</b></div>
+                                        <div className="db-fact"><span className="db-hint">Realisasi</span><b>{rupiah(budgetSummary.realized)}</b></div>
+                                        <div className="db-fact"><span className="db-hint">Selisih</span><b>{rupiah(budgetSummary.variance)}</b></div>
+                                        <div className="db-fact"><span className="db-hint">Serapan</span><b>{budgetSummary.absorption}%</b></div>
+                                    </div>
+
+                                    {budgets.length === 0 ? (
+                                        <span className="db-hint">Belum ada item anggaran untuk event ini.</span>
+                                    ) : (
+                                        <div style={{ display: 'grid', gap: 8 }}>
+                                            {budgets.map((budget) => (
+                                                <article key={budget.id} className="db-fact wide" style={{ display: 'grid', gap: 6 }}>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                                        <b style={{ color: 'var(--db-heading)', fontSize: 13 }}>{budget.itemName}</b>
+                                                        <span className={`db-badge ${toneClass(budget.categoryTone)}`}>{budget.categoryLabel}</span>
+                                                    </div>
+                                                    <div className="db-hint" style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+                                                        <span>Rencana {rupiah(budget.plannedAmount)}</span>
+                                                        <span>Realisasi {rupiah(budget.realizedAmount)}</span>
+                                                        <span>Selisih {rupiah(budget.variance)}</span>
+                                                    </div>
+                                                    {budget.notes && <span className="db-hint">{budget.notes}</span>}
+                                                    {can.update && (
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                            <button className="db-btn ghost sm" type="button" onClick={() => openEditBudget(budget)}>
+                                                                <Pencil size={12} /> Edit
+                                                            </button>
+                                                            <button className="db-btn danger sm" type="button" onClick={() => setBudgetPending(budget)}>
+                                                                <Trash2 size={12} /> Hapus
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </article>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
                         </div>
 
                         <div className="db-stack">
+                            <section className="db-card">
+                                <div className="db-card-head">
+                                    <h2 className="db-card-title"><MessageSquare size={15} /> Evaluasi Peserta</h2>
+                                    <span className="db-badge gray">{evaluationSummary.count} respons</span>
+                                </div>
+                                <div className="db-card-body" style={{ display: 'grid', gap: 10 }}>
+                                    {evaluationSummary.count === 0 ? (
+                                        <span className="db-hint">Belum ada evaluasi dari peserta.</span>
+                                    ) : (
+                                        <>
+                                            <div className="db-fact">
+                                                <span className="db-hint">Rata-rata keseluruhan</span>
+                                                <b style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                    <Star size={14} /> {evaluationSummary.average} / 5
+                                                </b>
+                                            </div>
+                                            <div className="db-fact"><span className="db-hint">Materi & manfaat</span><b>{evaluationSummary.averageBenefit ?? '—'} / 5</b></div>
+                                            <div className="db-fact"><span className="db-hint">Penyelenggaraan</span><b>{evaluationSummary.averageOrganization ?? '—'} / 5</b></div>
+                                            <div className="db-fact">
+                                                <span className="db-hint">Partisipasi</span>
+                                                <b>{evaluationSummary.count} dari {evaluationSummary.attended} peserta hadir ({evaluationSummary.responseRate}%)</b>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gap: 5 }}>
+                                                {[5, 4, 3, 2, 1].map((rating) => (
+                                                    <div key={rating} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                        <span className="db-hint" style={{ width: 34 }}>{rating} ★</span>
+                                                        <div style={{ flex: 1, height: 7, borderRadius: 999, background: 'var(--db-soft, rgba(104, 66, 244, 0.12))', overflow: 'hidden' }}>
+                                                            <div
+                                                                style={{
+                                                                    width: `${((evaluationSummary.distribution[String(rating)] ?? 0) / maxDistribution) * 100}%`,
+                                                                    height: '100%',
+                                                                    borderRadius: 999,
+                                                                    background: 'var(--db-brand)',
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <span className="db-hint" style={{ width: 18, textAlign: 'right' }}>{evaluationSummary.distribution[String(rating)] ?? 0}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div style={{ display: 'grid', gap: 8 }}>
+                                                {evaluations.slice(0, 5).map((evaluation) => (
+                                                    <article key={evaluation.id} className="db-fact wide" style={{ display: 'grid', gap: 4 }}>
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                                                            <b style={{ color: 'var(--db-heading)', fontSize: 13 }}>{evaluation.student}</b>
+                                                            <span className="db-badge gold"><Star size={11} /> {evaluation.rating}/5</span>
+                                                        </div>
+                                                        {evaluation.feedback && <span className="db-hint">{evaluation.feedback}</span>}
+                                                        {evaluation.suggestions && <span className="db-hint">Saran: {evaluation.suggestions}</span>}
+                                                        <span className="db-hint">{evaluation.createdAt || '—'}</span>
+                                                    </article>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </section>
+
                             <section className="db-card">
                                 <div className="db-card-head"><h2 className="db-card-title">Metadata</h2></div>
                                 <div className="db-card-body" style={{ display: 'grid', gap: 10 }}>
@@ -266,6 +633,104 @@ export default function EventShow({ shell, can, event, stats, registrations, opt
                     onConfirm={runAction}
                     onCancel={() => setPending(null)}
                 />
+
+                <ConfirmModal
+                    open={documentPending !== null}
+                    title="Hapus dokumentasi?"
+                    message={documentPending ? `"${documentPending.title}" akan dihapus permanen.` : ''}
+                    confirmLabel="Ya, hapus"
+                    danger
+                    onConfirm={() => {
+                        if (documentPending) {
+                            router.delete(documentPending.deleteUrl, {
+                                preserveScroll: true,
+                                onFinish: () => setDocumentPending(null),
+                            });
+                        }
+                    }}
+                    onCancel={() => setDocumentPending(null)}
+                />
+
+                <ConfirmModal
+                    open={budgetPending !== null}
+                    title="Hapus item anggaran?"
+                    message={budgetPending ? `"${budgetPending.itemName}" akan dihapus dari realisasi anggaran.` : ''}
+                    confirmLabel="Ya, hapus"
+                    danger
+                    onConfirm={() => {
+                        if (budgetPending) {
+                            router.delete(budgetPending.deleteUrl, {
+                                preserveScroll: true,
+                                onFinish: () => setBudgetPending(null),
+                            });
+                        }
+                    }}
+                    onCancel={() => setBudgetPending(null)}
+                />
+
+                {budgetModalOpen && (
+                    <StudentAffairsModal
+                        title={editingBudget ? 'Edit Item Anggaran' : 'Tambah Item Anggaran'}
+                        description="Catat rencana dan realisasi biaya kegiatan."
+                        onClose={() => setBudgetModalOpen(false)}
+                    >
+                        <form onSubmit={submitBudget} style={{ display: 'grid', gap: 12 }}>
+                            <TextField
+                                label="Nama Item"
+                                required
+                                value={budgetForm.data.item_name}
+                                onChange={(changeEvent) => budgetForm.setData('item_name', changeEvent.target.value)}
+                                error={budgetForm.errors.item_name}
+                                placeholder="Mis. Konsumsi peserta"
+                            />
+                            <SelectField
+                                label="Kategori"
+                                required
+                                value={budgetForm.data.category}
+                                onChange={(changeEvent) => budgetForm.setData('category', changeEvent.target.value)}
+                                error={budgetForm.errors.category}
+                            >
+                                {Object.entries(options.budgetCategories).map(([value, label]) => (
+                                    <option key={value} value={value}>{label}</option>
+                                ))}
+                            </SelectField>
+                            <div className="crud-grid">
+                                <TextField
+                                    label="Rencana (Rp)"
+                                    required
+                                    type="number"
+                                    min={0}
+                                    step="0.01"
+                                    value={budgetForm.data.planned_amount}
+                                    onChange={(changeEvent) => budgetForm.setData('planned_amount', changeEvent.target.value)}
+                                    error={budgetForm.errors.planned_amount}
+                                />
+                                <TextField
+                                    label="Realisasi (Rp)"
+                                    type="number"
+                                    min={0}
+                                    step="0.01"
+                                    value={budgetForm.data.realized_amount}
+                                    onChange={(changeEvent) => budgetForm.setData('realized_amount', changeEvent.target.value)}
+                                    error={budgetForm.errors.realized_amount}
+                                />
+                            </div>
+                            <TextareaField
+                                label="Catatan"
+                                value={budgetForm.data.notes}
+                                onChange={(changeEvent) => budgetForm.setData('notes', changeEvent.target.value)}
+                                error={budgetForm.errors.notes}
+                                placeholder="Keterangan tambahan (opsional)"
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                                <button className="db-btn ghost" type="button" onClick={() => setBudgetModalOpen(false)}>Batal</button>
+                                <button className="db-btn primary" type="submit" disabled={budgetForm.processing}>
+                                    {editingBudget ? 'Simpan Perubahan' : 'Tambah Item'}
+                                </button>
+                            </div>
+                        </form>
+                    </StudentAffairsModal>
+                )}
             </div>
         </AdminShell>
     );

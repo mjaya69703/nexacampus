@@ -11,11 +11,13 @@ use App\Enums\FacilityBookingStatus;
 use App\Enums\MemberPosition;
 use App\Enums\OrganizationType;
 use App\Enums\StudentEventCategory;
+use App\Enums\StudentEventStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Campus\Room;
 use App\Models\Campus\RoomReservation;
 use App\Models\StudentAffairs\StudentAchievement;
 use App\Models\StudentAffairs\StudentEvent;
+use App\Models\StudentAffairs\StudentEventEvaluation;
 use App\Models\StudentAffairs\StudentEventRegistration;
 use App\Models\StudentAffairs\StudentOrganization;
 use App\Models\StudentAffairs\StudentOrganizationMember;
@@ -169,7 +171,17 @@ class StudentAffairsController extends Controller
             ->withCount([
                 'registrations as registered_count' => fn ($sub) => $sub->where('status', '!=', EventRegistrationStatus::CANCELLED->value),
             ])
-            ->visibleToStudents()
+            ->where(function ($scope) use ($user) {
+                $scope->whereIn('status', [
+                    StudentEventStatus::PUBLISHED->value,
+                    StudentEventStatus::ONGOING->value,
+                ])->orWhere(function ($completed) use ($user) {
+                    $completed->where('status', StudentEventStatus::COMPLETED->value)
+                        ->whereHas('registrations', fn ($registration) => $registration
+                            ->where('user_id', $user->id)
+                            ->where('status', EventRegistrationStatus::ATTENDED->value));
+                });
+            })
             ->orderBy('starts_at');
 
         if (filled($validated['q'] ?? null)) {
@@ -192,10 +204,18 @@ class StudentAffairsController extends Controller
             ->get()
             ->keyBy('student_event_id');
 
-        $mapped = collect($events->items())->values()->map(function (StudentEvent $event, int $i) use ($events, $registrations) {
+        $evaluations = StudentEventEvaluation::query()
+            ->where('user_id', $user->id)
+            ->whereIn('student_event_id', collect($events->items())->pluck('id'))
+            ->get()
+            ->keyBy('student_event_id');
+
+        $mapped = collect($events->items())->values()->map(function (StudentEvent $event, int $i) use ($events, $registrations, $evaluations) {
             $registration = $registrations->get($event->id);
+            $evaluation = $evaluations->get($event->id);
             $activeRegistration = $registration && $registration->status !== EventRegistrationStatus::CANCELLED;
             $seatsLeft = $event->quota !== null ? max(0, $event->quota - (int) $event->registered_count) : null;
+            $attended = $registration?->status === EventRegistrationStatus::ATTENDED;
 
             return [
                 'id' => $event->id,
@@ -232,8 +252,14 @@ class StudentAffairsController extends Controller
                     'attendedAt' => $registration->attended_at?->format('d M Y H:i'),
                     'pointsAwarded' => (int) $registration->points_awarded,
                 ] : null,
+                'canEvaluate' => $event->status === StudentEventStatus::COMPLETED && $attended && ! $evaluation,
+                'myEvaluation' => $evaluation ? [
+                    'rating' => (int) $evaluation->rating,
+                    'createdAt' => $evaluation->created_at?->format('d M Y H:i'),
+                ] : null,
                 'registerUrl' => route('student.student-affairs.events.register', $event->id),
                 'cancelUrl' => route('student.student-affairs.events.cancel-registration', $event->id),
+                'evaluateUrl' => route('student.student-affairs.events.evaluate', $event->id),
             ];
         });
 
@@ -345,6 +371,53 @@ class StudentAffairsController extends Controller
         ]);
 
         return back()->with('success', 'Pendaftaran event dibatalkan.');
+    }
+
+    public function evaluateEvent(Request $request, int $id)
+    {
+        $user = $request->user();
+        $event = StudentEvent::findOrFail($id);
+
+        if ($event->status !== StudentEventStatus::COMPLETED) {
+            return back()->with('error', 'Evaluasi hanya dapat dikirim setelah event selesai.');
+        }
+
+        $registration = StudentEventRegistration::query()
+            ->where('student_event_id', $event->id)
+            ->where('user_id', $user->id)
+            ->where('status', EventRegistrationStatus::ATTENDED->value)
+            ->first();
+
+        if (! $registration) {
+            return back()->with('error', 'Hanya peserta yang hadir yang dapat mengirim evaluasi.');
+        }
+
+        if (StudentEventEvaluation::query()
+            ->where('student_event_id', $event->id)
+            ->where('user_id', $user->id)
+            ->exists()) {
+            return back()->with('info', 'Anda sudah mengirim evaluasi untuk event ini.');
+        }
+
+        $validated = $request->validate([
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'organization_rating' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'benefit_rating' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'feedback' => ['nullable', 'string', 'max:2000'],
+            'suggestions' => ['nullable', 'string', 'max:2000'],
+            'is_anonymous' => ['boolean'],
+        ]);
+
+        StudentEventEvaluation::create([
+            ...$validated,
+            'student_event_id' => $event->id,
+            'user_id' => $user->id,
+            'is_anonymous' => (bool) ($validated['is_anonymous'] ?? false),
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+
+        return back()->with('success', 'Terima kasih, evaluasi Anda sudah terkirim.');
     }
 
     public function leaderboard(Request $request, StudentPointService $points): Response

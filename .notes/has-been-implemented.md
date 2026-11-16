@@ -2015,6 +2015,39 @@ Fitur-fitur berikut sudah diidentifikasi namun belum masuk tahap implementasi ak
     - **Test:** `tests/Feature/Library/LibraryManagementTest.php` menjadi 41 test / 291 assertion (H-3/H-1, interval terlambat, dry-run, notifikasi reservasi, unggah bukti, otorisasi unduhan, verifikasi, penolakan + unggah ulang, filter status denda); suite total 867 test / 8.731 assertion. `vendor\bin\pint`, `npm run typecheck`, dan `npm run build` lulus.
     - **Verifikasi browser:** mahasiswa `rania.putri` mengunggah bukti PDF → status “Menunggu verifikasi”; pustakawan `pustakawan` memverifikasi → “Lunas”, denda belum lunas Rp 0, bukti tersimpan di `storage/app/public/library/fines/3`, dan 4 log notifikasi `library.*` tercatat.
 
+- **2026-11-16 (Kemahasiswaan Slice 1 — organisasi, anggota, prestasi):**
+  - **COMPLETED: Master ormawa, keanggotaan per periode, dan prestasi mahasiswa**
+    - **Database:** migrasi `2026_11_16_000001_create_student_affairs_tables.php` — `student_organizations`, `student_organization_members`, `student_achievements`.
+    - **Enum:** `OrganizationType` (`bem`, `dpm`, `hima`, `ukm`, `community`), `MemberPosition`, `AchievementCategory`, `AchievementLevel`, `AchievementRank`, `AchievementStatus` (`pending`, `verified`, `rejected`).
+    - **Admin:** CRUD organisasi + anggota (`admin.student-affairs.organizations.*`), CRUD prestasi + verifikasi/tolak/sorotan/unduh sertifikat (`admin.student-affairs.achievements.*`), permission `student-organization.*` dan `student-achievement.*` di `config/resources.php` (menu group “Kemahasiswaan”, `group_order` 45).
+    - **Portal mahasiswa:** `Student/StudentAffairs/Index.tsx` menampilkan kartu keanggotaan, prestasi pribadi, dan pintasan; unduh sertifikat dibatasi pemilik/admin.
+    - **Halaman publik:** `Home/Kemahasiswaan/Organisasi.tsx` dan `Prestasi.tsx` (hanya prestasi `verified`; sorotan hanya untuk prestasi terverifikasi).
+    - **Aturan:** organisasi dengan prestasi tidak bisa dihapus (single/bulk, bulk memberi flash `warning`); anggota wajib punya `studentProfile`; duplikasi user+periode ditolak; logo di disk `public` (`student-affairs/organizations`), sertifikat di `student-affairs/achievements/{id}`.
+    - **Seeder & test:** `StudentAffairsSeeder` (8 ormawa, 6 keanggotaan, 6 prestasi); `tests/Feature/StudentAffairs/StudentAffairsManagementTest.php` 18 test / 252 assertion; suite total 885 test / 8.983 assertion. `npm run typecheck` dan `npm run build` lulus.
+    - **Catatan:** indeks migrasi dipendekkan agar kompatibel MySQL (≤64 karakter), dengan regression test di `tests/Feature/System/DatabasePortabilityTest.php`. Dokumentasi modul di `AI_CONTEXT.md` §3.12.
+
+- **2026-11-16 (Kemahasiswaan Slice 2 — event, poin/leaderboard, booking fasilitas):**
+  - **COMPLETED: Event kemahasiswaan, poin keikutsertaan, dan booking fasilitas ormawa**
+    - **Database:** migrasi `2026_11_16_000002_create_student_affairs_engagement_tables.php` — `student_events`, `student_event_registrations`, `student_point_entries`, plus kolom `room_reservations.student_organization_id`.
+    - **Enum:** `StudentEventCategory`, `StudentEventStatus` (`draft`, `published`, `ongoing`, `completed`, `cancelled`), `EventRegistrationStatus` (`registered`, `attended`, `cancelled`), `PointEntryCategory` (`event`, `organization`, `achievement`, `manual`, `penalty`), `FacilityBookingStatus`.
+    - **Service:** `app/Support/StudentAffairs/StudentPointService.php` — `award()`, `awardEventAttendance()`, `revoke()`, `totalFor()`, `leaderboard()`, `rankFor()`; pemberian poin event idempoten via `source_type`/`source_id`, poin ditarik saat kehadiran dibatalkan.
+    - **Admin:** CRUD event + publish/complete/cancel + pencatatan kehadiran (`admin.student-affairs.events.*`), poin manual (`admin.student-affairs.points.*`), verifikasi booking fasilitas (`admin.student-affairs.facility-bookings.*`). Permission `student-event.*`, `student-point.*`, `student-facility-booking.*`.
+    - **Portal mahasiswa:** katalog event + daftar/batal, leaderboard + riwayat poin, pengajuan/pembatalan booking (`student.student-affairs.events*`, `leaderboard`, `bookings*`).
+    - **Aturan:** hanya event `published`/`ongoing` yang tampil; pendaftaran ditutup saat deadline lewat atau kuota penuh; registrasi batal dapat didaftarkan ulang tanpa duplikat; booking hanya untuk anggota aktif ormawa, peserta ≤ kapasitas, dan bebas bentrok jadwal kuliah/reservasi approved (memakai ulang `RoomReservation::getConflict()`).
+    - **Seeder & test:** `StudentAffairsSeeder` diperluas (6 event, 9 pendaftaran, 7 entri poin, 4 booking); `tests/Feature/StudentAffairs/StudentAffairsSliceTwoTest.php` 15 test / 163 assertion; suite total 901 test / 9.147 assertion. `npm run typecheck`, `npm run build`, migrasi MySQL, `resources:sync`, dan seeder lulus.
+    - **Verifikasi browser (MySQL):** halaman admin event/poin/booking dan portal mahasiswa event/leaderboard/booking tampil tanpa error console; pendaftaran event Futsal sebagai `rania.putri` berhasil, pembatalan mengembalikan kuota, dan baris cancelled dibersihkan sehingga data demo kembali 9 registrasi.
+
+- **2026-11-16 (Kemahasiswaan Slice 3 — dokumentasi, anggaran, evaluasi pasca-acara):**
+  - **COMPLETED: Dokumentasi kegiatan, realisasi anggaran, dan evaluasi peserta**
+    - **Database:** migrasi `2026_11_16_000003_create_student_affairs_event_insights_tables.php` — `student_event_documents`, `student_event_evaluations`, `student_event_budgets`.
+    - **Enum:** `EventDocumentCategory` (`photo`, `report`, `other`) dan `EventBudgetCategory` (`consumption`, `facility`, `speaker`, `publication`, `equipment`, `transportation`, `other`).
+    - **Model:** `StudentEventDocument` (`fileSizeLabel()`, `isImage()`), `StudentEventEvaluation`, `StudentEventBudget` (`variance()`); relasi `documents()`, `evaluations()`, `budgets()` pada `StudentEvent`.
+    - **Admin:** `StudentEventInsightController` — unggah/unduh/hapus dokumentasi dan CRUD item anggaran (`admin.student-affairs.events.documents.*`, `admin.student-affairs.events.budgets.*`); halaman detail event menampilkan galeri dokumentasi, ringkasan anggaran (rencana/realisasi/selisih/serapan) dengan modal CRUD, dan rekap evaluasi (rata-rata, distribusi bintang, partisipasi, anonimitas). Penghapusan event single/bulk ikut membersihkan berkas dokumentasi.
+    - **Portal mahasiswa:** event `completed` yang dihadiri tampil untuk riwayat; tombol “Beri Evaluasi” membuka modal rating keseluruhan/materi/penyelenggaraan, kesan, saran, dan opsi anonim. Evaluasi hanya untuk pendaftaran `attended`, sekali per user, dan badge “Evaluasi n/5” tampil setelah terkirim.
+    - **Aturan:** dokumentasi maksimal 10 MB (gambar/PDF/Office/ZIP) di disk `public` folder `student-affairs/events/{event_id}/documents`; unggah/hapus butuh `student-event.update`, unduh butuh `student-event.view`; anggaran memakai `student-event.update`; evaluasi anonim ditampilkan sebagai “Anonim”.
+    - **Seeder & test:** `StudentAffairsSeeder` diperluas (7 item anggaran, 3 evaluasi); `tests/Feature/StudentAffairs/StudentAffairsSliceThreeTest.php` 8 test / 129 assertion; total modul 41 test / 544 assertion; suite total 909 test / 9.276 assertion. `npm run typecheck`, `npm run build`, migrasi MySQL, dan seeder lulus.
+    - **Verifikasi browser (MySQL):** detail event `Bakti Sosial Mahasiswa` menampilkan dokumentasi/anggaran/evaluasi tanpa error console, modal anggaran terbuka normal, dan evaluasi sebagai `rania.putri` berhasil terkirim lalu data demo dipulihkan via seeder.
+
 - Last updated by: AI Assistant (based on actual git commit history)
 
 ---
